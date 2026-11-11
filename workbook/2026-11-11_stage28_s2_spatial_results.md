@@ -1,6 +1,6 @@
 # 阶段 28：S2 空间矩阵的部分完成结果
 
-12项空间实验中已有2项完成，另5项正在运行。新增完成的 ParT 原生双投影模型 τ AP=0.34989、NLL=1.22890，实际占用3.84833 GPU-hours。当前两个完成模型分别改变了架构和表示，尚未形成粒度、投影或架构的受控对照。
+12项空间实验中已有3项完成，另4项正在运行。新增完成的 ParT 1mm joint 模型 τ AP=0.35845、NLL=1.22922，实际占用4.71833 GPU-hours。当前完成模型尚未形成预定的粒度、投影或架构受控配对。
 
 ## 阶段目标
 
@@ -22,6 +22,7 @@
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | ParticleNet native joint | 0.35783732 | 0.63023309 | 1.24514857 | 0.397600 | 0.32706642 | 3.16083 |
 | ParT native projections | 0.34988948 | 0.62859563 | 1.22890107 | 0.404000 | 0.31567223 | 3.84833 |
+| ParT 1mm joint | 0.35844742 | 0.63260771 | 1.22922198 | 0.412800 | 0.32293880 | 4.71833 |
 
 ParT双投影模型在validation empirical 1% FPR阈值0.454139下保留76/2,500个τ、75/7,500个背景，τ效率为3.04%。0.1% FPR对应10个τ和7个背景，尾部统计不足标记保留。Common support使用既有8,559 events和固定权重，本报告没有增加新置信区间。
 
@@ -71,11 +72,28 @@ condor_qedit -name bigbird20.cern.ch \
 
 复现入口与阶段27相同：先 `s2.accounting`，再用 `s2_complete_pairs_v2.json` 运行 `s2.evaluate --allow-incomplete`。最终验收去掉该参数；当前显式保留44项pending。
 
+## 第三个完成模型与刷新评价
+
+23:11 UTC，`1573747.2` 四轮完成；Condor history 为JobStatus=4、ExitCode=0、RemoteWallClockTime=16,986 s。该模型为ParT 1mm joint，参数151,228，其他训练合同不变，按NLL选中epoch4。
+
+| Epoch | Validation NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.33085119 | 0.28580370 | 4,293.01853 |
+| 2 | 1.26453682 | 0.34462893 | 8,607.14306 |
+| 3 | 1.25458553 | 0.35316891 | 12,801.78146 |
+| 4 | 1.22922198 | 0.35844742 | 16,952.73098 |
+
+最终程序wall=16,953.67862 s，额外allocation=32.32138 s，peak=1,587.11963 MiB。80,064 attempted steps中80,029 applied、35 AMP skips，applied比例99.9563%；exposures仍为320,164。validation empirical 1% FPR保留82/2,500个τ和75/7,500个背景，τ效率3.28%；0.1% FPR为21个τ、7个背景，保留尾部统计不足标记。固定common-support AP=0.32293880。
+
+刷新后的 `evaluation_final/summary.json` 有7个完成结果（4 references+3科学模型）、187行分域指标、21个历史三类诊断，仍为1项预定配对完成、44项pending。已实际查看更新后的resolution图，新增1mm joint点；没有临时增加跨架构/跨表示比较。完整指标、history和terminal成本固定在 `third_scientific_model.json`。
+
+23:13:23 UTC累计22.33457 GPU-hours，missing history records=0。23:15队列仍为3 complete/4 running/28 idle；原ParticleNet投影 `.7/.9` 仍在队列等待。H100 ParT候选运行中、另一族idle，尚无完整首轮，环境门槛未通过。Kubeflow GPU probe v5于23:14:58 UTC以DeadlineExceeded结束，全程未分配node；终态证据为 `kubeflow/probe_v5_terminal.json`，GPU reservation=0，科学任务没有迁移。
+
 ## 阶段性结论
 
-已完成两项冻结配置的四轮执行及独立验证评价，新的ParT模型验证NLL随四轮下降，但τ AP不单调，预先固定选模规则得到保留。当前证据尚未回答“联合位置是否优于双投影”“原生是否优于1mm”或“ParT是否优于ParticleNet”。
+已完成三项冻结配置的四轮执行及独立验证评价，新的ParT模型验证NLL随四轮下降，但τ AP不单调，预先固定选模规则得到保留。当前证据尚未回答“联合位置是否优于双投影”“原生是否优于1mm”或“ParT是否优于ParticleNet”。
 
-资源侧已恢复5项并发科学训练，两个释放的slot继续执行后续空间项。Kubeflow降低环境探测CPU请求后消除了CPU不足的调度原因，GPU allocation仍待实际资源；尚不支持切换正式执行环境。
+资源侧当前有4项V100科学训练和1项H100候选实际运行。Kubeflow环境探测因GPU不足排队至deadline，未得到GPU执行证据；H100两族整轮门槛仍待完成。
 
 ## 下一步计划
 
