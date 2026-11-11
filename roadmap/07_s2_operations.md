@@ -18,6 +18,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Native response displays | `evaluation/event_displays/b0_all_s42/`，20 页 PDF、事件 keys 和首例 PNG |
 | V100 resource study | `resource_profile/` 为 v1；`resource_profile_v2/` 的 576 行已完成，两者分别保留 |
 | H100 resource comparison | `1573759.0` exit0，H100/LCG108/BF16 共 576 行；与 V100 匹配后去 warmup 保留552行，batch1 training compute 比值1.69–2.33；原始/配对图已查看，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；整轮收益待测 |
+| H100 full-epoch candidate | 独立 `h100/` 共享既有 accepted 输入和 B0 references；[35 项同配置合同](configs/s2_h100_v2.json)已冻结，先行 tasks0/6；两者首轮耗时均须 ≤V100 的80%且执行完整，见[阶段 25](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)。通过后统一环境完成全矩阵，当前 V100 任务继续 |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
 | Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
 | Prespecified controls | [13 runs](configs/s2_controls_v2.json)：两族 OR/shift/shuffle、各自 pair/graph，以及 ParticleNet modality/domain 控制 |
