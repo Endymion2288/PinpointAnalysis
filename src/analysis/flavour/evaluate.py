@@ -133,7 +133,8 @@ def evaluate(args):
                'selection': 'four deterministic pixel-occupancy strata per class; no truth selection',
                'peak_rss_mib': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
                'torch_version': torch.__version__, 'shard_target_mib': [256, 1024],
-               'pilot_shards_smaller_than_target': True, 'full_scale_size_estimate_status': 'needs_measured_full_inventory'})
+               'pilot_shards_smaller_than_target': True,
+               'full_scale_size_estimate_status': 'calculated_separately_from_inventory_counts_and_pilot_sizes'})
     print(json.dumps({'events': len(frame), 'displays': len(selected), 'output': str(args.output)}))
 
 

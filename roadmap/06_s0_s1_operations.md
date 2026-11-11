@@ -54,7 +54,23 @@ python -m analysis.flavour.train --input "$TASK_RESULTS/shards" \
   --output "$TASK_RESULTS/b0" --device cuda --epochs 60
 ```
 
-`NativeShard` 和 `collate_native` 提供变长 offsets、所有原生通道属性、空模态 mask 与独立 target 字典。模型只接收 observations；provenance 单独保存，B0 显式读取特征白名单，train-only normalization。S1 不打开 calibration/test 来调参。
+`NativeShard` 和 `collate_native` 提供变长 offsets、所有原生通道属性、空模态 mask 与独立 target 字典。`label_status` 保留在 targets 中供调用者隔离异常。模型只接收 observations；provenance 单独保存，B0 显式读取特征白名单，train-only normalization。S1 不打开 calibration/test 来调参。
+
+多 shard 输入用 `CachedNativeDataset`：构造时只读取 Parquet footer，worker 按需将 `observations.parquet` 与 `targets.parquet` 复制到自己的本地临时目录。target 默认只解码 `label/label_status`；不复制 provenance、ideal tracker 和 B0 features。scratch 优先级为显式 `cache_dir`、`_CONDOR_SCRATCH_DIR`、系统 tmp，拒绝 EOS/AFS。LRU 限制每 worker 的本地文件与已加载 shard 数，正常退出/显式 `close()` 清理自身目录；当前 batch 的 NumPy views 和 prefetch queue 可使 RAM 超过 LRU 本身，容量依据 decoded RSS 与 scratch 一同配置。
+
+`ShardBatchSampler` 在 seed+epoch 决定的 shard 窗口内 shuffle，覆盖全部事件且不截断 token。窗口不超过 cache 容量。当前四个 pilot shard 各自只有一个类别，单 shard 窗口用于 I/O profiler；训练需混类 shard，或覆盖四类的窗口，并由冻结 manifest 选择 train/validation。这个 profiler 不做 split selection，扫描 4,000 行只用于数据流检查，不输出 calibration/test 性能。
+
+```bash
+# 全部 pilot 的多 worker I/O 测量通过 Condor：
+python -m analysis.flavour.submit loader_profile --root "$TASK_RESULTS"
+# 最多 64-event 原生 tensor 传输检查，可在交互 GPU 运行：
+python -m analysis.flavour.profile_loader --input "$TASK_RESULTS/shards" \
+  --output "$TASK_RESULTS/native_transfer.json" --transfer-only
+```
+
+`loader_profile.json` 比较单进程/1-shard cache、2-worker/1-shard cache、2-worker/4-shard mixed window，各跑两个 epoch；记录 staging、decode、collate、wall time、cache hits/misses、临时文件容量、per-worker RSS、类别混合和清理。2-worker 使用 spawn、每个 worker 1 个 Arrow/BLAS/Torch 线程、prefetch=1。`native_transfer.json` 仅测量全部原生 observation tensors 的传输与精确往返，不运行新分类网络。
+
+本次第二个 epoch 分别达到 1,704/799/1,164 events/s，多 worker 没有提高小型 pilot 的吞吐；4-shard window 的第二个 epoch 没有新增 staging/decode。完整条件与 S0/S1 逐项验收见[阶段 06 报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。缓存实现验收不改变 source-family split 的 provisional 状态。
 
 pixel ID 可逆到 per-file geometry 中的 `(plane,row,col)` 与中心，保留原生联合位置和 binary occupancy；bar 以 `(layer,panel,orientation,bar)` 合并，保存实测方向与另一方向的有限区间。edep 与 PE 是无饱和/无积分窗的线性模拟 proxy，不声明已标定。时间不进入输入。输出能量 float32 的总和另用 `rtol=2e-6, atol=1e-6 MeV` 检查；PE 使用整数精确合并。
 

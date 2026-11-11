@@ -82,6 +82,22 @@ storage:
   production_target_shard_MiB: [256, 1024]
   no_token_truncation: true
   empty_events_retained: true
+loader:
+  dataset: CachedNativeDataset
+  staging_files: [observations.parquet, targets.parquet]
+  target_columns: [label, label_status]
+  scratch_root_order: [explicit_cache_dir, _CONDOR_SCRATCH_DIR, system_tmp]
+  shared_EOS_AFS_cache: forbidden
+  ownership: process_private
+  eviction: LRU_shard_count_bounded
+  default_max_shards_per_worker: 1
+  checksum: none_ephemeral_cache
+  normal_worker_exit_cleanup: true
+  batch_sampler: ShardBatchSampler
+  window_shards_at_most_cache_capacity: true
+  pure_class_pilot_training_window_shards: 4
+  all_pilot_rows_used_for_IO_profile_only: true
+  split_selection_for_training: frozen_inventory_train_validation_only
 baseline:
   architecture: MLP_20_48_24_4
   inputs: binary_pixel_shape_and_linear_bar_proxy_summaries

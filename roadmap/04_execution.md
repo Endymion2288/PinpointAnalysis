@@ -110,7 +110,7 @@ condor_status -schedd -af Name TotalRunningJobs TotalIdleJobs TotalHeldJobs MaxJ
 
 再对兼容 GPU/CPU 类型、作业时长、账号权限和站点 storage/container 要求的候选检查队列与可用资源；在兼容集合中优先选择排队/负载较低者。将时间、候选、idle/running、GPU/时长约束、选择依据与最终 `ClusterId` 写入 task manifest。只有 queue length 不足以代表等待时间，需记录可比较的约束。必要时限制 `max_materialize`/并发数，减少同时读 EOS 的小请求。
 
-当前不提交作业，因此 schedd 负载未测量。若后续改用 Kubeflow 而会话未登录，再提醒登录；无需为本次计划启动额外服务。
+S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录在 results 的 `submission_*.json`，不将规划时的队列状态当作下一次提交依据。若后续改用 Kubeflow 而会话未登录，再提醒登录。
 
 ## 9. 路径、产物与复现
 

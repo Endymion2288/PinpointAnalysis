@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。本文是待执行的研究设计；本次已完成文献核查、源码检查与有界数据抽样，尚未训练新模型。
+日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地 PDF 修订，S0/S1 已实现全库盘点、原生通道 pilot 与 B0 开发验证；S2–S6 为待执行研究设计。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -17,7 +17,7 @@
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
-S0/S1 已进入实现：全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图与 B0 GPU 验证已完成。真实生产 source-family 映射尚待核对，当前 split 仅作开发使用。完整实测与验收状态见 [S0 报告](../workbook/2026-11-11_stage04_flavour_inventory.md)和 [S1 报告](../workbook/2026-11-11_stage05_native_channel_pipeline.md)。
+S0/S1 已进入实现：全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图与 B0 GPU 验证已完成。多 worker scratch 缓存、原生 GPU 传输和 15 项测试也已验证；小型 pilot 没有观察到多 worker 加速。真实生产 source-family 映射尚待核对，当前 split 仅作开发使用。完整实测见 [S0 报告](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1 报告](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存与验收补充](../workbook/2026-11-11_stage06_native_cache_validation.md)。
 
 ## 1. 首先要回答的物理问题
 
@@ -106,4 +106,4 @@ flowchart TD
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
-本阶段尚未测量：新旧模型在这批样本上的 AUC/效率、硬件标定误差、generator 包络、全量事件数、GPU 吞吐/显存、训练 GPU-hours 和预期物理产额。相关测量已列入阶段验收。
+全量事件数、pilot native loader、B0 验证指标与资源已在 S0/S1 报告中测量。尚未测量：原生深度模型与旧方法的受控性能差异、硬件标定误差、generator 包络、全量训练资源和预期物理产额。当前 B0 与 split 均属于开发验证，正式评价等待生产 source-family 核对。
