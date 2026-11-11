@@ -1,0 +1,136 @@
+# Proposed research contract. No current trainer consumes this file yet.
+status: proposed
+date: "2026-11-11"
+task: pinpoint_neutrino_interaction_classification
+paths:
+  input_root: /eos/project-f/fasersim-bonn/public/pinpoint/data
+  simulation_source: /eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4
+  output_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour
+  planning_evidence: /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_2026-11-11
+  condor_submit: ~/condor/Pinpoint/flavour
+classes:
+  order: [CC_nue, CC_numu, CC_nutau, NC]
+  run_to_class:
+    10081: CC_nue
+    10082: CC_numu
+    10083: CC_nutau
+    10084: NC
+  include_antineutrinos: true
+  metadata_label_check_required: true
+  label_conflict_policy: unresolved_until_source_review
+  nc_tau_coverage: unmeasured
+provenance:
+  inspected_source_head: dbbdb5155a66f5329fd27ea5285d037bf8fb2f03
+  production_commit: null
+  production_macros: null
+  generator_source_event_mapping: null
+  geometry_source: per_file_ROOT_geometry
+  event_key: [production_id, source_file, evtID]
+  vertex_target_key: [event_key, vtxID]
+  model_receives_provenance: false
+  latest_tree_cycle_only: true
+  empty_pixel_id_repair: only_after_per_file_row_alignment_validation
+split:
+  seed: 20261111
+  group_by: generator_event_family
+  fractions: {train: 0.70, validation: 0.10, calibration: 0.10, test: 0.10}
+  stratify_within: [class, production_conditions]
+  all_representations_share_manifest: true
+  pretraining_partitions: [train]
+readout:
+  primary_pixel: binary_native
+  analog_pixel_confirmed: null
+  scintillator_signal: channel_response_pending_validation
+  scintillator_group_key: [event_key, layerID, panelID, isHorizontal, barID]
+  integration_window_ns: null
+  timing_calibrated: false
+  faser_signal: digitized_station_measurements_pending_validation
+  true_faser_momentum_input: false
+  true_faser_charge_input: false
+  pixel_subpixel_truth_position_input: false
+  tracker_resolution_mm: null
+  production_field_map: null
+  unseen_coordinate_representation: interval_and_covariance
+  keep_empty_events: true
+  minimum_node_selection: null
+  truth_good_event_selection: false
+input_contract:
+  observations_targets_provenance_separate: true
+  geometry_and_conditions_allowed: true
+  truth_features_forbidden:
+    - pdg
+    - trackID
+    - parentID
+    - fromPrimaryLepton
+    - fromPrimaryEMShower
+    - fromCharmedHadron
+    - fromTau
+    - fromMuon
+    - true_vertex
+    - true_momentum
+    - generator_interaction_metadata
+    - per_track_scintillator_record_count
+  representation_comparison: [native, 100um, 200um, 1mm]
+  coarse_binary_reducers: [occupancy_OR, active_native_pixel_count]
+  coarse_grid_origin: fixed_sensor_local
+  pooling_retains_local_residuals: true
+  hard_token_limit: null
+  overflow_policy: complete_window_or_hierarchical_path
+model:
+  screening_candidates: [BDT_or_MLP, ParticleNet_adapted, vanilla_set_transformer, ParT_geometry_adapted, local_module_latent]
+  local_encoder: [plane_sparse_2d, local_set_or_edge]
+  hidden_dimensions: [128, 192]
+  latent_counts: [32, 64]
+  local_window_native_pixels: [16, 64]
+  pair_features: [relative_measured_geometry, measurement_compatibility, material_interval, detector_pair_type]
+  head_comparison: [direct_four_class, six_class_tau_sum]
+  optional_auxiliaries: [vertex, soft_semantics, visible_kinematics, charm]
+training:
+  split_manifest_frozen_before_training: true
+  screening_seed: 42
+  confirmation_seeds: [17, 42, 2026]
+  pilot_max_train_events_per_class: 20000
+  labelled_budgets_total: [1000, 10000, 100000]
+  optional_labelled_budget_total: 1000000
+  main_loss: cross_entropy
+  optimizer: AdamW
+  learning_rate_candidates: [0.0001, 0.0003, 0.001]
+  weight_decay_candidates: [0.01, 0.05]
+  normalization_fit_partitions: [train]
+  checkpoint_selection_partition: validation
+  mixed_precision: bfloat16_if_supported
+pretraining:
+  strategies: [scratch, MAE, self_distillation, MAE_plus_relational]
+  initial_events: 100000
+  expanded_events: 1000000
+  mask_ratios: [0.50, 0.75]
+  candidate_support_from: geometry_and_visible_neighborhood
+  negative_occupancy_candidates_required: true
+  exact_soft_pixel_truth_available: false
+  relational_labels_require_quality_gate: true
+  matched_compute_controls: [continue_MAE, continue_supervised]
+evaluation:
+  primary_class: CC_nutau
+  primary_metrics: [PR_AUC, efficiency_at_fixed_background_acceptance]
+  background_acceptances: [0.01, 0.001]
+  optional_background_acceptance_if_MC_sufficient: 0.0001
+  required_metrics: [classwise_ROC_AUC, classwise_PR_AUC, macro_F1, balanced_accuracy, NLL, Brier, calibration, cutflow]
+  weight_scenarios: [class_balanced, nominal_if_weights_available, common_support_energy_vertex_matched]
+  nominal_exposure: null
+  nominal_flux_cross_section_weights: null
+  uncertainty: paired_family_bootstrap_and_training_seed_spread
+  calibration: temperature_on_calibration_partition
+  test_threshold_scan: false
+  tau_branch_diagnostics: [electron, muon, hadronic]
+  reported_efficiency_denominators: [declared_generated_domain, detector_active]
+resources:
+  actual_runtime_and_memory: unmeasured
+  large_jobs: HTCondor
+  initial_gpu_count_per_job: 1
+  initial_cpus_per_gpu_job: 8
+  initial_cpu_conversion_cpus: [4, 8]
+  screening_gpu_hour_budget_proposed: 100
+  pretraining_pilot_gpu_hours_per_strategy_proposed: [25, 50]
+  schedd_selection: compatible_then_current_low_load
+  record_schedd_evidence_at_submission: true
+  all_runtime_outputs_under_results: true
