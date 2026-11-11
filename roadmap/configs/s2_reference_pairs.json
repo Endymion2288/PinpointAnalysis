@@ -1,0 +1,8 @@
+{
+  "scope": "S2 validation, CPU reference information diagnostics",
+  "pairs": [
+    {"a": "b0_signal_s42", "b": "b0_all_s42", "question": "global signal versus full B0"},
+    {"a": "b0_shape_s42", "b": "b0_all_s42", "question": "shape summaries versus full B0"},
+    {"a": "b0_all_s42", "b": "truth_energy_vertex_s42", "question": "sample-prior diagnostic; truth model excluded from hardware claims"}
+  ]
+}

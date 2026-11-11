@@ -172,7 +172,7 @@ def run(args):
         model.train()
         loss_total,events=0.,0
         ready=time.perf_counter()
-        for batch in train_loader:
+        for step,batch in enumerate(train_loader,1):
             timing['data_wait']+=time.perf_counter()-ready
             batch.pop('index')
             label=batch.pop('label').to(device)
@@ -198,6 +198,14 @@ def run(args):
             timing['forward_backward']+=time.perf_counter()-t
             loss_total+=loss.item()*len(label)
             events+=len(label)
+            if step%config.get('progress_every_steps',250)==0:
+                progress={'experiment':experiment,'epoch':epoch+1,'step':step,'steps_per_epoch':len(train_sampler),
+                    'exposures':events,'train_loss':loss_total/events,
+                    'events_per_second':events/(time.perf_counter()-epoch_start),
+                    'seconds':time.perf_counter()-epoch_start,'timing_cumulative':timing.copy(),
+                    'peak_gpu_mib':torch.cuda.max_memory_allocated()/2**20 if device.type=='cuda' else 0.}
+                write_json(output/'progress.json',progress)
+                print(json.dumps(progress),flush=True)
             ready=time.perf_counter()
         train_seconds=time.perf_counter()-epoch_start
         t=time.perf_counter()

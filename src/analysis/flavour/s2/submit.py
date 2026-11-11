@@ -81,6 +81,12 @@ exec python -m "$@"
     elif args.stage=='reference':
         arguments=f'analysis.flavour.s2.reference --root {args.root} --mode $(mode)'
         queue='queue mode in b0_all b0_signal b0_shape truth_energy_vertex'
+    elif args.stage=='evaluate':
+        arguments=f'analysis.flavour.s2.evaluate --root {args.root} --output {args.root}/evaluation'
+        if args.comparisons:
+            arguments+=f' --comparisons {args.comparisons}'
+    elif args.stage=='display':
+        arguments=f'analysis.flavour.s2.display --root {args.root} --experiment {args.experiment}'
     else:
         raise ValueError(args.stage)
     text=f'''universe = vanilla
@@ -120,9 +126,11 @@ transfer_output_files = ""
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference'])
+    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference','evaluate','display'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
+    parser.add_argument('--comparisons',type=Path)
+    parser.add_argument('--experiment',default='b0_all_s42')
     parser.add_argument('--lcg-view',choices=['LCG_108_cuda','LCG_107_cuda'],default='LCG_108_cuda')
     parser.add_argument('--gpu-device',help='Optional exact CUDA device name for matched-hardware campaigns')
     submit(parser.parse_args())

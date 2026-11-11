@@ -36,6 +36,19 @@ class TinySpatialDataset:
 
 
 class TrainingTests(unittest.TestCase):
+    def test_occupancy_bucketing_preserves_coverage_and_reduces_padding(self):
+        dataset=TinySpatialDataset(None,None,{})
+        dataset.indexes=np.arange(16)
+        dataset.native.boundaries=[0,16]
+        dataset.workload=np.arange(1,17)
+        normal=list(train.SpatialBatchSampler(dataset,4,42))
+        dataset.config={'bucket_size':16}
+        bucketed=list(train.SpatialBatchSampler(dataset,4,42))
+        self.assertEqual(sorted(sum(bucketed,[])),list(range(16)))
+        self.assertEqual(len(normal),len(bucketed))
+        cost=lambda batches:sum(max(dataset.workload[b])*len(b) for b in batches)
+        self.assertLessEqual(cost(bucketed),cost(normal))
+
     def test_domain_sampler_repeats_complete_cycles_to_match_step_budget(self):
         dataset=TinySpatialDataset(None,None,{})
         normal=list(train.SpatialBatchSampler(dataset,3,42))

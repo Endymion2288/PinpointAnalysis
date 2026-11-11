@@ -31,6 +31,14 @@ class SpatialDataset(Dataset):
             metadata.append(frame.iloc[index])
         self.indexes=np.asarray(indexes,dtype='int64')
         self.metadata=pd.concat(metadata,ignore_index=True)
+        self.workload=None
+        if config.get('bucket_size',0):
+            key=['run','chunk','row']
+            counts=pd.read_parquet(self.root/'catalog.parquet',columns=key+['pixel_channels','bar_channels','tracker_channels'])
+            joined=self.metadata[key].merge(counts,on=key,how='left',validate='one_to_one',sort=False)
+            if joined.pixel_channels.isna().any():
+                raise ValueError('batch occupancy catalog lacks selected observations')
+            self.workload=joined[['pixel_channels','bar_channels','tracker_channels']].sum(axis=1).to_numpy()
 
     def __len__(self):
         return len(self.indexes)
@@ -75,6 +83,9 @@ class SpatialBatchSampler:
         self.dataset,self.batch_size,self.seed,self.shuffle=dataset,batch_size,seed,shuffle
         self.epoch=0
         self.steps=steps
+        self.bucket_size=dataset.config.get('bucket_size',0)
+        if self.bucket_size and self.bucket_size%batch_size:
+            raise ValueError('bucket size must be divisible by batch size to preserve step counts')
 
     def __len__(self):
         return self.steps if self.steps is not None else sum((len(ix)+self.batch_size-1)//self.batch_size for ix in self._windows())
@@ -94,10 +105,20 @@ class SpatialBatchSampler:
         emitted,cycle=0,0
         target=len(self)
         while emitted<target:
+            rng=np.random.default_rng(self.seed+self.epoch+10000*cycle+12345)
             for index in self._windows(cycle):
-                for start in range(0,len(index),self.batch_size):
+                batches=[]
+                width=self.bucket_size or max(1,len(index))
+                for start in range(0,len(index),width):
+                    group=index[start:start+width]
+                    if self.bucket_size:
+                        group=group[np.argsort(self.dataset.workload[group],kind='stable')]
+                    batches.extend(group[i:i+self.batch_size].tolist() for i in range(0,len(group),self.batch_size))
+                if self.shuffle and self.bucket_size:
+                    rng.shuffle(batches)
+                for batch in batches:
                     if emitted==target:
                         return
-                    yield index[start:start+self.batch_size].tolist()
+                    yield batch
                     emitted+=1
             cycle+=1
