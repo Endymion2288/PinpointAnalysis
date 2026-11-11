@@ -3,10 +3,13 @@
 import argparse
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve, precision_recall_curve
@@ -113,7 +116,7 @@ def resampling_groups(frame):
     groups={}
     for component,index in sorted(components.items()):
         index=np.asarray(index,dtype='int64')
-        stratum=tuple(sorted(set(frame.label.to_numpy()[index])))
+        stratum=tuple(int(value) for value in sorted(set(frame.label.to_numpy()[index])))
         groups.setdefault(stratum,[]).append(index)
     return groups,{'chunks':len(chunks),'resampling_blocks':len(components),
         'accepted_family_links_used':family_used,
@@ -279,6 +282,74 @@ def error_groups(frame,name):
     return out
 
 
+def plot_diagnostics(root,output,experiments,frames):
+    labels=['CC nu_e','CC nu_mu','CC nu_tau','NC']
+    with PdfPages(output/'classification_diagnostics.pdf') as pdf:
+        for number,experiment in enumerate(experiments):
+            name=experiment['name']
+            frame=frames[name]
+            fig,axes=plt.subplots(2,2,figsize=(11,8),constrained_layout=True)
+            matrix=np.asarray(experiment['metrics']['confusion_counts'])
+            normalized=matrix/np.maximum(1,matrix.sum(1,keepdims=True))
+            axes[0,0].imshow(normalized,vmin=0,vmax=1,cmap='Blues')
+            for i in range(4):
+                for j in range(4):
+                    axes[0,0].text(j,i,f'{normalized[i,j]:.1%}\n({matrix[i,j]})',ha='center',va='center',fontsize=7)
+            axes[0,0].set(xticks=range(4),xticklabels=labels,yticks=range(4),yticklabels=labels,
+                          xlabel='Argmax prediction',ylabel='True class',title='Row-normalized confusion and counts')
+            for c,label in enumerate(labels):
+                truth=frame.label.eq(c)
+                if truth.any() and (~truth).any():
+                    fpr,tpr,_=roc_curve(truth,frame[f'p{c}'])
+                    axes[0,1].plot(fpr,tpr,label=label)
+                axes[1,0].hist(frame.loc[truth,'p2'],bins=np.linspace(0,1,41),histtype='step',label=label)
+            axes[0,1].plot([0,1],[0,1],color='grey',linestyle=':')
+            axes[0,1].set(xlabel='Background acceptance',ylabel='Class efficiency',title='One-vs-rest ROC')
+            axes[0,1].legend(fontsize=7)
+            axes[1,0].set(xlabel='Uncalibrated tau score',ylabel='Validation events',yscale='log',title='Tau scores by true class')
+            axes[1,0].legend(fontsize=7)
+            history=json.loads((root/'experiments'/name/'history.json').read_text())
+            x=[row.get('epoch',row.get('iteration')) for row in history]
+            nll=[row['validation']['NLL'] for row in history]
+            ap=[row['validation']['classwise']['2']['PR_AUC'] for row in history]
+            axes[1,1].plot(x,nll,color='tab:blue',marker='.',label='NLL')
+            other=axes[1,1].twinx()
+            other.plot(x,ap,color='tab:orange',marker='.',label='Tau AP')
+            axes[1,1].set(xlabel='Epoch' if 'epoch' in history[0] else 'Boosting iteration',
+                          ylabel='Validation NLL',title='Learning curves (checkpoint selection: NLL)')
+            other.set_ylabel('Tau average precision',color='tab:orange')
+            fig.suptitle(f'S2 validation: {name}; sample priors, no calibration or test',fontsize=10)
+            pdf.savefig(fig)
+            if number==0:
+                fig.savefig(output/'first_classification_diagnostic.png',dpi=140)
+            plt.close(fig)
+    frame=next(iter(frames.values()))
+    weight,support=common_support_weights(frame)
+    if not np.any(weight):
+        return
+    fig,axes=plt.subplots(2,2,figsize=(10,7),constrained_layout=True)
+    for axis,column,scale,unit in zip(axes.flat,['initE','initX','initY','initZ'],[.001,1,1,1],['GeV','mm','mm','mm']):
+        values=frame[column].to_numpy()*scale
+        if column=='initE':
+            positive=values[values>0]
+            bins=np.geomspace(max(.1,positive.min()),positive.max(),45)
+            axis.set_xscale('log')
+        else:
+            bins=np.linspace(values.min(),values.max(),45)
+        for c,label in enumerate(labels):
+            flag=frame.label.eq(c).to_numpy()
+            color=f'C{c}'
+            axis.hist(values[flag],bins=bins,density=True,histtype='step',color=color,label=label)
+            axis.hist(values[flag],bins=bins,weights=weight[flag],density=True,histtype='step',color=color,linestyle='--')
+        description={'initE':'True neutrino energy','initX':'True vertex x','initY':'True vertex y','initZ':'True vertex z'}[column]
+        axis.set(xlabel=f'{description} [{unit}]',ylabel='Conditional density')
+    axes[0,0].legend(fontsize=7)
+    fig.suptitle(f'Truth prior diagnostic: solid unweighted, dashed common support; Neff={support["Neff"]:.0f}',fontsize=10)
+    fig.savefig(output/'common_support_balance.png',dpi=160)
+    fig.savefig(output/'common_support_balance.pdf')
+    plt.close(fig)
+
+
 def run(args):
     args.output.mkdir(parents=True,exist_ok=True)
     experiments=[]
@@ -335,9 +406,13 @@ def run(args):
             key=json.dumps(identity,sort_keys=True)
             factorial.setdefault(key,{})[(config.get('pitch_mm',0.),config.get('projection',False))]=path.name
     comparisons=[]
+    pending=[]
     if args.comparisons:
         for pair in json.loads(args.comparisons.read_text())['pairs']:
             if pair['a'] not in frames or pair['b'] not in frames:
+                if args.allow_incomplete:
+                    pending.append(pair)
+                    continue
                 raise ValueError(f'missing required completed experiment: {pair}')
             weights,_=common_support_weights(frames[pair['a']])
             comparisons.append({**pair,**paired_interval(frames[pair['a']],frames[pair['b']],args.bootstrap,
@@ -351,8 +426,11 @@ def run(args):
             interactions.append({'config':json.loads(identity),'experiments_NJ_NP_CJ_CP':names,
                 **factorial_contrast([frames[name] for name in names],args.bootstrap)})
     write_json(args.output/'summary.json',{'scope':'S2_validation_selection_no_calibration_or_test',
+        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        'python':sys.version,
         'experiments':experiments,'strata':strata,'paired_comparisons':comparisons,
         'seed_spread':seed_spread(experiments),'factorial_interactions':interactions,
+        'pending_comparisons':pending,'requested_comparisons_complete':not pending,
         'sample_mixture':'class_balanced_2500_per_class_before_conditional_strata',
         'source_acceptance':'user_attested_existing_frozen_split','physical_yields_measured':False})
     if not experiments:
@@ -366,6 +444,7 @@ def run(args):
             'tau_eff_at_1pct_FPR':e['tau']['FPR_0.01']['tau_efficiency'],
             'gpu_hours':e['gpu_hours'],'parameters':e['parameters'],'peak_gpu_mib':e['peak_gpu_mib']})
     pd.DataFrame(table).to_csv(args.output/'metrics.csv',index=False)
+    plot_diagnostics(args.root,args.output,experiments,frames)
     fig,ax=plt.subplots(figsize=(8,5),constrained_layout=True)
     for e in experiments:
         f=frames[e['name']]
@@ -383,6 +462,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--comparisons',type=Path)
     parser.add_argument('--bootstrap',type=int,default=400)
+    parser.add_argument('--allow-incomplete',action='store_true',help='Report available comparisons and explicitly list pending pairs')
     run(parser.parse_args())
 
 

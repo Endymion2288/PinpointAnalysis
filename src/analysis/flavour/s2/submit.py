@@ -87,11 +87,13 @@ exec python -m "$@"
         arguments=f'analysis.flavour.s2.reference --root {args.root} --mode $(mode)'
         queue='queue mode in b0_all b0_signal b0_shape truth_energy_vertex'
     elif args.stage=='evaluate':
-        arguments=f'analysis.flavour.s2.evaluate --root {args.root} --output {args.root}/evaluation'
+        arguments=f'analysis.flavour.s2.evaluate --root {args.root} --output {args.root}/{args.evaluation_tag}'
         if args.comparisons:
             arguments+=f' --comparisons {args.comparisons}'
+        if args.allow_incomplete:
+            arguments+=' --allow-incomplete'
     elif args.stage=='display':
-        arguments=f'analysis.flavour.s2.display --root {args.root} --experiment {args.experiment}'
+        arguments=f'analysis.flavour.s2.display --root {args.root} --experiment {args.experiment} --evaluation-tag {args.evaluation_tag}'
     elif args.stage=='accounting':
         arguments=f'analysis.flavour.s2.accounting --root {args.root}'
     else:
@@ -139,7 +141,9 @@ def main():
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',help='Selected indices from the frozen training campaign')
     parser.add_argument('--comparisons',type=Path)
+    parser.add_argument('--allow-incomplete',action='store_true')
     parser.add_argument('--experiment',default='b0_all_s42')
+    parser.add_argument('--evaluation-tag',default='evaluation')
     parser.add_argument('--lcg-view',choices=['LCG_108_cuda','LCG_107_cuda'],default='LCG_108_cuda')
     parser.add_argument('--gpu-device',help='Optional exact CUDA device name for matched-hardware campaigns')
     submit(parser.parse_args())

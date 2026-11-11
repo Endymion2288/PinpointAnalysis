@@ -15,8 +15,9 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | B0 / prior reference | `experiments/b0_*_s42` 和 `truth_energy_vertex_s42`，均已完成 |
 | Paired reference evaluation | `evaluation/summary.json`、`metrics.csv`、`tau_PR.png`、`error_event_groups.parquet` |
 | Native response displays | `evaluation/event_displays/b0_all_s42/`，20 页 PDF、事件 keys 和首例 PNG |
-| V100 resource study | `resource_profile/` 为 v1 的 576 行；v2 输出到 `resource_profile_v2/` |
+| V100 resource study | `resource_profile/` 为 v1；`resource_profile_v2/` 的 576 行已完成，两者分别保留 |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
+| Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
 
 完整 B0 的 τ AP=0.34471、1% FPR 下 τ efficiency=65/2,500=2.60%；truth E/vertex 参照 AP=0.44106。25% τ benchmark prior 下，粗 E/x/y/z common support 为 8,559 events、Neff=7,959.41，二者 weighted AP 为 0.30845/0.36474。truth 参照单列为先验诊断，不算硬件模型。详细 counts、CI 和条件指标见[阶段 12](../workbook/2026-11-11_stage12_s2_reference_results.md)。
 
@@ -39,6 +40,9 @@ python -m analysis.flavour.s2.submit train --root "$S2_RESULTS" --campaign "$S2_
   --tasks 0 6 --lcg-view LCG_107_cuda --gpu-device 'Tesla V100-PCIE-32GB'
 python -m analysis.flavour.s2.submit train --root "$S2_RESULTS" --campaign "$S2_CAMPAIGN" \
   --tasks 1 2 3 4 5 7 8 9 10 11 --lcg-view LCG_107_cuda --gpu-device 'Tesla V100-PCIE-32GB'
+# 部分 runs 完成时只报告已有结果，并显式保留 pending；最终验收去掉 allow-incomplete。
+python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-tag evaluation_spatial \
+  --comparisons "$PWD/roadmap/configs/s2_spatial_pairs_v2.json" --allow-incomplete
 # 某任务终止后，确认队列无存活副本，再仅重提该 index；自动恢复 atomic last epoch。
 # 已完成同名/同配置任务会直接返回，不重新训练。
 ```

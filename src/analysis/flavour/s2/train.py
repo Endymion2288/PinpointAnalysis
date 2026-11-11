@@ -211,6 +211,7 @@ def run(args):
             if step%config.get('progress_every_steps',250)==0:
                 progress={'experiment':experiment,'epoch':epoch+1,'step':step,'steps_per_epoch':len(train_sampler),
                     'exposures':events,'train_loss':loss_total/events,
+                    'optimizer_steps':optimizer_steps,'amp_skipped_steps':amp_skipped_steps,
                     'events_per_second':events/(time.perf_counter()-epoch_start),
                     'seconds':time.perf_counter()-epoch_start,'timing_cumulative':timing.copy(),
                     'peak_gpu_mib':torch.cuda.max_memory_allocated()/2**20 if device.type=='cuda' else 0.}

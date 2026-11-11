@@ -23,7 +23,7 @@ CLASSES=['CC nu_e','CC nu_mu','CC nu_tau','NC']
 def run(args):
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
-    groups=pd.read_parquet(args.root/'evaluation/error_event_groups.parquet')
+    groups=pd.read_parquet(args.root/args.evaluation_tag/'error_event_groups.parquet')
     groups=groups[groups.experiment.eq(args.experiment)]
     confusion=groups[groups.example_group.str.contains('high_confidence')].groupby('example_group',sort=True).head(1)
     random=groups[groups.example_group.eq('random_reference')].head(4)
@@ -38,7 +38,7 @@ def run(args):
         frame['native_index']=np.arange(len(frame))+native.boundaries[i]
         metadata.append(frame)
     selected=selected.merge(pd.concat(metadata),on=['run','chunk','row'],validate='one_to_one',how='left')
-    output=args.root/'evaluation/event_displays'/args.experiment
+    output=args.root/args.evaluation_tag/'event_displays'/args.experiment
     output.mkdir(parents=True,exist_ok=True)
     with PdfPages(output/'native_error_groups.pdf') as pdf:
         for number,row in enumerate(selected.itertuples(index=False)):
@@ -99,6 +99,7 @@ def main():
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--experiment',default='b0_all_s42')
     parser.add_argument('--pages',type=int,default=20)
+    parser.add_argument('--evaluation-tag',default='evaluation')
     run(parser.parse_args())
 
 

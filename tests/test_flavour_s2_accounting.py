@@ -21,6 +21,11 @@ class AccountingTests(unittest.TestCase):
             jobs=submission_jobs(submission)
             self.assertEqual([job['experiment'] for job in jobs],['e0','e6'])
             self.assertEqual([job['process'] for job in jobs],[0,1])
+            evidence['submitted_experiments']=[{'task':0,'config':{'name':'frozen0'}},
+                                               {'task':6,'config':{'name':'frozen6'}}]
+            submission.write_text(json.dumps(evidence))
+            campaign.write_text(json.dumps({'experiments':[]}))
+            self.assertEqual([job['experiment'] for job in submission_jobs(submission)],['frozen0','frozen6'])
             evidence.update(stage='reference',submit='arguments = analysis.flavour.s2.reference --mode $(mode)\nqueue mode in a b c d\n')
             submission.write_text(json.dumps(evidence))
             self.assertEqual(len(submission_jobs(submission)),4)
