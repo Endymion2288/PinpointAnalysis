@@ -114,6 +114,16 @@ condor_qedit -name bigbird20.cern.ch \
 
 第二行在当前单seed/四轮/模型表示下没有显示native双投影的正增益，区间上界低于+0.01，可排除该设置中至少+0.01的τ AP增量；这不回答native joint是否更优，也不构成一般等效结论。
 
+预定τ分支诊断进一步分解同1mm比较，背景均为同一7,500个non-τ事件，其他τ分支从各自ROC/AP中排除；下表工作点使用每个模型的inclusive 1% FPR阈值。分支AP的τ prior不同，不能跨行比较AP大小。
+
+| Tau branch | Signal events | Projection AP / AUC | Joint AP / AUC | Projection / joint selected at inclusive 1% FPR |
+| --- | ---: | --- | --- | --- |
+| Electron | 445 | 0.07980745 / 0.59316165 | 0.08147624 / 0.59637393 | 10 / 10 |
+| Muon | 395 | 0.06317755 / 0.57108624 | 0.05960147 / 0.55858194 | 8 / 5 |
+| Hadronic | 1,660 | 0.28712492 / 0.65353016 | 0.29780470 / 0.65993554 | 61 / 67 |
+
+inclusive选中数的净变化为hadronic +6、muon −3、electron 0，合计+3。分支差值区间未测量，不能将少量计数变化当成确定的通道机制；记录保存于 `first_spatial_branch_diagnostics.json`。物理假设是联合位置保留了双投影失去的x–y配对与空间关联；当前共同支持后的AP增量仍为正，提示它并非完全由所检查的粗能谱/顶点先验解释。模型表示、局部汇聚、τ可见拓扑的具体作用仍需冻结的shuffle、pair/graph、plane-only和种子控制完成后判定。
+
 同allocation预算13,832.59898 s的epoch-resolution比较中，projection保留epoch4，1mm joint只能保留epoch3，差值缩至+0.00106488；native projection保留epoch3，差值+0.00255248。这些为点估计，没有bootstrap区间。native projection的epoch4按记录成本比预算多约20 s，因此回退整轮，留下约3,479 s未使用；此粒度和中断成本限制了同耗时点估计的解释，不能据此确认资源优势。
 
 23:28:01 UTC累计23.56117 GPU-hours，missing history records=0，已包含v5删除Pod的终态恢复。原`.7`（ParticleNet native projection）已在释放的V100上开始执行，`.9`仍idle；35项为4 complete/4 running/27 idle。H100首轮尚未提交；23:27仅将仍idle的ParticleNet候选原JobPrio提高到20，依据是补齐执行门槛而非分类分数，证据 `h100/candidate_priority.json`。
