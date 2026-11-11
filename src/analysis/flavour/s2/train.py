@@ -101,7 +101,8 @@ def run(args):
     train_loader=DataLoader(train,batch_sampler=train_sampler,**options)
     val_loader=DataLoader(val,batch_sampler=val_sampler,**options)
     model=PointClassifier(config['architecture'],dim=config.get('dim',64),k=config.get('k',16),
-                          pair_bias=config.get('pair_bias',True),dynamic=config.get('dynamic',True)).to(device)
+                          pair_bias=config.get('pair_bias',True),dynamic=config.get('dynamic',True),
+                          cross_plane=config.get('cross_plane',True)).to(device)
     optimizer=torch.optim.AdamW(model.parameters(),lr=config.get('learning_rate',.0005),weight_decay=.01)
     epochs=config.get('epochs',12)
     scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,epochs,eta_min=1e-5)
@@ -124,6 +125,7 @@ def run(args):
         'local_blocks':'same_plane_4mm_then_canonical_chunks32_no_event_truncation',
         'schema_whitelist':'18_observation_features_plus_8_current_representation_counts_and_signal_sums',
         'response_summary_version':2,
+        'cross_plane_message_passing':config.get('cross_plane',True),
         'load_seconds':time.perf_counter()-started}
     history=[]
     epoch_predictions=[]

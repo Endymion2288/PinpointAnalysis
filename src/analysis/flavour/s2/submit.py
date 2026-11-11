@@ -107,7 +107,7 @@ log = {args.root}/logs/{args.stage}.$(ClusterId).log
 request_cpus = {cpus}
 request_memory = {memory}
 request_disk = {disk}
-{gpu}+JobFlavour = "{'tomorrow' if args.stage=='train' else 'workday' if gpu else 'microcentury'}"
+{gpu}+JobFlavour = "{args.training_flavour if args.stage=='train' else 'workday' if gpu else 'microcentury'}"
 requirements = (OpSysAndVer == "AlmaLinux9")
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
@@ -146,6 +146,8 @@ def main():
     parser.add_argument('--evaluation-tag',default='evaluation')
     parser.add_argument('--lcg-view',choices=['LCG_108_cuda','LCG_107_cuda'],default='LCG_108_cuda')
     parser.add_argument('--gpu-device',help='Optional exact CUDA device name for matched-hardware campaigns')
+    parser.add_argument('--training-flavour',choices=['espresso','microcentury','longlunch','workday','tomorrow'],default='tomorrow',
+                        help='Training wall-time class; espresso supports small GPU execution checks, scientific runs use tomorrow')
     submit(parser.parse_args())
 
 

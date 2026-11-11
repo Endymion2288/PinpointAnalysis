@@ -131,6 +131,58 @@ class SpatialTests(unittest.TestCase):
         dense=edge(x,mask,distance=physical_distance(geometry),geometry=geometry)
         torch.testing.assert_close(tiled,dense,atol=1e-6,rtol=1e-5)
 
+    def test_plane_only_attention_and_graph_block_cross_plane_gradients(self):
+        torch.manual_seed(2026)
+        geometry=torch.zeros(1,6,18)
+        geometry[:,:,2]=torch.tensor([0.,0.,0.,1.,1.,1.])
+        geometry[:,:,3:5]=1
+        geometry[:,:,12]=1
+        mask=torch.ones(1,6,dtype=torch.bool)
+        for kind in ['attention','physical_graph','dynamic_graph']:
+            base=PairAttention(16) if kind=='attention' else EdgeBlock(16,16,k=4)
+            restricted=PairAttention(16,cross_plane=False) if kind=='attention' else EdgeBlock(16,16,k=4,same_plane_only=True)
+            restricted.load_state_dict(base.state_dict())
+            for module,allowed in [(base,True),(restricted,False)]:
+                x=torch.randn(1,6,16,requires_grad=True)
+                if kind=='attention':
+                    out=module(x,mask,geometry)
+                elif kind=='physical_graph':
+                    out=module(x,mask,geometry=geometry)
+                else:
+                    out=module(x,mask,plane_z=geometry[:,:,2])
+                out[:,:3].square().sum().backward()
+                cross=x.grad[:,3:]
+                if allowed:
+                    self.assertGreater(cross.abs().max().item(),0)
+                else:
+                    self.assertEqual(cross.abs().max().item(),0)
+                    self.assertGreater(x.grad[:,:3].abs().max().item(),0)
+
+    def test_plane_only_complete_model_empty_padding_and_tiled_attention(self):
+        torch.manual_seed(42)
+        geometry=torch.randn(1,300,18)
+        geometry[:,:,2]=torch.arange(300)//20
+        geometry[:,:,3:5]=1
+        geometry[:,:,12:15]=0
+        geometry[:,:,12]=1
+        mask=torch.ones(1,300,dtype=torch.bool)
+        mask[:,-3:]=False
+        x=torch.randn(1,300,16,requires_grad=True)
+        attention=PairAttention(16,cross_plane=False).train()
+        output=attention(x,mask,geometry)
+        output.square().mean().backward()
+        self.assertTrue(torch.isfinite(output).all())
+        self.assertTrue(torch.isfinite(x.grad).all())
+        nodes,groups,_=token_inputs({'pixel':self.pixel([[i,i] for i in range(40)])},self.geometry,modalities=['pixel'])
+        batch=collate_spatial([{'nodes':nodes,'groups':groups,'label':0,'index':0},
+            {'nodes':np.zeros((1,18),dtype='float32'),'groups':np.array([0]),'label':3,'index':1}])
+        for family in ['part','particlenet']:
+            model=PointClassifier(family,dim=16,k=4,cross_plane=False).train()
+            output=model(batch)
+            output.square().mean().backward()
+            self.assertTrue(torch.isfinite(output).all())
+            self.assertTrue(all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None))
+
 
 if __name__=='__main__':
     unittest.main()

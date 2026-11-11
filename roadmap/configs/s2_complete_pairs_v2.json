@@ -1,0 +1,301 @@
+{
+  "scope": "S2 complete validation contract including explicit cross-plane controls; positive delta is B-A",
+  "pairs": [
+    {
+      "a": "part_native_projection_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "joint pairing benefit at native pitch"
+    },
+    {
+      "a": "part_1mm_joint_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "native resolution benefit with joint positions"
+    },
+    {
+      "a": "part_1mm_projection_s42_e4_v2",
+      "b": "part_1mm_joint_s42_e4_v2",
+      "question": "joint pairing benefit at 1mm"
+    },
+    {
+      "a": "part_1mm_projection_s42_e4_v2",
+      "b": "part_native_projection_s42_e4_v2",
+      "question": "native resolution benefit with projections"
+    },
+    {
+      "a": "part_100um_joint_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "native versus 100um"
+    },
+    {
+      "a": "part_200um_joint_s42_e4_v2",
+      "b": "part_100um_joint_s42_e4_v2",
+      "question": "100um versus 200um"
+    },
+    {
+      "a": "part_1mm_joint_s42_e4_v2",
+      "b": "part_200um_joint_s42_e4_v2",
+      "question": "200um versus 1mm"
+    },
+    {
+      "a": "pn_native_projection_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "joint pairing benefit at native pitch"
+    },
+    {
+      "a": "pn_1mm_joint_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "native resolution benefit with joint positions"
+    },
+    {
+      "a": "pn_1mm_projection_s42_e4_v2",
+      "b": "pn_1mm_joint_s42_e4_v2",
+      "question": "joint pairing benefit at 1mm"
+    },
+    {
+      "a": "pn_1mm_projection_s42_e4_v2",
+      "b": "pn_native_projection_s42_e4_v2",
+      "question": "native resolution benefit with projections"
+    },
+    {
+      "a": "pn_100um_joint_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "native versus 100um"
+    },
+    {
+      "a": "pn_200um_joint_s42_e4_v2",
+      "b": "pn_100um_joint_s42_e4_v2",
+      "question": "100um versus 200um"
+    },
+    {
+      "a": "pn_1mm_joint_s42_e4_v2",
+      "b": "pn_200um_joint_s42_e4_v2",
+      "question": "200um versus 1mm"
+    },
+    {
+      "a": "pn_native_joint_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "ParT versus ParticleNet under shared representation and attempted steps"
+    },
+    {
+      "a": "pn_1mm_joint_s42_e4_v2",
+      "b": "part_1mm_joint_s42_e4_v2",
+      "question": "ParT versus ParticleNet under shared representation and attempted steps"
+    },
+    {
+      "a": "b0_all_s42",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "full-response model versus B0 summaries; representation and estimator change, CPU reference not GPU-budget matched"
+    },
+    {
+      "a": "b0_all_s42",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "full-response model versus B0 summaries; representation and estimator change, CPU reference not GPU-budget matched"
+    },
+    {
+      "a": "part_1mm_or_s42_e4_v2",
+      "b": "part_1mm_joint_s42_e4_v2",
+      "question": "multiplicity retained by count versus occupied coarse cells; total count is part of the contrast"
+    },
+    {
+      "a": "part_1mm_shift_s42_e4_v2",
+      "b": "part_1mm_joint_s42_e4_v2",
+      "question": "coarse-grid origin sensitivity; sign reflects the reference origin"
+    },
+    {
+      "a": "part_native_shuffle_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "within-plane x-y association; marginals and total signal held fixed"
+    },
+    {
+      "a": "pn_1mm_or_s42_e4_v2",
+      "b": "pn_1mm_joint_s42_e4_v2",
+      "question": "multiplicity retained by count versus occupied coarse cells; total count is part of the contrast"
+    },
+    {
+      "a": "pn_1mm_shift_s42_e4_v2",
+      "b": "pn_1mm_joint_s42_e4_v2",
+      "question": "coarse-grid origin sensitivity; sign reflects the reference origin"
+    },
+    {
+      "a": "pn_native_shuffle_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "within-plane x-y association; marginals and total signal held fixed"
+    },
+    {
+      "a": "part_native_nopair_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "explicit geometry pair bias at fixed observed coordinates"
+    },
+    {
+      "a": "pn_native_fixed_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "dynamic feature graph versus fixed geometry graph"
+    },
+    {
+      "a": "pn_native_pixel_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "increment from bar response, conditional on ParticleNet"
+    },
+    {
+      "a": "pn_native_bar_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "increment from pixel response, conditional on ParticleNet"
+    },
+    {
+      "a": "pn_native_joint_s42_e4_v2",
+      "b": "pn_native_tracker_s42_e4_v2",
+      "question": "increment from accepted tracker proxy, conditional on ParticleNet"
+    },
+    {
+      "a": "pn_native_centertrain_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "full-domain versus centered-domain training at matched steps; consult conditional region metrics"
+    },
+    {
+      "a": "pn_native_largetrain_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "full-domain versus large-scintillator-domain training at matched steps; consult conditional region metrics"
+    },
+    {
+      "a": "part_1mm_joint_s17_e4_v2",
+      "b": "part_native_joint_s17_e4_v2",
+      "seed": 17,
+      "question": "part_native_benefit_three_seed_mean individual seed"
+    },
+    {
+      "a": "part_1mm_joint_s2026_e4_v2",
+      "b": "part_native_joint_s2026_e4_v2",
+      "seed": 2026,
+      "question": "part_native_benefit_three_seed_mean individual seed"
+    },
+    {
+      "a": "pn_1mm_joint_s17_e4_v2",
+      "b": "pn_native_joint_s17_e4_v2",
+      "seed": 17,
+      "question": "pn_native_benefit_three_seed_mean individual seed"
+    },
+    {
+      "a": "pn_1mm_joint_s2026_e4_v2",
+      "b": "pn_native_joint_s2026_e4_v2",
+      "seed": 2026,
+      "question": "pn_native_benefit_three_seed_mean individual seed"
+    },
+    {
+      "a": "pn_native_joint_s17_e4_v2",
+      "b": "part_native_joint_s17_e4_v2",
+      "seed": 17,
+      "question": "part_benefit_native_three_seed_mean individual seed"
+    },
+    {
+      "a": "pn_native_joint_s2026_e4_v2",
+      "b": "part_native_joint_s2026_e4_v2",
+      "seed": 2026,
+      "question": "part_benefit_native_three_seed_mean individual seed"
+    },
+    {
+      "a": "pn_1mm_joint_s17_e4_v2",
+      "b": "part_1mm_joint_s17_e4_v2",
+      "seed": 17,
+      "question": "part_benefit_1mm_three_seed_mean individual seed"
+    },
+    {
+      "a": "pn_1mm_joint_s2026_e4_v2",
+      "b": "part_1mm_joint_s2026_e4_v2",
+      "seed": 2026,
+      "question": "part_benefit_1mm_three_seed_mean individual seed"
+    },
+    {
+      "a": "part_native_planeonly_s42_e4_v2",
+      "b": "part_native_joint_s42_e4_v2",
+      "question": "cross-plane messages beyond same-plane learned processing and unchanged global summaries/late pooling"
+    },
+    {
+      "a": "pn_native_planeonly_s42_e4_v2",
+      "b": "pn_native_joint_s42_e4_v2",
+      "question": "cross-plane messages beyond same-plane learned processing and unchanged global summaries/late pooling"
+    }
+  ],
+  "seed_mean_comparisons": [
+    {
+      "name": "part_native_benefit_three_seed_mean",
+      "pairs": [
+        {
+          "a": "part_1mm_joint_s17_e4_v2",
+          "b": "part_native_joint_s17_e4_v2",
+          "seed": 17
+        },
+        {
+          "a": "part_1mm_joint_s42_e4_v2",
+          "b": "part_native_joint_s42_e4_v2",
+          "seed": 42
+        },
+        {
+          "a": "part_1mm_joint_s2026_e4_v2",
+          "b": "part_native_joint_s2026_e4_v2",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "pn_native_benefit_three_seed_mean",
+      "pairs": [
+        {
+          "a": "pn_1mm_joint_s17_e4_v2",
+          "b": "pn_native_joint_s17_e4_v2",
+          "seed": 17
+        },
+        {
+          "a": "pn_1mm_joint_s42_e4_v2",
+          "b": "pn_native_joint_s42_e4_v2",
+          "seed": 42
+        },
+        {
+          "a": "pn_1mm_joint_s2026_e4_v2",
+          "b": "pn_native_joint_s2026_e4_v2",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "part_benefit_native_three_seed_mean",
+      "pairs": [
+        {
+          "a": "pn_native_joint_s17_e4_v2",
+          "b": "part_native_joint_s17_e4_v2",
+          "seed": 17
+        },
+        {
+          "a": "pn_native_joint_s42_e4_v2",
+          "b": "part_native_joint_s42_e4_v2",
+          "seed": 42
+        },
+        {
+          "a": "pn_native_joint_s2026_e4_v2",
+          "b": "part_native_joint_s2026_e4_v2",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "part_benefit_1mm_three_seed_mean",
+      "pairs": [
+        {
+          "a": "pn_1mm_joint_s17_e4_v2",
+          "b": "part_1mm_joint_s17_e4_v2",
+          "seed": 17
+        },
+        {
+          "a": "pn_1mm_joint_s42_e4_v2",
+          "b": "part_1mm_joint_s42_e4_v2",
+          "seed": 42
+        },
+        {
+          "a": "pn_1mm_joint_s2026_e4_v2",
+          "b": "part_1mm_joint_s2026_e4_v2",
+          "seed": 2026
+        }
+      ]
+    }
+  ],
+  "interpretation": "Bootstrap the same physical blocks jointly across seeds; mean per-seed AP differences, not pooled events or ensemble predictions. Event CIs are conditional on fitted models; seed spread is separate."
+}

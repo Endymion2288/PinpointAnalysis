@@ -1,0 +1,41 @@
+{
+  "phase": "dedicated_V100_cross_plane_control_smoke",
+  "experiments": [
+    {
+      "name": "smoke_part_planeonly_v2",
+      "architecture": "part",
+      "seed": 42,
+      "epochs": 1,
+      "batch_size": 2,
+      "workers": 0,
+      "dim": 48,
+      "k": 16,
+      "cache_shards": 2,
+      "modalities": [
+        "pixel",
+        "bar"
+      ],
+      "response_summary_version": 2,
+      "cross_plane": false,
+      "role": "GPU_execution_check_not_scientific_comparison"
+    },
+    {
+      "name": "smoke_particlenet_planeonly_v2",
+      "architecture": "particlenet",
+      "seed": 42,
+      "epochs": 1,
+      "batch_size": 2,
+      "workers": 0,
+      "dim": 64,
+      "k": 16,
+      "cache_shards": 2,
+      "modalities": [
+        "pixel",
+        "bar"
+      ],
+      "response_summary_version": 2,
+      "cross_plane": false,
+      "role": "GPU_execution_check_not_scientific_comparison"
+    }
+  ]
+}

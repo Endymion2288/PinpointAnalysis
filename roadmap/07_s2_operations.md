@@ -21,6 +21,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Prespecified controls | [13 runs](configs/s2_controls_v2.json)：两族 OR/shift/shuffle、各自 pair/graph，以及 ParticleNet modality/domain 控制 |
 | Three-seed confirmation | [8 additional runs](configs/s2_confirmation_v2.json)：两族 native/1mm joint × seed17/2026；复用已有 seed42 |
 | Final comparisons | [39 individual contrasts and 4 three-seed means](configs/s2_final_pairs_v2.json)；共 33 项科学训练，尚未全部完成 |
+| Complete S2 contract | [41 individual contrasts and 4 three-seed means](configs/s2_complete_pairs_v2.json)；另含两族 [plane-only controls](configs/s2_cross_plane_controls_v2.json)，共 35 项科学配置，见[阶段 21](../workbook/2026-11-11_stage21_s2_cross_plane_control.md) |
 | Historical / branch diagnostics | `1573753` 已完成；`evaluation_final/summary.json` 含 4 个 references 的 12 张三类表和 τ 分支 AUC/AP，完整科学比较仍有 43 项 pending |
 | Input response domains | `1573754` 已完成；新增 model-input-active/empty 与 tracker-only，pixel+bar validation 输入空为 440 events，三探测器全空为 282；见[阶段 19](../workbook/2026-11-11_stage19_s2_input_response_domains.md) |
 | First full scientific epoch | ParT 1mm projection epoch1：τ AP=0.30649、NLL=1.32943、3,063.325 s；继续既定 4 epochs，尚未作为完成模型纳入配对，见[阶段 20](../workbook/2026-11-11_stage20_s2_first_complete_epoch.md) |
@@ -57,7 +58,7 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 对照在读取空间矩阵完整 validation 结果前冻结。modality/domain 最小控制预先选用实测计算较省的 ParticleNet，结论以该 backbone 为条件。空间初筛上限 100 GPU-hours，确认与控制追加上限 100，总组织上限 200，旧失败/替代尝试计入。每次监测以实际 allocation 为准，并在首个完整 epoch 后更新完成成本估计；这些数值是组织上限，不是已使用算力。
 
-三种子均值比较对 seed17/42/2026 的 **AP 差值**取平均，每次 bootstrap 对三者使用相同物理事件块；不是把三份 prediction 拼成 30k events，也不是 ensemble。分别报告事件区间、逐 seed 差值及训练 spread。固定 common-support weights 的区间为条件区间。最终评价使用 `s2_final_pairs_v2.json` 并去掉 `--allow-incomplete`，缺少任一指定结果时不能声称完成。
+三种子均值比较对 seed17/42/2026 的 **AP 差值**取平均，每次 bootstrap 对三者使用相同物理事件块；不是把三份 prediction 拼成 30k events，也不是 ensemble。分别报告事件区间、逐 seed 差值及训练 spread。固定 common-support weights 的区间为条件区间。最终评价使用 `s2_complete_pairs_v2.json` 并去掉 `--allow-incomplete`，缺少任一指定结果时不能声称完成。旧 39-pair 合同保留对应当时的部分评价。
 
 18:44 UTC 提交状态：空间 `1573747.0–11`、控制 `1573750.0–12`、额外种子 `1573751.0–7`，均在 `bigbird20.cern.ch`。当时 4 running/29 idle。`.6/.8` 的空间 JobPrio=10，其余尚未启动空间项=5，追加任务=0，以便先获得完整筛选证据。`1573752` 为 `evaluation_final/` 的部分结果集成检查，显式启用 `--allow-incomplete`。这些 ClusterIds 仅用于查状态；存活任务不再次提交。
 
@@ -66,7 +67,7 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 ```bash
 python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" \
-  --evaluation-tag evaluation_final --comparisons "$PWD/roadmap/configs/s2_final_pairs_v2.json"
+  --evaluation-tag evaluation_final --comparisons "$PWD/roadmap/configs/s2_complete_pairs_v2.json"
 # 等上述评价成功后提交 displays。
 python -m analysis.flavour.s2.submit display --root "$S2_RESULTS" \
   --evaluation-tag evaluation_final --experiment part_native_joint_s42_e4_v2

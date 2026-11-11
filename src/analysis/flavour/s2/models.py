@@ -57,14 +57,15 @@ def physical_distance(geometry):
 
 
 class EdgeBlock(nn.Module):
-    def __init__(self,in_dim,out_dim,k=16):
+    def __init__(self,in_dim,out_dim,k=16,same_plane_only=False):
         super().__init__()
         self.k=k
+        self.same_plane_only=same_plane_only
         self.edge=nn.Sequential(nn.Linear(in_dim*2,out_dim),nn.LayerNorm(out_dim),nn.GELU(),
                                 nn.Linear(out_dim,out_dim),nn.GELU())
         self.skip=nn.Linear(in_dim,out_dim)
 
-    def forward(self,x,mask,distance=None,geometry=None):
+    def forward(self,x,mask,distance=None,geometry=None,plane_z=None):
         number=min(self.k,max(1,x.shape[1]-1))
         all_neighbors,all_valid=[],[]
         for start in range(0,x.shape[1],256):
@@ -79,9 +80,13 @@ class EdgeBlock(nn.Module):
                 else:
                     d=torch.cdist(x[:,start:stop].float(),x.float()).square()
                 d=d.masked_fill(~mask[:,None,:],float('inf'))
+                if self.same_plane_only:
+                    z=geometry[...,2] if geometry is not None else plane_z
+                    same=(z[:,start:stop,None]-z[:,None,:]).abs()<1e-6
+                    d=d.masked_fill(~same,float('inf'))
                 self_edge=torch.arange(start,stop,device=x.device)[:,None]==torch.arange(x.shape[1],device=x.device)[None,:]
                 d=d.masked_fill(self_edge[None],float('inf'))
-                if geometry is not None and number>=2:
+                if geometry is not None and number>=2 and not self.same_plane_only:
                     same=(geometry[:,start:stop,None,2]-geometry[:,None,:,2]).abs()<1e-6
                     a=number//2
                     local_distance=d.masked_fill(~same,float('inf'))
@@ -108,9 +113,10 @@ class EdgeBlock(nn.Module):
 
 
 class PairAttention(nn.Module):
-    def __init__(self,dim,heads=4,pair_bias=True):
+    def __init__(self,dim,heads=4,pair_bias=True,cross_plane=True):
         super().__init__()
         self.heads=heads
+        self.cross_plane=cross_plane
         self.norm1,self.norm2=nn.LayerNorm(dim),nn.LayerNorm(dim)
         self.qkv=nn.Linear(dim,3*dim)
         self.out=nn.Linear(dim,dim)
@@ -130,6 +136,9 @@ class PairAttention(nn.Module):
             bias=bias.masked_fill(~mask[:,None,None,:],float('-inf'))
         else:
             bias=torch.zeros((q.shape[0],1,1,k.shape[2]),device=q.device,dtype=q.dtype).masked_fill(~mask[:,None,None,:],float('-inf'))
+        if not self.cross_plane:
+            same=(query_geometry[:,:,None,2]-key_geometry[:,None,:,2]).abs()<1e-6
+            bias=bias.masked_fill(~same[:,None],float('-inf'))
         return F.scaled_dot_product_attention(q,k,v,attn_mask=bias)
 
     def forward(self,x,mask,geometry):
@@ -148,16 +157,17 @@ class PairAttention(nn.Module):
 
 
 class PointClassifier(nn.Module):
-    def __init__(self,architecture='part',dim=64,k=16,pair_bias=True,dynamic=True):
+    def __init__(self,architecture='part',dim=64,k=16,pair_bias=True,dynamic=True,cross_plane=True):
         super().__init__()
         self.architecture,self.dynamic=architecture,dynamic
+        self.cross_plane=cross_plane
         self.input=nn.Sequential(nn.Linear(18,dim),nn.LayerNorm(dim),nn.GELU())
         if architecture=='part':
             self.local=nn.ModuleList([PairAttention(dim,pair_bias=pair_bias) for _ in range(2)])
-            self.global_blocks=nn.ModuleList([PairAttention(dim,pair_bias=pair_bias) for _ in range(4)])
+            self.global_blocks=nn.ModuleList([PairAttention(dim,pair_bias=pair_bias,cross_plane=cross_plane) for _ in range(4)])
         elif architecture=='particlenet':
             self.local=nn.ModuleList([EdgeBlock(dim,dim,k) for _ in range(3)])
-            self.global_blocks=nn.ModuleList([EdgeBlock(dim,dim,k) for _ in range(3)])
+            self.global_blocks=nn.ModuleList([EdgeBlock(dim,dim,k,same_plane_only=not cross_plane) for _ in range(3)])
         else:
             raise ValueError(architecture)
         self.pool=nn.Linear(dim*2+8,dim)
@@ -211,6 +221,7 @@ class PointClassifier(nn.Module):
                 # First global graph includes both within-plane and across-plane
                 # edges; later graphs use learned feature distances.
                 event=block(event,mask,distance if i==0 or not self.dynamic else None,
-                            geometry if i==0 or not self.dynamic else None)
+                            geometry if i==0 or not self.dynamic else None,
+                            plane_z=geometry[:,:,2] if not self.cross_plane else None)
         pools=[masked_pool(event,mask&(geometry[:,:,12+d]>.5)) for d in range(3)]
         return self.head(torch.cat(pools+[scale_totals(event_totals).to(event.dtype)],dim=-1))

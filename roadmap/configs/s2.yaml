@@ -93,6 +93,9 @@ training:
   maximum_initial_S2_S3_screening_GPU_hours: 100
   controls_campaign: roadmap/configs/s2_controls_v2.json
   confirmation_campaign: roadmap/configs/s2_confirmation_v2.json
+  cross_plane_control_campaign: roadmap/configs/s2_cross_plane_controls_v2.json
+  cross_plane_control_default: enabled
+  scientific_runs_including_cross_plane_controls: 35
   confirmation_seed42_reuses_spatial_screen: true
   modality_and_domain_control_backbone: particlenet_prespecified_for_lower_compute
   maximum_confirmation_and_controls_additional_GPU_hours: 100
@@ -106,7 +109,7 @@ evaluation:
   paired_intervals: accepted_family_signature_and_chunk_bootstrap
   minimum_background_tail_events_for_stable_claim: 25
   same_events_for_all_representations: true
-  final_comparisons: roadmap/configs/s2_final_pairs_v2.json
+  final_comparisons: roadmap/configs/s2_complete_pairs_v2.json
   seed_mean_interval: shared_physical_block_resamples_mean_per_seed_AP_differences
   seed_spread_separate_from_physical_event_interval: true
   strata: [all, pixel_centered, large_scintillator, detector_active, energy, vertex, tau_branch]
