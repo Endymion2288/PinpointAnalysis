@@ -1,5 +1,5 @@
 # S2 execution contract; campaign JSON freezes each actual training run.
-status: converted_catalog_complete_GPU_smoke_queued
+status: scientific_spatial_screen_frozen
 date: "2026-11-11"
 module: analysis.flavour.s2
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11
@@ -74,12 +74,18 @@ training:
   local_block_checkpointing: true
   global_attention_checkpointing: true
   resume: atomic_epoch_checkpoint_with_optimizer_scheduler_scaler_and_RNG
-  GPU_minimum_CUDA_capability: 7.5
+  GPU_minimum_CUDA_capability: 7.0
+  GPU_execution_environment: LCG_107_cuda_Python3.11.9_Torch2.5.1
+  scientific_GPU_device: Tesla_V100_PCIE_32GB
   HTCondor_training_flavour: tomorrow
   complete_event_path: no_truncation
   training_domain_controls: [all, pixel_centered, large_scintillator]
   training_domain_step_match: repeat_complete_domain_cycles_to_full_domain_steps
-  epoch_budget: freeze_after_GPU_smoke_and_throughput_measurement
+  spatial_screen_campaign: roadmap/configs/s2_spatial_screen.json
+  spatial_screen_epochs: 4
+  spatial_screen_attempted_steps_per_epoch: 20016
+  spatial_screen_bucket_size: 256
+  attempted_and_applied_optimizer_steps: record_separately_with_AMP_skip_counts
   match_parameter_steps_and_GPU_time: report_both
   maximum_initial_S2_S3_screening_GPU_hours: 100
 evaluation:

@@ -63,11 +63,22 @@ def run(args):
                 axis.set(xlabel='z [mm]',ylabel=f'{"xy"[coordinate]} readout interval [mm]',
                          title='Scintillator bar extents (color: log(1+PE))')
             if len(xy):
-                axes[0,2].scatter(xy[:,0],xy[:,1],c=station,cmap='tab10',s=8,alpha=.7,rasterized=True)
+                for s in np.unique(station):
+                    flag=station==s
+                    axes[0,2].scatter(xy[flag,0],xy[flag,1],s=8,alpha=.7,rasterized=True,label=f'Station {s}')
+                axes[0,2].legend(fontsize=7)
             axes[0,2].set(xlabel='x [mm]',ylabel='y [mm]',title='Accepted tracker proxy (color: station)')
             if len(xyz):
-                axes[1,2].scatter(xyz[:,0],xyz[:,1],c=xyz[:,2],cmap='plasma',s=.8,alpha=.6,rasterized=True)
+                points=axes[1,2].scatter(xyz[:,0],xyz[:,1],c=xyz[:,2],cmap='plasma',s=.8,alpha=.6,rasterized=True)
+                fig.colorbar(points,ax=axes[1,2],label='z [mm]',fraction=.04)
             axes[1,2].set(xlabel='x [mm]',ylabel='y [mm]',title='Native pixel joint positions (color: z)')
+            for present,panels,message in [(len(xy),[axes[0,2]],'No accepted tracker hits'),
+                    (len(xyz),[axes[0,0],axes[1,0],axes[1,2]],'No active pixel channels'),
+                    (len(bounds),[axes[0,1],axes[1,1]],'No active bar channels')]:
+                if not present:
+                    for axis in panels:
+                        axis.text(.5,.5,message,ha='center',va='center',transform=axis.transAxes)
+                        axis.set_axis_off()
             fig.suptitle(f'{args.experiment}: true {CLASSES[row.label]}, predicted {CLASSES[row.prediction]}; '
                 f'p(tau)={row.p2:.3f}\nRun {row.run}, chunk {row.chunk}, row {row.row}; {row.example_group}\n'
                 f'Truth diagnostics: E={row.initE/1000:.1f} GeV, vertex=({row.initX:.1f}, {row.initY:.1f}, {row.initZ:.1f}) mm',fontsize=10)

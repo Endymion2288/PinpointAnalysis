@@ -64,8 +64,11 @@ exec python -m "$@"
         if args.campaign is None:
             raise ValueError('--campaign JSON required')
         configs=json.loads(args.campaign.read_text())['experiments']
-        arguments=f'analysis.flavour.s2.train --root {args.root} --campaign {args.campaign} --task $(Process)'
-        queue=f'queue {len(configs)}'
+        arguments=f'analysis.flavour.s2.train --root {args.root} --campaign {args.campaign} --task $(task)'
+        tasks=args.tasks if args.tasks is not None else list(range(len(configs)))
+        if len(set(tasks))!=len(tasks) or not all(0<=t<len(configs) for t in tasks):
+            raise ValueError('training task indices must be unique members of the frozen campaign')
+        queue='queue task in '+','.join(map(str,tasks))
         cpus,memory,disk=4,'12GB','12GB'
         gpu=f'request_gpus = 1\nrequire_gpus = {GPU_requirement}\n'
     elif args.stage=='audit':
@@ -129,6 +132,7 @@ def main():
     parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference','evaluate','display'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
+    parser.add_argument('--tasks',type=int,nargs='+',help='Selected indices from the frozen training campaign')
     parser.add_argument('--comparisons',type=Path)
     parser.add_argument('--experiment',default='b0_all_s42')
     parser.add_argument('--lcg-view',choices=['LCG_108_cuda','LCG_107_cuda'],default='LCG_108_cuda')

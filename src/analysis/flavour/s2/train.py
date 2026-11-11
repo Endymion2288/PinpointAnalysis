@@ -130,6 +130,8 @@ def run(args):
     best_epoch=0
     best_model=None
     best_probabilities=None
+    optimizer_steps=0
+    amp_skipped_steps=0
     timing=dict(data_wait=0.,transfer=0.,forward_backward=0.,validation=0.)
     start_epoch=0
     prior_seconds=0.
@@ -148,6 +150,8 @@ def run(args):
         best_probabilities=state['best_probabilities']
         timing=state['timing'].copy()
         prior_seconds=state['elapsed_seconds']
+        optimizer_steps=state.get('optimizer_steps',start_epoch*len(train_sampler))
+        amp_skipped_steps=state.get('amp_skipped_steps',0)
         random.setstate(state['random_state'])
         np.random.set_state(state['numpy_state'])
         torch.set_rng_state(state['torch_state'].cpu())
@@ -191,8 +195,13 @@ def run(args):
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(),5.)
+            scale_before=scaler.get_scale()
             scaler.step(optimizer)
             scaler.update()
+            if scaler.get_scale()<scale_before:
+                amp_skipped_steps+=1
+            else:
+                optimizer_steps+=1
             if device.type=='cuda':
                 torch.cuda.synchronize()
             timing['forward_backward']+=time.perf_counter()-t
@@ -222,7 +231,9 @@ def run(args):
         record={'epoch':epoch+1,'train_loss':loss_total/events,'train_seconds':train_seconds,
             'train_events_per_second':events/train_seconds,'validation':measured,
             'wall_seconds':prior_seconds+time.perf_counter()-started,
-            'optimizer_steps_cumulative':(epoch+1)*len(train_sampler),'timing_cumulative':timing.copy()}
+            'train_exposures':events,'optimizer_steps_cumulative':optimizer_steps,
+            'attempted_optimizer_steps_cumulative':(epoch+1)*len(train_sampler),
+            'amp_skipped_steps_cumulative':amp_skipped_steps,'timing_cumulative':timing.copy()}
         history.append(record)
         improved=score<best
         if score<best:
@@ -237,6 +248,7 @@ def run(args):
         scheduler.step()
         checkpoint={'model':model.state_dict(),'optimizer':optimizer.state_dict(),'config':config,
             'epoch':epoch+1,'seed':seed,'scheduler':scheduler.state_dict(),'scaler':scaler.state_dict(),
+            'optimizer_steps':optimizer_steps,'amp_skipped_steps':amp_skipped_steps,
             'history':history,'timing':timing.copy(),'best_NLL':best,'best_epoch':best_epoch,
             'best_model':best_model,'best_probabilities':best_probabilities,
             'elapsed_seconds':prior_seconds+time.perf_counter()-started,
@@ -254,6 +266,7 @@ def run(args):
         gpu_hours=elapsed/3600 if device.type=='cuda' else 0,
         peak_gpu_allocated_mib=max(previous.get('peak_gpu_allocated_mib',0),torch.cuda.max_memory_allocated()/2**20) if device.type=='cuda' else 0,
         parent_peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,
+        optimizer_steps=optimizer_steps,amp_skipped_steps=amp_skipped_steps,
         timing_seconds=timing)
     write_json(output/'manifest.json',manifest)
     train.native.close()
