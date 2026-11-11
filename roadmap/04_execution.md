@@ -1,6 +1,6 @@
 # 分阶段工单、资源与交付
 
-S0/S1 已完成，用户已确认 samples 满足要求并接受现有 detector-proxy 参数；生产来源认证和真实硬件标定不再作为前置条件。[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)记录验收决定，[运行入口](06_s0_s1_operations.md)与阶段 04–06 报告保留实现和实测。下一阶段为 S2，S2–S6 模块尚待实现。以下时间与 GPU-hours 仍为建议预算，后续模型的吞吐、显存和 EOS I/O 需实测。
+S0/S1 已完成，用户已确认 samples 满足要求并接受现有 detector-proxy 参数；生产来源认证和真实硬件标定不再作为前置条件。[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)记录验收决定，[运行入口](06_s0_s1_operations.md)与阶段 04–06 报告保留实现和实测。S2 已完成目录、参照、toy 与资源测量，空间矩阵正在训练，运行状态见 [S2 入口](07_s2_operations.md)；S3–S6 尚未执行。以下时间与 GPU-hours 仍为建议预算，具体 campaign 以实际配置和测量为准。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
@@ -135,4 +135,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-下一步从 S2 的共享训练子集、混类 shard 和统一表示对照开始；复用已完成的 native catalog、B0、冻结 split 和现有 detector-proxy 参数。来源认证和硬件标定不再阻塞后续阶段。
+下一步继续 S2 已冻结的 12-run 空间矩阵，再按结果完成模态、结构、训练域和三种子确认。共享 80k/10k 子集、完整 mixed shards、参考指标及命令见 [07_s2_operations.md](07_s2_operations.md)。来源认证和硬件标定按用户决定不再重复执行。

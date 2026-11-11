@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地 PDF 修订，S0/S1 已实现全库盘点、原生通道 pilot 与 B0 开发验证；S2–S6 为待执行研究设计。
+日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地 PDF 修订，S0/S1 已验收；S2 的 90k-event 目录、CPU 参照、toy 和 GPU 资源测量已完成，12 项空间对照正在训练；S3–S6 尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -14,10 +14,13 @@
 | [04_execution.md](04_execution.md) | 分阶段工单、资源预算、HTCondor、产物与验收标准 |
 | [05_local_studies.md](05_local_studies.md) | 更新后四份 PDF 的逐项证据；fiducial、投影损失、FASER 工作点与重建覆盖率 |
 | [06_s0_s1_operations.md](06_s0_s1_operations.md) | 新原生通道管线、实际运行命令、事件签名 split 与 detector-proxy 的适用状态 |
+| [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集/空间矩阵、实测参照、GPU 环境、运行与尚待完成的科学验收 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
 **S0/S1 已完成并验收。**全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图、B0 GPU 验证、多 worker scratch 缓存和 15 项测试已完成。用户确认 samples 满足要求，并接受现有 detector-proxy 参数；缺少的生产认证由用户确认覆盖，不再追查来源或要求真实硬件标定。沿用现有冻结 split 进入 S2。验收依据见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)，实测保留在 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。
+
+**S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[12-run 科学矩阵](configs/s2_spatial_screen.json)已记录；S2 尚未通过完整科学验收。
 
 ## 1. 首先要回答的物理问题
 
