@@ -14,6 +14,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Information toys | `toys/`，420 点曲线、projection pairing collision、双轨/kink/shower support |
 | B0 / prior reference | `experiments/b0_*_s42` 和 `truth_energy_vertex_s42`，均已完成 |
 | Paired reference evaluation | `evaluation/summary.json`、`metrics.csv`、`tau_PR.png`、`error_event_groups.parquet` |
+| Comparison report figures | 新增 `s2.plots` 并接入 `evaluate`：粒度曲线、配对 CI/等 GPU-time、三种子均值图；真实 B0 的 3 项配对图已查看，完整空间/种子图待结果，见[阶段 22](../workbook/2026-11-11_stage22_s2_comparison_figures.md) |
 | Native response displays | `evaluation/event_displays/b0_all_s42/`，20 页 PDF、事件 keys 和首例 PNG |
 | V100 resource study | `resource_profile/` 为 v1；`resource_profile_v2/` 的 576 行已完成，两者分别保留 |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |

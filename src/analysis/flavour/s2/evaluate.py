@@ -16,6 +16,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve, p
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s2.train import metrics
+from analysis.flavour.s2.plots import plot_evaluation
 
 
 def tau_metrics(frame,weight=None):
@@ -577,6 +578,7 @@ def run(args):
     ax.legend(fontsize=6,loc='upper right')
     fig.savefig(args.output/'tau_PR.png',dpi=160)
     plt.close(fig)
+    plot_evaluation(args.output)
 
 
 def main():
