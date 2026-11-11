@@ -56,6 +56,21 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 三种子均值比较对 seed17/42/2026 的 **AP 差值**取平均，每次 bootstrap 对三者使用相同物理事件块；不是把三份 prediction 拼成 30k events，也不是 ensemble。分别报告事件区间、逐 seed 差值及训练 spread。固定 common-support weights 的区间为条件区间。最终评价使用 `s2_final_pairs_v2.json` 并去掉 `--allow-incomplete`，缺少任一指定结果时不能声称完成。
 
+18:44 UTC 提交状态：空间 `1573747.0–11`、控制 `1573750.0–12`、额外种子 `1573751.0–7`，均在 `bigbird20.cern.ch`。当时 4 running/29 idle。`.6/.8` 的空间 JobPrio=10，其余尚未启动空间项=5，追加任务=0，以便先获得完整筛选证据。`1573752` 为 `evaluation_final/` 的部分结果集成检查，显式启用 `--allow-incomplete`。这些 ClusterIds 仅用于查状态；存活任务不再次提交。
+
+全部训练完成后的入口：先更新实际 terminal allocation，再严格评价与两族原生错误显示。
+
+```bash
+python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
+python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" \
+  --evaluation-tag evaluation_final --comparisons "$PWD/roadmap/configs/s2_final_pairs_v2.json"
+# 等上述评价成功后提交 displays。
+python -m analysis.flavour.s2.submit display --root "$S2_RESULTS" \
+  --evaluation-tag evaluation_final --experiment part_native_joint_s42_e4_v2
+python -m analysis.flavour.s2.submit display --root "$S2_RESULTS" \
+  --evaluation-tag evaluation_final --experiment pn_native_joint_s42_e4_v2
+```
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |

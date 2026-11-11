@@ -35,6 +35,10 @@ python -m unittest discover -s tests -p test_flavour_s2_evaluation.py -v
 
 新增科学 runs 的 AP、τ branch efficiencies、factorial interaction、完整 allocation 和三种子 spread 均未测量。calibration/test 保持 S6 前冻结。
 
+提交结果：commit `ecd26ab` 后，控制任务于 18:43 UTC 提交为 `1573750.0–12`，额外种子为 `1573751.0–7`；两次均按当前 schedd 负载/EOS/WRITE 选择 `bigbird20.cern.ch`。精确映射分别保存在 results 下 `submission_train_184321.json`、`submission_train_184351.json`。18:44 UTC 训练队列为 4 running、29 idle，无重复任务；空间未启动项优先于追加任务。`1573752` 为 `evaluation_final/` 部分结果集成检查。
+
+18:42:55 UTC accounting 实测累计 1.83077 GPU-hours，缺失 history records=0；含旧尝试与当前 slot 的已用 allocation，运行中数值为快照，不是最终成本。
+
 ## 阶段性结论
 
 事实：追加实验与差值统计已成为可执行、可审阅的合同，统计检查通过。此前 B0 结果仍是目前完成的科学参照；本阶段不增加对 native/coarse 或架构优劣的判断。
