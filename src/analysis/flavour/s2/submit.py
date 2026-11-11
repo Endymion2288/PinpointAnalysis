@@ -80,7 +80,7 @@ exec python -m "$@"
     elif args.stage=='refresh_tau':
         arguments=f'analysis.flavour.s2.prepare refresh_tau --root {args.root}'
     elif args.stage=='profile':
-        arguments=f'analysis.flavour.s2.profile --root {args.root}'
+        arguments=f'analysis.flavour.s2.profile --root {args.root} --events {args.profile_events} --output {args.root/args.profile_tag}'
         cpus,memory,disk=2,'8GB','4GB'
         gpu=f'request_gpus = 1\nrequire_gpus = {GPU_requirement}\n'
     elif args.stage=='reference':
@@ -144,6 +144,10 @@ def main():
     parser.add_argument('--allow-incomplete',action='store_true')
     parser.add_argument('--experiment',default='b0_all_s42')
     parser.add_argument('--evaluation-tag',default='evaluation')
+    parser.add_argument('--profile-events',type=int,default=24,
+                        help='Occupancy-rank events per representation in a resource measurement')
+    parser.add_argument('--profile-tag',default='resource_profile_v2',
+                        help='Separate output directory for resource measurements on another device')
     parser.add_argument('--lcg-view',choices=['LCG_108_cuda','LCG_107_cuda'],default='LCG_108_cuda')
     parser.add_argument('--gpu-device',help='Optional exact CUDA device name for matched-hardware campaigns')
     parser.add_argument('--training-flavour',choices=['espresso','microcentury','longlunch','workday','tomorrow'],default='tomorrow',
