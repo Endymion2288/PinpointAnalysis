@@ -1,5 +1,7 @@
 # 阶段 05：S1 原生通道管线与 B0 开发验证
 
+当前状态更新：用户已确认 samples 满足验收要求并接受现有 detector-proxy 参数，S0/S1 已完成，来源认证和硬件标定不再阻塞。详见[阶段 07](2026-11-11_stage07_s0_s1_acceptance.md)。下文保留本阶段当时的测量与判断。
+
 后续补充：[阶段 06](2026-11-11_stage06_native_cache_validation.md)完成多 shard 本地缓存、原生 GPU tensor 传输与最终 S0/S1 验收核对；以下保留本阶段的测量条件和数值。
 
 每类一个完整 ROOT chunk 已通过 HTCondor 转换，共 4,000 个事件；保留原生 pixel 联合位置、合并 bar 通道并保留空事件。10 项自动化检查、真实数据往返检查、16 张分层事件图和一次 GPU 训练已完成。原生 loader 的 batch collation 达到约 1,791–2,196 events/s。当前交付层级为 **detector proxy 开发验证**；生产 source-event 映射和电子学标定尚未确认，正式 S0 split 与硬件物理性能验收仍未关闭。

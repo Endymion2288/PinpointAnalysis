@@ -1,6 +1,8 @@
 # 分阶段工单、资源与交付
 
-研究计划的 S0 全库 inventory 和 S1 native-channel/proxy pipeline、B0、diagnostics 与 HTCondor wrappers 已在 `analysis.flavour` 实现；[运行入口](06_s0_s1_operations.md)和 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)/[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md) 报告给出实测。生产 source-family gate 仍待核对，S2–S6 模块尚待实现。以下时间与 GPU-hours 仍为建议预算，后续模型的吞吐、显存和 EOS I/O 需实测。每阶段进入下一步前写中文 workbook，提交本阶段相关代码、配置与报告。
+S0/S1 已完成，用户已确认 samples 满足要求并接受现有 detector-proxy 参数；生产来源认证和真实硬件标定不再作为前置条件。[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)记录验收决定，[运行入口](06_s0_s1_operations.md)与阶段 04–06 报告保留实现和实测。下一阶段为 S2，S2–S6 模块尚待实现。以下时间与 GPU-hours 仍为建议预算，后续模型的吞吐、显存和 EOS I/O 需实测。
+
+以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
 ## 1. S0：可观测量、事件身份和样本协议
 
@@ -133,4 +135,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-从 S0 inventory 与 readout contract 开始，首先处理本次已发现的空 pixel ID、10081 标签冲突、geometry/生产版本追溯、source-family 去重。随后只实现 binary native pixel + 聚合 bar 的 observation catalog 和 B0；未标定模拟量带明确 proxy 标记。第一个 milestone 是“事件对应正确、无 truth 输入、可复现的四类基线”，再进入模型复杂化。
+下一步从 S2 的共享训练子集、混类 shard 和统一表示对照开始；复用已完成的 native catalog、B0、冻结 split 和现有 detector-proxy 参数。来源认证和硬件标定不再阻塞后续阶段。

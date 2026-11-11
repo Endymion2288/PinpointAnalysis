@@ -1,5 +1,7 @@
 # 阶段 06：S1 本地 shard 缓存、原生传输与验收补充
 
+当前状态更新：用户已确认 samples 满足验收要求并接受现有 detector-proxy 参数，S0/S1 已完成，来源认证和硬件标定不再阻塞。详见[阶段 07](2026-11-11_stage07_s0_s1_acceptance.md)。下文保留本阶段当时的测量与判断。
+
 已补齐 S1 计划中的 worker/local scratch 缓存、可复现窗口采样、标签状态传递和实测。15 项测试通过；HTCondor 完成四类共 4,000-event、三个配置各两个 epoch 的 I/O 检查，事件与通道完整保留，临时缓存全部清理。64-event 原生 GPU tensor 往返完全一致。**S1 detector-proxy 工程交付已补齐；S0 生产 source-family 映射仍待实际生产记录，整个 S0/S1 正式验收尚未关闭。**
 
 ## 阶段目标

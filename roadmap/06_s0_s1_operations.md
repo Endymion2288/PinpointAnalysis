@@ -2,6 +2,8 @@
 
 独立实现位于 `src/analysis/flavour/`。本阶段转换原生 pixel/channel 与模拟 detector proxy，B0 用 pixel 和 bar 的 20 个汇总特征。没有调用旧的 good-event selection、run 取模标签或 highest-true-energy tracker hit。运行合同见 [s0_s1.yaml](configs/s0_s1.yaml)，结果与验收状态以对应 workbook 和 results 的实测 JSON 为准。
 
+**当前验收：S0/S1 complete。**用户确认 samples 满足全部要求，覆盖缺少的生产认证，并接受已有 detector-proxy 数值。沿用冻结 manifest，不再追溯生产来源或重复核查硬件标定；完整决定见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)。已有日志中的 provisional/unverified 是当时的独立核查记录，当前使用状态由配置的 `acceptance` 和 `acceptance.json` 决定。
+
 ## 环境与目录
 
 ```bash
@@ -34,9 +36,9 @@ python -m analysis.flavour.submit merge --root "$TASK_RESULTS"
 
 最终检查结果保存在 `validation.json`。汇总与校验成功后，逐任务 Parquet/audit 已合并清理；保留 `inventory/`、`pilot_inventory/`、`inventory_task_statistics.json` 与任务日志。`compaction.json` 记录清理范围。复现 merge 前需重新生成 scan parts；只核对已完成产物无需重跑全库任务。
 
-**事件签名与真实源身份分开。**当前缺少生产 source-event 映射，使用高维 generator 元数据的精确签名保守合并重复记录；签名排除重新随机生成的 vertex。源事件在不同 generator/转换版本下改变这些元数据时，精确签名不能建立家族关系。split 标为 `provisional_signature_grouped_development_only`，所有表示共用落盘的 `70/10/10/10` manifest；只有生产映射核对后才能转为正式物理评价合同。签名无 split 交叉不等于真实源家族映射已经证明。
+**冻结 split：用户确认接受。**继续使用高维 generator 元数据精确签名分组与已落盘的 `70/10/10/10` manifest，签名排除重新随机生成的 vertex。当前状态为 `accepted_signature_grouped_user_attested`；生产 source-event key 未独立恢复，样本独立性要求依据用户确认通过。无需重划 split 或重写全量 Parquet。
 
-`python -m analysis.flavour.submit source_match --root "$TASK_RESULTS"` 可对已找到的旧 `2026-05-08-genie` 四个 gFaser 文件进行全条目 scalar-signature 匹配，输出 `source_match/source_<run>.json`。该检查不只比较首条记录；保持旧源只读，不读取 particle-vector branches，也不凭匹配候选直接认定其为生产 macro 所用版本。
+`source_match` 工具与历史结果保留供参考，按用户决定不再运行生产来源认证。
 
 ## 原生转换、数据加载和 B0
 
@@ -70,10 +72,10 @@ python -m analysis.flavour.profile_loader --input "$TASK_RESULTS/shards" \
 
 `loader_profile.json` 比较单进程/1-shard cache、2-worker/1-shard cache、2-worker/4-shard mixed window，各跑两个 epoch；记录 staging、decode、collate、wall time、cache hits/misses、临时文件容量、per-worker RSS、类别混合和清理。2-worker 使用 spawn、每个 worker 1 个 Arrow/BLAS/Torch 线程、prefetch=1。`native_transfer.json` 仅测量全部原生 observation tensors 的传输与精确往返，不运行新分类网络。
 
-本次第二个 epoch 分别达到 1,704/799/1,164 events/s，多 worker 没有提高小型 pilot 的吞吐；4-shard window 的第二个 epoch 没有新增 staging/decode。完整条件与 S0/S1 逐项验收见[阶段 06 报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。缓存实现验收不改变 source-family split 的 provisional 状态。
+本次第二个 epoch 分别达到 1,704/799/1,164 events/s，多 worker 没有提高小型 pilot 的吞吐；4-shard window 的第二个 epoch 没有新增 staging/decode。实测条件见[阶段 06 报告](../workbook/2026-11-11_stage06_native_cache_validation.md)，当前验收状态以阶段 07 为准。
 
 pixel ID 可逆到 per-file geometry 中的 `(plane,row,col)` 与中心，保留原生联合位置和 binary occupancy；bar 以 `(layer,panel,orientation,bar)` 合并，保存实测方向与另一方向的有限区间。edep 与 PE 是无饱和/无积分窗的线性模拟 proxy，不声明已标定。时间不进入输入。输出能量 float32 的总和另用 `rtol=2e-6, atol=1e-6 MeV` 检查；PE 使用整数精确合并。
 
-tracker 的连续 G4 crossing 单独存为 ideal proxy；另用 station 内固定 0.1 mm 网格、L3 的 `σx=0.58 mm, σy=0.017 mm, ε=0.99` 形成无 truth 关联的测量假设。网格中心随后加 Gaussian smear；`sigma_xy_mm` 记录该 Gaussian 分量，0.1 mm 网格另有每坐标最多 0.05 mm 的量化偏差，不将这一字段称为总测量协方差。此方案尚未验证当前真实 strip readout、field、noise 与 clustering，也不等同于旧报告的距离式 step merge。未做动量拟合，不将无响应归为出接受度；未知状态为 `-1`。B0 暂不使用 tracker，以免将这套假设的效果混入通道管线验收。
+tracker 的连续 G4 crossing 单独存为 ideal proxy；使用用户接受的 station 内固定 0.1 mm 网格、L3 的 `σx=0.58 mm, σy=0.017 mm, ε=0.99` 和无 noise 配置。网格中心随后加 Gaussian smear；`sigma_xy_mm` 记录该 Gaussian 分量，0.1 mm 网格另有每坐标最多 0.05 mm 的量化偏差。现有值直接作为后续 proxy 参数，不要求真实硬件标定。未做动量拟合，不将无响应归为出接受度；未知状态为 `-1`。B0 保持原有 pixel+bar 输入。
 
 `evaluate` 每类用 pixel occupancy 的最低、25%、50%、95% 四个位置选图，共 16 张；另给 occupancy/signal/cutflow、p99/p99.9、shard bytes/event、loader 时间和 RSS。小样本 shard 允许低于 256 MiB，扩大转换前依据实测 bytes/event 合并到目标大小。资源外推注明每类只转换一个 chunk，不能将其尾部分位数当作全库保证。

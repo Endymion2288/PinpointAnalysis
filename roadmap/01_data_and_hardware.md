@@ -1,5 +1,7 @@
 # 数据证据、硬件响应与输入合同
 
+当前合同：S0/S1 已由用户确认通过；现有 samples、冻结 split 与 detector-proxy 数值直接接受，不再要求来源认证或真实硬件标定。见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)。以下保留原始数据审计和设计说明，其追溯条款已由该决定覆盖。
+
 本文件区分三类信息：2026-11-11 的实际抽样结果、当前模拟源码的行为、待验证的硬件响应假设。抽样只用于确定研究起点，不估计全样本分类能力。
 
 **S0 全量更新：**随后已通过 HTCondor 读取全部 7,240 文件的相关 metadata、geometry/schema、事件 ID 与 detector count vectors，确认 7,237,572 个事件、1,566,540 个空 pixel ID 修复、189,009 个全空事件。1,150 条标签例外已列入异常表；NC 实际包含 4,267 个 ντ 与 1,940 个 anti-ντ。所有权重为 1，单一相关 schema/geometry，无重复精确元数据签名；真实 source-family mapping 仍未验证。详细分 run 表、非有限 W、异常过程、开发 split 和验收状态见 [S0 报告](../workbook/2026-11-11_stage04_flavour_inventory.md)。下文首轮抽样数字保留原有统计范围，不代表最终全库结论。

@@ -24,6 +24,9 @@ classes:
     neutrino: 4267
     antineutrino: 1940
 provenance:
+  sample_acceptance: user_attested
+  production_certification_required: false
+  further_provenance_checks: false
   inspected_source_head: dbbdb5155a66f5329fd27ea5285d037bf8fb2f03
   production_commit: null
   production_macros: null
@@ -36,7 +39,8 @@ provenance:
   empty_pixel_id_repair: only_after_per_file_row_alignment_validation
 split:
   seed: 20261111
-  group_by: generator_event_family
+  group_by: existing_frozen_signature_manifest
+  acceptance: user_attested_samples_meet_requirements
   fractions: {train: 0.70, validation: 0.10, calibration: 0.10, test: 0.10}
   stratify_within: [class, production_conditions]
   all_representations_share_manifest: true
@@ -44,15 +48,20 @@ split:
 readout:
   primary_pixel: binary_native
   analog_pixel_confirmed: null
-  scintillator_signal: channel_response_pending_validation
+  scintillator_signal: user_accepted_linear_channel_proxy
   scintillator_group_key: [event_key, layerID, panelID, isHorizontal, barID]
   integration_window_ns: null
   timing_calibrated: false
-  faser_signal: digitized_station_measurements_pending_validation
+  faser_signal: user_accepted_digitized_station_proxy
   true_faser_momentum_input: false
   true_faser_charge_input: false
   pixel_subpixel_truth_position_input: false
-  tracker_resolution_mm: null
+  tracker_resolution_mm: [0.58, 0.017]
+  tracker_grid_mm: 0.1
+  tracker_efficiency: 0.99
+  tracker_noise: false
+  real_hardware_calibration_required: false
+  repeat_calibration_checks: false
   historical_tracker_assumptions_validated: false
   tracker_status_masks: [outside_acceptance, no_measurement, fit_failure, momentum_censored]
   production_field_map: null
@@ -163,8 +172,11 @@ implementation:
   canonical_label_exceptions: 1150
   empty_pixel_id_repairs: 1566540
   all_empty_events: 189009
-  development_split: provisional_signature_grouped
-  production_family_gate: pending_source_mapping
-  S1_level: detector_proxy_development_pilot
+  development_split: accepted_signature_grouped_user_attested
+  production_family_gate: passed_by_user_attestation
+  S0_status: complete
+  S1_status: complete
+  acceptance_record: workbook/2026-11-11_stage07_s0_s1_acceptance.md
+  S1_level: user_accepted_detector_proxy
   S1_events: 4000
   test_campaign_opened: false

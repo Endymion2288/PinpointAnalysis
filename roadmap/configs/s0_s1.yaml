@@ -1,7 +1,17 @@
 # Operational documentation contract. The CLIs accept paths/limits explicitly;
 # this file records their common assumptions, not an implicit trainer config.
-status: development_detector_proxy
+status: S0_S1_complete_user_accepted_detector_proxy
 date: "2026-11-11"
+acceptance:
+  S0: passed
+  S1: passed
+  basis: existing_engineering_evidence_plus_user_attestation
+  sample_requirements: accepted_by_user
+  missing_production_certification: waived_by_user
+  detector_proxy: accepted_with_existing_values
+  real_hardware_calibration_required: false
+  repeat_provenance_or_calibration_checks: false
+  record: workbook/2026-11-11_stage07_s0_s1_acceptance.md
 module: analysis.flavour
 input_root: /eos/project-f/fasersim-bonn/public/pinpoint/data
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s0_s1_2026-11-11
@@ -24,20 +34,24 @@ identity:
   production_commit: null
   production_macros: null
   inspected_source_commit: dbbdb5155a66f5329fd27ea5285d037bf8fb2f03
-  split_status: provisional_signature_grouped_development_only
+  split_status: accepted_signature_grouped_user_attested
   signature_fields: [initPDG, initPx, initPy, initPz, initE, tgtPDG, hitnucPDG, Q2, xBj, y, W, scatteringType, fslPDG]
   randomized_vertex_in_signature: false
   source_mapping_verified: false
+  source_mapping_acceptance: user_attested_no_further_certification_required
   split_seed: 20261111
   split_fractions: {train: 0.70, validation: 0.10, calibration: 0.10, test: 0.10}
   split_algorithm: blake2b_128_canonical_float64_then_splitmix64
-  official_test_use: deferred_until_provenance_verified
+  official_test_use: after_model_and_threshold_freeze_per_S6
 join:
   latest_root_cycles: true
   required: [unique_event_ids, equal_tree_entry_counts, all_nonempty_pixel_ids_aligned, all_bar_tracker_ids_aligned]
   empty_pixel_id: use_event_row_only_after_file_checks
   failed_file: inventory_retained_converter_rejects
 readout:
+  operating_level: user_accepted_detector_proxy
+  parameter_policy: retain_existing_values
+  real_hardware_calibration_required: false
   pixel:
     level: native_binary
     index: [plane, row, col]
@@ -57,7 +71,7 @@ readout:
     PE_conservation: exact_int64
   tracker:
     ideal_crossings: separate_ideal_tracker_proxy_file
-    digitization: unvalidated_L3_hypothesis
+    digitization: user_accepted_L3_proxy
     truth_based_track_merging: false
     merge: station_plus_fixed_xy_grid_0.1mm
     resolution_sigma_xy_mm: [0.58, 0.017]

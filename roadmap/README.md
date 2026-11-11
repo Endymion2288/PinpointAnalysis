@@ -17,7 +17,7 @@
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
-S0/S1 已进入实现：全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图与 B0 GPU 验证已完成。多 worker scratch 缓存、原生 GPU 传输和 15 项测试也已验证；小型 pilot 没有观察到多 worker 加速。真实生产 source-family 映射尚待核对，当前 split 仅作开发使用。完整实测见 [S0 报告](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1 报告](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存与验收补充](../workbook/2026-11-11_stage06_native_cache_validation.md)。
+**S0/S1 已完成并验收。**全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图、B0 GPU 验证、多 worker scratch 缓存和 15 项测试已完成。用户确认 samples 满足要求，并接受现有 detector-proxy 参数；缺少的生产认证由用户确认覆盖，不再追查来源或要求真实硬件标定。沿用现有冻结 split 进入 S2。验收依据见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)，实测保留在 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。
 
 ## 1. 首先要回答的物理问题
 
@@ -45,7 +45,7 @@ S0/S1 已进入实现：全库 7,240 文件、7,237,572 个事件完成盘点，
 
 原生 pixel 抽样最大为 6,056 hits/event，Scintillator 原始记录最大为 174,535 records/event；这只是每类首 32 事件的结果，尚不能代表高占用尾部。先压缩不具有物理独立性的 bar 记录，再测量全样本占用分位数，是确定模型容量的首要依据。
 
-用户所写的仓库内 `Pinpoint_G4` 路径本次不存在。实际检查的是同级 `/eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4`，HEAD 为 `dbbdb5155a66f5329fd27ea5285d037bf8fb2f03`。当前源码与生产 ROOT 的几何默认值不同；生产版本和 macro 尚待追溯。使用每个 ROOT 自带的 `geometry`，再核对相匹配的模拟配置。
+实际模拟源码位于同级 `/eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4`，已检查 HEAD 为 `dbbdb5155a66f5329fd27ea5285d037bf8fb2f03`。几何使用每个 ROOT 自带的 `geometry`；生产版本和 macro 的独立追溯要求已由用户覆盖。
 
 ## 3. 文献综合后的技术选择
 
@@ -106,4 +106,4 @@ flowchart TD
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
-全量事件数、pilot native loader、B0 验证指标与资源已在 S0/S1 报告中测量。尚未测量：原生深度模型与旧方法的受控性能差异、硬件标定误差、generator 包络、全量训练资源和预期物理产额。当前 B0 与 split 均属于开发验证，正式评价等待生产 source-family 核对。
+全量事件数、pilot native loader、B0 验证指标与资源已在 S0/S1 报告中测量。尚未测量：原生深度模型与旧方法的受控性能差异、generator 包络、全量训练资源和预期物理产额。后续采用用户接受的现有 split 与 detector-proxy；正式 test 仍按 S6 在模型、阈值和校准冻结后执行。
