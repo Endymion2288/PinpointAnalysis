@@ -37,6 +37,8 @@ python -m unittest discover -s tests -p test_flavour_s2_evaluation.py -v
 
 10 tests passed，0.931 s；日志：`evaluation_plot_integration_tests.log`。这组检查覆盖原有指标、配对/种子统计、τ 分支和时间匹配逻辑；图形版式由实际 PNG 检查。当前代码增加绘图入口和调用，科学训练模块未改动。
 
+commit `9d67e8a` 后，正式 `evaluate` 入口的 Condor 集成检查提交为 `1573758.0`，20:27 UTC 已 exit0，Condor log 的 TimeExecute=49 s。使用当前完整合同并显式启用 `--allow-incomplete`；`evaluation_final/summary.json` 与新图形索引均记录 source commit `9d67e8a`，4 个完成 references、45 项 pending，完成标记仍为 false。该检查已包含调用端，完整空间与三种子图仍待真实完成模型。
+
 ## 阶段性结论
 
 现有 reference 的统计结果可直接转为可审阅配对图。最终合同的未完成项在图形索引中仍明确为 pending。尚无完成四轮的深度模型，本阶段没有新增架构、粒度或物理增益结论。
