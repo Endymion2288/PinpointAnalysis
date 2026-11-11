@@ -32,7 +32,11 @@ python -m analysis.flavour.submit merge --root "$TASK_RESULTS"
 
 盘点读取 scalar event 元数据、最新 geometry/schema、detector IDs 和每模态一个计数向量。输出 event manifest、geometry registry、schema registry、文件审计、标签异常表、重复签名表和范围图。每个文件先验证所有事件 ID 与非空关联，再允许修复空 pixel 的陈旧 ID；非空错配不会自动修复。
 
+最终检查结果保存在 `validation.json`。汇总与校验成功后，逐任务 Parquet/audit 已合并清理；保留 `inventory/`、`pilot_inventory/`、`inventory_task_statistics.json` 与任务日志。`compaction.json` 记录清理范围。复现 merge 前需重新生成 scan parts；只核对已完成产物无需重跑全库任务。
+
 **事件签名与真实源身份分开。**当前缺少生产 source-event 映射，使用高维 generator 元数据的精确签名保守合并重复记录；签名排除重新随机生成的 vertex。源事件在不同 generator/转换版本下改变这些元数据时，精确签名不能建立家族关系。split 标为 `provisional_signature_grouped_development_only`，所有表示共用落盘的 `70/10/10/10` manifest；只有生产映射核对后才能转为正式物理评价合同。签名无 split 交叉不等于真实源家族映射已经证明。
+
+`python -m analysis.flavour.submit source_match --root "$TASK_RESULTS"` 可对已找到的旧 `2026-05-08-genie` 四个 gFaser 文件进行全条目 scalar-signature 匹配，输出 `source_match/source_<run>.json`。该检查不只比较首条记录；保持旧源只读，不读取 particle-vector branches，也不凭匹配候选直接认定其为生产 macro 所用版本。
 
 ## 原生转换、数据加载和 B0
 

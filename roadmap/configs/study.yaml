@@ -19,7 +19,10 @@ classes:
   include_antineutrinos: true
   metadata_label_check_required: true
   label_conflict_policy: unresolved_until_source_review
-  nc_tau_coverage: unmeasured
+  nc_tau_coverage:
+    measured_events: 6207
+    neutrino: 4267
+    antineutrino: 1940
 provenance:
   inspected_source_head: dbbdb5155a66f5329fd27ea5285d037bf8fb2f03
   production_commit: null
@@ -142,7 +145,7 @@ evaluation:
   tau_branch_diagnostics: [electron, muon, hadronic]
   reported_efficiency_denominators: [declared_generated_domain, detector_active]
 resources:
-  actual_runtime_and_memory: unmeasured
+  actual_runtime_and_memory: measured_for_S0_and_S1_proxy_only
   large_jobs: HTCondor
   initial_gpu_count_per_job: 1
   initial_cpus_per_gpu_job: 8
@@ -152,3 +155,16 @@ resources:
   schedd_selection: compatible_then_current_low_load
   record_schedd_evidence_at_submission: true
   all_runtime_outputs_under_results: true
+implementation:
+  module: analysis.flavour
+  operational_contract: roadmap/configs/s0_s1.yaml
+  full_inventory_files: 7240
+  full_inventory_events: 7237572
+  canonical_label_exceptions: 1150
+  empty_pixel_id_repairs: 1566540
+  all_empty_events: 189009
+  development_split: provisional_signature_grouped
+  production_family_gate: pending_source_mapping
+  S1_level: detector_proxy_development_pilot
+  S1_events: 4000
+  test_campaign_opened: false

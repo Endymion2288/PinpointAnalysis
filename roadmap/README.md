@@ -17,6 +17,8 @@
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
+S0/S1 已进入实现：全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图与 B0 GPU 验证已完成。真实生产 source-family 映射尚待核对，当前 split 仅作开发使用。完整实测与验收状态见 [S0 报告](../workbook/2026-11-11_stage04_flavour_inventory.md)和 [S1 报告](../workbook/2026-11-11_stage05_native_channel_pipeline.md)。
+
 ## 1. 首先要回答的物理问题
 
 分类对象是反应的 CC flavour/NC 类别。`ν/anti-ν`、DIS/QE/RES 等作为分层诊断，不混成新的主类别。NC 内不同入射 flavour 合并；若现有 NC 样本未覆盖 `ντ NC`，需要单列覆盖范围并补样或限定适用域。
@@ -33,7 +35,7 @@
 
 ## 2. 本次核对改变了哪些优先级
 
-指定四类目录共 **7,240 个 ROOT 文件、2,386,015,012,744 bytes（约 2.386 TB）**。总事件数尚未逐文件统计；尾文件不足 1,000 事件，NC 的 chunk 编号还有 38 个缺口，不能用文件数直接换算总事件数。[数据证据](01_data_and_hardware.md)给出了抽样边界和复现命令。
+指定四类目录共 **7,240 个 ROOT 文件、2,386,015,012,744 bytes（约 2.386 TB）、7,237,572 个实际事件**。尾文件不足 1,000 事件，NC 的 chunk 编号还有 38 个缺口，事件数已由全库 metadata 核对。[数据证据](01_data_and_hardware.md)分别给出原始抽样边界与后续全库结果。
 
 直接开始训练前有三个实际问题要解决：
 

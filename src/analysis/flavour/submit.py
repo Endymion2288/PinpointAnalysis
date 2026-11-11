@@ -83,6 +83,9 @@ exec python -m "$@"
     elif args.stage == 'diagnostics':
         arguments = f'analysis.flavour.evaluate --input {args.root}/shards --output {args.root}/diagnostics'
         memory = '8GB'
+    elif args.stage == 'source_match':
+        arguments = f'analysis.flavour.source_match --source /eos/project-f/fasersim-bonn/public/pinpoint/2026-05-08-genie/$(source) --run $(run) --inventory {args.root}/pilot_inventory/events.parquet --output {args.root}/source_match'
+        queue = 'queue run, source from (\n10081 cc-nue.gfaser.root\n10082 cc-num.gfaser.root\n10083 cc-nut.gfaser.root\n10084 nc-nu.gfaser.root\n)'
     else:
         raise ValueError(args.stage)
     text = f'''universe = vanilla
@@ -120,7 +123,7 @@ transfer_output_files = ""
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage', choices=['pilot', 'pilot_merge', 'inventory', 'merge', 'convert', 'diagnostics'])
+    parser.add_argument('stage', choices=['pilot', 'pilot_merge', 'inventory', 'merge', 'convert', 'diagnostics', 'source_match'])
     parser.add_argument('--root', type=Path, required=True)
     submit(parser.parse_args())
 

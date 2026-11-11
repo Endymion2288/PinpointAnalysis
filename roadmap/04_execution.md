@@ -1,6 +1,6 @@
 # 分阶段工单、资源与交付
 
-本次交付的是研究计划和只读审计工具；以下生产模块、训练器与 HTCondor wrappers 尚待实现。时间和 GPU-hours 为建议预算，实际吞吐、显存、CPU 与 EOS I/O 尚未测量。每阶段进入下一步前写中文 workbook，提交本阶段相关代码、配置与报告。
+研究计划的 S0 全库 inventory 和 S1 native-channel/proxy pipeline、B0、diagnostics 与 HTCondor wrappers 已在 `analysis.flavour` 实现；[运行入口](06_s0_s1_operations.md)和 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)/[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md) 报告给出实测。生产 source-family gate 仍待核对，S2–S6 模块尚待实现。以下时间与 GPU-hours 仍为建议预算，后续模型的吞吐、显存和 EOS I/O 需实测。每阶段进入下一步前写中文 workbook，提交本阶段相关代码、配置与报告。
 
 ## 1. S0：可观测量、事件身份和样本协议
 

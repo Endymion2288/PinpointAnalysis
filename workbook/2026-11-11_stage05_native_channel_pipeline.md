@@ -40,7 +40,7 @@
 | 10083 | 14.507 | 13.109 | 2.879 | 34.157 | 667.80 | 17,701,315 |
 | 10084 | 14.878 | 12.570 | 2.710 | 34.733 | 611.84 | 17,356,458 |
 
-每任务申请 2 CPUs、8 GB memory，在 bigbird20 的 cluster `1573713` 运行。Parquet 当前使用 snappy；LCG 的 PyArrow 未编译 zstd。observation 约 17.4–23.4 kB/event；小型 pilot shard 不足 256 MiB，扩大生产时按实测 event size 合并到 256 MiB–1 GiB。全量体积估算需以完成后的 S0 事件数按类加权，见 S0 总结。
+每任务 submit 文件申请 2 CPUs、8 GB memory，在 bigbird20 的 cluster `1573713` 运行；站点最终调整为 3 CPUs、9,000 MB memory。四个转换作业的 user+system CPU time 分别为 42/32/35/33 s，scheduler wall time 为 55/46/43/43 s，均 exit 0、启动一次，详见 `condor_s1_resources.json`。Parquet 当前使用 snappy；LCG 的 PyArrow 未编译 zstd。observation 约 17.4–23.4 kB/event；小型 pilot shard 不足 256 MiB，扩大生产时按实测 event size 合并到 256 MiB–1 GiB。按 S0 实测的 7,237,572 个事件分 run 加权，预计全量 observation 为 131.402 GB（122.378 GiB）；包含当前 pilot 的全部辅助 Parquet 则约 134.068 GB。`storage_estimate.json` 保留逐类计算。该外推仅依据每类首个 chunk，跨 chunk 波动及估计区间未测量。
 
 ### 原生 occupancy 尾部
 

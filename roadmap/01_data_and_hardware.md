@@ -2,6 +2,8 @@
 
 本文件区分三类信息：2026-11-11 的实际抽样结果、当前模拟源码的行为、待验证的硬件响应假设。抽样只用于确定研究起点，不估计全样本分类能力。
 
+**S0 全量更新：**随后已通过 HTCondor 读取全部 7,240 文件的相关 metadata、geometry/schema、事件 ID 与 detector count vectors，确认 7,237,572 个事件、1,566,540 个空 pixel ID 修复、189,009 个全空事件。1,150 条标签例外已列入异常表；NC 实际包含 4,267 个 ντ 与 1,940 个 anti-ντ。所有权重为 1，单一相关 schema/geometry，无重复精确元数据签名；真实 source-family mapping 仍未验证。详细分 run 表、非有限 W、异常过程、开发 split 和验收状态见 [S0 报告](../workbook/2026-11-11_stage04_flavour_inventory.md)。下文首轮抽样数字保留原有统计范围，不代表最终全库结论。
+
 ## 1. 实测数据范围
 
 输入根目录：`/eos/project-f/fasersim-bonn/public/pinpoint/data`。遍历四个 run 目录的文件名和文件大小；按 chunk 数值排序，每类打开首/中/末三个 ROOT 的 header 与 geometry。每类 chunk 000 读取 1,000 条 scalar event 元数据、前 32 条 detector hit entries。未批量转换数据。

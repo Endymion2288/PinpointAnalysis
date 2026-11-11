@@ -191,6 +191,11 @@ def merge(args):
         raise ValueError('duplicate observation identity')
     if sum(r['events'] for r in records) != len(frame):
         raise ValueError('file audit and scalar manifest row counts differ')
+    id_ranges = frame.groupby(['run', 'chunk']).evtID.agg(['min', 'max', 'nunique'])
+    for record in records:
+        ids = id_ranges.loc[(record['run'], record['chunk'])]
+        record['evtID_min'], record['evtID_max'] = int(ids['min']), int(ids['max'])
+        record['unique_evtID_count'] = int(ids['nunique'])
     # Same signature always shares one partition across runs/conditions. Ratios
     # are probabilistic within strata, checked below, not forced by row order.
     frame['split'] = split_names(frame.family_hi, frame.family_lo)
@@ -204,6 +209,11 @@ def merge(args):
     frame.loc[frame.label_status != 'consistent'].to_parquet(args.output / 'label_exceptions.parquet', index=False, compression=COMPRESSION)
     if len(duplicate):
         duplicate.rename('observations').to_frame().to_parquet(args.output / 'repeated_signatures.parquet', compression=COMPRESSION)
+        example_keys = duplicate.head(10).rename('family_observations').reset_index()
+        example_columns = ['run', 'chunk', 'row', 'evtID', 'family_hi', 'family_lo', 'label_status',
+                           'split', 'initPDG', 'fslPDG', 'initE', 'initX', 'initY', 'initZ']
+        frame[example_columns].merge(example_keys, on=['family_hi', 'family_lo']).to_parquet(
+            args.output / 'signature_overlap_examples.parquet', index=False, compression=COMPRESSION)
     geometries = {k: v for r in reports for k, v in r['geometries'].items()}
     schemas = {k: v for r in reports for k, v in r['schemas'].items()}
     write_json(args.output / 'geometries.json', geometries)
@@ -216,16 +226,23 @@ def merge(args):
             'label': RUN_LABELS[run], 'files': len(chunks), 'events': len(group),
             'missing_chunks': sorted(set(range(max(chunks) + 1)) - set(chunks)),
             'labels': group.label_status.value_counts().to_dict(),
+            'weights': {'all_one': bool((group.weight == 1).all()),
+                        'min': float(group.weight.min()), 'max': float(group.weight.max()),
+                        'nonfinite': int((~np.isfinite(group.weight)).sum())},
+            'nonfinite_metadata': {key: int((~np.isfinite(group[key])).sum()) for key in SCALARS},
             'initPDG': {str(k): int(v) for k, v in group.initPDG.value_counts().items()},
             'interaction_scattering_counts': group.groupby(['intType', 'scatteringType']).size().rename('count').reset_index().to_dict('records'),
             'splits': group.groupby(['label_status', 'split']).size().rename('count').reset_index().to_dict('records'),
             'join_failures': int((~group.usable_join).sum()),
+            'repeated_evtID_rows_within_run': int(group.evtID.duplicated().sum()),
+            'evtID_range': [int(group.evtID.min()), int(group.evtID.max())],
             'empty': {d: int((group['n_' + d] == 0).sum()) for d in TREES},
             'all_empty': int((group[[f'n_{d}' for d in TREES]] == 0).all(axis=1).sum()),
             'ranges': {key: {str(q): float(value) for q, value in group[key].quantile([0, .5, .9, .95, .99, .999, 1]).items()}
                        for key in ['initE', 'initX', 'initY', 'initZ', 'n_pixel', 'n_bar', 'n_tracker']}}
     summary = {'events': len(frame), 'files': len(records), 'runs': summaries,
-               'unique_metadata_event_keys': int(frame.groupby(['run', 'chunk']).evtID.nunique().sum()),
+               'input_bytes': sum(r['bytes'] for r in records),
+               'unique_metadata_event_keys': int(id_ranges['nunique'].sum()),
                'files_with_duplicate_event_ids': sum(not r['unique_event_ids'] for r in records),
                'geometry_ids': list(geometries), 'schema_ids': list(schemas),
                'repeated_signature_families': len(duplicate),
@@ -251,18 +268,24 @@ def plot_inventory(frame, output):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     fig, axes = plt.subplots(2, 3, figsize=(14, 8), constrained_layout=True)
+    fields = ['initE', 'initX', 'initY', 'initZ', 'n_pixel', 'n_bar']
+    def values_for_plot(values, key):
+        if key == 'initE':
+            values = np.log10(np.maximum(values / 1000, 1e-6))
+        elif key.startswith('n_'):
+            values = np.log10(1 + values)
+        return values[np.isfinite(values)]
+    bins = {key: np.histogram_bin_edges(values_for_plot(frame[key].to_numpy(), key), bins=70) for key in fields}
     for run, group in frame.groupby('run'):
-        for ax, key, title in zip(axes.flat, ['initE', 'initX', 'initY', 'initZ', 'n_pixel', 'n_bar'],
+        for ax, key, title in zip(axes.flat, fields,
                                  ['Incident energy [GeV]', 'True vertex x [mm]', 'True vertex y [mm]',
                                   'True vertex z [mm]', 'Native pixel records', 'Scintillator track records']):
-            values = group[key].to_numpy()
+            values = values_for_plot(group[key].to_numpy(), key)
             if key == 'initE':
-                values = np.log10(np.maximum(values / 1000, 1e-6))
                 title = 'log10 incident energy [GeV]'
             elif key.startswith('n_'):
-                values = np.log10(1 + values)
                 title = 'log10(1 + ' + title.lower() + ')'
-            ax.hist(values, bins=70, histtype='step', density=True, label=RUN_LABELS[run])
+            ax.hist(values, bins=bins[key], histtype='step', density=True, label=RUN_LABELS[run])
             ax.set(xlabel=title, ylabel='Density')
     axes[0, 0].legend()
     fig.savefig(output / 'data_ranges.png', dpi=140)
