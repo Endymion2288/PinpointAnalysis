@@ -8,7 +8,7 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval
+from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval, historical_three_class, tau_branch_metrics
 
 
 class EvaluationTests(unittest.TestCase):
@@ -78,6 +78,35 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(result['events'],len(frame))
         with self.assertRaises(ValueError):
             seed_mean_interval([(tied,perfect.iloc[:-1])],replicates=2)
+
+    def test_historical_three_class_keeps_distinct_score_definitions(self):
+        frame=pd.DataFrame({'label':[0,1,3,2],
+            'p0':[.4,.3,.1,1.], 'p1':[.01,.5,.1,0.],
+            'p2':[.58,.1,.1,0.], 'p3':[.01,.1,.7,0.]})
+        result=historical_three_class(frame)
+        self.assertEqual(result['events'],3)
+        self.assertEqual(result['excluded_tau_events'],1)
+        self.assertEqual(result['confusion_counts'],[[1,0,0],[0,1,0],[0,0,1]])
+        self.assertEqual(result['balanced_accuracy'],1)
+        self.assertFalse(result['historical_model_reproduced'])
+        frame.loc[0,['p0','p1','p3']]=0
+        result=historical_three_class(frame)
+        self.assertEqual(result['zero_non_tau_score_events'],1)
+        self.assertTrue(np.isfinite(result['conditional_NLL']))
+
+    def test_tau_branch_retains_same_background_excludes_other_tau(self):
+        frame=pd.DataFrame({'label':[0,1,3,2,2,2],'p2':[.1,.2,.3,.9,.5,.8],
+                            'tau_branch':['not_tau']*3+['electron','electron','hadronic']})
+        result=tau_branch_metrics(frame,'electron',.8)
+        self.assertEqual(result['events'],5)
+        self.assertEqual(result['tau_events'],2)
+        self.assertEqual(result['background_events'],3)
+        self.assertEqual(result['PR_AUC'],1)
+        self.assertEqual(result['ROC_AUC'],1)
+        self.assertEqual(result['efficiency_at_inclusive_1pct_FPR'],.5)
+        missing=tau_branch_metrics(frame,'muon',.8)
+        self.assertEqual(missing['tau_events'],0)
+        self.assertIsNone(missing['PR_AUC'])
 
     def test_time_match_excludes_later_better_checkpoint(self):
         frame=self.sample()

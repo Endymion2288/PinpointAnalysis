@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve, precision_recall_curve
+from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve, precision_recall_curve, confusion_matrix, log_loss
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s2.train import metrics
@@ -47,6 +47,49 @@ def tau_metrics(frame,weight=None):
             value['weighted_background_selected']=float(np.sum(weight[background]))
         out[f'FPR_{acceptance:g}']=value
     return out
+
+
+def historical_three_class(frame):
+    """Conditional diagnostic from four-way scores, not a retrained old model."""
+    classes=[0,1,3]
+    selected=frame[frame.label.isin(classes)]
+    truth=selected.label.to_numpy()
+    raw=selected[[f'p{c}' for c in classes]].to_numpy(dtype='float64')
+    if not len(selected):
+        return {'events':0,'classes':classes}
+    sums=raw.sum(1,keepdims=True)
+    conditional=np.divide(raw,sums,out=np.full_like(raw,1/3),where=sums>0)
+    prediction=np.asarray(classes)[conditional.argmax(1)]
+    matrix=confusion_matrix(truth,prediction,labels=classes)
+    detail={}
+    for i,c in enumerate(classes):
+        flag=truth==c
+        detail[str(c)]={'events':int(flag.sum()),'predicted':int(matrix[:,i].sum()),
+            'recall':float(matrix[i,i]/matrix[i].sum()) if matrix[i].sum() else None,
+            'precision':float(matrix[i,i]/matrix[:,i].sum()) if matrix[:,i].sum() else None,
+            'raw_four_way_score_ROC_AUC':float(roc_auc_score(flag,raw[:,i])) if flag.any() and (~flag).any() else None,
+            'raw_four_way_score_PR_AUC':float(average_precision_score(flag,raw[:,i])) if flag.any() else None,
+            'conditional_score_ROC_AUC':float(roc_auc_score(flag,conditional[:,i])) if flag.any() and (~flag).any() else None,
+            'conditional_score_PR_AUC':float(average_precision_score(flag,conditional[:,i])) if flag.any() else None}
+    recalls=[v['recall'] for v in detail.values() if v['recall'] is not None]
+    return {'events':len(selected),'excluded_tau_events':int(frame.label.eq(2).sum()),'classes':classes,
+        'classwise':detail,'confusion_counts':matrix.tolist(),'balanced_accuracy':float(np.mean(recalls)),
+        'conditional_NLL':float(log_loss(truth,conditional,labels=classes)),
+        'zero_non_tau_score_events':int((sums[:,0]==0).sum()),
+        'scope':'same four-way model; restrict true labels to e/mu/NC; conditional scores renormalize these three probabilities',
+        'historical_model_reproduced':False}
+
+
+def tau_branch_metrics(frame,branch,inclusive_threshold):
+    """Use every non-tau background and only the stated tau signal branch."""
+    branch_flag=frame.label.eq(2)&frame.tau_branch.eq(branch)
+    branch_frame=frame.loc[frame.label.ne(2)|branch_flag]
+    return {**tau_metrics(branch_frame),'branch':branch,'branch_signal_events':int(branch_flag.sum()),
+        'background_events':int(frame.label.ne(2).sum()),
+        'efficiency_at_inclusive_1pct_FPR':float((frame.loc[branch_flag,'p2']>=inclusive_threshold).mean())
+            if branch_flag.any() and inclusive_threshold is not None else None,
+        'background_definition':'all non-tau events in the same evaluation domain; other tau branches excluded',
+        'branch_working_point_definition':'branch ROC recomputes threshold on the same non-tau background; inclusive threshold separately reported'}
 
 
 def common_support_weights(frame):
@@ -399,6 +442,7 @@ def run(args):
     strata=[]
     examples=[]
     factorial={}
+    historical=[]
     catalog=pd.read_parquet(args.root/'catalog.parquet',columns=['run','chunk','row','all_empty',
                                                                'pixel_channels','bar_channels','tracker_channels'])
     for path in sorted((args.root/'experiments').iterdir()):
@@ -437,11 +481,12 @@ def run(args):
             result=tau_metrics(frame.loc[mask])
             fourclass=metrics(frame.loc[mask,'label'].to_numpy(),frame.loc[mask,[f'p{c}' for c in range(4)]].to_numpy()) if mask.any() else None
             strata.append({'experiment':path.name,'stratum':name,**result,'four_class':fourclass})
+            if name in ['all','pixel_centered','large_scintillator']:
+                historical.append({'experiment':path.name,'stratum':name,**historical_three_class(frame.loc[mask])})
         threshold=tau.get('FPR_0.01',{}).get('threshold')
         for branch in ['electron','muon','hadronic','unknown','ambiguous']:
-            branch_frame=frame[frame.label.eq(2)&frame.tau_branch.eq(branch)]
-            strata.append({'experiment':path.name,'stratum':'tau_'+branch,'events':len(branch_frame),
-                'efficiency_at_inclusive_1pct_FPR':float((branch_frame.p2>=threshold).mean()) if len(branch_frame) and threshold is not None else None})
+            result=tau_branch_metrics(frame,branch,threshold)
+            strata.append({'experiment':path.name,'stratum':'tau_'+branch,**result})
         config=manifest['config']
         if config.get('pitch_mm',0.) in [0.,1.] and config.get('reducer','count')=='count':
             identity={k:v for k,v in config.items() if k not in ['name','role','pitch_mm','projection']}
@@ -481,6 +526,7 @@ def run(args):
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         'python':sys.version,
         'experiments':experiments,'strata':strata,'paired_comparisons':comparisons,
+        'historical_three_class_reference':historical,
         'seed_spread':seed_spread(experiments),'factorial_interactions':interactions,
         'pending_comparisons':pending,'requested_comparisons_complete':not pending,
         'seed_mean_comparisons':seed_comparisons,
