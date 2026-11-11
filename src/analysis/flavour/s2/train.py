@@ -122,7 +122,8 @@ def run(args):
         'mixed_precision':str(dtype) if device.type=='cuda' else None,'selection':'validation_NLL',
         'normalization':'fixed_physical_scales_no_truth','calibration_test_used':False,
         'local_blocks':'same_plane_4mm_then_canonical_chunks32_no_event_truncation',
-        'schema_whitelist':'18_observation_features_in_s2.representation',
+        'schema_whitelist':'18_observation_features_plus_8_current_representation_counts_and_signal_sums',
+        'response_summary_version':2,
         'load_seconds':time.perf_counter()-started}
     history=[]
     epoch_predictions=[]

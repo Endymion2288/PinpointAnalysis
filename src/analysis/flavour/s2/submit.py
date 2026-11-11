@@ -49,6 +49,7 @@ exec python -m "$@"
 ''')
     wrapper.chmod(0o755)
     cpus,memory,disk,queue,gpu=2,'6GB','2GB','queue 1',''
+    submitted_experiments=[]
     capability=7.0 if args.lcg_view=='LCG_107_cuda' else 7.5
     GPU_requirement=f'(GlobalMemoryMb >= 14000) && (Capability >= {capability})'
     if args.gpu_device:
@@ -69,6 +70,7 @@ exec python -m "$@"
         if len(set(tasks))!=len(tasks) or not all(0<=t<len(configs) for t in tasks):
             raise ValueError('training task indices must be unique members of the frozen campaign')
         queue='queue task in '+','.join(map(str,tasks))
+        submitted_experiments=[{'task':t,'config':configs[t]} for t in tasks]
         cpus,memory,disk=4,'12GB','12GB'
         gpu=f'request_gpus = 1\nrequire_gpus = {GPU_requirement}\n'
     elif args.stage=='audit':
@@ -90,6 +92,8 @@ exec python -m "$@"
             arguments+=f' --comparisons {args.comparisons}'
     elif args.stage=='display':
         arguments=f'analysis.flavour.s2.display --root {args.root} --experiment {args.experiment}'
+    elif args.stage=='accounting':
+        arguments=f'analysis.flavour.s2.accounting --root {args.root}'
     else:
         raise ValueError(args.stage)
     text=f'''universe = vanilla
@@ -114,7 +118,8 @@ transfer_output_files = ""
         'schedd_snapshot':snapshot,'checks':attempts,'submit':text,'wrapper':wrapper.read_text(),
         'code_commit':command(['git','rev-parse','HEAD']).strip(),
         'selection_basis':'compatible direct EOS policy and WRITE; minimum idle/held/running',
-        'software_view':view,'GPU_requirement':GPU_requirement if gpu else None}
+        'software_view':view,'GPU_requirement':GPU_requirement if gpu else None,
+        'submitted_experiments':submitted_experiments}
     if gpu:
         evidence['gpu_pool_snapshot']=command(['condor_status','-constraint','GPUs > 0','-af',
                                                 'Name','State','Activity','Cpus','Memory','GPUs_GlobalMemoryMb','GPUs_DeviceName'])
@@ -129,7 +134,7 @@ transfer_output_files = ""
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference','evaluate','display'])
+    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference','evaluate','display','accounting'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',help='Selected indices from the frozen training campaign')

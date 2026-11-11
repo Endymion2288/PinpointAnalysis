@@ -8,7 +8,7 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time
+from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups
 
 
 class EvaluationTests(unittest.TestCase):
@@ -46,6 +46,17 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(result['interaction'],0)
         self.assertEqual(result['CI95'],[0,0])
 
+    def test_existing_family_links_join_chunks_for_resampling(self):
+        frame=self.sample()
+        frame['family_hi']=np.arange(len(frame),dtype='uint64')
+        frame['family_lo']=np.zeros(len(frame),dtype='uint64')
+        frame.loc[20,'family_hi']=frame.loc[0,'family_hi']
+        groups,summary=resampling_groups(frame)
+        self.assertEqual(summary['chunks'],12)
+        self.assertEqual(summary['resampling_blocks'],11)
+        self.assertEqual(summary['multi_chunk_blocks'],1)
+        self.assertTrue(any(0 in block and 20 in block for block in groups[(0,)]))
+
     def test_time_match_excludes_later_better_checkpoint(self):
         frame=self.sample()
         for c in [0,1,3]:
@@ -65,6 +76,11 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(result['budget_seconds'],20)
             self.assertEqual([r['epoch'] for r in result['runs']],[1,2])
             self.assertEqual(result['tau_AP_B_minus_A'],0)
+            (root/'campaign_accounting.json').write_text(json.dumps({'experiments':{
+                'a':{'untracked_allocation_seconds':0},'b':{'untracked_allocation_seconds':15}}}))
+            result=matched_time('a','b',root,{'a':frame,'b':frame})
+            self.assertEqual(result['budget_seconds'],30)
+            self.assertEqual([r['epoch'] for r in result['runs']],[2,1])
 
 
 if __name__=='__main__':

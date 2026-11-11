@@ -15,16 +15,16 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | B0 / prior reference | `experiments/b0_*_s42` 和 `truth_energy_vertex_s42`，均已完成 |
 | Paired reference evaluation | `evaluation/summary.json`、`metrics.csv`、`tau_PR.png`、`error_event_groups.parquet` |
 | Native response displays | `evaluation/event_displays/b0_all_s42/`，20 页 PDF、事件 keys 和首例 PNG |
-| V100 resource study | `resource_profile/`，24 占用秩事件×6 表示×2 家族×2 模式=576 行 |
-| Spatial screen | [12-run configuration](configs/s2_spatial_screen.json)，真实训练进行中 |
+| V100 resource study | `resource_profile/` 为 v1 的 576 行；v2 输出到 `resource_profile_v2/` |
+| Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
 
 完整 B0 的 τ AP=0.34471、1% FPR 下 τ efficiency=65/2,500=2.60%；truth E/vertex 参照 AP=0.44106。25% τ benchmark prior 下，粗 E/x/y/z common support 为 8,559 events、Neff=7,959.41，二者 weighted AP 为 0.30845/0.36474。truth 参照单列为先验诊断，不算硬件模型。详细 counts、CI 和条件指标见[阶段 12](../workbook/2026-11-11_stage12_s2_reference_results.md)。
 
 ## 科学训练合同
 
-两家族共享当前表示的局部 learned compression（每块最多 32 nodes）和全部全局块；这是明确的 baseline adaptation，不是未经压缩的全事件 ParT。模型输入只含 18 项 observation 特征，truth/provenance 仅做 split/诊断。粗表示不携带原生 cell 残差，投影移除 x–y pairing；空事件保持先验型输出。
+两家族共享当前表示的局部 learned compression（每块最多 32 nodes）和全部全局块；这是明确的 baseline adaptation，不是未经压缩的全事件 ParT。模型输入为 18 项 observation 特征及其导出的 8 项计数/信号和，后者在局部汇聚与全局头显式保留。只从当前表示计算，不读取 raw counts 恢复 OR 丢失的 multiplicity。truth/provenance 仅做 split/诊断。粗表示不携带原生 cell 残差，投影移除 x–y pairing；空事件保持先验型输出。
 
-ParT dim48=150,076 parameters；ParticleNet dim64=159,620，相差 6.36%。空间筛选每 run 4 epochs、batch4、20,016 attempted steps/epoch、相同 seed42 与数据顺序；记录实际 applied steps 和 AMP skips。bucket256 用同一原生通道数排序，完整覆盖后重复少量 batches 匹配步数。模型按 validation NLL 选 best；每 epoch 四类概率支持同型号 GPU、共同时间预算内的比较。
+v2 ParT dim48=151,228 parameters；ParticleNet dim64=161,156，相差 6.56%。空间筛选每 run 4 epochs、batch4、20,016 attempted steps/epoch、相同 seed42 与数据顺序；记录实际 applied steps 和 AMP skips。bucket256 用同一原生通道数排序，完整覆盖后重复少量 batches 匹配步数。模型按 validation NLL 选 best；每 epoch 四类概率支持同型号 GPU、共同时间预算内的比较。
 
 科学 GPU 固定 Tesla V100-PCIE-32GB，复用 `LCG_107_cuda/x86_64-el9-gcc11-opt`：Python3.11.9、Torch2.5.1、FP16。这是复用现成 V100 构建的运行环境，项目 Python3.12 声明未修改。LCG_108/Torch2.7.1 不含 sm70，不能用于 V100；108 仍用于 CPU reference/evaluation。
 
@@ -33,7 +33,7 @@ source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh
 export PYTHONPATH="$PWD/src:$PYTHONPATH"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 S2_RESULTS=/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11
-S2_CAMPAIGN="$PWD/roadmap/configs/s2_spatial_screen.json"
+S2_CAMPAIGN="$PWD/roadmap/configs/s2_spatial_screen_v2.json"
 # 仅用于首次提交；已存活的任务不重复提交。
 python -m analysis.flavour.s2.submit train --root "$S2_RESULTS" --campaign "$S2_CAMPAIGN" \
   --tasks 0 6 --lcg-view LCG_107_cuda --gpu-device 'Tesla V100-PCIE-32GB'
@@ -43,7 +43,7 @@ python -m analysis.flavour.s2.submit train --root "$S2_RESULTS" --campaign "$S2_
 # 已完成同名/同配置任务会直接返回，不重新训练。
 ```
 
-提交器每次保存当前 schedd/EOS/WRITE/GPU pool 与最终 ClusterId；训练 `manifest.json` 保存代码、软件、参数、样本数。`progress.json` 每 250 steps 更新；`history.json` 为完成的 epochs；`last.pt` 为恢复依据，`best.pt`/`validation_predictions.parquet` 为 selection 结果。中途停止不可视作完成 epoch。
+提交器每次保存当前 schedd/EOS/WRITE/GPU pool、精确 task/config 映射与最终 ClusterId；训练 `manifest.json` 保存代码、软件、参数、样本数。`progress.json` 每 250 steps 更新；`history.json` 为完成的 epochs；`last.pt` 为恢复依据，`best.pt`/`validation_predictions.parquet` 为 selection 结果。中途停止不可视作完成 epoch。`s2.accounting` 只查询本 S2 目录记录的 ClusterIds，保留失败/重启成本，汇总到 `campaign_accounting.json`；时间匹配将 history 外的 allocation 成本也计入。
 
 ## S2 科学验收清单
 

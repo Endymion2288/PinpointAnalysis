@@ -2,6 +2,8 @@
 
 两族 native-joint 已在固定 V100 上开始 80k/10k 正式训练。前 250-step 实测覆盖 1,000 train exposures，ParT 为 11.311 events/s，ParticleNet 为 16.488 events/s；后者 500 steps 提高至 21.920 events/s，存在首次 loader/CUDA 开销。依据该吞吐继续提交其余十个已冻结空间配置。
 
+后续修正：1573741/1573743 的 v1 任务已在首个 epoch 完成前停止，原因和新配置见[阶段 15](2026-11-11_stage15_s2_summary_correction.md)。本页仅保留当时的真实运行记录，未产生科学空间比较结论。
+
 ## 阶段目标
 
 将阶段 13 的 12-run 空间矩阵具体运行，并让实际 loader/optimizer 成本约束初轮资源预算。

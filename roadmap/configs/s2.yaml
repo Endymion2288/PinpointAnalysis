@@ -42,8 +42,11 @@ representations:
 models:
   families: [particlenet, part]
   screening_hidden_dim: {part: 48, particlenet: 64}
-  screening_parameters: {part: 150076, particlenet: 159620}
-  parameter_difference_fraction: 0.0636
+  screening_parameters: {part: 151228, particlenet: 161156}
+  parameter_difference_fraction: 0.06565
+  response_summary_version: 2
+  additive_summaries: current_representation_only_counts_and_bar_signal_sums
+  raw_native_multiplicity_in_OR_control: forbidden
   shared_local_block_compression: true
   particlenet:
     local_edge_blocks: 3
@@ -81,7 +84,7 @@ training:
   complete_event_path: no_truncation
   training_domain_controls: [all, pixel_centered, large_scintillator]
   training_domain_step_match: repeat_complete_domain_cycles_to_full_domain_steps
-  spatial_screen_campaign: roadmap/configs/s2_spatial_screen.json
+  spatial_screen_campaign: roadmap/configs/s2_spatial_screen_v2.json
   spatial_screen_epochs: 4
   spatial_screen_attempted_steps_per_epoch: 20016
   spatial_screen_bucket_size: 256

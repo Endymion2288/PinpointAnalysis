@@ -33,7 +33,7 @@ def run(args):
     device=torch.device(args.device)
     dtype=torch.bfloat16 if device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False) else torch.float16
     rows=[]
-    output=args.root/'resource_profile'
+    output=args.output or args.root/'resource_profile_v2'
     output.mkdir(parents=True,exist_ok=True)
     for pitch,projection in [(0.,False),(0.,True),(.1,False),(.2,False),(1.,False),(1.,True)]:
         dataset=SpatialDataset(args.root,'train',{'pitch_mm':pitch,'projection':projection})
@@ -119,6 +119,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--events',type=int,default=24)
+    parser.add_argument('--output',type=Path)
     parser.add_argument('--device',default='cuda')
     run(parser.parse_args())
 

@@ -2,6 +2,8 @@
 
 24 个占用分层事件 × 6 个表示 × 2 个模型族的完整 batch-1 资源测量已结束，共 576 行 inference/training 记录，loss 均有限。基于该测量和已通过的 GPU smoke，冻结 80k train/10k validation 的 12-run 空间筛选矩阵；先启动两族 native joint，观察实际 batch throughput，再提交其余已冻结配置。
 
+后续修正：本页为 v1 的实际资源与配置。空间任务在首个 epoch 完成前停止；[阶段 15](2026-11-11_stage15_s2_summary_correction.md)补入显式计数/信号和，当前配置为 `s2_spatial_screen_v2.json`。本页的 v1 资源不冒充 v2 实测。
+
 ## 阶段目标
 
 在完整输入和明确预算下比较 native/1mm 与 joint/projection，并补 100/200 μm 中间点，分开判断粗化、关联损失与模型族。

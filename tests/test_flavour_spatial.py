@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from analysis.flavour.s2.dataset import collate_spatial
-from analysis.flavour.s2.models import PointClassifier, PairAttention, EdgeBlock, physical_distance
+from analysis.flavour.s2.models import PointClassifier, PairAttention, EdgeBlock, physical_distance, response_totals
 from analysis.flavour.s2.representation import pixel_view, token_inputs
 from analysis.flavour.s2.prepare import classify_tau_daughters
 
@@ -67,6 +67,24 @@ class SpatialTests(unittest.TestCase):
                                {'nodes':empty,'groups':group,'label':3,'index':1}])
         self.assertEqual(batch['local_mask'].sum().item(),101)
         self.assertEqual(batch['event_mask'].sum().item(),5)
+
+    def test_current_representation_totals_preserve_count_and_signal_without_OR_leakage(self):
+        obs={'pixel':self.pixel([[10,10],[11,11],[12,10],[13,11]]),
+             'bar':{'bounds_mm':np.array([[0,2,0,10,0],[0,10,0,2,10]]),
+                    'horizontal':np.array([0,1]),'panel':np.array([0,1]),
+                    'edep_proxy_MeV':np.array([1.25,2.5]),'pe_proxy':np.array([12,34])}}
+        for pitch in [0.,.1,.2,1.]:
+            for projection in [False,True]:
+                nodes,groups,_=token_inputs(obs,self.geometry,pitch_mm=pitch,projection=projection)
+                totals=response_totals(torch.from_numpy(nodes)[None],torch.ones(1,len(nodes),dtype=torch.bool))[0]
+                torch.testing.assert_close(totals[:5],torch.tensor([4.,2.,0.,3.75,46.]),rtol=1e-5,atol=1e-5)
+                torch.testing.assert_close(totals[6:],torch.tensor([4.,4.]),rtol=1e-5,atol=1e-5)
+        for projection in [False,True]:
+            nodes,_,_=token_inputs(obs,self.geometry,pitch_mm=1.,projection=projection,reducer='or')
+            totals=response_totals(torch.from_numpy(nodes)[None],torch.ones(1,len(nodes),dtype=torch.bool))[0]
+            self.assertAlmostEqual(totals[0].item(),1.,places=5)
+        empty=torch.zeros(1,1,18)
+        torch.testing.assert_close(response_totals(empty,torch.ones(1,1,dtype=torch.bool)),torch.zeros(1,8))
 
     def test_models_empty_batch_gradients_and_block_permutation(self):
         torch.manual_seed(17)

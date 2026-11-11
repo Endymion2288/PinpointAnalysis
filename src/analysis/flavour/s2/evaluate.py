@@ -78,7 +78,50 @@ def common_support_weights(frame):
         'scope':'energy_vertex_joint_common_support_diagnostic_no_flux_weights'}
 
 
-def paired_interval(a,b,replicates=400,seed=2026):
+def binary_comparison_metrics(y,score):
+    fpr,tpr,_=roc_curve(y,score,drop_intermediate=False)
+    return {'tau_AP':float(average_precision_score(y,score)),'tau_ROC_AUC':float(roc_auc_score(y,score)),
+            **{f'tau_eff_at_{acceptance:g}_FPR':float(tpr[np.flatnonzero(fpr<=acceptance)[-1]])
+               for acceptance in [.01,.001]}}
+
+
+def resampling_groups(frame):
+    """Use accepted family links to keep connected chunks in the same block.
+
+    This consumes the existing family annotation; it neither certifies samples
+    nor changes their membership. Mixed-class connected blocks stay together.
+    """
+    chunks=sorted(set(zip(frame.run,frame.chunk)))
+    lookup={key:i for i,key in enumerate(chunks)}
+    node=np.array([lookup[key] for key in zip(frame.run,frame.chunk)])
+    parent=list(range(len(chunks)))
+    def root(i):
+        while parent[i]!=i:
+            parent[i]=parent[parent[i]]
+            i=parent[i]
+        return i
+    family_used={'family_hi','family_lo'}.issubset(frame.columns)
+    if family_used:
+        for index in frame.groupby(['family_hi','family_lo'],sort=False).indices.values():
+            unique=np.unique(node[index])
+            for other in unique[1:]:
+                a,b=root(int(unique[0])),root(int(other))
+                parent[max(a,b)]=min(a,b)
+    components={}
+    for i,n in enumerate(node):
+        components.setdefault(root(int(n)),[]).append(i)
+    groups={}
+    for component,index in sorted(components.items()):
+        index=np.asarray(index,dtype='int64')
+        stratum=tuple(sorted(set(frame.label.to_numpy()[index])))
+        groups.setdefault(stratum,[]).append(index)
+    return groups,{'chunks':len(chunks),'resampling_blocks':len(components),
+        'accepted_family_links_used':family_used,
+        'multi_chunk_blocks':sum(len(set(node[ix]))>1 for ix in components.values()),
+        'blocks_by_class_signature':{str(key):len(value) for key,value in groups.items()}}
+
+
+def paired_interval(a,b,replicates=400,seed=2026,weight=None):
     """Stratified paired chunk bootstrap; seeds never become event replicas."""
     key=['run','chunk','row']
     joined=a[key+['label','p2']].merge(b[key+['label','p2']],on=key,validate='one_to_one',suffixes=('_a','_b'))
@@ -86,21 +129,36 @@ def paired_interval(a,b,replicates=400,seed=2026):
         raise ValueError('paired comparison has different validation events')
     y=joined.label_a.to_numpy()==2
     pa,pb=joined.p2_a.to_numpy(),joined.p2_b.to_numpy()
-    block=joined.groupby(['run','chunk']).indices
-    groups={c:[ix for (run,_),ix in block.items() if run==10081+c] for c in range(4)}
+    groups,block_summary=resampling_groups(a.reset_index(drop=True))
     rng=np.random.default_rng(seed)
     differences=[]
+    detailed=[]
+    weighted=[]
     for _ in range(replicates):
         index=np.concatenate([np.concatenate([g[i] for i in rng.integers(0,len(g),len(g))])
                               for g in groups.values()])
-        differences.append(average_precision_score(y[index],pb[index])-average_precision_score(y[index],pa[index]))
+        ma,mb=[binary_comparison_metrics(y[index],p[index]) for p in [pa,pb]]
+        differences.append(mb['tau_AP']-ma['tau_AP'])
+        detailed.append({key:mb[key]-ma[key] for key in ma})
+        if weight is not None:
+            weighted.append(average_precision_score(y[index],pb[index],sample_weight=weight[index])-
+                            average_precision_score(y[index],pa[index],sample_weight=weight[index]))
     low,high=np.quantile(differences,[.025,.975])
     delta=average_precision_score(y,pb)-average_precision_score(y,pa)
+    measured_a,measured_b=[binary_comparison_metrics(y,p) for p in [pa,pb]]
+    metrics={key:{'delta':measured_b[key]-measured_a[key],
+                  'CI95':np.quantile([row[key] for row in detailed],[.025,.975]).tolist()} for key in measured_a}
+    matched={}
+    if weight is not None:
+        matched={'delta':float(average_precision_score(y,pb,sample_weight=weight)-average_precision_score(y,pa,sample_weight=weight)),
+                 'CI95':np.quantile(weighted,[.025,.975]).tolist(),
+                 'scope':'conditional_on_fixed_validation_common_support_weights; no flux or exposure inference'}
     return {'metric':'tau_average_precision_B_minus_A','delta':float(delta),
-        'CI95':[float(low),float(high)],'replicates':replicates,'resampling':'paired_class_stratified_chunk_bootstrap',
+        'CI95':[float(low),float(high)],'replicates':replicates,
+        'resampling':'paired_class_stratified_accepted_family_connected_chunk_bootstrap','blocks':block_summary,
         'events':len(joined),'minimum_relevant_gain':.01,
         'can_exclude_gain_ge_0.01':bool(high<.01),'positive_gain_supported':bool(low>0),
-        'equivalence_claim':False}
+        'equivalence_claim':False,'other_paired_metrics':metrics,'common_support_tau_AP':matched}
 
 
 def factorial_contrast(frames,replicates=400,seed=2026):
@@ -122,16 +180,15 @@ def factorial_contrast(frames,replicates=400,seed=2026):
     coefficients=np.array([1.,-1.,-1.,1.])  # NJ, NP, CJ, CP
     def statistic(index):
         return float(np.dot(coefficients,[average_precision_score(y[index],s[index]) for s in scores]))
-    blocks=reference.groupby(['run','chunk']).indices
-    groups=[[ix for (run,_),ix in blocks.items() if run==10081+c] for c in range(4)]
+    groups,block_summary=resampling_groups(reference)
     rng=np.random.default_rng(seed)
     samples=[]
     for _ in range(replicates):
-        index=np.concatenate([np.concatenate([g[i] for i in rng.integers(0,len(g),len(g))]) for g in groups])
+        index=np.concatenate([np.concatenate([g[i] for i in rng.integers(0,len(g),len(g))]) for g in groups.values()])
         samples.append(statistic(index))
     return {'interaction':statistic(np.arange(len(y))),'CI95':np.quantile(samples,[.025,.975]).tolist(),
             'definition':'AP_CP - AP_CJ - AP_NP + AP_NJ','replicates':replicates,
-            'resampling':'paired_class_stratified_chunk_bootstrap'}
+            'resampling':'paired_class_stratified_accepted_family_connected_chunk_bootstrap','blocks':block_summary}
 
 
 def matched_time(a,b,root,frames):
@@ -142,12 +199,23 @@ def matched_time(a,b,root,frames):
     if manifests[0]['gpu_name']!=manifests[1]['gpu_name']:
         return {'status':'different_GPU_models','GPU_names':[m['gpu_name'] for m in manifests],
                 'comparison_measured':False}
+    for key in ['torch','mixed_precision']:
+        if manifests[0].get(key)!=manifests[1].get(key):
+            return {'status':'different_software_or_precision','comparison_measured':False}
     histories=[json.loads((p/'history.json').read_text()) for p in paths]
-    budget=min(h[-1]['wall_seconds'] for h in histories)
+    accounting_file=root/'campaign_accounting.json'
+    overheads=[0.,0.]
+    if accounting_file.exists():
+        allocations=json.loads(accounting_file.read_text())['experiments']
+        records=[allocations.get(name) for name in [a,b]]
+        if any(record is None or record.get('untracked_allocation_seconds') is None for record in records):
+            return {'status':'allocation_history_incomplete','comparison_measured':False}
+        overheads=[record['untracked_allocation_seconds'] for record in records]
+    budget=min(h[-1]['wall_seconds']+extra for h,extra in zip(histories,overheads))
     selected=[]
     predictions=[]
-    for name,path,history in zip([a,b],paths,histories):
-        eligible=[r for r in history if r['wall_seconds']<=budget]
+    for name,path,history,extra in zip([a,b],paths,histories,overheads):
+        eligible=[r for r in history if r['wall_seconds']+extra<=budget]
         if not eligible:
             return {'status':'no_complete_epoch_within_shared_time','budget_seconds':budget,
                     'comparison_measured':False}
@@ -159,10 +227,13 @@ def matched_time(a,b,root,frames):
             raise ValueError('epoch probabilities do not cover the validation rows')
         frame[[f'p{c}' for c in range(4)]]=ep[[f'p{c}' for c in range(4)]].to_numpy()
         predictions.append(frame)
-        selected.append({'experiment':name,'epoch':record['epoch'],'seconds':record['wall_seconds'],
-                         'unused_seconds':budget-record['wall_seconds'],'tau_AP':tau_metrics(frame)['PR_AUC']})
+        selected.append({'experiment':name,'epoch':record['epoch'],'seconds':record['wall_seconds']+extra,
+                         'untracked_allocation_seconds':extra,
+                         'unused_seconds':budget-record['wall_seconds']-extra,'tau_AP':tau_metrics(frame)['PR_AUC']})
     return {'status':'measured_at_epoch_resolution','comparison_measured':True,'budget_seconds':budget,
             'GPU':manifests[0]['gpu_name'],'selection':'minimum_validation_NLL_within_allocated_wall_time',
+            'allocation_overhead':'all setup/failed/resumed allocation absent from committed epoch history charged before first eligible checkpoint',
+            'actual_HTCondor_allocation_used':accounting_file.exists(),
             'runs':selected,'tau_AP_B_minus_A':selected[1]['tau_AP']-selected[0]['tau_AP']}
 
 
@@ -268,7 +339,9 @@ def run(args):
         for pair in json.loads(args.comparisons.read_text())['pairs']:
             if pair['a'] not in frames or pair['b'] not in frames:
                 raise ValueError(f'missing required completed experiment: {pair}')
-            comparisons.append({**pair,**paired_interval(frames[pair['a']],frames[pair['b']],args.bootstrap),
+            weights,_=common_support_weights(frames[pair['a']])
+            comparisons.append({**pair,**paired_interval(frames[pair['a']],frames[pair['b']],args.bootstrap,
+                                weight=weights if np.any(weights) else None),
                                 'matched_allocated_time':matched_time(pair['a'],pair['b'],args.root,frames)})
     interactions=[]
     for identity,cells in factorial.items():

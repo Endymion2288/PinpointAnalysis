@@ -18,6 +18,33 @@ def masked_pool(x,mask):
     return torch.cat([mean,maximum],dim=-1)
 
 
+def response_totals(nodes,mask):
+    """Additive information from the CURRENT representation, never raw truth.
+
+    Count projections contain each native pixel in both marginals. Half of the
+    sum of measured x/y multiplicities recovers the same total as joint input.
+    For OR this deliberately counts occupied represented cells, not the lost
+    native multiplicity. The other entries preserve bar/track counts, bar
+    signal sums, token count and the two pixel marginal counts.
+    """
+    values=nodes.float()
+    valid=mask*values[...,15]
+    pixel=valid*values[...,12]
+    bar=valid*values[...,13]
+    tracker=valid*values[...,14]
+    count=torch.expm1(values[...,5])
+    px=(pixel*count*values[...,3]).sum(-1)
+    py=(pixel*count*values[...,4]).sum(-1)
+    return torch.stack([.5*(px+py),bar.sum(-1),tracker.sum(-1),
+        (bar*torch.expm1(values[...,6]*10)).sum(-1),
+        (bar*torch.expm1(values[...,7]*15)).sum(-1),valid.sum(-1),px,py],dim=-1)
+
+
+def scale_totals(totals):
+    scales=totals.new_tensor([.1,.1,.1,.1,1/15,.1,.1,.1])
+    return torch.log1p(totals)*scales
+
+
 def physical_distance(geometry):
     xyz=geometry[...,:3]
     delta=xyz[:,:,None,:]-xyz[:,None,:,:]
@@ -133,10 +160,10 @@ class PointClassifier(nn.Module):
             self.global_blocks=nn.ModuleList([EdgeBlock(dim,dim,k) for _ in range(3)])
         else:
             raise ValueError(architecture)
-        self.pool=nn.Linear(dim*2,dim)
+        self.pool=nn.Linear(dim*2+8,dim)
         # Separate detector pooled branches followed by late fusion for both
         # families; geometry/response masks are identical in every ablation.
-        self.head=nn.Sequential(nn.Linear(dim*6,dim*2),nn.GELU(),nn.Dropout(.1),nn.Linear(dim*2,4))
+        self.head=nn.Sequential(nn.Linear(dim*6+8,dim*2),nn.GELU(),nn.Dropout(.1),nn.Linear(dim*2,4))
 
     def encode_local(self,nodes,local_mask):
         x=self.input(nodes)
@@ -146,7 +173,8 @@ class PointClassifier(nn.Module):
                 x=block(x,local_mask,nodes)
             else:
                 x=block(x,local_mask,distance if i==0 or not self.dynamic else None)
-        return self.pool(masked_pool(x,local_mask))
+        summary=scale_totals(response_totals(nodes,local_mask)).to(x.dtype)
+        return self.pool(torch.cat([masked_pool(x,local_mask),summary],dim=-1))
 
     def forward(self,batch):
         nodes,local_mask=batch['nodes'],batch['local_mask']
@@ -160,6 +188,9 @@ class PointClassifier(nn.Module):
         local=torch.cat(parts)
         # Scatter complete block summaries into the event dimension.
         event_index,block_index=batch['event_index'],batch['block_index']
+        totals=response_totals(nodes,local_mask)
+        event_totals=totals.new_zeros((batch['event_mask'].shape[0],8))
+        event_totals.index_add_(0,event_index,totals)
         shape=(batch['event_mask'].shape[0],batch['event_mask'].shape[1],local.shape[-1])
         event=local.new_zeros(shape)
         event[event_index,block_index]=local
@@ -182,4 +213,4 @@ class PointClassifier(nn.Module):
                 event=block(event,mask,distance if i==0 or not self.dynamic else None,
                             geometry if i==0 or not self.dynamic else None)
         pools=[masked_pool(event,mask&(geometry[:,:,12+d]>.5)) for d in range(3)]
-        return self.head(torch.cat(pools,dim=-1))
+        return self.head(torch.cat(pools+[scale_totals(event_totals).to(event.dtype)],dim=-1))
