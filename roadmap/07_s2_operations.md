@@ -17,6 +17,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Comparison report figures | 新增 `s2.plots` 并接入 `evaluate`：粒度曲线、配对 CI/等 GPU-time、三种子均值图；真实 B0 的 3 项配对图已查看，完整空间/种子图待结果，见[阶段 22](../workbook/2026-11-11_stage22_s2_comparison_figures.md) |
 | Native response displays | `evaluation/event_displays/b0_all_s42/`，20 页 PDF、事件 keys 和首例 PNG |
 | V100 resource study | `resource_profile/` 为 v1；`resource_profile_v2/` 的 576 行已完成，两者分别保留 |
+| H100 resource comparison | `1573759.0` exit0，H100/LCG108/BF16 共 576 行；与 V100 匹配后去 warmup 保留552行，batch1 training compute 比值1.69–2.33；原始/配对图已查看，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；整轮收益待测 |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
 | Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
 | Prespecified controls | [13 runs](configs/s2_controls_v2.json)：两族 OR/shift/shuffle、各自 pair/graph，以及 ParticleNet modality/domain 控制 |
