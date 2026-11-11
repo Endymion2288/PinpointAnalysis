@@ -19,7 +19,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | V100 resource study | `resource_profile/` 为 v1；`resource_profile_v2/` 的 576 行已完成，两者分别保留 |
 | H100 resource comparison | `1573759.0` exit0，H100/LCG108/BF16 共 576 行；与 V100 匹配后去 warmup 保留552行，batch1 training compute 比值1.69–2.33；原始/配对图已查看，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；整轮收益待测 |
 | H100 full-epoch candidate | 独立 `h100/` 共享既有 accepted 输入和 B0 references；[35 项同配置合同](configs/s2_h100_v2.json)已冻结，先行 tasks0/6 已提交为 `1573760.0/1`；两者首轮耗时均须 ≤V100 的80%且执行完整，见[阶段 25](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)。通过后统一环境完成全矩阵，当前 V100 任务继续 |
-| H100 candidate execution / gate | `1573760.0` 于22:56:49 UTC实际开始，H100 NVL/Torch2.7.1/BF16和冻结配置一致；`.1`仍idle。新 `s2.hardware_gate` 的5项测试通过，23:01真实入口输出pending：两族都尚无完整首轮。验收读回完成后才判断80%耗时/99% applied门槛；`h100/execution_gate.json` 保存状态 |
+| H100 candidate execution / gate | `1573760.0` 于22:56:49 UTC实际开始，H100 NVL/Torch2.7.1/BF16和冻结配置一致；`.1`仍idle。新 `s2.hardware_gate` 的5项测试通过，23:34真实首轮验收：ParT 2,223.38 s（V100的45.76%）、20,016/20,016 applied、23项检查通过；另一族pending，总体pending。已从首轮checkpoint暂时hold原ParT任务，让另一族优先取得资源；实际启动或10分钟无收益后自动release原任务。`h100/execution_gate.json` 保存状态 |
 | Kubeflow execution | `ml-prod/xcheng` 已登录，NVIDIA quota=1；CPU 容器的 LCG108/Python3.12/Torch2.7.1、EOS/CVMFS 路径已实际成功，GPU probe v5全程未分配node，23:14:58 UTC到达deadline（GPU reservation=0）；科学任务未迁移。v6以相同资源保留6小时排队机会，容器探测仍限时300秒。新提交/核算入口与失败环境探测见[阶段 26](../workbook/2026-11-11_stage26_s2_kubeflow.md) |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
 | Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
