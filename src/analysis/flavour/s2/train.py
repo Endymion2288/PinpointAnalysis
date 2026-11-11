@@ -1,6 +1,7 @@
 """Train paired S2 baselines on frozen accepted train/validation subsets only."""
 
 import argparse
+import copy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -25,6 +26,12 @@ def init_worker(worker):
     torch.set_num_threads(1)
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
+
+
+def save_checkpoint(path,state):
+    temporary=path.with_suffix('.tmp')
+    torch.save(state,temporary)
+    temporary.replace(path)
 
 
 def metrics(y,p):
@@ -63,6 +70,12 @@ def run(args):
     experiment=config['name']
     output=args.root/'experiments'/experiment
     output.mkdir(parents=True,exist_ok=True)
+    previous=json.loads((output/'manifest.json').read_text()) if (output/'manifest.json').exists() else {}
+    if previous.get('status')=='complete':
+        if previous['config']!=config:
+            raise ValueError('completed experiment name reused for a different configuration')
+        print(f'{experiment} already complete; no duplicate training',flush=True)
+        return
     seed=config.get('seed',42)
     random.seed(seed)
     np.random.seed(seed)
@@ -71,7 +84,7 @@ def run(args):
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
     device=torch.device(args.device)
-    dtype=torch.bfloat16 if device.type=='cuda' and torch.cuda.is_bf16_supported() else torch.float16
+    dtype=torch.bfloat16 if device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False) else torch.float16
     started=time.perf_counter()
     train=SpatialDataset(args.root,'train',config)
     val=SpatialDataset(args.root,'validation',config)
@@ -80,7 +93,8 @@ def run(args):
     train_sampler=SpatialBatchSampler(train,config.get('batch_size',4),seed)
     val_sampler=SpatialBatchSampler(val,config.get('batch_size',4),seed,shuffle=False)
     workers=config.get('workers',2)
-    options={'num_workers':workers,'collate_fn':collate_spatial,'pin_memory':device.type=='cuda'}
+    options={'num_workers':workers,'collate_fn':collate_spatial,'pin_memory':device.type=='cuda',
+             'generator':torch.Generator().manual_seed(seed)}
     if workers:
         options.update(multiprocessing_context='spawn',worker_init_fn=init_worker,prefetch_factor=1,persistent_workers=True)
     train_loader=DataLoader(train,batch_sampler=train_sampler,**options)
@@ -95,7 +109,7 @@ def run(args):
         torch.cuda.reset_peak_memory_stats()
     counts=np.bincount(train.metadata.label,minlength=4)
     weights=torch.tensor(counts.sum()/(4*counts),dtype=torch.float32,device=device)
-    manifest={'utc':datetime.now(timezone.utc).isoformat(),'config':config,
+    manifest={'utc':datetime.now(timezone.utc).isoformat(),'config':config,'status':'running',
         'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         'campaign':str(args.campaign),'root':str(args.root),'response_level':'user_accepted_detector_proxy',
         'split_status':'accepted_signature_grouped_user_attested','train_events':len(train),'validation_events':len(val),
@@ -107,12 +121,49 @@ def run(args):
         'local_blocks':'same_plane_4mm_then_canonical_chunks32_no_event_truncation',
         'schema_whitelist':'18_observation_features_in_s2.representation',
         'load_seconds':time.perf_counter()-started}
-    write_json(output/'manifest.json',manifest)
     history=[]
+    epoch_predictions=[]
     best=float('inf')
     best_epoch=0
+    best_model=None
+    best_probabilities=None
     timing=dict(data_wait=0.,transfer=0.,forward_backward=0.,validation=0.)
-    for epoch in range(epochs):
+    start_epoch=0
+    prior_seconds=0.
+    if (output/'last.pt').exists():
+        state=torch.load(output/'last.pt',map_location=device,weights_only=False)
+        if state['config']!=config:
+            raise ValueError('resume configuration differs from stored checkpoint')
+        model.load_state_dict(state['model'])
+        optimizer.load_state_dict(state['optimizer'])
+        scheduler.load_state_dict(state['scheduler'])
+        scaler.load_state_dict(state['scaler'])
+        start_epoch=state['epoch']
+        history=state['history']
+        best,best_epoch=state['best_NLL'],state['best_epoch']
+        best_model=state['best_model']
+        best_probabilities=state['best_probabilities']
+        timing=state['timing'].copy()
+        prior_seconds=state['elapsed_seconds']
+        random.setstate(state['random_state'])
+        np.random.set_state(state['numpy_state'])
+        torch.set_rng_state(state['torch_state'].cpu())
+        if device.type=='cuda':
+            torch.cuda.set_rng_state_all([s.cpu() for s in state['cuda_states']])
+        ep=pd.read_parquet(output/'epoch_predictions.parquet')
+        epoch_predictions=[ep[ep.epoch<=start_epoch]]
+        # The atomic last checkpoint is authoritative if interruption happened
+        # between writing best/predictions and committing the next epoch.
+        save_checkpoint(output/'best.pt',{'model':best_model,'config':config,'epoch':best_epoch,'seed':seed})
+        predictions=val.metadata.copy()
+        for c in range(4):
+            predictions[f'p{c}']=best_probabilities[:,c]
+        predictions.to_parquet(output/'validation_predictions.parquet',index=False,compression=COMPRESSION)
+        write_json(output/'metrics.json',metrics(val.metadata.label.to_numpy(),best_probabilities))
+        manifest['resumed_from_epoch']=start_epoch
+        manifest['prior_gpu_name']=previous.get('gpu_name')
+    write_json(output/'manifest.json',manifest)
+    for epoch in range(start_epoch,epochs):
         epoch_start=time.perf_counter()
         train_sampler.epoch=epoch
         model.train()
@@ -150,29 +201,47 @@ def run(args):
         y,p=evaluate(model,val_loader,device,dtype)
         timing['validation']+=time.perf_counter()-t
         measured=metrics(y,p)
+        ep=pd.DataFrame({'row':np.arange(len(y),dtype='int32'),'epoch':np.full(len(y),epoch+1,dtype='int16')})
+        for c in range(4):
+            ep[f'p{c}']=p[:,c]
+        epoch_predictions.append(ep)
+        pd.concat(epoch_predictions,ignore_index=True).to_parquet(output/'epoch_predictions.parquet',
+                        index=False,compression=COMPRESSION)
         score=measured['NLL']
         record={'epoch':epoch+1,'train_loss':loss_total/events,'train_seconds':train_seconds,
             'train_events_per_second':events/train_seconds,'validation':measured,
-            'wall_seconds':time.perf_counter()-started,'timing_cumulative':timing.copy()}
+            'wall_seconds':prior_seconds+time.perf_counter()-started,
+            'optimizer_steps_cumulative':(epoch+1)*len(train_sampler),'timing_cumulative':timing.copy()}
         history.append(record)
-        checkpoint={'model':model.state_dict(),'optimizer':optimizer.state_dict(),'config':config,
-                    'epoch':epoch+1,'seed':seed}
-        torch.save(checkpoint,output/'last.pt')
+        improved=score<best
         if score<best:
             best,best_epoch=score,epoch+1
-            torch.save(checkpoint,output/'best.pt')
+            best_model=copy.deepcopy(model.state_dict())
+            best_probabilities=p.copy()
             predictions=val.metadata.copy()
             for c in range(4):
                 predictions[f'p{c}']=p[:,c]
             predictions.to_parquet(output/'validation_predictions.parquet',index=False,compression=COMPRESSION)
             write_json(output/'metrics.json',measured)
         scheduler.step()
+        checkpoint={'model':model.state_dict(),'optimizer':optimizer.state_dict(),'config':config,
+            'epoch':epoch+1,'seed':seed,'scheduler':scheduler.state_dict(),'scaler':scaler.state_dict(),
+            'history':history,'timing':timing.copy(),'best_NLL':best,'best_epoch':best_epoch,
+            'best_model':best_model,'best_probabilities':best_probabilities,
+            'elapsed_seconds':prior_seconds+time.perf_counter()-started,
+            'random_state':random.getstate(),'numpy_state':np.random.get_state(),
+            'torch_state':torch.get_rng_state(),
+            'cuda_states':torch.cuda.get_rng_state_all() if device.type=='cuda' else []}
+        if improved:
+            save_checkpoint(output/'best.pt',{'model':best_model,'config':config,'epoch':best_epoch,'seed':seed})
+        save_checkpoint(output/'last.pt',checkpoint)
         write_json(output/'history.json',history)
         print(json.dumps({'experiment':experiment,'epoch':epoch+1,'NLL':score,'tau_AP':measured['classwise']['2']['PR_AUC'],
                           'events_per_second':events/train_seconds}),flush=True)
-    manifest.update(status='complete',best_epoch=best_epoch,best_NLL=best,seconds=time.perf_counter()-started,
-        gpu_hours=(time.perf_counter()-started)/3600 if device.type=='cuda' else 0,
-        peak_gpu_allocated_mib=torch.cuda.max_memory_allocated()/2**20 if device.type=='cuda' else 0,
+    elapsed=prior_seconds+time.perf_counter()-started
+    manifest.update(status='complete',best_epoch=best_epoch,best_NLL=best,seconds=elapsed,
+        gpu_hours=elapsed/3600 if device.type=='cuda' else 0,
+        peak_gpu_allocated_mib=max(previous.get('peak_gpu_allocated_mib',0),torch.cuda.max_memory_allocated()/2**20) if device.type=='cuda' else 0,
         parent_peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,
         timing_seconds=timing)
     write_json(output/'manifest.json',manifest)

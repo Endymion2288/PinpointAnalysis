@@ -38,26 +38,38 @@ class EdgeBlock(nn.Module):
         self.skip=nn.Linear(in_dim,out_dim)
 
     def forward(self,x,mask,distance=None,geometry=None):
-        distance=torch.cdist(x.float(),x.float()).square() if distance is None else distance.float()
-        distance=distance.masked_fill(~mask[:,None,:],float('inf'))
-        eye=torch.eye(x.shape[1],device=x.device,dtype=torch.bool)[None]
-        distance=distance.masked_fill(eye,float('inf'))
         number=min(self.k,max(1,x.shape[1]-1))
-        if geometry is not None and number>=2:
-            # Explicit quotas prevent the same-plane density from excluding
-            # cross-plane context. Longitudinal nearest neighbors prioritize
-            # adjacent instrumented planes; physical transverse distances break
-            # ties. Mask unavailable neighbors rather than inventing nodes.
-            same=(geometry[:,:,None,2]-geometry[:,None,:,2]).abs()<1e-6
-            a=number//2
-            local=distance.masked_fill(~same,float('inf')).topk(a,dim=-1,largest=False).indices
-            cross=distance.masked_fill(same,float('inf')).topk(number-a,dim=-1,largest=False).indices
-            neighbors=torch.cat([local,cross],dim=-1)
-            neighbor_finite=torch.cat([distance.masked_fill(~same,float('inf')).gather(-1,local),
-                                       distance.masked_fill(same,float('inf')).gather(-1,cross)],dim=-1).isfinite()
-        else:
-            neighbors=distance.topk(number,dim=-1,largest=False).indices
-            neighbor_finite=distance.gather(-1,neighbors).isfinite()
+        all_neighbors,all_valid=[],[]
+        for start in range(0,x.shape[1],256):
+            stop=min(start+256,x.shape[1])
+            with torch.no_grad():
+                if distance is not None:
+                    d=distance[:,start:stop,:].float()
+                elif geometry is not None:
+                    delta=geometry[:,start:stop,None,:3]-geometry[:,None,:,:3]
+                    common=geometry[:,start:stop,None,3:5]*geometry[:,None,:,3:5]
+                    d=(delta[...,:2].square()*common).sum(-1)+delta[...,2].square()*.05
+                else:
+                    d=torch.cdist(x[:,start:stop].float(),x.float()).square()
+                d=d.masked_fill(~mask[:,None,:],float('inf'))
+                self_edge=torch.arange(start,stop,device=x.device)[:,None]==torch.arange(x.shape[1],device=x.device)[None,:]
+                d=d.masked_fill(self_edge[None],float('inf'))
+                if geometry is not None and number>=2:
+                    same=(geometry[:,start:stop,None,2]-geometry[:,None,:,2]).abs()<1e-6
+                    a=number//2
+                    local_distance=d.masked_fill(~same,float('inf'))
+                    cross_distance=d.masked_fill(same,float('inf'))
+                    local=local_distance.topk(a,dim=-1,largest=False).indices
+                    cross=cross_distance.topk(number-a,dim=-1,largest=False).indices
+                    neighbors=torch.cat([local,cross],dim=-1)
+                    finite=torch.cat([local_distance.gather(-1,local),cross_distance.gather(-1,cross)],dim=-1).isfinite()
+                else:
+                    neighbors=d.topk(number,dim=-1,largest=False).indices
+                    finite=d.gather(-1,neighbors).isfinite()
+                all_neighbors.append(neighbors)
+                all_valid.append(finite)
+        neighbors=torch.cat(all_neighbors,dim=1)
+        neighbor_finite=torch.cat(all_valid,dim=1)
         batch=torch.arange(len(x),device=x.device)[:,None,None]
         other=x[batch,neighbors]
         center=x[:,:,None,:].expand_as(other)
@@ -78,22 +90,32 @@ class PairAttention(nn.Module):
         self.ff=nn.Sequential(nn.Linear(dim,dim*2),nn.GELU(),nn.Linear(dim*2,dim))
         self.pair=nn.Sequential(nn.Linear(8,32),nn.GELU(),nn.Linear(32,heads)) if pair_bias else None
 
-    def forward(self,x,mask,geometry):
-        batch,n,dim=x.shape
-        q,k,v=self.qkv(self.norm1(x)).reshape(batch,n,3,self.heads,dim//self.heads).permute(2,0,3,1,4)
+    def attend_tile(self,q,k,v,query_geometry,key_geometry,mask):
         if self.pair is not None:
-            delta=geometry[:,:,None,:3]-geometry[:,None,:,:3]
-            common=geometry[:,:,None,3:5]*geometry[:,None,:,3:5]
+            delta=query_geometry[:,:,None,:3]-key_geometry[:,None,:,:3]
+            common=query_geometry[:,:,None,3:5]*key_geometry[:,None,:,3:5]
             delta=torch.cat([delta[...,:2]*common,delta[...,2:]],dim=-1)
-            same_type=(geometry[:,:,None,12:15]*geometry[:,None,:,12:15]).sum(-1,keepdim=True)
+            same_type=(query_geometry[:,:,None,12:15]*key_geometry[:,None,:,12:15]).sum(-1,keepdim=True)
             same_plane=(delta[...,2:].abs()<1e-6).to(delta.dtype)
             transverse=torch.log1p((delta[...,:2].square()*common).sum(-1,keepdim=True)*1e4)
             pair=torch.cat([delta,common,same_type,same_plane,transverse],dim=-1)
             bias=self.pair(pair).permute(0,3,1,2)
             bias=bias.masked_fill(~mask[:,None,None,:],float('-inf'))
         else:
-            bias=torch.zeros((batch,1,1,n),device=x.device,dtype=x.dtype).masked_fill(~mask[:,None,None,:],float('-inf'))
-        attention=F.scaled_dot_product_attention(q,k,v,attn_mask=bias)
+            bias=torch.zeros((q.shape[0],1,1,k.shape[2]),device=q.device,dtype=q.dtype).masked_fill(~mask[:,None,None,:],float('-inf'))
+        return F.scaled_dot_product_attention(q,k,v,attn_mask=bias)
+
+    def forward(self,x,mask,geometry):
+        batch,n,dim=x.shape
+        q,k,v=self.qkv(self.norm1(x)).reshape(batch,n,3,self.heads,dim//self.heads).permute(2,0,3,1,4)
+        pieces=[]
+        for start in range(0,n,256):
+            values=(q[:,:,start:start+256],k,v,geometry[:,start:start+256],geometry,mask)
+            if self.training and torch.is_grad_enabled() and n>256:
+                pieces.append(checkpoint(self.attend_tile,*values,use_reentrant=False))
+            else:
+                pieces.append(self.attend_tile(*values))
+        attention=torch.cat(pieces,dim=2)
         x=x+self.out(attention.transpose(1,2).reshape(batch,n,dim))
         return (x+self.ff(self.norm2(x)))*mask[...,None]
 
@@ -145,7 +167,9 @@ class PointClassifier(nn.Module):
         mean=(nodes*local_mask[...,None]).sum(1)/local_mask.sum(1,keepdim=True).clamp_min(1)
         geometry[event_index,block_index]=mean
         mask=batch['event_mask']
-        distance=physical_distance(geometry) if self.architecture=='particlenet' else None
+        # Global pair relations are generated in query tiles to bound memory;
+        # every query still sees every real block or the complete KNN candidate set.
+        distance=None
         for i,block in enumerate(self.global_blocks):
             if self.architecture=='part':
                 if self.training and torch.is_grad_enabled():

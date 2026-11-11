@@ -6,8 +6,9 @@ import numpy as np
 import torch
 
 from analysis.flavour.s2.dataset import collate_spatial
-from analysis.flavour.s2.models import PointClassifier
+from analysis.flavour.s2.models import PointClassifier, PairAttention, EdgeBlock, physical_distance
 from analysis.flavour.s2.representation import pixel_view, token_inputs
+from analysis.flavour.s2.prepare import classify_tau_daughters
 
 
 class SpatialTests(unittest.TestCase):
@@ -30,6 +31,13 @@ class SpatialTests(unittest.TestCase):
             for key in ['xyz_mm','count','measured','view']:
                 np.testing.assert_array_equal(va[key],vb[key])
         self.assertFalse(np.array_equal(pixel_view(a,self.geometry)['xyz_mm'],pixel_view(b,self.geometry)['xyz_mm']))
+
+    def test_tau_ionization_electron_does_not_change_decay_branch(self):
+        self.assertEqual(classify_tau_daughters([16,13,-14,11]),'muon')
+        self.assertEqual(classify_tau_daughters([16,211,111,11]),'hadronic')
+        self.assertEqual(classify_tau_daughters([16,11,-12]),'electron')
+        self.assertEqual(classify_tau_daughters([16,11,-12,13,-14]),'ambiguous')
+        self.assertEqual(classify_tau_daughters([11]),'unknown')
 
     def test_coarse_count_OR_and_no_native_residual(self):
         a=self.pixel([[10,10],[20,20]])
@@ -83,6 +91,27 @@ class SpatialTests(unittest.TestCase):
             loss.backward()
             self.assertTrue(torch.isfinite(loss))
             self.assertTrue(all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None))
+
+    def test_query_tiling_preserves_full_attention_and_knn(self):
+        torch.manual_seed(7)
+        x=torch.randn(1,300,16,requires_grad=True)
+        geometry=torch.randn(1,300,18)
+        geometry[:,:,3:5]=1
+        geometry[:,:,2]=torch.arange(300)//20
+        mask=torch.ones(1,300,dtype=torch.bool)
+        attention=PairAttention(16).eval()
+        q,k,v=attention.qkv(attention.norm1(x)).reshape(1,300,3,4,4).permute(2,0,3,1,4)
+        dense=attention.attend_tile(q,k,v,geometry,geometry,mask)
+        expected=x+attention.out(dense.transpose(1,2).reshape(1,300,16))
+        expected=expected+attention.ff(attention.norm2(expected))
+        torch.testing.assert_close(attention(x,mask,geometry),expected,atol=1e-6,rtol=1e-5)
+        attention.train()
+        attention(x,mask,geometry).square().mean().backward()
+        self.assertTrue(torch.isfinite(x.grad).all())
+        edge=EdgeBlock(16,16,k=8).eval()
+        tiled=edge(x,mask,geometry=geometry)
+        dense=edge(x,mask,distance=physical_distance(geometry),geometry=geometry)
+        torch.testing.assert_close(tiled,dense,atol=1e-6,rtol=1e-5)
 
 
 if __name__=='__main__':

@@ -1,5 +1,5 @@
 # S2 execution contract; campaign JSON freezes each actual training run.
-status: implementation_and_smoke
+status: converted_catalog_complete_GPU_smoke_queued
 date: "2026-11-11"
 module: analysis.flavour.s2
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11
@@ -41,7 +41,9 @@ representations:
   event_token_cap: null
 models:
   families: [particlenet, part]
-  shared_initial_hidden_dim: 64
+  screening_hidden_dim: {part: 48, particlenet: 64}
+  screening_parameters: {part: 150076, particlenet: 159620}
+  parameter_difference_fraction: 0.0636
   shared_local_block_compression: true
   particlenet:
     local_edge_blocks: 3
@@ -57,6 +59,8 @@ models:
     geometry_pair_bias: true
     no_pair_bias_control: true
   empty_events: response_zero_token_and_prior_output
+  global_query_tile: 256
+  global_keys: complete_no_candidate_truncation
 training:
   initial_seed: 42
   confirmation_seeds: [17, 42, 2026]
@@ -68,6 +72,10 @@ training:
   normalization: fixed_physical_scales
   mixed_precision: bf16_if_available_else_scaled_fp16
   local_block_checkpointing: true
+  global_attention_checkpointing: true
+  resume: atomic_epoch_checkpoint_with_optimizer_scheduler_scaler_and_RNG
+  GPU_minimum_CUDA_capability: 7.5
+  HTCondor_training_flavour: tomorrow
   complete_event_path: no_truncation
   epoch_budget: freeze_after_GPU_smoke_and_throughput_measurement
   match_parameter_steps_and_GPU_time: report_both

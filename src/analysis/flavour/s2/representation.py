@@ -108,14 +108,16 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
             raise ValueError(detector)
         feat[:,:3]=xyz/[210,210,3000]
         feat[:,15]=1
-        feat[:,16:18]=((xyz[:,:2]/4-np.floor(xyz[:,:2]/4))-.5)*feat[:,3:5]
-        if shuffle_local and n:
+        if shuffle_local and n and detector=='pixel':
             # Observation-only diagnostic: permute x/y among nodes in a plane
             # while retaining each coordinate marginal and per-plane occupancy.
             rng=np.random.default_rng(seed)
             for z in np.unique(xyz[:,2]):
                 index=np.flatnonzero(xyz[:,2]==z)
                 feat[index,1]=feat[rng.permutation(index),1]
+            xyz[:,1]=feat[:,1]*210
+            group_keys=np.column_stack([xyz[:,2],view['view'],np.floor(xyz[:,:2]/4)])
+        feat[:,16:18]=((xyz[:,:2]/4-np.floor(xyz[:,:2]/4))-.5)*feat[:,3:5]
         _,inv=np.unique(group_keys,axis=0,return_inverse=True)
         blocks=[]
         for g in range(inv.max()+1 if len(inv) else 0):

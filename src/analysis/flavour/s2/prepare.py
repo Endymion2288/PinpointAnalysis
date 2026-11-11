@@ -88,6 +88,22 @@ def plan(args):
     print(json.dumps({'counts':counts,'tasks':len(tasks),'output':str(args.output)}))
 
 
+def classify_tau_daughters(pdgs):
+    """Direct flavour neutrinos distinguish decays from tau ionization electrons."""
+    pdgs=set(np.abs(np.asarray(list(pdgs),dtype='int64')))
+    electron=11 in pdgs and 12 in pdgs
+    muon=13 in pdgs and 14 in pdgs
+    if electron and muon:
+        return 'ambiguous'
+    if electron:
+        return 'electron'
+    if muon:
+        return 'muon'
+    if 16 in pdgs and not ({12,14}&pdgs) and any(p>100 for p in pdgs):
+        return 'hadronic'
+    return 'unknown'
+
+
 def tau_branches(root, event_ids):
     """Direct primary tau daughters, grouped by the stored parent track ID.
 
@@ -102,19 +118,38 @@ def tau_branches(root, event_ids):
                 right_on=['evtID','trackID'],how='inner')
     result={int(e):'unknown' for e in event_ids}
     for evt,group in daughter.groupby('evtID'):
-        pdgs=set(group.PDG.abs().astype(int))
-        if 11 in pdgs and 13 in pdgs:
-            branch='ambiguous'
-        elif 11 in pdgs:
-            branch='electron'
-        elif 13 in pdgs:
-            branch='muon'
-        elif any(p>100 for p in pdgs):
-            branch='hadronic'
-        else:
-            branch='unknown'
-        result[int(evt)]=branch
+        result[int(evt)]=classify_tau_daughters(group.PDG)
     return result
+
+
+def refresh_tau(args):
+    """Refresh diagnostic labels only; observations/4-way targets are untouched."""
+    plan_data=json.loads((args.root/'plan.json').read_text())
+    manifest=pd.read_parquet(args.root/'manifest.parquet')
+    mapping={}
+    for chunk,group in manifest[manifest.run.eq(10083)].groupby('chunk'):
+        path=Path(plan_data['input_root'])/'10083'/f'10083_{int(chunk):03d}.root'
+        with uproot.open(path,object_cache=None,array_cache=None) as root:
+            branches=tau_branches(root,group.evtID)
+            mapping.update({(int(chunk),int(evt)):label for evt,label in branches.items()})
+    for path in sorted((args.root/'shards').iterdir()):
+        file=path/'provenance.parquet'
+        frame=pd.read_parquet(file)
+        flag=frame.run.eq(10083)
+        frame.loc[flag,'tau_branch']=[mapping[(int(c),int(e))] for c,e in zip(frame.loc[flag,'chunk'],frame.loc[flag,'evtID'])]
+        frame.to_parquet(file,index=False,compression=COMPRESSION)
+    catalog_path=args.root/'catalog.parquet'
+    if catalog_path.exists():
+        frame=pd.read_parquet(catalog_path)
+        flag=frame.run.eq(10083)
+        frame.loc[flag,'tau_branch']=[mapping[(int(c),int(e))] for c,e in zip(frame.loc[flag,'chunk'],frame.loc[flag,'evtID'])]
+        frame.to_parquet(catalog_path,index=False,compression=COMPRESSION)
+        summary_path=args.root/'catalog_summary.json'
+        summary=json.loads(summary_path.read_text())
+        summary['tau_branch']=frame[flag].groupby(['split','tau_branch']).size().rename('events').reset_index().to_dict('records')
+        summary['tau_branch_definition']='primary_tau_direct_daughters_with_flavour_neutrino_confirmation_excluding_ionization_only_leptons'
+        write_json(summary_path,summary)
+        print(json.dumps(summary['tau_branch']),flush=True)
 
 
 def convert(args):
@@ -202,8 +237,10 @@ def main():
     p.add_argument('--cpus',type=int,default=2)
     p.add_argument('--output-root',type=Path)
     p.add_argument('--smoke-per-class',type=int,default=0)
+    p=sub.add_parser('refresh_tau')
+    p.add_argument('--root',type=Path,required=True)
     args=parser.parse_args()
-    (plan if args.command=='plan' else convert)(args)
+    {'plan':plan,'convert':convert,'refresh_tau':refresh_tau}[args.command](args)
 
 
 if __name__=='__main__':

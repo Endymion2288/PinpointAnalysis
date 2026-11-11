@@ -61,7 +61,17 @@ exec python -m "$@"
         arguments=f'analysis.flavour.s2.train --root {args.root} --campaign {args.campaign} --task $(Process)'
         queue=f'queue {len(configs)}'
         cpus,memory,disk=4,'12GB','12GB'
-        gpu='request_gpus = 1\nrequire_gpus = (GlobalMemoryMb >= 14000)\n'
+        gpu='request_gpus = 1\nrequire_gpus = (GlobalMemoryMb >= 14000) && (Capability >= 7.5)\n'
+    elif args.stage=='audit':
+        arguments=f'analysis.flavour.s2.audit --root {args.root}'
+    elif args.stage=='toys':
+        arguments=f'analysis.flavour.s2.toys --geometry {baseline}/shards/10083/geometry.json --output {args.root}/toys'
+    elif args.stage=='refresh_tau':
+        arguments=f'analysis.flavour.s2.prepare refresh_tau --root {args.root}'
+    elif args.stage=='profile':
+        arguments=f'analysis.flavour.s2.profile --root {args.root}'
+        cpus,memory,disk=2,'8GB','4GB'
+        gpu='request_gpus = 1\nrequire_gpus = (GlobalMemoryMb >= 14000) && (Capability >= 7.5)\n'
     else:
         raise ValueError(args.stage)
     text=f'''universe = vanilla
@@ -73,7 +83,7 @@ log = {args.root}/logs/{args.stage}.$(ClusterId).log
 request_cpus = {cpus}
 request_memory = {memory}
 request_disk = {disk}
-{gpu}+JobFlavour = "{'workday' if args.stage=='train' else 'microcentury'}"
+{gpu}+JobFlavour = "{'tomorrow' if args.stage=='train' else 'workday' if gpu else 'microcentury'}"
 requirements = (OpSysAndVer == "AlmaLinux9")
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
@@ -86,7 +96,7 @@ transfer_output_files = ""
         'schedd_snapshot':snapshot,'checks':attempts,'submit':text,'wrapper':wrapper.read_text(),
         'code_commit':command(['git','rev-parse','HEAD']).strip(),
         'selection_basis':'compatible direct EOS policy and WRITE; minimum idle/held/running',
-        'GPU_requirement':'one CUDA GPU with >=14000 MiB' if gpu else None}
+        'GPU_requirement':'one CUDA GPU with >=14000 MiB and capability >=7.5 matching LCG torch kernels' if gpu else None}
     if gpu:
         evidence['gpu_pool_snapshot']=command(['condor_status','-constraint','GPUs > 0','-af',
                                                 'Name','State','Activity','Cpus','Memory','GPUs_GlobalMemoryMb','GPUs_DeviceName'])
@@ -101,7 +111,7 @@ transfer_output_files = ""
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage',choices=['plan','convert','train'])
+    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
     submit(parser.parse_args())
