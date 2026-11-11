@@ -55,10 +55,12 @@ condor_q -name bigbird20.cern.ch 1573747 -af ProcId JobStatus JobPrio RemoteHost
 
 22:40:04 UTC 新证据：`.3` 已提交恢复后的完整epoch3 checkpoint，随后进入epoch4。LCG108/Torch2.7.1使用CPU执行 `torch.load(last.pt, map_location='cpu', weights_only=False)`：106个model-state tensors、318个optimizer-state tensors全部有限，best probabilities有限；checkpoint/history均为3轮、配置等于运行manifest，scheduler/scaler/四组RNG恢复字段存在。累计applied=60,022、AMP skips=26，合计60,048=3×20,016 attempted；checkpoint elapsed=8,927.58764 s。8项检查均通过，原始结果为 `startd_shutdown_post_resume_checkpoint.json`。这是恢复后新完整epoch的实际读回，四轮任务尚未终态。
 
+22:54:35 UTC，`.0`也提交恢复后的完整epoch2 checkpoint，并在后续观察中进入epoch3。同样使用LCG108/Torch2.7.1和CPU读回：106个model-state tensors、318个optimizer-state tensors及best probabilities全部有限，history/config和scheduler/scaler/四组RNG恢复字段一致。累计applied=40,012、AMP skips=20，合计40,032=2×20,016 attempted；checkpoint elapsed=9,074.40068 s。8项检查均通过，证据为 `startd_shutdown_native_post_resume_checkpoint.json`。至此两项原任务都具备恢复后新完整epoch的实际checkpoint证据。
+
 已确认的中断原因是执行侧 Startd 服务关闭；原任务均已恢复执行。可恢复的进度为已提交 epoch，未提交 epoch 的部分训练重新执行，实际成本保留。
 
 中断与恢复证据不支持新增架构或粒度结论。其他科学模型的完成结果另见阶段27/28；S2仍进行中，calibration/test保持冻结。
 
 ## 下一步计划
 
-`.3`恢复后的完整checkpoint已经读回通过，继续等待四轮终态；`.0`继续跟踪恢复后的完整checkpoint。全部35项完成后按原41项单seed配对、4项种子均值与科学交付清单验收。
+两项恢复后的新完整checkpoint均已读回通过，继续等待各自四轮终态。全部35项完成后按原41项单seed配对、4项种子均值与科学交付清单验收。

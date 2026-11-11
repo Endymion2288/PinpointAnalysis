@@ -82,6 +82,8 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 22:43:49 UTC，仍idle且未启动的 `1573747.7/.9` 原任务JobPrio从5提高到10，优先补齐ParticleNet native/1mm双投影这两个主factorial成员；其余6个主factorial成员已完成或运行中。依据实验角色调整顺序，不改模型/数据/步数，也不重提任务。证据为 `primary_factorial_priority.json`，见阶段28。
 
+22:54:35 UTC，`.0`恢复后的完整epoch2也已CPU读回通过8项检查，累计40,012 applied/20 skips，随后进入epoch3；见 `startd_shutdown_native_post_resume_checkpoint.json`。两项Startd中断任务均已提交并读回恢复后的新完整checkpoint，四轮科学训练继续。
+
 ```bash
 python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" \
