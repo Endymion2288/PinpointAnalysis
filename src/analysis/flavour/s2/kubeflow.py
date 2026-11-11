@@ -72,15 +72,16 @@ def prepare(args):
                  f'assert actual == {expected_gpu!r}, (actual, {expected_gpu!r})')
         script = script.replace('exec python -m ',
                                 'python -c ' + shlex.quote(check) + '\nexec python -m ')
-    resources = {'cpu': '2' if args.cpu_only else '4',
-                 'memory': '4Gi' if args.cpu_only else '12Gi'}
+    resources = {'cpu': '4' if args.task is not None else '2',
+                 'memory': '12Gi' if args.task is not None else '4Gi'}
     if not args.cpu_only:
         resources['nvidia.com/gpu'] = 1
     spec = {
         'restartPolicy': 'Never', 'serviceAccountName': 'default-editor',
         'securityContext': {'runAsUser': os.getuid(), 'runAsGroup': os.getgid()},
         'containers': [{
-            'name': 's2', 'image': args.image, 'command': ['/bin/bash', '-c', script],
+            'name': 's2', 'image': args.image,
+            'command': (['/usr/bin/timeout', '300'] if args.task is None else []) + ['/bin/bash', '-c', script],
             'resources': {'requests': resources, 'limits': resources},
             'volumeMounts': [{'name': 'cvmfs', 'mountPath': '/cvmfs', 'readOnly': True,
                              'mountPropagation': 'HostToContainer'}],
@@ -94,7 +95,7 @@ def prepare(args):
         'apiVersion': 'batch/v1', 'kind': 'Job',
         'metadata': {'name': args.name, 'namespace': args.namespace,
                      'labels': {'app': 'pinpoint-s2'}},
-        'spec': {'backoffLimit': 0, 'activeDeadlineSeconds': 86400 if args.task is not None else 900,
+        'spec': {'backoffLimit': 0, 'activeDeadlineSeconds': 86400 if args.task is not None else 3600,
                  'template': {'metadata': {'labels': {'app': 'pinpoint-s2',
                     'mount-eos': 'true', 'mount-kerberos-secret': 'true'}}, 'spec': spec}},
     }

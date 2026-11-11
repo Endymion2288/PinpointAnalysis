@@ -53,6 +53,8 @@ python -m analysis.flavour.s2.kubeflow prepare --root "$S2_RESULTS" \
 
 已解决容器镜像、LCG、EOS 与 CVMFS 的 CPU 执行路径。NVIDIA quota 可用不等于当前 GPU 已分配；GPU 型号、CUDA 操作与整轮训练耗时仍待实际资源。现有 Condor 35 项科学任务与两项 H100 候选继续保留，未发生两后端同时写同一 experiment。
 
+22:14:56 UTC 更新：GPU 环境探测 `v4` 一直没有分配节点，调度原因包括 CPU 不足。保留成本记录并结束该排队探测，改为 `pinpoint-s2-env-probe-v5`：2 CPU、4 GiB、1 NVIDIA GPU，队列 deadline 为1小时，容器主进程启动后 `timeout 300` 限制执行时间。科学任务仍为4 CPU/12 GiB和原冻结配置。新 Pod 的调度原因中已没有 `Insufficient cpu`，但6个节点仍报 `Insufficient nvidia.com/gpu`，当前继续排队。未替换 Condor 科学任务。
+
 ## 下一步计划
 
 GPU 探测成功后，依据实际型号准备同环境候选。若承接已有 H100 tasks0/6，先确认对应 Condor 副本仍 idle，再移除副本并提交。保留阶段25预先冻结的两族整轮耗时规则；通过后才扩展完整矩阵。继续 V100 四轮训练与终态评价，calibration/test 保持冻结。
