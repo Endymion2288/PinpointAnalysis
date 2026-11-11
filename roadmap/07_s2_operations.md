@@ -21,6 +21,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Prespecified controls | [13 runs](configs/s2_controls_v2.json)：两族 OR/shift/shuffle、各自 pair/graph，以及 ParticleNet modality/domain 控制 |
 | Three-seed confirmation | [8 additional runs](configs/s2_confirmation_v2.json)：两族 native/1mm joint × seed17/2026；复用已有 seed42 |
 | Final comparisons | [39 individual contrasts and 4 three-seed means](configs/s2_final_pairs_v2.json)；共 33 项科学训练，尚未全部完成 |
+| Historical / branch diagnostics | evaluator 已补齐 full/centered/large 三类诊断和各 τ 分支相对相同非 τ 背景的 AUC/AP；`1573753` 批量评价待完成 |
 
 完整 B0 的 τ AP=0.34471、1% FPR 下 τ efficiency=65/2,500=2.60%；truth E/vertex 参照 AP=0.44106。25% τ benchmark prior 下，粗 E/x/y/z common support 为 8,559 events、Neff=7,959.41，二者 weighted AP 为 0.30845/0.36474。truth 参照单列为先验诊断，不算硬件模型。详细 counts、CI 和条件指标见[阶段 12](../workbook/2026-11-11_stage12_s2_reference_results.md)。
 
@@ -83,7 +84,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS" \
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
 | No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
-| Three seeds for retained architectures and coarse inputs | 待筛选及 17/42/2026 确认 |
+| Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结并全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
 | Paired CI / interaction / matched time | 程序已有，reference CI 已完成；空间主表待运行 |
 | Resource / error groups | GPU 曲线与 B0 原生显示完成；深度模型结果待补 |

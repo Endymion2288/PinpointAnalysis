@@ -81,13 +81,15 @@ class EvaluationTests(unittest.TestCase):
 
     def test_historical_three_class_keeps_distinct_score_definitions(self):
         frame=pd.DataFrame({'label':[0,1,3,2],
-            'p0':[.4,.3,.1,1.], 'p1':[.01,.5,.1,0.],
-            'p2':[.58,.1,.1,0.], 'p3':[.01,.1,.7,0.]})
+            'p0':[.2,.3,.1,1.], 'p1':[.01,.5,.1,0.],
+            'p2':[.78,.1,.1,0.], 'p3':[.01,.1,.7,0.]})
         result=historical_three_class(frame)
         self.assertEqual(result['events'],3)
         self.assertEqual(result['excluded_tau_events'],1)
         self.assertEqual(result['confusion_counts'],[[1,0,0],[0,1,0],[0,0,1]])
         self.assertEqual(result['balanced_accuracy'],1)
+        self.assertEqual(result['classwise']['0']['raw_four_way_score_ROC_AUC'],.5)
+        self.assertEqual(result['classwise']['0']['conditional_score_ROC_AUC'],1)
         self.assertFalse(result['historical_model_reproduced'])
         frame.loc[0,['p0','p1','p3']]=0
         result=historical_three_class(frame)

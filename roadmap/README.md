@@ -20,7 +20,7 @@
 
 **S0/S1 已完成并验收。**全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图、B0 GPU 验证、多 worker scratch 缓存和 15 项测试已完成。用户确认 samples 满足要求，并接受现有 detector-proxy 参数；缺少的生产认证由用户确认覆盖，不再追查来源或要求真实硬件标定。沿用现有冻结 split 进入 S2。验收依据见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)，实测保留在 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。
 
-**S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 科学矩阵](configs/s2_spatial_screen_v2.json)已记录；S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
+**S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 空间矩阵](configs/s2_spatial_screen_v2.json)已记录；加上[控制与种子确认](../workbook/2026-11-11_stage17_s2_controls_and_seed_contract.md)，共 33 项科学训练已提交，最终 39 项单 seed 配对与 4 项三种子均值尚待完成。S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
 
 ## 1. 首先要回答的物理问题
 

@@ -31,6 +31,10 @@ python -m unittest discover -s tests -p test_flavour_s2_evaluation.py -v
 
 当前实际 neutrino 三类/分支新增指标待批量评价写出，本次不以 unit-test 数字代替科学测量。完整深度训练仍进行中。
 
+commit `37b89b5` 的补充评价已提交为 `1573753.0`（bigbird20），写入 `evaluation_final/`，使用完整比较配置并明确 `--allow-incomplete`；最近查询仍为 idle，未重复提交。进一步加强的已知样本检查确认 e-score 的 raw 三类 AUC=0.5、conditional AUC=1，避免把重新归一前后的排序混为一谈；再次运行全部 9 tests passed，0.940 s。
+
+18:50:35 UTC accounting 实测累计 2.34086 GPU-hours，缺失 history records=0，当前三个科学 clusters 的全部 33 tasks 均已纳入核算。仍为运行中快照。
+
 ## 阶段性结论
 
 事实：评价所需分母与 score 定义已经显式区分，程序检查通过。假设：native topology 是否特别改善 leptonic τ 或历史三类中的某一类，仍待完整训练及配对结果。
