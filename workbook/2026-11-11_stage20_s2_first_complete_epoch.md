@@ -59,8 +59,22 @@ python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 
 事实：第一项科学 run 已完成全规模训练/validation 和可恢复 checkpoint，资源处于既定单 V100 申请内。其首轮指标低于已经完成的 B0 nominal reference，但两者当前训练阶段/估计器不同，不以该点宣称深度模型最终较差或改变训练合同。
 
-未测量：该 run 四轮后的 NLL-selected 指标、native/coarse 配对区间、其他家族完整 epoch、三种子 spread 与最终 allocation。
+后续首轮记录现已补齐如下。它们都继续按原配置训练，不作为最终 NLL-selected 模型的完成结果。
+
+| Configuration | Tau AP (epoch1) | NLL (epoch1) | Balanced accuracy | Epoch wall [s] | Four-epoch linear estimate [GPU h] | Applied / skipped steps |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| ParT native joint | 0.34117 | 1.27921 | 0.37390 | 4,859.181 | 5.39909 | 20,005 / 11 |
+| ParT native projection | 0.34389 | 1.28103 | 0.37730 | 3,555.224 | 3.95025 | 20,004 / 12 |
+| ParT 1mm joint | 0.28580 | 1.33085 | 0.33600 | 4,293.019 | 4.77002 | 20,008 / 8 |
+| ParT 1mm projection | 0.30649 | 1.32943 | 0.35040 | 3,063.325 | 3.40369 | 20,007 / 9 |
+| ParticleNet native joint | 0.29390 | 1.32811 | 0.34140 | 2,937.912 | 3.26435 | 20,006 / 10 |
+
+五项均为同一 80k/10k、seed42、V100/LCG_107/FP16、20,016 attempted steps。四轮估计只把各自第一轮 wall time 乘四，不是测得的最终成本；两族/表示实际速度不同，最终同时报告等步数和共同 GPU-time 比较。第一轮 native/projection 数值只描述学习进程，不用于停止对照或判定等效/晋级。
+
+19:52:51 UTC 更新的 accounting 累计 7.45134 GPU-hours、missing history records=0。尚未完成任何一项四轮科学 run，因此正式完整评价继续保留 pending 状态。
+
+未测量：四轮后的 NLL-selected 指标、native/coarse 配对区间、其他尚未启动配置的完整 epochs、三种子 spread 与最终 allocation。
 
 ## 下一步计划
 
-保持全部 33 项既定训练；用两族 native/1mm 的完整 epochs 更新剩余成本。任务完成后运行严格的 39 个单 seed 配对、4 个三种子均值、factorial interaction、响应域/τ 分支与错误事件显示，再形成 S2 科学验收结论。
+保持原有 33 项训练，结合阶段 21 的两项跨层控制共 35 项科学配置继续执行。任务完成后运行严格的 41 个单 seed 配对、4 个三种子均值、factorial interaction、响应域/τ 分支与错误事件显示，再形成 S2 科学验收结论。

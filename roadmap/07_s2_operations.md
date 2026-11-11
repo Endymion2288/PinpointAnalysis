@@ -20,9 +20,9 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
 | Prespecified controls | [13 runs](configs/s2_controls_v2.json)：两族 OR/shift/shuffle、各自 pair/graph，以及 ParticleNet modality/domain 控制 |
 | Three-seed confirmation | [8 additional runs](configs/s2_confirmation_v2.json)：两族 native/1mm joint × seed17/2026；复用已有 seed42 |
-| Final comparisons | [39 individual contrasts and 4 three-seed means](configs/s2_final_pairs_v2.json)；共 33 项科学训练，尚未全部完成 |
+| Original comparison contract | [39 individual contrasts and 4 three-seed means](configs/s2_final_pairs_v2.json)；原有 33 项科学训练，保留此文件以对应既有部分评价 |
 | Complete S2 contract | [41 individual contrasts and 4 three-seed means](configs/s2_complete_pairs_v2.json)；另含两族 [plane-only controls](configs/s2_cross_plane_controls_v2.json)，共 35 项科学配置，见[阶段 21](../workbook/2026-11-11_stage21_s2_cross_plane_control.md) |
-| Plane-only GPU execution | `1573755.0/1` 为专用 V100 espresso smoke，待完成后提交两项新科学配置；原有 33 项训练均已提交 |
+| Plane-only GPU execution | `1573755.0/1` 为专用 espresso smoke；idle jobs 已允许兼容 sm70+ GPU、2 CPUs/6GiB，覆盖记录在 `smoke/cross_plane_smoke_resource_override.json`，待完成后提交两项 V100 科学配置 |
 | Historical / branch diagnostics | `1573753` 已完成；`evaluation_final/summary.json` 含 4 个 references 的 12 张三类表和 τ 分支 AUC/AP，完整科学比较仍有 43 项 pending |
 | Input response domains | `1573754` 已完成；新增 model-input-active/empty 与 tracker-only，pixel+bar validation 输入空为 440 events，三探测器全空为 282；见[阶段 19](../workbook/2026-11-11_stage19_s2_input_response_domains.md) |
 | First full scientific epoch | ParT 1mm projection epoch1：τ AP=0.30649、NLL=1.32943、3,063.325 s；继续既定 4 epochs，尚未作为完成模型纳入配对，见[阶段 20](../workbook/2026-11-11_stage20_s2_first_complete_epoch.md) |
@@ -87,6 +87,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS" \
 | OR/count, grid shift | 待科学对照 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
 | No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |
+| Explicit cross-plane messages | 两族 plane-only 对照已实现、CPU 检查通过，GPU smoke `1573755` 进行中；科学配对待结果 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结并全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
