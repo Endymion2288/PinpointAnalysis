@@ -92,6 +92,17 @@ def tau_branch_metrics(frame,branch,inclusive_threshold):
         'branch_working_point_definition':'branch ROC recomputes threshold on the same non-tau background; inclusive threshold separately reported'}
 
 
+def input_response_activity(frame,config,hardware_model=True):
+    """Response presence in supplied modalities, independent of truth labels."""
+    if not hardware_model:
+        return None,[]
+    modalities=config.get('modalities',['pixel','bar'])
+    active=np.zeros(len(frame),dtype=bool)
+    for modality in modalities:
+        active |= frame[f'{modality}_channels'].to_numpy()>0
+    return active,list(modalities)
+
+
 def common_support_weights(frame):
     """Joint energy/vertex overlap on fixed bins, no extrapolation or refitting.
 
@@ -459,10 +470,14 @@ def run(args):
         examples.append(error_groups(frame,path.name))
         m=metrics(frame.label.to_numpy(),frame[[f'p{c}' for c in range(4)]].to_numpy())
         tau=tau_metrics(frame)
+        input_active,modalities=input_response_activity(frame,manifest['config'],manifest.get('hardware_model',True))
         weight,support=common_support_weights(frame)
         matched=tau_metrics(frame.loc[weight>0],weight[weight>0]) if np.any(weight>0) else {}
         experiments.append({'name':path.name,'config':manifest['config'],'metrics':m,'tau':tau,
                             'hardware_model':manifest.get('hardware_model',True),
+                            'input_response_modalities':modalities,
+                            'input_response_active_events':int(input_active.sum()) if input_active is not None else None,
+                            'input_response_empty_events':int((~input_active).sum()) if input_active is not None else None,
                             'matched_tau':matched,'common_support':support,
                             'parameters':manifest['parameters'],'gpu':manifest['gpu_name'],
                             'gpu_hours':manifest.get('gpu_hours'),'peak_gpu_mib':manifest.get('peak_gpu_allocated_mib')})
@@ -470,6 +485,9 @@ def run(args):
                'large_scintillator':frame.large_scintillator}
         if 'all_empty' in frame:
             masks.update(detector_active=~frame.all_empty,all_empty=frame.all_empty)
+        if input_active is not None:
+            masks.update(model_input_active=input_active,model_input_empty=~input_active)
+        masks['tracker_only_response']=frame.pixel_channels.eq(0)&frame.bar_channels.eq(0)&frame.tracker_channels.gt(0)
         for low,high in [(0,100),(100,300),(300,1000),(1000,2500),(2500,6000)]:
             masks[f'energy_{low}_{high}_GeV']=frame.initE.ge(low*1000)&frame.initE.lt(high*1000)
         for low,high in [(-2993,-2600),(-2600,-2200),(-2200,-1800)]:
@@ -530,6 +548,12 @@ def run(args):
         'seed_spread':seed_spread(experiments),'factorial_interactions':interactions,
         'pending_comparisons':pending,'requested_comparisons_complete':not pending,
         'seed_mean_comparisons':seed_comparisons,
+        'response_domain_definitions':{
+            'detector_active':'at least one pixel, bar, or accepted tracker channel, independent of model input',
+            'all_empty':'no pixel, bar, or accepted tracker channels',
+            'model_input_active':'at least one channel in this hardware model supplied modalities; B0 uses pixel/bar',
+            'model_input_empty':'no channels in this hardware model supplied modalities; not applied to truth-prior diagnostic',
+            'tracker_only_response':'no pixel/bar channels and at least one accepted tracker channel'},
         'sample_mixture':'class_balanced_2500_per_class_before_conditional_strata',
         'source_acceptance':'user_attested_existing_frozen_split','physical_yields_measured':False})
     if not experiments:

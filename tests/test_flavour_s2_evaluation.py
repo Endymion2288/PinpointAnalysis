@@ -8,7 +8,7 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval, historical_three_class, tau_branch_metrics
+from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval, historical_three_class, tau_branch_metrics, input_response_activity
 
 
 class EvaluationTests(unittest.TestCase):
@@ -109,6 +109,18 @@ class EvaluationTests(unittest.TestCase):
         missing=tau_branch_metrics(frame,'muon',.8)
         self.assertEqual(missing['tau_events'],0)
         self.assertIsNone(missing['PR_AUC'])
+
+    def test_response_domain_tracks_model_modalities_and_truth_reference(self):
+        frame=pd.DataFrame({'pixel_channels':[0,0,1,0], 'bar_channels':[0,0,0,1],
+                            'tracker_channels':[0,2,0,0]})
+        active,modalities=input_response_activity(frame,{'architecture':'hist_gradient_boosting'})
+        self.assertEqual(modalities,['pixel','bar'])
+        self.assertEqual(active.tolist(),[False,False,True,True])
+        active,_=input_response_activity(frame,{'modalities':['pixel','bar','tracker']})
+        self.assertEqual(active.tolist(),[False,True,True,True])
+        active,modalities=input_response_activity(frame,{},hardware_model=False)
+        self.assertIsNone(active)
+        self.assertEqual(modalities,[])
 
     def test_time_match_excludes_later_better_checkpoint(self):
         frame=self.sample()
