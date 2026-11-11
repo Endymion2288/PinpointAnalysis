@@ -80,6 +80,8 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 22:40:04 UTC，`.3`恢复后已提交完整epoch3，并进入epoch4。CPU读回的新checkpoint参数、optimizer、概率、history/config和恢复状态8项检查通过，见 `startd_shutdown_post_resume_checkpoint.json` 与阶段23。22:35:58 UTC累计18.97207 GPU-hours，missing history records=0；5项V100科学训练继续。
 
+22:43:49 UTC，仍idle且未启动的 `1573747.7/.9` 原任务JobPrio从5提高到10，优先补齐ParticleNet native/1mm双投影这两个主factorial成员；其余6个主factorial成员已完成或运行中。依据实验角色调整顺序，不改模型/数据/步数，也不重提任务。证据为 `primary_factorial_priority.json`，见阶段28。
+
 ```bash
 python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" \

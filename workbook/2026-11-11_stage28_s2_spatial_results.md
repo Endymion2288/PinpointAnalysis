@@ -55,6 +55,13 @@ ParT双投影模型在validation empirical 1% FPR阈值0.454139下保留76/2,500
 
 全35项科学配置为2 complete、5 running、28 idle；独立H100候选两项idle。22:21:34 UTC accounting累计17.77179 GPU-hours，missing history records=0。上述成本包含早期尝试、重启、资源测量，未分配节点的 Kubeflow 排队耗时不计GPU reservation。
 
+22:43:49 UTC 调度调整：原 `1573747.7/.9`（ParticleNet native/1mm projections）均仍为idle、NumJobStarts=0，JobPrio从5提高到10；`condor_qedit`返回2 matching jobs，查询确认两者为10。主factorial已有的其他6项已完成或正在运行，因而优先让这两个原任务在下一批slot上启动，再补余下中间粒度；依据是预定实验角色，未使用validation分数决定排队。运行任务和科学配置不变，未重提。调度证据为 `primary_factorial_priority.json`；22:35:58 UTC累计18.97207 GPU-hours，missing history records=0。
+
+```bash
+condor_qedit -name bigbird20.cern.ch \
+  -constraint 'ClusterId == 1573747 && (ProcId == 7 || ProcId == 9) && JobStatus == 1' JobPrio 10
+```
+
 产物位于 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/`：
 
 - `second_scientific_model.json`：固定保存新增模型指标、完整history和terminal allocation，评价代码commit=`ff11eb1`。
