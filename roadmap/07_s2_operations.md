@@ -22,7 +22,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Three-seed confirmation | [8 additional runs](configs/s2_confirmation_v2.json)：两族 native/1mm joint × seed17/2026；复用已有 seed42 |
 | Original comparison contract | [39 individual contrasts and 4 three-seed means](configs/s2_final_pairs_v2.json)；原有 33 项科学训练，保留此文件以对应既有部分评价 |
 | Complete S2 contract | [41 individual contrasts and 4 three-seed means](configs/s2_complete_pairs_v2.json)；另含两族 [plane-only controls](configs/s2_cross_plane_controls_v2.json)，共 35 项科学配置，见[阶段 21](../workbook/2026-11-11_stage21_s2_cross_plane_control.md) |
-| Plane-only GPU execution | `1573755.0/1` 为专用 espresso smoke；idle jobs 已允许兼容 sm70+ GPU、2 CPUs/6GiB，覆盖记录在 `smoke/cross_plane_smoke_resource_override.json`，待完成后提交两项 V100 科学配置 |
+| Plane-only GPU execution | `1573755.0/1` 均 exit0，实际 H100/BF16、各 15 applied steps、0 skips，checkpoint/概率有限；`smoke/cross_plane_smoke_checks.json`。两项 V100/FP16 科学配置已提交为 `1573757.0/1`，见阶段 21 |
 | Historical / branch diagnostics | 初次 `1573753` 已完成；`evaluation_final/summary.json` 含 4 个 references 的 12 张三类表和 τ 分支 AUC/AP |
 | Latest complete-contract evaluation | `1573756` exit0；当前 `evaluation_final/summary.json` 有 4 个完成 references、45 项 pending（41 个单 seed+4 个种子均值），科学比较仍未完成 |
 | Input response domains | `1573754` 已完成；新增 model-input-active/empty 与 tracker-only，pixel+bar validation 输入空为 440 events，三探测器全空为 282；见[阶段 19](../workbook/2026-11-11_stage19_s2_input_response_domains.md) |
@@ -64,6 +64,8 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 18:44 UTC 提交状态：空间 `1573747.0–11`、控制 `1573750.0–12`、额外种子 `1573751.0–7`，均在 `bigbird20.cern.ch`。当时 4 running/29 idle。`.6/.8` 的空间 JobPrio=10，其余尚未启动空间项=5，追加任务=0，以便先获得完整筛选证据。`1573752` 为 `evaluation_final/` 的部分结果集成检查，显式启用 `--allow-incomplete`。这些 ClusterIds 仅用于查状态；存活任务不再次提交。
 
+20:17:53 UTC，跨层控制已通过专用 H100/BF16 smoke 后提交为 `1573757.0/1`，正式任务仍是 V100/FP16。对应记录 `submission_train_201753.json` 保留新的 schedd 负载、EOS/WRITE 检查和配置。35 项科学配置均已提交；20:18 UTC 为 5 running、30 idle，尚无四轮科学 run 完成。两项 smoke 的 terminal allocation 共 833 s，按实际成本计入；小样本执行结果不进入分类主表。
+
 全部训练完成后的入口：先更新实际 terminal allocation，再严格评价与两族原生错误显示。
 
 ```bash
@@ -88,7 +90,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS" \
 | OR/count, grid shift | 待科学对照 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
 | No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |
-| Explicit cross-plane messages | 两族 plane-only 对照已实现、CPU 检查通过，GPU smoke `1573755` 进行中；科学配对待结果 |
+| Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；V100/FP16 科学任务 `1573757.0/1` 已提交，配对待结果 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结并全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
