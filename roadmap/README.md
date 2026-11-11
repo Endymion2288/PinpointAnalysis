@@ -26,7 +26,9 @@
 
 [首个四轮科学结果](../workbook/2026-11-11_stage27_s2_first_scientific_model.md)：ParticleNet native-joint τ AP=0.35784，相对B0 ΔAP=+0.01313，95%配对区间=[−0.00097,+0.02446]；固定common-support条件下ΔAP=+0.01862，区间=[+0.00686,+0.02971]。四类balanced accuracy/NLL没有同时改善。当前完成1项配对、44项pending，尚不能归因于空间粒度或架构差异；原生错误显示已生成并检查。
 
-[空间矩阵部分结果](../workbook/2026-11-11_stage28_s2_spatial_results.md)：新增ParT native-projections四轮完成，τ AP=0.34989、NLL=1.22890。按预定NLL规则选中第4轮；新模型的受控配对对象仍待完成。另有ParT 1mm joint四轮完成，τ AP=0.35845、NLL=1.22922，allocation=4.71833 GPUh。最新评价包含4个references和3个科学模型、187行分域指标，仍为1项配对完成、44项pending。随后ParT 1mm projection完成，τ AP=0.35210；最新为4 references+4科学模型，3项配对完成、42项pending。1mm joint−projection AP=+0.00634，pointwise CI=[+0.00101,+0.01250]；native−1mm projection=−0.00221，CI=[−0.00935,+0.00544]。23:28 UTC累计23.56117 GPUh，missing=0；H100 ParT首轮2,223.38 s、45.76% V100 wall、执行检查通过；ParticleNet候选已在23:35实际启动，总体门槛仍pending。Kubeflow GPU probe v5全程未分配node，23:14 UTC到达deadline，未迁移科学任务。
+[空间矩阵部分结果](../workbook/2026-11-11_stage28_s2_spatial_results.md)：目前4个references和4个四轮科学模型，3项预定配对完成、42项pending。ParT在1mm下joint相对projection的τ AP增量=+0.00634，pointwise CI=[+0.00101,+0.01250]；projection中native相对1mm为−0.00221，CI=[−0.00935,+0.00544]。结论限于当前seed42、模型表示和四轮预算；工作点收益与跨种子稳定性仍待结果。
+
+23:38 UTC组织总成本24.62590 GPU-hours，H100子目录0.70501，missing=0。H100 ParT首轮2,223.38 s、45.76% V100 wall、执行检查通过；ParticleNet候选已在23:35实际启动，总体环境门槛仍pending。原V100科学队列继续，Kubeflow v6以相同2 CPU/4 GiB/1 NVIDIA资源和6小时排队期限等待，实际探测仍限时300秒。
 
 ## 1. 首先要回答的物理问题
 
