@@ -78,6 +78,8 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 21:44:20/21:50:04 UTC，原 `1573747.0/.3` 已分别从 epoch1/epoch2 在 V100 恢复，optimizer/AMP counters 与保存状态衔接一致；见阶段23补充与 `startd_shutdown_resume_execution.json`。Kubeflow 自21:58起已有成功 CPU 环境证据，GPU资源仍待调度；用户已授权在Condor排队时使用。`s2.accounting` 现按记录的 Job UID 合并两个后端，未分配节点的等待为0，已分配 Pod 的启动/初始化/失败成本保留。
 
+22:40:04 UTC，`.3`恢复后已提交完整epoch3，并进入epoch4。CPU读回的新checkpoint参数、optimizer、概率、history/config和恢复状态8项检查通过，见 `startd_shutdown_post_resume_checkpoint.json` 与阶段23。22:35:58 UTC累计18.97207 GPU-hours，missing history records=0；5项V100科学训练继续。
+
 ```bash
 python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" \
