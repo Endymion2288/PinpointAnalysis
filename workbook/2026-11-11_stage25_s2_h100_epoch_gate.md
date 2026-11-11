@@ -29,6 +29,10 @@ H100 的 batch1 资源测量支持进一步验证整轮耗时。已建立独立�
 
 候选任务的完整首轮、optimizer counters、NLL/AP 和最终成本均未测量。准备工作确认完整合同引用的 experiment names 均存在于 35 个科学配置或 4 个 references 中，原有 41+4 比较文件可直接用于独立候选目录。
 
+commit `1654db1` 后，21:14:20 UTC 通过当前 schedd/EOS/WRITE 检查提交为 **`1573760.0/1`**，分别对应配置 tasks0/6。选用 `bigbird20.cern.ch`，记录为 `h100/submission_train_211421.json`。21:19 UTC 两项均 idle、NumJobStarts=0，尚无训练 manifest。
+
+21:20 UTC 的 `condor_q -better-analyze` 显示当前 0 个愿意运行任务的 slot；具体检查 `b9pgpun014` 时，其两个 parent slots 均为 Start=false。任务请求为 4 CPUs、12 GiB memory、12 GiB disk、一个 H100 NVL；继续等待符合条件的 allocation。
+
 ```bash
 python -m analysis.flavour.s2.submit train --root "$S2_RESULTS/h100" \
   --campaign "$PWD/roadmap/configs/s2_h100_v2.json" --tasks 0 6 \

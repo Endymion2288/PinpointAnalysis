@@ -22,6 +22,8 @@
 
 **S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 空间矩阵](configs/s2_spatial_screen_v2.json)已记录；加上[控制与种子确认](../workbook/2026-11-11_stage17_s2_controls_and_seed_contract.md)，原有 33 项科学训练已提交。另为落实跨层连通条目，[两项 plane-only 控制](../workbook/2026-11-11_stage21_s2_cross_plane_control.md)已通过专用 H100/BF16 smoke，V100/FP16 科学任务已提交为 `1573757.0/1`；完整合同的 35 项科学配置均已提交，等待完成 41 项单 seed 配对与 4 项三种子均值。S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
 
+两项 V100 任务在 Startd 关闭后重排，checkpoint 已检查；其他任务继续。新增 H100/LCG108 的同事件 batch1 资源测量显示 training compute 快约1.69–2.33倍，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)。已在独立目录提交两族 native-joint 的[完整 epoch 候选](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)，纯执行/耗时规则及全部35项配置预先冻结；两者首轮均满足≤V100耗时的80%后，再统一执行环境完成全矩阵。正式资源安排尚待该测量，所有旧尝试和候选均计入200 GPU-hours总组织上限。
+
 ## 1. 首先要回答的物理问题
 
 分类对象是反应的 CC flavour/NC 类别。`ν/anti-ν`、DIS/QE/RES 等作为分层诊断，不混成新的主类别。NC 内不同入射 flavour 合并；若现有 NC 样本未覆盖 `ντ NC`，需要单列覆盖范围并补样或限定适用域。
