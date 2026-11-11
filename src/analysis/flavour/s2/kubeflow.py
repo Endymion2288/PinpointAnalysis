@@ -95,7 +95,7 @@ def prepare(args):
         'apiVersion': 'batch/v1', 'kind': 'Job',
         'metadata': {'name': args.name, 'namespace': args.namespace,
                      'labels': {'app': 'pinpoint-s2'}},
-        'spec': {'backoffLimit': 0, 'activeDeadlineSeconds': 86400 if args.task is not None else 3600,
+        'spec': {'backoffLimit': 0, 'activeDeadlineSeconds': args.deadline_seconds or (86400 if args.task is not None else 3600),
                  'template': {'metadata': {'labels': {'app': 'pinpoint-s2',
                     'mount-eos': 'true', 'mount-kerberos-secret': 'true'}}, 'spec': spec}},
     }
@@ -259,9 +259,13 @@ def main():
     parser.add_argument('--campaign', type=Path)
     parser.add_argument('--task', type=int)
     parser.add_argument('--gpu-product')
+    parser.add_argument('--deadline-seconds', type=int,
+                        help='Job lifetime including queue time; probe runtime stays limited to 300 seconds')
     parser.add_argument('--cpu-only', action='store_true')
     parser.add_argument('--apply', action='store_true')
     args = parser.parse_args()
+    if args.deadline_seconds is not None and args.deadline_seconds <= 0:
+        parser.error('--deadline-seconds must be positive')
     if args.action == 'probe-runtime':
         probe_runtime(args.root)
     else:

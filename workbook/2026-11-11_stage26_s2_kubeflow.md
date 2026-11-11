@@ -1,6 +1,6 @@
 # 阶段 26：Kubeflow 执行环境与资源核算
 
-Kubeflow 的 CPU 环境探测成功，现有 EOS 输入和结果目录可访问，LCG108/Python3.12/Torch2.7.1 可加载。GPU 探测仍在排队；科学训练尚未迁移。用户明确授权在 HTCondor GPU 不足或排队时使用 Kubeflow。
+Kubeflow 的 CPU 环境探测成功，现有 EOS 输入和结果目录可访问，LCG108/Python3.12/Torch2.7.1 可加载。GPU probe v5排队至deadline未获GPU；已用相同资源提交6小时排队期限的v6，科学训练尚未迁移。用户明确授权在 HTCondor GPU 不足或排队时使用 Kubeflow。
 
 ## 阶段目标
 
@@ -54,6 +54,14 @@ python -m analysis.flavour.s2.kubeflow prepare --root "$S2_RESULTS" \
 已解决容器镜像、LCG、EOS 与 CVMFS 的 CPU 执行路径。NVIDIA quota 可用不等于当前 GPU 已分配；GPU 型号、CUDA 操作与整轮训练耗时仍待实际资源。现有 Condor 35 项科学任务与两项 H100 候选继续保留，未发生两后端同时写同一 experiment。
 
 22:14:56 UTC 更新：GPU 环境探测 `v4` 一直没有分配节点，调度原因包括 CPU 不足。保留成本记录并结束该排队探测，改为 `pinpoint-s2-env-probe-v5`：2 CPU、4 GiB、1 NVIDIA GPU，队列 deadline 为1小时，容器主进程启动后 `timeout 300` 限制执行时间。科学任务仍为4 CPU/12 GiB和原冻结配置。新 Pod 的调度原因中已没有 `Insufficient cpu`，但6个节点仍报 `Insufficient nvidia.com/gpu`，当前继续排队。未替换 Condor 科学任务。
+
+23:14:58 UTC，v5终态为DeadlineExceeded，全程未分配node，GPU reservation=0；`probe_v5_terminal.json` 保留终态，既有精简生命周期缓存保留排队证据。23:17:35 UTC创建v6（Job UID=`15a8f8da-83b4-4a9b-b68c-90d3a4539a5b`），同为2 CPU/4 GiB/1 NVIDIA，增加 `--deadline-seconds 21600`，将允许排队的期限延长至6小时，实际探测runtime仍为300秒。新Pod仍因GPU不足而Pending，没有新增CPU不足原因。此时Condor第二个H100候选的 `-better-analyze` 为0 willing matches/12 slots would match if drained，因此保留第二后端的排队机会。参数只改变Job生命周期，科学配置没有改动；6项既有Kubeflow/accounting测试再次通过。
+
+```bash
+PYTHONPATH=src /usr/bin/python3 -m analysis.flavour.s2.kubeflow prepare \
+  --root "$S2_RESULTS" --name pinpoint-s2-env-probe-v6 \
+  --deadline-seconds 21600 --apply
+```
 
 ## 下一步计划
 
