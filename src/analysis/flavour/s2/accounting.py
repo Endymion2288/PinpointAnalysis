@@ -1,4 +1,4 @@
-"""Account for actual HTCondor allocations, including failed/restarted jobs."""
+"""Account for HTCondor and Kubeflow allocations, including failed attempts."""
 
 import argparse
 from datetime import datetime, timezone
@@ -10,6 +10,7 @@ import subprocess
 import time
 
 from analysis.flavour.inventory import write_json
+from analysis.flavour.s2.kubeflow import allocations as kubeflow_allocations
 
 
 FIELDS=['ClusterId','ProcId','JobStatus','ExitCode','RemoteWallClockTime','RequestGPUs',
@@ -78,13 +79,15 @@ def run(args):
             'seconds':seconds,'GPUs':gpu_count,'GPU_hours':seconds*gpu_count/3600,
             'CPU_core_hours':seconds*float(ad.get('requestcpus',0))/3600,
             'starts':ad.get('numjobstarts',0),'running_estimate':running,'hold_reason':ad.get('holdreason')})
+    allocations.extend(kubeflow_allocations(args.root, datetime.fromtimestamp(now, timezone.utc)))
     by_experiment={}
     for row in allocations:
         if row['stage']!='train' or row['root']!=str(args.root):
             continue
         group=by_experiment.setdefault(row['experiment'],{'allocated_seconds':0.,'GPU_hours':0.,
             'jobs':[],'allocation_complete':True,'all_terminal':True})
-        group['jobs'].append([row['cluster'],row['process']])
+        group['jobs'].append([row['cluster'],row['process']] if 'cluster' in row else
+                             ['kubeflow',row['namespace'],row['job'],row.get('pod')])
         if row['seconds'] is None:
             group['allocation_complete']=False
         else:
@@ -103,8 +106,8 @@ def run(args):
         'CPU_core_hours':sum(row.get('CPU_core_hours',0.) for row in allocations),
         'missing_history_records':sum(row['seconds'] is None for row in allocations),
         'allocations':allocations,'experiments':by_experiment,
-        'scope':'actual_remote_allocation_including_failed_attempts_setup_and_resume; running estimates add current slot age',
-        'source':'only ClusterIds recorded by this S2 submission directory; unrelated jobs are excluded'})
+        'scope':'actual_remote_allocation_including_failed_attempts_setup_and_resume; Kubeflow includes scheduled image-pull/init time',
+        'source':'only recorded S2 HTCondor ClusterIds and Kubeflow Job UIDs; unrelated jobs are excluded'})
 
 
 def main():

@@ -1,6 +1,6 @@
 # 阶段 23：Startd 关闭后的 checkpoint 与排队恢复
 
-两项运行中的 ParT 任务因 `Startd was shutdown` 返回 idle。原 JobId 保留；两份 atomic checkpoint 读取成功，排队优先级已提高至 20，等待重新分配 V100 后从已提交 epoch 恢复。其他三项科学任务继续运行。
+两项运行中的 ParT 任务因 `Startd was shutdown` 返回 idle，随后均以原 JobId 在 V100 上从已提交 epoch 恢复。两份 atomic checkpoint 读取成功，optimizer/AMP counters 与新进度一致。其余科学任务继续运行。
 
 ## 阶段目标
 
@@ -49,10 +49,14 @@ condor_q -name bigbird20.cern.ch 1573747 -af ProcId JobStatus JobPrio RemoteHost
 
 ## 阶段性结论
 
-已确认的中断原因是执行侧 Startd 服务关闭；原任务处于重新排队状态，两份 checkpoint 读取与配置检查通过。可恢复的进度为已提交 epoch，未提交 epoch 的部分训练需要重新执行，实际成本保留。
+补充实际执行证据：`.0` 在 `slot1_1@b9g47n2007.cern.ch` 恢复，manifest 时间为 21:44:20 UTC，`resumed_from_epoch=1`。21:47:27 的 epoch2/step500 对应 applied steps=20,505（原20,005+500）、AMP skips=11、loss=1.27536。
+
+`.3` 在 `slot1_1@b9g47n2008.cern.ch` 恢复，manifest 时间为 21:50:04 UTC，`resumed_from_epoch=2`。21:58:19 记录的 epoch3/step3,250 对应 applied steps=43,262、AMP skips=20，累计 attempted=43,282，与原40,014 applied/18 skips衔接一致；loss=1.26417。两项 `NumShadowStarts=2`，`NumJobStarts` 仍为1。原始 manifest/progress 与调度事实保存在 `startd_shutdown_resume_execution.json`。
+
+已确认的中断原因是执行侧 Startd 服务关闭；原任务均已恢复执行。可恢复的进度为已提交 epoch，未提交 epoch 的部分训练重新执行，实际成本保留。
 
 尚无完成四轮的科学模型，当前事件不支持新增架构或粒度结论。S2 仍进行中，calibration/test 保持冻结。
 
 ## 下一步计划
 
-核实两项原 JobId 的重新执行、manifest 的 `resumed_from_epoch`、恢复后的 optimizer/AMP counters 及下一份完整 checkpoint。继续其余训练，在全部 35 项完成后按原 41 项单 seed 配对、4 项种子均值与科学交付清单验收。
+继续跟踪恢复后的完整 checkpoint 和四轮终态。全部 35 项完成后按原 41 项单 seed 配对、4 项种子均值与科学交付清单验收。
