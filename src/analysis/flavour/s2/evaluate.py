@@ -194,6 +194,48 @@ def factorial_contrast(frames,replicates=400,seed=2026):
             'resampling':'paired_class_stratified_accepted_family_connected_chunk_bootstrap','blocks':block_summary}
 
 
+def seed_mean_interval(pairs,replicates=400,seed=2026):
+    """Bootstrap physical blocks once for every trained seed, not 3x events."""
+    key=['run','chunk','row']
+    reference=pairs[0][0].sort_values(key).reset_index(drop=True)
+    y=reference.label.to_numpy()==2
+    scores=[]
+    for a,b in pairs:
+        aligned=[]
+        for frame in [a,b]:
+            frame=frame.sort_values(key).reset_index(drop=True)
+            if not frame[key+['label']].equals(reference[key+['label']]):
+                raise ValueError('seed-mean contrast has different physical validation events')
+            aligned.append(frame.p2.to_numpy())
+        scores.append(aligned)
+    weight,_=common_support_weights(reference)
+    def deltas(index,weighted=False):
+        options={'sample_weight':weight[index]} if weighted else {}
+        return [average_precision_score(y[index],b[index],**options)-average_precision_score(y[index],a[index],**options)
+                for a,b in scores]
+    groups,block_summary=resampling_groups(reference)
+    rng=np.random.default_rng(seed)
+    intervals=[]
+    weighted=[]
+    for _ in range(replicates):
+        index=np.concatenate([np.concatenate([g[i] for i in rng.integers(0,len(g),len(g))]) for g in groups.values()])
+        intervals.append(float(np.mean(deltas(index))))
+        if np.any(weight):
+            weighted.append(float(np.mean(deltas(index,True))))
+    observed=deltas(np.arange(len(y)))
+    low,high=np.quantile(intervals,[.025,.975])
+    return {'metric':'mean_seed_tau_AP_B_minus_A','delta':float(np.mean(observed)),
+        'CI95':[float(low),float(high)],'per_seed_deltas':observed,
+        'delta_seed_std':float(np.std(observed,ddof=1)) if len(observed)>1 else None,
+        'events':len(reference),'trained_seed_pairs':len(pairs),'replicates':replicates,'blocks':block_summary,
+        'scope':'event interval conditional on trained seeds; training spread separately reported; seeds are not event replicas',
+        'minimum_relevant_gain':.01,'can_exclude_gain_ge_0.01':bool(high<.01),'positive_gain_supported':bool(low>0),
+        'common_support_tau_AP':{'delta':float(np.mean(deltas(np.arange(len(y)),True))),
+            'CI95':np.quantile(weighted,[.025,.975]).tolist(),
+            'scope':'conditional on fixed common-support weights and trained seeds'} if weighted else {},
+        'equivalence_claim':False}
+
+
 def matched_time(a,b,root,frames):
     paths=[root/'experiments'/name for name in [a,b]]
     manifests=[json.loads((p/'manifest.json').read_text()) for p in paths]
@@ -407,8 +449,10 @@ def run(args):
             factorial.setdefault(key,{})[(config.get('pitch_mm',0.),config.get('projection',False))]=path.name
     comparisons=[]
     pending=[]
+    seed_comparisons=[]
     if args.comparisons:
-        for pair in json.loads(args.comparisons.read_text())['pairs']:
+        comparison_config=json.loads(args.comparisons.read_text())
+        for pair in comparison_config['pairs']:
             if pair['a'] not in frames or pair['b'] not in frames:
                 if args.allow_incomplete:
                     pending.append(pair)
@@ -418,6 +462,14 @@ def run(args):
             comparisons.append({**pair,**paired_interval(frames[pair['a']],frames[pair['b']],args.bootstrap,
                                 weight=weights if np.any(weights) else None),
                                 'matched_allocated_time':matched_time(pair['a'],pair['b'],args.root,frames)})
+        for group in comparison_config.get('seed_mean_comparisons',[]):
+            missing=sorted({name for pair in group['pairs'] for name in [pair['a'],pair['b']] if name not in frames})
+            if missing:
+                if args.allow_incomplete:
+                    pending.append({'type':'seed_mean','name':group['name'],'missing_experiments':missing})
+                    continue
+                raise ValueError(f'missing completed experiments for seed mean: {missing}')
+            seed_comparisons.append({**group,**seed_mean_interval([(frames[p['a']],frames[p['b']]) for p in group['pairs']],args.bootstrap)})
     interactions=[]
     for identity,cells in factorial.items():
         order=[(0.,False),(0.,True),(1.,False),(1.,True)]
@@ -431,6 +483,7 @@ def run(args):
         'experiments':experiments,'strata':strata,'paired_comparisons':comparisons,
         'seed_spread':seed_spread(experiments),'factorial_interactions':interactions,
         'pending_comparisons':pending,'requested_comparisons_complete':not pending,
+        'seed_mean_comparisons':seed_comparisons,
         'sample_mixture':'class_balanced_2500_per_class_before_conditional_strata',
         'source_acceptance':'user_attested_existing_frozen_split','physical_yields_measured':False})
     if not experiments:

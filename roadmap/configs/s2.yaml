@@ -91,6 +91,13 @@ training:
   attempted_and_applied_optimizer_steps: record_separately_with_AMP_skip_counts
   match_parameter_steps_and_GPU_time: report_both
   maximum_initial_S2_S3_screening_GPU_hours: 100
+  controls_campaign: roadmap/configs/s2_controls_v2.json
+  confirmation_campaign: roadmap/configs/s2_confirmation_v2.json
+  confirmation_seed42_reuses_spatial_screen: true
+  modality_and_domain_control_backbone: particlenet_prespecified_for_lower_compute
+  maximum_confirmation_and_controls_additional_GPU_hours: 100
+  maximum_total_S2_organization_GPU_hours: 200
+  previous_failed_or_superseded_allocations_counted: true
 evaluation:
   partition: validation_for_S2_model_and_representation_comparisons
   test: held_until_S6_freeze
@@ -99,6 +106,9 @@ evaluation:
   paired_intervals: accepted_family_signature_and_chunk_bootstrap
   minimum_background_tail_events_for_stable_claim: 25
   same_events_for_all_representations: true
+  final_comparisons: roadmap/configs/s2_final_pairs_v2.json
+  seed_mean_interval: shared_physical_block_resamples_mean_per_seed_AP_differences
+  seed_spread_separate_from_physical_event_interval: true
   strata: [all, pixel_centered, large_scintillator, detector_active, energy, vertex, tau_branch]
   required_diagnostics: [toy_two_track, toy_kink, toy_shower_overlap, local_shuffle, common_support_energy_vertex, error_event_groups, memory_latency_curves]
 references:

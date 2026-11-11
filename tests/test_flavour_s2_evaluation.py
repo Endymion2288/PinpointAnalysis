@@ -8,7 +8,7 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups
+from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval
 
 
 class EvaluationTests(unittest.TestCase):
@@ -56,6 +56,28 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(summary['resampling_blocks'],11)
         self.assertEqual(summary['multi_chunk_blocks'],1)
         self.assertTrue(any(0 in block and 20 in block for block in groups[(0,)]))
+
+    def test_seed_mean_keeps_physical_event_count_and_paired_identity(self):
+        frame=self.sample()
+        result=seed_mean_interval([(frame,frame.iloc[::-1])]*3,replicates=20)
+        self.assertEqual(result['events'],len(frame))
+        self.assertEqual(result['trained_seed_pairs'],3)
+        self.assertEqual(result['delta'],0)
+        self.assertEqual(result['CI95'],[0,0])
+        self.assertEqual(result['common_support_tau_AP']['CI95'],[0,0])
+
+    def test_seed_mean_averages_metrics_and_reports_training_spread(self):
+        frame=self.sample()
+        perfect=frame.assign(p2=frame.label.eq(2).astype(float))
+        tied=frame.assign(p2=.25)
+        result=seed_mean_interval([(tied,perfect),(perfect,tied),(tied,tied)],replicates=20)
+        np.testing.assert_allclose(result['per_seed_deltas'],[.75,-.75,0])
+        self.assertEqual(result['delta'],0)
+        self.assertAlmostEqual(result['delta_seed_std'],.75)
+        self.assertEqual(result['CI95'],[0,0])
+        self.assertEqual(result['events'],len(frame))
+        with self.assertRaises(ValueError):
+            seed_mean_interval([(tied,perfect.iloc[:-1])],replicates=2)
 
     def test_time_match_excludes_later_better_checkpoint(self):
         frame=self.sample()
