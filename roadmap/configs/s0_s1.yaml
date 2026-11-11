@@ -1,0 +1,107 @@
+# Operational documentation contract. The CLIs accept paths/limits explicitly;
+# this file records their common assumptions, not an implicit trainer config.
+status: development_detector_proxy
+date: "2026-11-11"
+module: analysis.flavour
+input_root: /eos/project-f/fasersim-bonn/public/pinpoint/data
+results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s0_s1_2026-11-11
+environment:
+  setup: /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh
+  python: "3.12.11"
+  poetry_lock_matched: false
+  compression: snappy_if_zstd_unavailable
+labels:
+  run_to_class: {10081: CC_nue, 10082: CC_numu, 10083: CC_nutau, 10084: NC}
+  primary_training: metadata_consistent_only
+  exception_states: [nu_e_elastic_candidate, unresolved_metadata]
+  neutrino_and_antineutrino: true
+  cc_charge_sign_consistency: required
+  nc_outgoing_neutrino_identity: required
+identity:
+  observation_key: [run, chunk, row]
+  event_id_retained_in_provenance: true
+  source_event_key: null
+  production_commit: null
+  production_macros: null
+  inspected_source_commit: dbbdb5155a66f5329fd27ea5285d037bf8fb2f03
+  split_status: provisional_signature_grouped_development_only
+  signature_fields: [initPDG, initPx, initPy, initPz, initE, tgtPDG, hitnucPDG, Q2, xBj, y, W, scatteringType, fslPDG]
+  randomized_vertex_in_signature: false
+  source_mapping_verified: false
+  split_seed: 20261111
+  split_fractions: {train: 0.70, validation: 0.10, calibration: 0.10, test: 0.10}
+  split_algorithm: blake2b_128_canonical_float64_then_splitmix64
+  official_test_use: deferred_until_provenance_verified
+join:
+  latest_root_cycles: true
+  required: [unique_event_ids, equal_tree_entry_counts, all_nonempty_pixel_ids_aligned, all_bar_tracker_ids_aligned]
+  empty_pixel_id: use_event_row_only_after_file_checks
+  failed_file: inventory_retained_converter_rejects
+readout:
+  pixel:
+    level: native_binary
+    index: [plane, row, col]
+    pitch_source: per_file_geometry_centers
+    charge_used: false
+    positions: pixel_centers_mm
+  bar:
+    level: linear_simulated_detector_proxy
+    key: [layer, panel, horizontal, bar]
+    aggregate: sum_edep_and_PE_over_all_tracks
+    measurement_geometry: transverse_interval_and_panel_z
+    electronics_window_ns: null
+    electronics_threshold: null
+    timing_used: false
+    calibration: null
+    float32_edep_conservation: {rtol: 0.000002, atol_MeV: 0.000001}
+    PE_conservation: exact_int64
+  tracker:
+    ideal_crossings: separate_ideal_tracker_proxy_file
+    digitization: unvalidated_L3_hypothesis
+    truth_based_track_merging: false
+    merge: station_plus_fixed_xy_grid_0.1mm
+    resolution_sigma_xy_mm: [0.58, 0.017]
+    efficiency: 0.99
+    noise: false
+    field_map: null
+    station_z_map: null
+    momentum_fit: false
+    used_in_B0: false
+  masks:
+    has_response: observed_boolean_per_modality
+    outside_acceptance: -1_means_unknown
+    fit_attempted: false
+    momentum_censored: -1_means_unknown
+storage:
+  observations: observations.parquet
+  targets: targets.parquet
+  provenance: provenance.parquet
+  ideal_tracker: ideal_tracker_proxy.parquet
+  baseline_features: b0_features.parquet
+  row_group_events: 64
+  production_target_shard_MiB: [256, 1024]
+  no_token_truncation: true
+  empty_events_retained: true
+baseline:
+  architecture: MLP_20_48_24_4
+  inputs: binary_pixel_shape_and_linear_bar_proxy_summaries
+  normalization: train_only
+  labels: four_class_cross_entropy
+  class_weights: inverse_train_class_frequency
+  optimizer: AdamW
+  learning_rate: 0.001
+  weight_decay: 0.01
+  seed: 42
+  epochs: 60
+  selection: validation_NLL
+  calibration_partition_opened: false
+  test_partition_opened: false
+historical_studies:
+  reference: roadmap/05_local_studies.md
+  L1_run_ids: null
+  L2_run_ids: null
+  L3_run_ids: null
+  L2_small_large_bounds: null
+  exact_score_thresholds: null
+  class_weights: null
+  tracker_production_matching: null

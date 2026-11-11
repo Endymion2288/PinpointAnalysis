@@ -13,6 +13,7 @@
 | [03_models_and_experiments.md](03_models_and_experiments.md) | 输入表示、模型结构、预训练、τ/charm 任务、实验矩阵与统计评价 |
 | [04_execution.md](04_execution.md) | 分阶段工单、资源预算、HTCondor、产物与验收标准 |
 | [05_local_studies.md](05_local_studies.md) | 更新后四份 PDF 的逐项证据；fiducial、投影损失、FASER 工作点与重建覆盖率 |
+| [06_s0_s1_operations.md](06_s0_s1_operations.md) | 新原生通道管线、实际运行命令、事件签名 split 与 detector-proxy 的适用状态 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
