@@ -7,6 +7,7 @@ paths:
   simulation_source: /eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4
   output_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour
   planning_evidence: /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_2026-11-11
+  pdf_review_evidence: /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_pdf_refresh_2026-11-11
   condor_submit: ~/condor/Pinpoint/flavour
 classes:
   order: [CC_nue, CC_numu, CC_nutau, NC]
@@ -49,6 +50,8 @@ readout:
   true_faser_charge_input: false
   pixel_subpixel_truth_position_input: false
   tracker_resolution_mm: null
+  historical_tracker_assumptions_validated: false
+  tracker_status_masks: [outside_acceptance, no_measurement, fit_failure, momentum_censored]
   production_field_map: null
   unseen_coordinate_representation: interval_and_covariance
   keep_empty_events: true
@@ -71,6 +74,10 @@ input_contract:
     - generator_interaction_metadata
     - per_track_scintillator_record_count
   representation_comparison: [native, 100um, 200um, 1mm]
+  pixel_spatial_factorial:
+    pitches: [native, 1mm]
+    position_relations: [joint_xy_per_plane, separate_xz_yz_marginals]
+    other_modalities_fixed: true
   coarse_binary_reducers: [occupancy_OR, active_native_pixel_count]
   coarse_grid_origin: fixed_sensor_local
   pooling_retains_local_residuals: true
@@ -85,6 +92,8 @@ model:
   pair_features: [relative_measured_geometry, measurement_compatibility, material_interval, detector_pair_type]
   head_comparison: [direct_four_class, six_class_tau_sum]
   optional_auxiliaries: [vertex, soft_semantics, visible_kinematics, charm]
+  optional_vertex_centering: predicted_or_reconstructed_with_uncertainty
+  retain_absolute_and_raw_path: true
 training:
   split_manifest_frozen_before_training: true
   screening_seed: 42
@@ -116,6 +125,15 @@ evaluation:
   optional_background_acceptance_if_MC_sufficient: 0.0001
   required_metrics: [classwise_ROC_AUC, classwise_PR_AUC, macro_F1, balanced_accuracy, NLL, Brier, calibration, cutflow]
   weight_scenarios: [class_balanced, nominal_if_weights_available, common_support_energy_vertex_matched]
+  efficiency_purity_curves: true
+  modal_gain_at_common_operating_points: true
+  fiducial_diagnostics: [pixel_centered, large_scintillator]
+  historical_fiducial_bounds_validated: false
+  primary_domain: declared_target_all_events
+  angular_diagnostics: [px_py, pT_magnitude, wrapped_delta_phi, delta_theta]
+  resolution_coverage_curves: true
+  selection_reject_fraction_required: true
+  relative_residual_sign: reco_minus_true
   nominal_exposure: null
   nominal_flux_cross_section_weights: null
   uncertainty: paired_family_bootstrap_and_training_seed_spread

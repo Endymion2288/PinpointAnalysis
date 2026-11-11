@@ -17,6 +17,8 @@
 
 **Pixel token：**`(x,y,z,plane,module,detector type,validity)` 与 binary response 为主；若确认硬件可测 analog，则增加 `log1p(Q/Q0)`、饱和/threshold mask。保存绝对 detector frame 与可观测 event-centroid-relative frame 两种位置、到边界的距离、局部材料/plane 描述。归一化采用固定物理尺度或训练集统计，不逐事件把 shower 长宽标准化掉；不以真 vertex 居中。
 
+可选加入相对重建/预测 vertex 的坐标、vertex uncertainty 和 quality mask，保留 absolute frame 与 raw-hit 分支。训练与推理均使用预测坐标；true-vertex-centred 只作单列 oracle 诊断。外置 vertex 模型需遵循相同 split，或在联合模型中由 observation 端到端预测。该对照来自 [2026-10-07 运动学汇报](05_local_studies.md) 对局部分量信息的建议。
+
 **Bar token：**`(panel z, measured transverse coordinate, orientation, full bar extent, measurement covariance, channel response, valid mask)`；时间只在 channel digitization 和 event-time reference 通过验证后加入。bar 的未测坐标表示为区间/大协方差，不当成 bar 中心处的精确 hit。按 detector type 独立归一化 signal，避免 silicon 和 scintillator 的沉积混成统一 energy unit。
 
 **Tracker token：**先用 digitized station hit set；再比较测量拟合的 track parameters、covariance、fit quality、hit count 和 acceptance flags。轨迹关联图与拟合器只读 observation。无信号、无接受度、坏道和重建失败使用不同 mask；未测的动量值不能用真值替代，也不能用缺省零冒充有效 `q/p`。
@@ -67,6 +69,8 @@ pixel plane-aware local encoder 与 bar/panel encoder 提供 tokens；按实际 
 
 kinematic target 的“visible”定义必须固定：选定真 final-state 粒子集合、是否含 nuclear/remnant、不可见 neutrinos、可进入接受度或全部末态，不能混用 `Eν−Eℓ`、calorimetric signal 和真 particle energy。对 NC 的 primary charged lepton、无可见 vertex 和不可重建 track 使用明确 target mask。回归 `log1p(magnitude)`/vector components、Huber loss 与异方差预测，report median/68%/95% residual，分母接近零时使用绝对 residual。
 
+分别定义 `Evis=ΣEᵢ`、`pvis=Σpᵢ` 和 `|pvis|` proxy，说明与 incident Eν 的近似及接受度；2025 FASERCal workshop 将 `|pvis|` 称作 Evis 的用法单列引用。2026-10-07 汇报显示 pT magnitude、polar θ 与 azimuth φ 的泛化行为不同：辅助任务应分别评价 `px/py、pT、wrapped Δφ、Δθ`、能量/位置响应与尾部；低 pT 的方位角使用有效性和不确定度处理。统一 residual 为 `(reco−true)/true`，角度用 wrapped difference，近零分母用绝对误差；不能混用旧汇报相反符号的 pTmiss residual。
+
 `pTmiss` 只有在可测 visible momentum 和束流方向模型定义后才作为派生估计；对漏出接受度和核效应分别分层。真实 `pTmiss` 可作辅助 target/诊断，但不作为输入或 event selection。
 
 τ 标签从 primary CC τ 的 direct decay ancestry 定义，比较 `e/μ/had`，不能用“事件内出现电子/μ”来分道；charm 的 leptons 另计。多 charm 的四类排他标签需要先固定 precedence（如 μ→e→had）或改用 multi-label；汇报原始定义与各 generator 一致性，不沿用旧 `trackID==1` 假设或不完整 PDG 列表。
@@ -109,7 +113,7 @@ augmentation 限于有依据的 gain/noise、dead channels、alignment jitter、
 | --- | --- | --- | --- |
 | E00 | Data contract | ID/label/unit/channel/empty-event/whitelist checks；truth-only upper bound 单列 | 是否在解正确的硬件问题？ |
 | E01 | Information content | binary native pixel；+validated charge；bar；pixel+bar；+digitized FASER；+validated time | 哪些测量真正提供增量？ |
-| E02 | Spatial representation | native / 100 μm / 200 μm / 1 mm；相同 analog/binary 合同 | 粗表示损失有多大，发生在哪类拓扑？ |
+| E02 | Spatial representation | native / 100 μm / 200 μm / 1 mm；native/1 mm × 联合位置/双投影；相同 analog/binary 合同 | 粗粒度和投影关联各损失多少，发生在哪类拓扑？ |
 | E03 | Architecture | BDT/MLP、ParticleNet、vanilla Transformer、ParT、local+latent model | local relation/global context 的作用是什么？ |
 | E04 | Fusion | late pooled / joint attention / latent；modality quotas 与 dropout | 是否利用互补模态，是否受某分支压制？ |
 | E05 | Pretraining | Scratch / MAE / self-distill / MAE+Rel；同标签、同总 GPU budget | 净收益来自目标还是额外训练量？ |
@@ -121,6 +125,8 @@ augmentation 限于有依据的 gain/noise、dead channels、alignment jitter、
 
 E02 的粗网格按各 plane 的固定 sensor-local 原点定义。binary 读出分别比较 coarse OR（bin 是否有响应）和 coarse count（bin 内 active native pixels 数），后者保留 multiplicity 但丢失内部布局；只有 analog 已验证时才增加同 bin 的 signal sum。所有归约均从同一份 native observation 派生，不能把 binary→analog 的增量归因于空间分辨率。先固定网格原点，另测原点平移的敏感性。
 
+新增联合位置/投影因子，是因为 2026-10-21 的 pixel 输入同时进行了 1 mm rebin 和 xz/yz 双投影。先在 pixel 分支控制 native/1 mm 与 joint/projections，其他模态固定；native 投影用 sparse marginals，移除 x–y 配对但保留已声明的 count/signal 统计。四种输入需适用同一 encoder family 或对应容量匹配的分支，报告固定训练预算与实际资源，不能把模态/模型变动归因于单一输入因素。[四格对照定义](05_local_studies.md)
+
 E02 必须至少在 ParticleNet/ParT 两个能处理 point sets 的模型族中核对，不只比较旧 CNN 与新 Transformer。压缩减少 token 的速度优势本身也报告；固定参数/步数和固定总 GPU budget 两种比较都保留。所有 ablations 在 validation 上筛选，最终候选、阈值与校准冻结后统一打开 test。
 
 ## 7. 评价：从算法分数到物理效率
@@ -129,11 +135,17 @@ E02 必须至少在 ParticleNet/ParT 两个能处理 point sets 的模型族中�
 
 主表同时给 `generator source → interaction in declared target/fiducial domain → detector active → selected` 的 cutflow、四类 confusion counts/row-normalized matrix 和 active 条件性能。S0 先核对 generator vertex 是否位于实际目标材料：源文件里的 reaction 与目标探测器内 reaction 不是同一个分母，样本中超出 sensor 横向视场也不自动代表超出更大的 target。目标域内的全空事件须获得先验型输出或明确 abstention，并计入 overall efficiency。truth fiducial domain 是物理样本与接受度的定义，不能作为真实推理时的已知选择；event selection 另用测量量实现。
 
+主模型在固定完整目标域训练，另对 pixel-centered、large-scintillator、pixel/FASER acceptance 与实际 response 分层评价；必要时增加匹配训练域的控制，区分接受度与训练分布。历史三类报告只作 `νe/νμ/NC` 诊断参照，不把 τ 移除后的分数当作四类结果。τhad 分支效率以 τhad 为分母，inclusive τ efficiency 以全部 τ 为分母，六类合并后的工作点重新按四类定义计算。
+
 评价分别使用：class-balanced benchmark；有可靠 flux/cross-section/exposure weights 的 nominal mixture；在共同支持区域做 `Eν`/vertex/target 匹配的 topology diagnostic。matching 权重的边界、截断与 `Neff=(Σw)²/Σw²` 均报告，不能把 extrapolation 区域伪装成匹配。训练 class priors 与部署 priors 不同，若用 prior correction，明确其 label-shift 假设并重新检查条件校准。
 
 ### 7.2 必报指标
 
 四类及 τ 子道的 one-vs-rest ROC-AUC、PR-AUC（声明 prevalence）、macro-F1、balanced accuracy、precision/recall；τ 主工作点为 background acceptance `10⁻²,10⁻³` 下的 signal efficiency，`10⁻⁴` 仅在 MC 统计足够时增加。background mixture 在每个表中固定并声明，避免用不同 νμ/NC 比例制造不同 rejection。
+
+另给 efficiency–purity 曲线，并在共同 purity 或背景接受率下比较 pixel/FASER 增量。2026-10-21 的 FASER 配置 νμ purity 更高但 efficiency 更低，两个不同工作点不能单独证明净增益。对带 reject/未选择状态的 selection matrix，报告未通过比例与阈值/冲突规则，不把行和小于 1 的矩阵当作 argmax confusion。2026-09-16 large-volume NC 的 AUC 与 argmax recall 方向不同，后续分别检验排序、argmax 与特定 selection 性能。
+
+所有 objects/kinematics 结果同时报告 all-event→reconstructable→quality-selected 的计数与权重，扫描 resolution–coverage，并按能量、位置、类别分层；selected-sample 的窄 residual 不能替代整体效率。图中写明 score/quality cuts、target 定义、residual 符号与 fit 范围，尾部用 quantiles/overflow counts 描述。
 
 报告 calibrated NLL、Brier score、reliability diagram 与 ECE（附 binning/counts）；仅在 calibration partition 拟合 temperature。校准后仍按 energy、vertex、occupancy、containment、ν/anti-ν、τ branch、charm、FASER acceptance 和 reconstruction quality 分层；未覆盖域不报告成“已验证”。
 

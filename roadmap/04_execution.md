@@ -12,6 +12,8 @@
 
 与硬件设计/标定资料核对 binary/analog pixel、bar 单/双端 readout、可用时间信息、SiPM 动态范围、实际 window/threshold、tracker 分辨率/拟合能力。已知范围写入 conditions；未知项保持 null，并只报告相应 detector-proxy/ideal response 层级，不把未标定项加入“已验证硬件”主结果。
 
+更新四份本地汇报后，S0 增加 historical-study 对照表：L1–L3 对应的 run IDs、模型/representation、fiducial 原点与边界、score selections、class priors/weights、FASER field/reconstruction 假设。2026-10-07 的 small/large 与 2026-09-16 的定义分别核对；资料未给出的项保持待查，当前数据审计继续。具体证据见 [05_local_studies.md](05_local_studies.md)。
+
 交付：版本化 data contract、完整 event inventory、source-family split manifest、readout/geometry map、异常表、cutflow 和数据范围图。验收：每个可用事件可追溯、所有 split 无家族交叉、schema 白名单与模型输入隔离、所有标签例外有可复核状态；总事件数、source overlap、全空事件和 ν/anti-ν/NC-flavour 覆盖有测量。
 
 ## 2. S1：原生通道数据管线与基线
@@ -32,6 +34,8 @@
 
 在固定训练子集上完成 E01–E03 的最小版。建议 pilot 为每类最多 20k train events（实际数量取有效样本与预算允许的较小值），筛选用种子 42；最终对最强两个架构与至少一个粗表示重复三种子。共享 validation/calibration/test manifest；不能按 class 选择不同的 occupancy cut。
 
+先固定其他模态，在 pixel 分支比较 native/1 mm × joint positions/xz–yz projections 四种处理，再补 100/200 μm 分辨率曲线。统一 OR/count/signal reducer 并记录处理顺序，量化关联丢失与粗粒度的交互。所有模型在完整目标域及经 S0 固定的中心/large 区域交叉评价，另做训练域控制；两份既有报告的差异只有在条件统一后才能归因。
+
 同时做可控 toy topology：单/双轨像素间距、kink angles、shower overlap，在真实 plane/pitch/噪声范围内检查原生与粗表示的分辨能力。toy study 只证明信息保留/实现行为，不替代 neutrino sample 指标。量化 layer 内局部结构、跨层连通和能量/位置先验各自贡献。
 
 交付：B1/B2、native/rebin 对照、各类/τ 分支统计、memory/latency 曲线和错误事件组。验收：有统一输入与预算下的可复核结论；若增益不显著，报告区间与是否有统计能力排除预定最小收益，不用“未显著”直接判定等效。
@@ -43,6 +47,8 @@
 实现 plane-aware local encoder + module context + latent fusion，先用无复杂 decoder 的 direct-supervised 模型。依次比较 late pooling、latent、joint attention；关闭 module/pair geometry；关闭 pixel/bar/tracker/time。不同读出层级分开建表，time 和 charge 需分别证明标定/validity。
 
 记录 all-event 与 active 条件效率，以及高占用、出接受度、缺失子系统情况。按 validation 的 τ 工作点、macro metrics 和实际 GPU-hours 选择两个 Pareto 候选，再用三种子确认。
+
+FASER 的增量同时报相同 purity/background acceptance 下的效率、完整曲线和拟合覆盖率；digitized hit、reconstructed track 与简化 12-feature 参照分开。检查 `q/p` uncertainty、fake associations 与动量截顶，不把高纯低覆盖分支当作全样本重建。
 
 交付：推荐 backbone、资源 Pareto 图、modal ablation 和解释图。验收：达到 README 的预注册晋级门槛，或在置信区间支持的近等效质量下明显减小资源；若未达标，继续最强简单模型，分层结构保留为解释性结果。
 
@@ -63,6 +69,8 @@ Rel 需要的 soft contribution truth 若不完整，先做少量匹配模拟，
 完成 direct four-way 与 six-subclass sum 的对照，分开评价 τ→e/μ/had、τ decay location、visible prongs、charm presence、containment。逐项加入 vertex/semantic/charm auxiliaries；验证辅助标签定义、target masks 和负迁移。objects 分支先报告 track/cluster association、fake rate、vertex efficiency/resolution，再接分类。
 
 抽取在 detector geometry 内可见与不可见的 secondary signature 子样本，画正确/错误/随机事件的 raw response。以能谱、真实 vertex/target matched 诊断控制先验，并检查 model score 与 reconstructed observable 的联系。对程序来源（ID/labels、真值混入、截断）和物理来源（接受度、重叠、不可见衰变）分别验证。
+
+按更新的运动学汇报，增加预测 vertex-relative 与 absolute/raw 双路径、component direction 和 θ/φ 分开评价。每个 quality/score cut 对应 resolution–coverage 表与能量/位置图。τhad 先形成稳定诊断，但最终保留 τ→e/μ；分别写 τhad 与 inclusive τ 的分母，不用 2025 workshop 的 11% τhad efficiency 代表全部 τ。
 
 交付：τ efficiency/purity 与 decay-visibility 图、charm 假 τ 分析、辅助任务/objects 净贡献。验收：至少形成一个有计数、区间和物理解释的困难通道结论，并明确仍待查的混淆。
 
@@ -111,6 +119,7 @@ condor_status -schedd -af Name TotalRunningJobs TotalIdleJobs TotalHeldJobs MaxJ
 | Source input | `/eos/project-f/fasersim-bonn/public/pinpoint/data/{10081,10082,10083,10084}/`；只读 |
 | Simulation | `/eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4`；固定相匹配 production/conditions |
 | Current planning evidence | `/eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_2026-11-11/` |
+| Updated-PDF review evidence | `/eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_pdf_refresh_2026-11-11/` |
 | Future run output | `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/<stage>/<experiment_id>/` |
 | Submit files | `~/condor/Pinpoint/flavour/<stage>/`；只放小 wrappers/config/submit 文件 |
 | Logs / checkpoints / figures | `results/flavour/.../logs,checkpoints,figures`；作业 stdout/stderr/event log 同样写 results |

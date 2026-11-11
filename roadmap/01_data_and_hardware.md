@@ -97,6 +97,8 @@ S1 先做 bar-energy 与无 timing 的 detector proxy；主硬件版本要验证
 
 **FASER：**先把 charged-step crossing 转为 station/strip 测量，验证多 hit 合并、finite resolution、inefficiency、acceptance、alignment 和场内轨迹拟合。轨迹关联必须来自测量，`trackID` 只用于事后评估。三层理想 crossing 并不保证能获得可校准动量。无法可靠重建时，先用 station hit sets 与有效性 mask，另列 ideal-position 结果；不要挑选“真能量最高 hit”代表每层。
 
+更新的 2026-10-21 汇报提供一个简化重建参照：`σx=0.58 mm、σy=17 μm`、99% hit efficiency、无 noise、0.1 mm step 合并、3 mm 直线相容判断及 2.4 TeV momentum cap。其 field/坐标与当前生产匹配关系尚未确认，先作为待验证假设；详细条件见 [L3 核对](05_local_studies.md)。新转换必须分别记录出接受度、无测量、拟合失败和高动量不确定/截顶状态，不把 capped p 当作精确测量。
+
 **Bar view 歧义：**一条 bar 只测一个 transverse 坐标、有限的另一方向范围与所在平面，保留 orientation、bar extent 和测量协方差；不随意填一个精确的二维点。可选 H/V compatibility graph 或 learned cross-view association，保留 multiple hypotheses 和 fake rate；只有显式构造空间点时才定义与 FASERCal ghost 类似的匹配标签。
 
 ## 7. 数据格式、split 与完整性合同
@@ -108,6 +110,8 @@ S1 先做 bar-energy 与无 timing 的 detector proxy；主硬件版本要验证
 先按 generator source event/重模拟家族分组，再在各类与 production 条件内做固定 `70/10/10/10` 的 train/validation/calibration/test 分配；同一物理事件的噪声变体、不同 geometry/digitization、τ enrichment 复制必须同组。chunk 可能只是切片，不能证明事件独立；缺少 source ID 时先追溯生产映射。随机种子 `17,42,2026` 用于训练重复，split 种子固定为 `20261111`，落盘 manifest 后所有表示和模型共用。energy/vertex matching 只改变诊断权重或训练子集，不能重新随机划分测试集。
 
 转换验收包括：每个有效 source event 恰好一条 observation；空事件保留；pixel/channel ID 有效且量纲正确；按通道合并前后 `edep` 守恒（float 容差随累加尺度声明）；理想线性合并 PE 守恒；窗口/threshold 造成的信号损失单列。高占用事件不按类别截断。所有 cutflow 包括标签未决、无响应、重建失败、触发与 fiducial selection；truth fiducial 子样本只能作为明确的条件效率。
+
+另为 historical-study 诊断定义 pixel-centered 与 large-scintillator volume，记录三维边界、坐标原点、target/material 与 source config。2026-09-16 汇报的 2 cm/前 50 cm 和 1.5 cm/下游 20 cm 是待映射到当前几何的选择参照，2026-10-07 的 small/large 不能未经配置核对就视为同一选择。主 split 仍覆盖完整声明目标域，这些 truth-domain 标记仅用于条件评价；不作为推理输入或默认 selection。
 
 ## 8. 本次证据的复现
 

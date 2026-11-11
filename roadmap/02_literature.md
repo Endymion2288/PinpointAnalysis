@@ -8,12 +8,12 @@
 | --- | --- | --- |
 | `docs/FASERCal/arXiv-2604.07037v2.tar.gz` | 有效 gzip/tar，包含 `main.tex`、`main.bib` 与论文图；已读取 Methods、Results、Supplementary training details | FASERCal 结构、loss、样本、指标和成本的主要可复核来源 |
 | `docs/FASERCal/ichep-sam-26-07-30.pdf` | 有效 PDF，19 页；已提取全文 | 对照 2026-07-30 ICHEP 汇报的流程和困难通道 |
-| `docs/FASERCal/FASERCal_wshopRun4.pdf` | 17,096 bytes，内容是 `<!DOCTYPE html>` CERN 登录页 | 未获得实际 workshop 内容，不引用其结果 |
-| `docs/FORTVNE_10212026.pdf` | 17,096 bytes，CERN 登录页 | 未获得旧研究展示内容 |
-| `docs/FORTVNE_Update_kinematic_variables_2026-10-07.pdf` | 17,096 bytes，CERN 登录页 | 未获得旧研究展示内容 |
-| `docs/FORTVNE_pixel_vs_scintonly_meeting_260916.pdf` | 17,099 bytes，CERN 登录页 | 未获得旧研究展示内容 |
+| `docs/FASERCal/FASERCal_wshopRun4.pdf` | 更新为有效 PDF，37 页、8,122,725 bytes；全文及关键图表已核对 | 2025-11-14 的完整重建链路、τhad 初步工作点与运动学选择 |
+| `docs/FORTVNE_10212026.pdf` | 更新为有效 PDF，7 页、564,085 bytes；全文及选择矩阵已核对 | 1 mm pixel 投影、CNN/ResNet、简化 FASER 特征的条件与限制 |
+| `docs/FORTVNE_Update_kinematic_variables_2026-10-07.pdf` | 更新为有效 PDF，9 页、3,546,193 bytes；文字及 raster 运动学图已核对 | 分量级信息、azimuth 泛化、quality selection 与覆盖率 |
+| `docs/FORTVNE_pixel_vs_scintonly_meeting_260916.pdf` | 更新为有效 PDF，8 页、618,051 bytes；全文及曲线/counts 已核对 | matched validation 中 pixel 增量的 fiducial 依赖 |
 
-四份实际幻灯片应在有 CERN 访问权限的浏览器重新下载后补入资料核对。当前可读论文与真实模拟源码足以规划主线。旧程序仅用于 schema/图形接口检查，没有把其网络结构、truth selection 或 node-label 管线设为本研究前提；旧方法在本批数据上的性能尚未重测。
+四份更新文件共 61 页；它们的数值、页码、未明确的配置及路线图变更见 [本地汇报核对](05_local_studies.md)。旧研究结果用于确定对照问题；旧程序仍只作为 schema/图形接口参考，没有把其网络结构、truth selection 或 node-label 管线设为本研究前提。上述汇报的指标属于其各自样本，本批数据上的性能尚未重测。
 
 ## 2. FASERCal：应重点借鉴的完整链路
 
@@ -22,6 +22,8 @@
 **F2.** 同工作 [arXiv:2604.07037v2](https://arxiv.org/abs/2604.07037v2)，v2 日期 2026-08-12。[本地源码包](../docs/FASERCal/arXiv-2604.07037v2.tar.gz)。下面精确数值引用这个本地 v2，避免将早期汇报、arXiv 和正式版的不同表述混为同一测量。
 
 **F3.** S. Alonso-Monsalve et al., *Multi-task masked autoencoder pretraining for TeV neutrino event reconstruction in FASERCal*, ICHEP，2026-07-30。[本地汇报](../docs/FASERCal/ichep-sam-26-07-30.pdf)。重点页码为 3（异构探测器）、5–7（MAE、Rel、fine-tuning）、8–9（分类/回归）。
+
+<a id="f4"></a>**F4.** A. Mascellani, *FASERCal*, FASER Run 4 Workshop，**2025-11-14**。[本地汇报](../docs/FASERCal/FASERCal_wshopRun4.pdf)。第 12、15–18 页说明 Kalman track fit、三视图 voxel reconstruction、masked/relational pretraining 与多任务 fine-tuning；第 19–25、30–32 页给优化工作点及不同 selection 下的运动学图。这是早期概念设计，样本为约 1.5M unbiased + 68k τ-only，与下述 2026 v2 分开使用。[详细核对](05_local_studies.md)
 
 ### 2.1 结构与训练
 
