@@ -1,0 +1,84 @@
+# S2 execution contract; campaign JSON freezes each actual training run.
+status: implementation_and_smoke
+date: "2026-11-11"
+module: analysis.flavour.s2
+results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11
+accepted_S0_S1: roadmap/configs/s0_s1.yaml
+data:
+  frozen_manifest: manifest.parquet
+  selection_seed: 42
+  random_chunks_per_class: 32
+  train_per_class: 20000
+  validation_per_class: 2500
+  label_policy: existing_metadata_consistent_only
+  calibration_test_used: false
+  shards: mixed_class_by_sampled_chunk_rank
+  split_reassigned: false
+  truth_diagnostics_only: [initE, initX, initY, initZ, initPDG, tau_branch, tgtPDG]
+regions:
+  source: per_file_ROOT_geometry
+  origin: target_front_min_tungsten_z_minus_half_thickness
+  pixel_centered: pixel_edges_inset_20mm_and_first_500mm
+  large_scintillator: scint_edges_inset_15mm_and_downstream_200mm_excluded
+  historical_identity_claimed: false
+representations:
+  main_factorial:
+    pitch_mm: [0.0, 1.0]
+    projection: [false, true]
+    reducer: count
+    fixed_modalities: [pixel, bar]
+  intermediate_joint_pitch_mm: [0.1, 0.2]
+  binary_OR_control: true
+  shifted_origin_control: half_coarse_cell
+  native_to_token_mapping: explicit
+  native_residual_after_coarsening: forbidden
+  projection_xy_pairing: removed
+  measured_coordinate_masks: required
+  local_blocks: same_plane_4mm_cells_canonical_chunks_of_at_most_32_nodes
+  node_features: 18_observation_only_columns
+  local_residuals: measured_xy_within_4mm_from_current_representation_only
+  complete_block_coverage: true
+  event_token_cap: null
+models:
+  families: [particlenet, part]
+  shared_initial_hidden_dim: 64
+  shared_local_block_compression: true
+  particlenet:
+    local_edge_blocks: 3
+    global_edge_blocks: 3
+    neighbors: 16
+    first_global_graph: same_plane_and_cross_plane_quotas
+    later_graphs: dynamic_feature_distance
+    fixed_graph_control: true
+  part:
+    local_attention_blocks: 2
+    global_attention_blocks: 4
+    heads: 4
+    geometry_pair_bias: true
+    no_pair_bias_control: true
+  empty_events: response_zero_token_and_prior_output
+training:
+  initial_seed: 42
+  confirmation_seeds: [17, 42, 2026]
+  initial_batch_size: 4
+  selection: validation_NLL
+  optimizer: AdamW
+  initial_learning_rate: 0.0005
+  weight_decay: 0.01
+  normalization: fixed_physical_scales
+  mixed_precision: bf16_if_available_else_scaled_fp16
+  local_block_checkpointing: true
+  complete_event_path: no_truncation
+  epoch_budget: freeze_after_GPU_smoke_and_throughput_measurement
+  match_parameter_steps_and_GPU_time: report_both
+  maximum_initial_S2_S3_screening_GPU_hours: 100
+evaluation:
+  partition: validation_for_S2_model_and_representation_comparisons
+  test: held_until_S6_freeze
+  primary: tau_PR_AUC_and_efficiency_at_fixed_background_acceptance
+  background_acceptances: [0.01, 0.001]
+  paired_intervals: accepted_family_signature_and_chunk_bootstrap
+  minimum_background_tail_events_for_stable_claim: 25
+  same_events_for_all_representations: true
+  strata: [all, pixel_centered, large_scintillator, detector_active, energy, vertex, tau_branch]
+  required_diagnostics: [toy_two_track, toy_kink, toy_shower_overlap, local_shuffle, common_support_energy_vertex, error_event_groups, memory_latency_curves]
