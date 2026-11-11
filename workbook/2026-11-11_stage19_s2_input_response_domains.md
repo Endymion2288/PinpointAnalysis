@@ -42,8 +42,20 @@ python -m unittest discover -s tests -p test_flavour_s2_evaluation.py -v
 
 ## 阶段性结论
 
-事实：完整 detector-active 与 model-input-active 分母不同，已测得差异及其类别组成。此前 282-event 空域结果仍正确地描述三探测器全空子集，但不能代表 pixel+bar 的全部输入空事件。新域评价待批量写出，深度模型的 native/coarse/模态增益仍未测量。
+事实：完整 detector-active 与 model-input-active 分母不同，已测得差异及其类别组成。此前 282-event 空域结果仍正确地描述三探测器全空子集，但不能代表 pixel+bar 的全部输入空事件。补充 B0 结果见下表；深度模型的 native/coarse/模态增益仍未测量。
+
+### B0 条件评价实际结果
+
+补充评价 `1573754.0` 已完成，写入 `evaluation_final/summary.json`，含 4 个完成的 reference models、43 项待完成比较。B0 all 的结果为：
+
+| Response domain | Events | Tau events | Tau prevalence | Tau AP | Tau AUC | Balanced accuracy | NLL |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Model input active (pixel+bar) | 9,560 | 2,352 | 0.24603 | 0.34267 | 0.62653 | 0.40583 | 1.23927 |
+| Model input empty (pixel+bar) | 440 | 148 | 0.33636 | 0.33636 | 0.50000 | 0.25000 | 1.37047 |
+| Tracker-only response | 158 | 58 | 0.36709 | 0.36709 | 0.50000 | 0.25000 | 1.35965 |
+
+输入空域与 tracker-only 域的 AP 等于各自 τ prevalence，AUC=0.5，符合 pixel+bar B0 在这些域没有输入响应区分能力。分域 AP 的 prior 不同，不把 0.34267 与 0.33636 的差直接解释成独立信息收益。tracker-only 域的 +tracker 分类性能仍待指定训练对照。
 
 ## 下一步计划
 
-运行补充 B0 条件评价并记录 440-event 输入空域的分数行为；科学训练完成后，对所有模态控制同时报告两种 active 定义和 tracker-only 性能，形成 S2 最终解释。
+科学训练完成后，对所有模态控制同时报告两种 active 定义和 tracker-only 性能，完成 39 项配对、4 项三种子均值与 S2 最终解释。
