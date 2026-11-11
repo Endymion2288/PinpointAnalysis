@@ -56,6 +56,8 @@ python -m analysis.flavour.s2.hardware_gate --root "$S2_RESULTS/h100" \
 
 另一族原Job仍idle且无可运行匹配。23:27已将其JobPrio从0提高到20，证据 `h100/candidate_priority.json`。23:34:42 UTC在ParT首轮checkpoint读回通过后，将原 `1573760.0` 暂时hold以释放H100，优先让 `1573760.1` 取得完整首轮资源。原JobId和四轮配置保持，所有额外allocation继续计费。已启动有界观察：ParticleNet实际running后release原ParT任务；若10分钟仍没有调度收益则也release恢复原排队。原始状态/原因/后续release写入 `h100/candidate_checkpoint_scheduling.json`。23:35:19 UTC观察到ParticleNet已在刚释放的 `slot1_2@b9pgpun501.cern.ch` 实际running，随即release原ParT任务，查询确认为idle；调度暂停约37 s后达成目的，没有重提或双writer。这是首轮执行证据的调度安排，总体pass之前不扩展35项H100矩阵。
 
+ParticleNet实际manifest已确认H100 NVL、Python3.12.11、Torch2.7.1、BF16、161,156参数和80k/10k完整子集。首轮已推进、0 AMP skips；`h100/second_candidate_execution_start.json` 保存配置与执行快照，不能代替完整首轮。23:38:38 UTC组织总成本24.62590 GPU-hours，其中H100候选合计0.70501（含ParT暂时hold前的2303 s allocation），missing=0；两项候选均无held状态，ParT原任务idle、ParticleNet running。
+
 ## 阶段性结论
 
 完整的候选矩阵与选择标准已在H100分类训练结果产生前固定。ParT候选已通过完整首轮执行/耗时门槛；ParticleNet完整首轮尚待资源，总体切换门槛仍未通过。正式比较仍须在单一选定执行环境完成全部指定任务。

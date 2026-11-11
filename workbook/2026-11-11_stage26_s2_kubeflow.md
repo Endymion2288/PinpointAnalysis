@@ -65,6 +65,8 @@ PYTHONPATH=src /usr/bin/python3 -m analysis.flavour.s2.kubeflow prepare \
 
 成本恢复补充：v5的Job `SuccessfulCreate` 事件在一小时后过期，而Pod因deadline被删除，首次终态刷新因此显式报告1项missing。现复用精简缓存中的准确Pod name/UID，并结合仍存在的同UID scheduler event与Job终态恢复成本；若缓存已有Scheduled时间则保留该reservation到Job终态的上界，若未调度且没有scheduler events则继续报告缺失。新增3项回归测试覆盖这三种情况。LCG108下Kubeflow/accounting共9项测试通过（0.010 s）；未以缺失记录自动代替零成本。
 
+统一环境准备补充：`s2.accounting --root "$S2_RESULTS"` 现在一次查询后同时写出父目录组织总成本，以及H100等子目录各自的 `campaign_accounting.json`；子目录按真实root筛选全部backend，两个目录同名模型的成本不混用，也不会把子目录汇总再次加进组织总成本。该输出支持之后H100环境的同allocation比较，仍保留所有旧V100/profile成本。新增测试覆盖同名模型、跨root、Condor+Kubeflow、profile与训练成本分离；共10项测试通过（0.011 s）。23:38:38 UTC真实刷新得到总计24.62590 GPU-hours、H100子集0.70501、两者missing=0；报告均注明组织预算父目录。
+
 ## 下一步计划
 
 GPU 探测成功后，依据实际型号准备同环境候选。若承接已有 H100 tasks0/6，先确认对应 Condor 副本仍 idle，再移除副本并提交。保留阶段25预先冻结的两族整轮耗时规则；通过后才扩展完整矩阵。继续 V100 四轮训练与终态评价，calibration/test 保持冻结。

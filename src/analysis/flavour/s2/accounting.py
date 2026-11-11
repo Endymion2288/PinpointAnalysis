@@ -80,9 +80,21 @@ def run(args):
             'CPU_core_hours':seconds*float(ad.get('requestcpus',0))/3600,
             'starts':ad.get('numjobstarts',0),'running_estimate':running,'hold_reason':ad.get('holdreason')})
     allocations.extend(kubeflow_allocations(args.root, datetime.fromtimestamp(now, timezone.utc)))
+    utc=datetime.now(timezone.utc).isoformat()
+    scopes={args.root:allocations}
+    for directory in {Path(row['root']) for row in allocations}:
+        if args.root in directory.parents:
+            scopes[directory]=[row for row in allocations if Path(row['root'])==directory]
+    for directory,rows in scopes.items():
+        report=accounting_report(directory,rows,utc)
+        report['organization_budget_root']=str(args.root)
+        write_json(directory/'campaign_accounting.json',report)
+
+
+def accounting_report(root, allocations, utc):
     by_experiment={}
     for row in allocations:
-        if row['stage']!='train' or row['root']!=str(args.root):
+        if row['stage']!='train' or row['root']!=str(root):
             continue
         group=by_experiment.setdefault(row['experiment'],{'allocated_seconds':0.,'GPU_hours':0.,
             'jobs':[],'allocation_complete':True,'all_terminal':True})
@@ -95,19 +107,19 @@ def run(args):
             group['GPU_hours']+=row['GPU_hours']
             group['all_terminal'] &= row['status'] in [3,4]
     for name,group in by_experiment.items():
-        path=args.root/'experiments'/name/'manifest.json'
+        path=root/'experiments'/name/'manifest.json'
         manifest=json.loads(path.read_text()) if path.exists() else {}
         complete=manifest.get('status')=='complete' and group['all_terminal'] and group['allocation_complete']
         group['model_complete']=manifest.get('status')=='complete'
         group['epoch_history_seconds']=manifest.get('seconds')
         group['untracked_allocation_seconds']=max(0.,group['allocated_seconds']-manifest['seconds']) if complete else None
-    write_json(args.root/'campaign_accounting.json',{'utc':datetime.now(timezone.utc).isoformat(),
+    return {'utc':utc,
         'GPU_hours':sum(row.get('GPU_hours',0.) for row in allocations),
         'CPU_core_hours':sum(row.get('CPU_core_hours',0.) for row in allocations),
         'missing_history_records':sum(row['seconds'] is None for row in allocations),
         'allocations':allocations,'experiments':by_experiment,
         'scope':'actual_remote_allocation_including_failed_attempts_setup_and_resume; Kubeflow includes scheduled image-pull/init time',
-        'source':'only recorded S2 HTCondor ClusterIds and Kubeflow Job UIDs; unrelated jobs are excluded'})
+        'source':'only recorded S2 HTCondor ClusterIds and Kubeflow Job UIDs; unrelated jobs are excluded'}
 
 
 def main():

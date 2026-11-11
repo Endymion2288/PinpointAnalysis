@@ -5,10 +5,38 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from analysis.flavour.s2.accounting import submission_jobs
+from analysis.flavour.s2.accounting import accounting_report, submission_jobs
 
 
 class AccountingTests(unittest.TestCase):
+    def test_same_name_across_roots_and_backends_does_not_mix_model_costs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            candidate=root/'h100'
+            for directory in [root,candidate]:
+                path=directory/'experiments/e/manifest.json'
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps({'status':'complete','seconds':20}))
+            rows=[
+                {'root':str(root),'stage':'train','experiment':'e','cluster':1,'process':0,
+                 'seconds':3600,'GPU_hours':1,'status':4},
+                {'root':str(candidate),'stage':'train','experiment':'e','cluster':2,'process':0,
+                 'seconds':1800,'GPU_hours':.5,'status':4},
+                {'root':str(candidate),'stage':'train','experiment':'e','backend':'kubeflow',
+                 'namespace':'n','job':'j','seconds':900,'GPU_hours':.25,'status':4},
+                {'root':str(root),'stage':'profile','experiment':'profile','seconds':1800,
+                 'GPU_hours':.5,'status':4},
+            ]
+            organization=accounting_report(root,rows,'now')
+            child=accounting_report(candidate,[r for r in rows if r['root']==str(candidate)],'now')
+            self.assertEqual(organization['GPU_hours'],2.25)
+            self.assertEqual(organization['experiments']['e']['allocated_seconds'],3600)
+            self.assertEqual(child['GPU_hours'],.75)
+            self.assertEqual(child['experiments']['e']['allocated_seconds'],2700)
+            self.assertEqual(child['experiments']['e']['untracked_allocation_seconds'],2680)
+            self.assertEqual(len(child['experiments']['e']['jobs']),2)
+            self.assertTrue(child['experiments']['e']['all_terminal'])
+
     def test_selected_task_indices_and_named_CPU_queue(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary)
