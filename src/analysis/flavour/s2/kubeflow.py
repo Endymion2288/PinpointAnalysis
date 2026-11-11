@@ -210,14 +210,21 @@ def allocations(root, now):
             for execution in missing:
                 created = [e for e in events if e.get('involvedObject', {}).get('uid') == execution['uid']
                            and e.get('reason') == 'SuccessfulCreate' and e.get('message', '').startswith('Created pod: ')]
-                for event in created:
-                    name = event['message'].split('Created pod: ', 1)[1]
+                known = {v['pod']['metadata']['name']: v['pod'] for v in cache.values()
+                         if v['allocation']['namespace'] == namespace and
+                         v['allocation']['job'] == execution['job'] and 'pod' in v}
+                names = set(known) | {e['message'].split('Created pod: ', 1)[1] for e in created}
+                for name in names:
                     pevents = [e for e in events if e.get('involvedObject', {}).get('name') == name
-                               and e.get('involvedObject', {}).get('kind') == 'Pod']
+                               and e.get('involvedObject', {}).get('kind') == 'Pod' and
+                               (name not in known or e['involvedObject'].get('uid') == known[name]['metadata']['uid'])]
                     scheduled = next((e for e in pevents if e.get('reason') == 'Scheduled'), None)
+                    previous_conditions = known.get(name, {}).get('status', {}).get('conditions', [])
+                    previous_schedule = next((c for c in previous_conditions
+                                              if c['type'] == 'PodScheduled' and c['status'] == 'True'), None)
                     never_scheduled = any(e.get('reason') == 'FailedScheduling' for e in pevents)
                     end = terminal_times.get(execution['uid'])
-                    if not end or (not scheduled and not never_scheduled):
+                    if not end or (not scheduled and not previous_schedule and not never_scheduled):
                         continue
                     # Deadline deletion may remove the pod before the first poll.
                     # Scheduler events plus Job terminal time bound that allocation.
@@ -225,9 +232,12 @@ def allocations(root, now):
                     if scheduled:
                         conditions = [{'type': 'PodScheduled', 'status': 'True',
                                        'lastTransitionTime': scheduled.get('firstTimestamp') or scheduled['eventTime']}]
+                    elif previous_schedule:
+                        conditions = [previous_schedule]
                     job = next(j for j in jobs if j['metadata']['uid'] == execution['uid'])
-                    safe = {'metadata': {'name': name, 'uid': pevents[0]['involvedObject']['uid']},
-                            'spec': job['spec']['template']['spec'],
+                    safe = {'metadata': known[name]['metadata'] if name in known else
+                                        {'name': name, 'uid': pevents[0]['involvedObject']['uid']},
+                            'spec': known[name]['spec'] if name in known else job['spec']['template']['spec'],
                             'status': {'phase': 'Failed', 'conditions': conditions},
                             'job_terminal_time': end}
                     row = pod_allocation(safe, execution, now)

@@ -63,6 +63,8 @@ PYTHONPATH=src /usr/bin/python3 -m analysis.flavour.s2.kubeflow prepare \
   --deadline-seconds 21600 --apply
 ```
 
+成本恢复补充：v5的Job `SuccessfulCreate` 事件在一小时后过期，而Pod因deadline被删除，首次终态刷新因此显式报告1项missing。现复用精简缓存中的准确Pod name/UID，并结合仍存在的同UID scheduler event与Job终态恢复成本；若缓存已有Scheduled时间则保留该reservation到Job终态的上界，若未调度且没有scheduler events则继续报告缺失。新增3项回归测试覆盖这三种情况。LCG108下Kubeflow/accounting共9项测试通过（0.010 s）；未以缺失记录自动代替零成本。
+
 ## 下一步计划
 
 GPU 探测成功后，依据实际型号准备同环境候选。若承接已有 H100 tasks0/6，先确认对应 Condor 副本仍 idle，再移除副本并提交。保留阶段25预先冻结的两族整轮耗时规则；通过后才扩展完整矩阵。继续 V100 四轮训练与终态评价，calibration/test 保持冻结。
