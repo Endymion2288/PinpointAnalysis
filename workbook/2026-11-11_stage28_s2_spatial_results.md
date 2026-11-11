@@ -1,6 +1,6 @@
 # 阶段 28：S2 空间矩阵的部分完成结果
 
-12项空间实验中已有3项完成，另4项正在运行。新增完成的 ParT 1mm joint 模型 τ AP=0.35845、NLL=1.22922，实际占用4.71833 GPU-hours。当前完成模型尚未形成预定的粒度、投影或架构受控配对。
+12项空间实验中已有4项完成，另4项正在运行。新增完成的 ParT 1mm projection 形成两项预定受控比较：相同1mm输入下joint相对projection的τ AP差值为+0.00634，pointwise 95%配对区间[+0.00101,+0.01250]；projection条件下native相对1mm为−0.00221，区间[−0.00935,+0.00544]。这些结果限于当前seed42与四轮训练，完整S2仍待完成。
 
 ## 阶段目标
 
@@ -23,6 +23,7 @@
 | ParticleNet native joint | 0.35783732 | 0.63023309 | 1.24514857 | 0.397600 | 0.32706642 | 3.16083 |
 | ParT native projections | 0.34988948 | 0.62859563 | 1.22890107 | 0.404000 | 0.31567223 | 3.84833 |
 | ParT 1mm joint | 0.35844742 | 0.63260771 | 1.22922198 | 0.412800 | 0.32293880 | 4.71833 |
+| ParT 1mm projections | 0.35210402 | 0.62975843 | 1.22893495 | 0.412000 | 0.31624497 | 3.84250 |
 
 ParT双投影模型在validation empirical 1% FPR阈值0.454139下保留76/2,500个τ、75/7,500个背景，τ效率为3.04%。0.1% FPR对应10个τ和7个背景，尾部统计不足标记保留。Common support使用既有8,559 events和固定权重，本报告没有增加新置信区间。
 
@@ -89,9 +90,37 @@ condor_qedit -name bigbird20.cern.ch \
 
 23:13:23 UTC累计22.33457 GPU-hours，missing history records=0。23:15队列仍为3 complete/4 running/28 idle；原ParticleNet投影 `.7/.9` 仍在队列等待。H100 ParT候选运行中、另一族idle，尚无完整首轮，环境门槛未通过。Kubeflow GPU probe v5于23:14:58 UTC以DeadlineExceeded结束，全程未分配node；终态证据为 `kubeflow/probe_v5_terminal.json`，GPU reservation=0，科学任务没有迁移。
 
+## 第四个完成模型与首批空间配对
+
+23:26 UTC，`1573747.3` 四轮完成，Condor终态JobStatus=4、ExitCode=0、NumJobStarts=2，累计allocation=13,833 s（3.84250 GPU-hours），包含Startd中断前后两次执行。ParT 1mm projection仍按NLL选择epoch4，τ AP最大值在epoch3；没有按AP改选。
+
+| Epoch | Validation NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.32943303 | 0.30649284 | 3,063.32531 |
+| 2 | 1.27722088 | 0.33114206 | 5,989.65353 |
+| 3 | 1.25029869 | 0.35634043 | 8,927.39277 |
+| 4 | 1.22893495 | 0.35210402 | 11,757.92155 |
+
+最终程序wall=11,758.32257 s，未进入committed history的allocation=2,074.67743 s，其中保留中断与重新准备开销。peak=346.56982 MiB，80,031 applied/33 AMP skips，exposures=320,164。validation empirical 1% FPR保留79个τ、75个背景，效率3.16%；0.1% FPR为13个τ、7个背景，统计不足标记保留。
+
+完整合同的部分评价正常退出，目前8个完成结果（4 references+4科学模型）、214行分域指标、24个历史三类诊断，3项配对完成、42项pending。`fourth_scientific_model.json` 固定保存新模型、history、terminal成本和本次配对；更新的resolution图与三列paired-effects图均已实际查看。全部区间沿用400次accepted-family/chunk配对bootstrap、128个物理块、每类32块，属于pointwise事件区间；训练种子spread尚未测量。
+
+| Prespecified B − A | Raw tau AP difference [95% CI] | Fixed common-support difference [95% CI] |
+| --- | --- | --- |
+| 1mm joint − 1mm projection | +0.00634340 [+0.00100972,+0.01249854] | +0.00669383 [+0.00137665,+0.01301917] |
+| Native projection − 1mm projection | −0.00221455 [−0.00934589,+0.00543544] | −0.00057274 [−0.00714126,+0.00639215] |
+
+第一行支持当前设置下保留联合位置的τ AP收益，但不能确认增量达到预定的+0.01；1% FPR下效率差值仅+0.0012，区间[−0.00390558,+0.00797488]跨0，ROC AUC差值区间也跨0。joint的NLL=1.22922198，projection=1.22893495，四类NLL没有同时改善。共同支持结果使用固定validation权重，结论以该条件为准。
+
+第二行在当前单seed/四轮/模型表示下没有显示native双投影的正增益，区间上界低于+0.01，可排除该设置中至少+0.01的τ AP增量；这不回答native joint是否更优，也不构成一般等效结论。
+
+同allocation预算13,832.59898 s的epoch-resolution比较中，projection保留epoch4，1mm joint只能保留epoch3，差值缩至+0.00106488；native projection保留epoch3，差值+0.00255248。这些为点估计，没有bootstrap区间。native projection的epoch4按记录成本比预算多约20 s，因此回退整轮，留下约3,479 s未使用；此粒度和中断成本限制了同耗时点估计的解释，不能据此确认资源优势。
+
+23:28:01 UTC累计23.56117 GPU-hours，missing history records=0，已包含v5删除Pod的终态恢复。原`.7`（ParticleNet native projection）已在释放的V100上开始执行，`.9`仍idle；35项为4 complete/4 running/27 idle。H100首轮尚未提交；23:27仅将仍idle的ParticleNet候选原JobPrio提高到20，依据是补齐执行门槛而非分类分数，证据 `h100/candidate_priority.json`。
+
 ## 阶段性结论
 
-已完成三项冻结配置的四轮执行及独立验证评价，新的ParT模型验证NLL随四轮下降，但τ AP不单调，预先固定选模规则得到保留。当前证据尚未回答“联合位置是否优于双投影”“原生是否优于1mm”或“ParT是否优于ParticleNet”。
+已完成四项冻结配置的四轮执行及独立验证评价，预先固定的NLL选模规则得到保留。首批配对支持当前ParT/1mm/seed42设置下联合位置的AP收益，工作点效率收益尚未确认；双投影内的native增量未见支持。native-joint粒度收益、架构差异和跨种子稳定性仍待预定矩阵。
 
 资源侧当前有4项V100科学训练和1项H100候选实际运行。Kubeflow环境探测因GPU不足排队至deadline，未得到GPU执行证据；H100两族整轮门槛仍待完成。
 
