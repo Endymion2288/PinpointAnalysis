@@ -67,6 +67,8 @@ python -m analysis.flavour.s2.submit evaluate --root "$S2_RESULTS" --evaluation-
 
 20:17:53 UTC，跨层控制已通过专用 H100/BF16 smoke 后提交为 `1573757.0/1`，正式任务仍是 V100/FP16。对应记录 `submission_train_201753.json` 保留新的 schedd 负载、EOS/WRITE 检查和配置。35 项科学配置均已提交；20:18 UTC 为 5 running、30 idle，尚无四轮科学 run 完成。两项 smoke 的 terminal allocation 共 833 s，按实际成本计入；小样本执行结果不进入分类主表。
 
+20:43:59/20:45:19 UTC，`1573747.3/.0` 因 `Startd was shutdown`（1013）自动返回 idle，原 JobId 保留。分别可从 epoch2/epoch1 恢复，CPU checkpoint readback 已通过；只将这两个 idle JobId 的 JobPrio 提高到20，等待原任务重新匹配 V100。20:47 UTC 为 3 running、32 idle。中断 allocation 纳入成本，未进入已提交 checkpoint 的部分共 1.50795 GPU-hours，含准备与部分 epoch；见[阶段 23](../workbook/2026-11-11_stage23_s2_startd_shutdown.md)。当前执行状态以 `condor_q` 为准，重排后训练 manifest 可暂留 `running`。
+
 全部训练完成后的入口：先更新实际 terminal allocation，再严格评价与两族原生错误显示。
 
 ```bash
