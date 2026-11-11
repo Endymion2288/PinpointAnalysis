@@ -64,10 +64,10 @@ pixel-centered 域为885 events、176τ，τ AP=0.30579；large-scintillator 域
 | Allocation outside recorded program time | 46.21971 s |
 | Applied / attempted optimizer steps | 80,030 / 80,064 = 99.9575% |
 | AMP skips | 34 |
-| Train exposures | 80,040 per epoch；320,160 total |
+| Train exposures | epochs1/3/4各80,040，epoch2为80,044；320,164 total |
 | Peak allocated GPU memory | 1,546.40576 MiB |
 
-Exposures 包含匹配步数的少量重复，独立 train events 仍为80k。22:06:37 UTC S2 累计16.78668 GPU-hours，missing history records=0，包含旧失败、重启和 H100 profile；Kubeflow GPU 当时仍未分配。
+Exposures 包含匹配步数的少量重复，独立 train events 仍为80k。后续核对完整 history，修正本报告初版将每轮概写为80,040的总和：epoch2实际为80,044，总计320,164。已运行的同seed配置在对应epoch具有相同 exposures；差异来自每轮 shard-window 尾部 batch 数和匹配步数所需重复次数，不是丢失事件。22:06:37 UTC S2 累计16.78668 GPU-hours，missing history records=0，包含旧失败、重启和 H100 profile；Kubeflow GPU 当时仍未分配。
 
 复现命令：
 

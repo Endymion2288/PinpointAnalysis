@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地 PDF 修订，S0/S1 已验收；S2 的 90k-event 目录、CPU 参照、toy 和 GPU 资源测量已完成，35项科学配置中首个 ParticleNet 模型已完成，其他任务继续；S3–S6 尚未执行。
+日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地 PDF 修订，S0/S1 已验收；S2 的 90k-event 目录、CPU 参照、toy 和 GPU 资源测量已完成，35项科学配置中2项已完成、5项运行中，其他任务继续；S3–S6 尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -25,6 +25,8 @@
 两项 V100 任务在 Startd 关闭后均已从 checkpoint 恢复。新增 H100/LCG108 的同事件 batch1 资源测量显示 training compute 快约1.69–2.33倍，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)。已在独立目录提交两族 native-joint 的[完整 epoch 候选](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)，纯执行/耗时规则及全部35项配置预先冻结；两者首轮均满足≤V100耗时的80%后，再统一执行环境完成全矩阵。用户授权排队时使用 Kubeflow，[容器的LCG/EOS/CVMFS路径已成功](../workbook/2026-11-11_stage26_s2_kubeflow.md)，GPU探测尚在排队。两后端、旧尝试和候选均计入200 GPU-hours总组织上限。
 
 [首个四轮科学结果](../workbook/2026-11-11_stage27_s2_first_scientific_model.md)：ParticleNet native-joint τ AP=0.35784，相对B0 ΔAP=+0.01313，95%配对区间=[−0.00097,+0.02446]；固定common-support条件下ΔAP=+0.01862，区间=[+0.00686,+0.02971]。四类balanced accuracy/NLL没有同时改善。当前完成1项配对、44项pending，尚不能归因于空间粒度或架构差异；原生错误显示已生成并检查。
+
+[空间矩阵部分结果](../workbook/2026-11-11_stage28_s2_spatial_results.md)：新增ParT native-projections四轮完成，τ AP=0.34989、NLL=1.22890。按预定NLL规则选中第4轮；新模型的受控配对对象仍待完成。最新评价包含4个references和2个科学模型，仍为1项配对完成、44项pending。
 
 ## 1. 首先要回答的物理问题
 

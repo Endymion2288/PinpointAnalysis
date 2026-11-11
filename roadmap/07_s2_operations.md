@@ -30,6 +30,7 @@ S2 进行中。沿用用户接受的 sample/source-family split 与 detector-pro
 | Historical / branch diagnostics | 初次 `1573753` 已完成；`evaluation_final/summary.json` 含 4 个 references 的 12 张三类表和 τ 分支 AUC/AP |
 | Historical drawing integration | `1573758` exit0（commit `9d67e8a`），当时4个 references、45项 pending；后续科学评价见下一行 |
 | First scientific model / current evaluation | `1573747.6` exit0，ParticleNet native-joint 四轮完成，τ AP=0.35784；相对B0 raw ΔAP=+0.01313，CI95=[−0.00097,+0.02446]；fixed-common ΔAP=+0.01862，CI=[+0.00686,+0.02971]。22:07 UTC 本地部分评价正常退出，5个完成结果、1项配对/44项 pending；20页原生图和3个错误页已查看，见[阶段27](../workbook/2026-11-11_stage27_s2_first_scientific_model.md) |
+| Second scientific model / updated evaluation | `1573747.1` exit0，ParT native-projections 四轮完成，τ AP=0.34989、NLL=1.22890、allocation=3.84833 GPUh。最新部分评价正常退出，6个完成结果、160行分域指标、1项配对/44项pending；新resolution图已查看。22:23 UTC为2 complete/5 running/28 idle，见[阶段28](../workbook/2026-11-11_stage28_s2_spatial_results.md) |
 | Input response domains | `1573754` 已完成；新增 model-input-active/empty 与 tracker-only，pixel+bar validation 输入空为 440 events，三探测器全空为 282；见[阶段 19](../workbook/2026-11-11_stage19_s2_input_response_domains.md) |
 | First full scientific epoch | ParT 1mm projection epoch1：τ AP=0.30649、NLL=1.32943、3,063.325 s；继续既定 4 epochs，尚未作为完成模型纳入配对，见[阶段 20](../workbook/2026-11-11_stage20_s2_first_complete_epoch.md) |
 
