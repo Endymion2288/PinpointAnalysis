@@ -8,6 +8,7 @@ from pathlib import Path
 import random
 import resource
 import subprocess
+import sys
 import time
 
 import numpy as np
@@ -117,6 +118,7 @@ def run(args):
         'optimizer_steps_per_epoch':len(train_sampler),'repeated_training_domain':config.get('train_domain','all')!='all',
         'parameters':sum(p.numel() for p in model.parameters()),'device':str(device),
         'gpu_name':torch.cuda.get_device_name() if device.type=='cuda' else None,'torch':torch.__version__,
+        'python':sys.version,'numpy':np.__version__,'pyarrow':pa.__version__,
         'mixed_precision':str(dtype) if device.type=='cuda' else None,'selection':'validation_NLL',
         'normalization':'fixed_physical_scales_no_truth','calibration_test_used':False,
         'local_blocks':'same_plane_4mm_then_canonical_chunks32_no_event_truncation',

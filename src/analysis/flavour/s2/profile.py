@@ -3,6 +3,8 @@
 import argparse
 import json
 from pathlib import Path
+import subprocess
+import sys
 import time
 
 import numpy as np
@@ -104,8 +106,10 @@ def run(args):
     fig.savefig(output/'resource_curves.pdf')
     plt.close(fig)
     write_json(output/'summary.json',{'events_per_representation':len(chosen),'rows':len(rows),
+        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         'device':str(device),'gpu':torch.cuda.get_device_name() if device.type=='cuda' else None,
-        'torch':torch.__version__,'precision':str(dtype),'batch_size':1,'seed':42,
+        'torch':torch.__version__,'python':sys.version,'pyarrow':pa.__version__,
+        'precision':str(dtype),'batch_size':1,'seed':42,
         'sampling':'equally spaced total-channel occupancy ranks including maximum; stress curve, not population mean',
         'warmup':'first event per architecture/representation includes CUDA warmup; identify in individual rows',
         'scope':'resource_measurement_no_training_or_validation_selection'})

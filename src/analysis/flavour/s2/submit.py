@@ -36,10 +36,12 @@ def submit(args):
     submit_dir=Path.home()/'condor/Pinpoint/flavour_s2'
     submit_dir.mkdir(parents=True,exist_ok=True)
     (args.root/'logs').mkdir(parents=True,exist_ok=True)
-    wrapper=submit_dir/'run.sh'
+    platforms={'LCG_108_cuda':'x86_64-el9-gcc13-opt','LCG_107_cuda':'x86_64-el9-gcc11-opt'}
+    view=f'/cvmfs/sft.cern.ch/lcg/views/{args.lcg_view}/{platforms[args.lcg_view]}'
+    wrapper=submit_dir/f'run_{args.lcg_view}.sh'
     wrapper.write_text(f'''#!/bin/bash
 set -eo pipefail
-source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh
+source {view}/setup.sh
 export PYTHONPATH={shlex.quote(str(repo/'src'))}:${{PYTHONPATH}}
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 cd {shlex.quote(str(repo))}
@@ -47,6 +49,10 @@ exec python -m "$@"
 ''')
     wrapper.chmod(0o755)
     cpus,memory,disk,queue,gpu=2,'6GB','2GB','queue 1',''
+    capability=7.0 if args.lcg_view=='LCG_107_cuda' else 7.5
+    GPU_requirement=f'(GlobalMemoryMb >= 14000) && (Capability >= {capability})'
+    if args.gpu_device:
+        GPU_requirement+=' && (DeviceName == '+json.dumps(args.gpu_device)+')'
     baseline=Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s0_s1_2026-11-11')
     if args.stage=='plan':
         arguments=f'analysis.flavour.s2.prepare plan --inventory {baseline}/inventory/events.parquet --geometry {baseline}/shards/10083/geometry.json --output {args.root}'
@@ -61,7 +67,7 @@ exec python -m "$@"
         arguments=f'analysis.flavour.s2.train --root {args.root} --campaign {args.campaign} --task $(Process)'
         queue=f'queue {len(configs)}'
         cpus,memory,disk=4,'12GB','12GB'
-        gpu='request_gpus = 1\nrequire_gpus = (GlobalMemoryMb >= 14000) && (Capability >= 7.5)\n'
+        gpu=f'request_gpus = 1\nrequire_gpus = {GPU_requirement}\n'
     elif args.stage=='audit':
         arguments=f'analysis.flavour.s2.audit --root {args.root}'
     elif args.stage=='toys':
@@ -71,7 +77,7 @@ exec python -m "$@"
     elif args.stage=='profile':
         arguments=f'analysis.flavour.s2.profile --root {args.root}'
         cpus,memory,disk=2,'8GB','4GB'
-        gpu='request_gpus = 1\nrequire_gpus = (GlobalMemoryMb >= 14000) && (Capability >= 7.5)\n'
+        gpu=f'request_gpus = 1\nrequire_gpus = {GPU_requirement}\n'
     elif args.stage=='reference':
         arguments=f'analysis.flavour.s2.reference --root {args.root} --mode $(mode)'
         queue='queue mode in b0_all b0_signal b0_shape truth_energy_vertex'
@@ -99,7 +105,7 @@ transfer_output_files = ""
         'schedd_snapshot':snapshot,'checks':attempts,'submit':text,'wrapper':wrapper.read_text(),
         'code_commit':command(['git','rev-parse','HEAD']).strip(),
         'selection_basis':'compatible direct EOS policy and WRITE; minimum idle/held/running',
-        'GPU_requirement':'one CUDA GPU with >=14000 MiB and capability >=7.5 matching LCG torch kernels' if gpu else None}
+        'software_view':view,'GPU_requirement':GPU_requirement if gpu else None}
     if gpu:
         evidence['gpu_pool_snapshot']=command(['condor_status','-constraint','GPUs > 0','-af',
                                                 'Name','State','Activity','Cpus','Memory','GPUs_GlobalMemoryMb','GPUs_DeviceName'])
@@ -117,6 +123,8 @@ def main():
     parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
+    parser.add_argument('--lcg-view',choices=['LCG_108_cuda','LCG_107_cuda'],default='LCG_108_cuda')
+    parser.add_argument('--gpu-device',help='Optional exact CUDA device name for matched-hardware campaigns')
     submit(parser.parse_args())
 
 
