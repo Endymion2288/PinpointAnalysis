@@ -55,7 +55,7 @@ python -m analysis.flavour.s2.kubeflow prepare --root "$S2_RESULTS" \
 
 22:14:56 UTC 更新：GPU 环境探测 `v4` 一直没有分配节点，调度原因包括 CPU 不足。保留成本记录并结束该排队探测，改为 `pinpoint-s2-env-probe-v5`：2 CPU、4 GiB、1 NVIDIA GPU，队列 deadline 为1小时，容器主进程启动后 `timeout 300` 限制执行时间。科学任务仍为4 CPU/12 GiB和原冻结配置。新 Pod 的调度原因中已没有 `Insufficient cpu`，但6个节点仍报 `Insufficient nvidia.com/gpu`，当前继续排队。未替换 Condor 科学任务。
 
-23:14:58 UTC，v5终态为DeadlineExceeded，全程未分配node，GPU reservation=0；`probe_v5_terminal.json` 保留终态，既有精简生命周期缓存保留排队证据。23:17:35 UTC创建v6（Job UID=`15a8f8da-83b4-4a9b-b68c-90d3a4539a5b`），同为2 CPU/4 GiB/1 NVIDIA，增加 `--deadline-seconds 21600`，将允许排队的期限延长至6小时，实际探测runtime仍为300秒。新Pod仍因GPU不足而Pending，没有新增CPU不足原因。此时Condor第二个H100候选的 `-better-analyze` 为0 willing matches/12 slots would match if drained，因此保留第二后端的排队机会。参数只改变Job生命周期，科学配置没有改动；6项既有Kubeflow/accounting测试再次通过。
+23:14:58 UTC，v5终态为DeadlineExceeded，全程未分配node，GPU reservation=0；`probe_v5_terminal.json` 保留终态，既有精简生命周期缓存保留排队证据。23:17:35 UTC创建v6（Job UID=`15a8f8da-83b4-4a9b-b68c-90d3a4539a5b`），同为2 CPU/4 GiB/1 NVIDIA，增加 `--deadline-seconds 21600`，将允许排队的期限延长至6小时，实际探测runtime仍为300秒。新Pod仍因GPU不足而Pending，没有新增CPU不足原因。此时Condor第二个H100候选的 `-better-analyze` 为0 willing matches/12 slots would match if drained，因此保留第二后端的排队机会。参数只改变Job生命周期，科学配置没有改动；系统Python3.9执行时accounting测试因缺少pandas未能导入；改用既有LCG108/Python3.12环境后，6项Kubeflow/accounting测试全部通过（0.003 s）。
 
 ```bash
 PYTHONPATH=src /usr/bin/python3 -m analysis.flavour.s2.kubeflow prepare \
