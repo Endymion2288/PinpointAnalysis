@@ -72,6 +72,9 @@ exec python -m "$@"
         arguments=f'analysis.flavour.s2.profile --root {args.root}'
         cpus,memory,disk=2,'8GB','4GB'
         gpu='request_gpus = 1\nrequire_gpus = (GlobalMemoryMb >= 14000) && (Capability >= 7.5)\n'
+    elif args.stage=='reference':
+        arguments=f'analysis.flavour.s2.reference --root {args.root} --mode $(mode)'
+        queue='queue mode in b0_all b0_signal b0_shape truth_energy_vertex'
     else:
         raise ValueError(args.stage)
     text=f'''universe = vanilla
@@ -111,7 +114,7 @@ transfer_output_files = ""
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile'])
+    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
     submit(parser.parse_args())

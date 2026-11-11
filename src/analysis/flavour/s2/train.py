@@ -90,7 +90,7 @@ def run(args):
     val=SpatialDataset(args.root,'validation',config)
     if not len(train) or not len(val):
         raise ValueError('train/validation subset empty')
-    train_sampler=SpatialBatchSampler(train,config.get('batch_size',4),seed)
+    train_sampler=SpatialBatchSampler(train,config.get('batch_size',4),seed,steps=config.get('steps_per_epoch'))
     val_sampler=SpatialBatchSampler(val,config.get('batch_size',4),seed,shuffle=False)
     workers=config.get('workers',2)
     options={'num_workers':workers,'collate_fn':collate_spatial,'pin_memory':device.type=='cuda',
@@ -114,6 +114,7 @@ def run(args):
         'campaign':str(args.campaign),'root':str(args.root),'response_level':'user_accepted_detector_proxy',
         'split_status':'accepted_signature_grouped_user_attested','train_events':len(train),'validation_events':len(val),
         'train_class_counts':counts.tolist(),'validation_class_counts':np.bincount(val.metadata.label,minlength=4).tolist(),
+        'optimizer_steps_per_epoch':len(train_sampler),'repeated_training_domain':config.get('train_domain','all')!='all',
         'parameters':sum(p.numel() for p in model.parameters()),'device':str(device),
         'gpu_name':torch.cuda.get_device_name() if device.type=='cuda' else None,'torch':torch.__version__,
         'mixed_precision':str(dtype) if device.type=='cuda' else None,'selection':'validation_NLL',

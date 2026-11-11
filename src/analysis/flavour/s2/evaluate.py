@@ -137,6 +137,8 @@ def factorial_contrast(frames,replicates=400,seed=2026):
 def matched_time(a,b,root,frames):
     paths=[root/'experiments'/name for name in [a,b]]
     manifests=[json.loads((p/'manifest.json').read_text()) for p in paths]
+    if any(m['gpu_name'] is None for m in manifests):
+        return {'status':'CPU_reference_not_GPU_time_matched','comparison_measured':False}
     if manifests[0]['gpu_name']!=manifests[1]['gpu_name']:
         return {'status':'different_GPU_models','GPU_names':[m['gpu_name'] for m in manifests],
                 'comparison_measured':False}
@@ -232,6 +234,7 @@ def run(args):
         weight,support=common_support_weights(frame)
         matched=tau_metrics(frame.loc[weight>0],weight[weight>0]) if np.any(weight>0) else {}
         experiments.append({'name':path.name,'config':manifest['config'],'metrics':m,'tau':tau,
+                            'hardware_model':manifest.get('hardware_model',True),
                             'matched_tau':matched,'common_support':support,
                             'parameters':manifest['parameters'],'gpu':manifest['gpu_name'],
                             'gpu_hours':manifest.get('gpu_hours'),'peak_gpu_mib':manifest.get('peak_gpu_allocated_mib')})
@@ -285,6 +288,7 @@ def run(args):
     table=[]
     for e in experiments:
         table.append({'experiment':e['name'],'tau_AP':e['tau']['PR_AUC'],'tau_AUC':e['tau']['ROC_AUC'],
+            'hardware_model':e['hardware_model'],
             'balanced_accuracy':e['metrics']['balanced_accuracy'],'NLL':e['metrics']['NLL'],
             'tau_eff_at_1pct_FPR':e['tau']['FPR_0.01']['tau_efficiency'],
             'gpu_hours':e['gpu_hours'],'parameters':e['parameters'],'peak_gpu_mib':e['peak_gpu_mib']})

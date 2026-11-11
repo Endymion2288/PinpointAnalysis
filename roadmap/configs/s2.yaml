@@ -77,6 +77,8 @@ training:
   GPU_minimum_CUDA_capability: 7.5
   HTCondor_training_flavour: tomorrow
   complete_event_path: no_truncation
+  training_domain_controls: [all, pixel_centered, large_scintillator]
+  training_domain_step_match: repeat_complete_domain_cycles_to_full_domain_steps
   epoch_budget: freeze_after_GPU_smoke_and_throughput_measurement
   match_parameter_steps_and_GPU_time: report_both
   maximum_initial_S2_S3_screening_GPU_hours: 100
@@ -90,3 +92,11 @@ evaluation:
   same_events_for_all_representations: true
   strata: [all, pixel_centered, large_scintillator, detector_active, energy, vertex, tau_branch]
   required_diagnostics: [toy_two_track, toy_kink, toy_shower_overlap, local_shuffle, common_support_energy_vertex, error_event_groups, memory_latency_curves]
+references:
+  estimator: HistGradientBoostingClassifier
+  iterations: 200
+  validation_selection_interval: 10
+  hardware_feature_modes: [b0_all, b0_signal, b0_shape]
+  separate_truth_diagnostic: truth_energy_vertex
+  truth_diagnostic_is_hardware_model: false
+  GPU_budget_match_with_CPU_reference: false

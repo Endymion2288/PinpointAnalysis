@@ -36,6 +36,15 @@ class TinySpatialDataset:
 
 
 class TrainingTests(unittest.TestCase):
+    def test_domain_sampler_repeats_complete_cycles_to_match_step_budget(self):
+        dataset=TinySpatialDataset(None,None,{})
+        normal=list(train.SpatialBatchSampler(dataset,3,42))
+        repeated=list(train.SpatialBatchSampler(dataset,3,42,steps=5))
+        self.assertEqual(len(repeated),5)
+        self.assertEqual(repeated[:len(normal)],normal)
+        self.assertEqual(sorted(sum(repeated[:2],[])),list(range(4)))
+        self.assertEqual(sorted(sum(repeated[2:4],[])),list(range(4)))
+
     def test_resume_matches_uninterrupted_weights_and_predictions(self):
         config={'name':'test','architecture':'part','dim':8,'pair_bias':False,
                 'epochs':2,'batch_size':4,'workers':0,'seed':42}

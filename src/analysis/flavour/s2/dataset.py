@@ -71,15 +71,16 @@ def collate_spatial(events):
 class SpatialBatchSampler:
     """Shuffle indices in mixed-shard windows to avoid random cache thrashing."""
 
-    def __init__(self,dataset,batch_size,seed,shuffle=True):
+    def __init__(self,dataset,batch_size,seed,shuffle=True,steps=None):
         self.dataset,self.batch_size,self.seed,self.shuffle=dataset,batch_size,seed,shuffle
         self.epoch=0
+        self.steps=steps
 
     def __len__(self):
-        return sum((len(ix)+self.batch_size-1)//self.batch_size for ix in self._windows())
+        return self.steps if self.steps is not None else sum((len(ix)+self.batch_size-1)//self.batch_size for ix in self._windows())
 
-    def _windows(self):
-        rng=np.random.default_rng(self.seed+self.epoch)
+    def _windows(self,cycle=0):
+        rng=np.random.default_rng(self.seed+self.epoch+10000*cycle)
         shard=np.searchsorted(self.dataset.native.boundaries,self.dataset.indexes,side='right')-1
         order=rng.permutation(len(self.dataset.paths)) if self.shuffle else np.arange(len(self.dataset.paths))
         capacity=self.dataset.config.get('cache_shards',2)
@@ -90,6 +91,13 @@ class SpatialBatchSampler:
             yield index
 
     def __iter__(self):
-        for index in self._windows():
-            for start in range(0,len(index),self.batch_size):
-                yield index[start:start+self.batch_size].tolist()
+        emitted,cycle=0,0
+        target=len(self)
+        while emitted<target:
+            for index in self._windows(cycle):
+                for start in range(0,len(index),self.batch_size):
+                    if emitted==target:
+                        return
+                    yield index[start:start+self.batch_size].tolist()
+                    emitted+=1
+            cycle+=1
