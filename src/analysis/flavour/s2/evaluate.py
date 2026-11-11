@@ -333,7 +333,7 @@ def matched_time(a,b,root,frames):
     return {'status':'measured_at_epoch_resolution','comparison_measured':True,'budget_seconds':budget,
             'GPU':manifests[0]['gpu_name'],'selection':'minimum_validation_NLL_within_allocated_wall_time',
             'allocation_overhead':'all setup/failed/resumed allocation absent from committed epoch history charged before first eligible checkpoint',
-            'actual_HTCondor_allocation_used':accounting_file.exists(),
+            'actual_recorded_backend_allocation_used':accounting_file.exists(),
             'runs':selected,'tau_AP_B_minus_A':selected[1]['tau_AP']-selected[0]['tau_AP']}
 
 
