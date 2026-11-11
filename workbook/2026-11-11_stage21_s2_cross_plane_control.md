@@ -32,6 +32,8 @@ commit `ff84b5f` 后按当前 schedd/EOS/WRITE/负载检查提交为 `1573755.0/
 
 两项 smoke 持续 idle 后，仅对这两项 idle jobs 调整为任意 `Capability>=7.0`、显存至少 14,000 MiB 的兼容 GPU，并按零 workers 的小样本需求申请 2 CPUs、6 GiB RAM、2 GiB disk。精确覆盖记录在 `smoke/cross_plane_smoke_resource_override.json`，JobFlavour 仍为 espresso，实际 GPU 型号将由训练 manifest 记录。该执行检查使用 LCG_107/Torch2.5.1；全部科学对照的硬件合同仍为 V100、4 CPUs、12 GB RAM。没有重复提交 smoke。
 
+35 个科学配置的名称唯一性与完整配对引用检查通过。新的完整合同批量集成评价 `1573756.0` 正常完成（exit0，allocation45 s）：4 个完成 references、41 项单 seed 与 4 项种子均值均列为 pending，共 45 项，`requested_comparisons_complete=false`。产物仍为 `evaluation_final/summary.json`。最先启动的五项科学 runs 已完成第一轮并进入第二轮，尚无任何一项完成预定四轮，因此不将其纳入完成模型的主比较。
+
 ```bash
 python -m unittest discover -s tests -p test_flavour_spatial.py -v
 python -m unittest discover -s tests -p test_flavour_s2_training.py -v
