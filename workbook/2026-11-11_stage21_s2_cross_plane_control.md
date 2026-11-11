@@ -26,6 +26,10 @@ CPU 检查：9 项 spatial tests passed，5.307 s；3 项 training/resume tests 
 
 改用 [专用 GPU smoke 配置](../roadmap/configs/s2_cross_plane_smoke_v2.json)，复用已有 29 train/3 validation 的小样本、原生 pixel+bar；模型 dim48/64 与科学配置一致。它只验证 V100 上的 FP16 执行与 checkpoint，不用于分类性能判断。提交器增加 `--training-flavour espresso` 支持短 GPU 检查，科学任务仍使用默认 `tomorrow`。
 
+commit `ff84b5f` 后按当前 schedd/EOS/WRITE/负载检查提交为 `1573755.0/1`（bigbird20），JobFlavour=espresso、JobPrio=20，当前仍在排队。精确提交记录为 `smoke/submission_train_194416.json`，归入 S2 的 Condor allocation 核算。两项新科学配置暂待 smoke 结果，原有 33 项训练均已提交。
+
+进一步在科学运行环境 LCG_107/Torch2.5.1 执行 9 项 spatial tests，全部通过，3.937 s；包含 padded query 与所有真实 key 不同层、没有任何允许 key 的情况，输出与梯度仍有限。日志为 `spatial_unit_tests_lcg107.log`。这项 CPU 检查补充软件版本兼容性，专用 GPU 执行结果仍待测量。
+
 ```bash
 python -m unittest discover -s tests -p test_flavour_spatial.py -v
 python -m unittest discover -s tests -p test_flavour_s2_training.py -v

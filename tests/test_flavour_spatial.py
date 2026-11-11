@@ -161,12 +161,13 @@ class SpatialTests(unittest.TestCase):
     def test_plane_only_complete_model_empty_padding_and_tiled_attention(self):
         torch.manual_seed(42)
         geometry=torch.randn(1,300,18)
-        geometry[:,:,2]=torch.arange(300)//20
+        geometry[:,:,2]=torch.arange(300)//20-15
         geometry[:,:,3:5]=1
         geometry[:,:,12:15]=0
         geometry[:,:,12]=1
         mask=torch.ones(1,300,dtype=torch.bool)
         mask[:,-3:]=False
+        geometry[:,-3:,2]=0  # Padded queries have no allowed real key in their plane.
         x=torch.randn(1,300,16,requires_grad=True)
         attention=PairAttention(16,cross_plane=False).train()
         output=attention(x,mask,geometry)
