@@ -4,7 +4,8 @@ import unittest
 
 import numpy as np
 
-from analysis.flavour.s3.accept import promotion, comparison_inventory, confirmation_contract
+from analysis.flavour.s3.accept import (promotion, comparison_inventory, confirmation_contract,
+                                        conditional_inventory)
 from analysis.flavour.s3.conditional import operating_points
 from analysis.flavour.s3.metrics import NAMES
 
@@ -96,6 +97,36 @@ class S3DecisionTests(unittest.TestCase):
         self.assertTrue(confirmation_contract(screen, confirmation))
         partial = copy.deepcopy(confirmation); partial['experiments'].pop()
         self.assertFalse(confirmation_contract(screen, partial))
+
+    def test_conditional_gate_requires_each_domain_pair_and_class_metric(self):
+        comp, _ = self.example()
+        comp['pairs'] = [{'a': 'part_a', 'b': 's3_b'}] * 3
+        comp['replicates'] = 400
+        for scope in comp['metrics'].values():
+            for value in scope.values():
+                value['valid_replicates'] = 400
+        pair = {**comp, 'a': 'part_a', 'b': 's3_b'}
+        spec = {'pairs': [{'a': 'part_a', 'b': 's3_b'}],
+                'seed_mean_comparisons': [{'name': comp['name'], 'pairs': comp['pairs']}]}
+        evaluation = {'experiments': [{'name': n} for n in ['part_a', 's3_b', 'b0']]}
+        domains = ['pixel_centered', 'large_scintillator', 'detector_active', 'all_empty',
+                   'pixel_ge_1000', 'tracker_active', 'tracker_empty']
+        conditional = {'experiments': ['part_a', 's3_b'], 'paired_domains': [
+            {'domain': domain, 'paired_comparisons': [copy.deepcopy(pair)],
+             'seed_mean_comparisons': [copy.deepcopy(comp)]} for domain in domains]}
+        self.assertTrue(all(conditional_inventory(conditional, evaluation, spec).values()))
+        partial = copy.deepcopy(conditional); partial['paired_domains'].pop()
+        self.assertFalse(all(conditional_inventory(partial, evaluation, spec).values()))
+        partial = copy.deepcopy(conditional); partial['paired_domains'][0]['paired_comparisons'] = []
+        self.assertFalse(all(conditional_inventory(partial, evaluation, spec).values()))
+        partial = copy.deepcopy(conditional)
+        del partial['paired_domains'][0]['paired_comparisons'][0]['metrics']['raw']['class_3_AP']
+        self.assertFalse(all(conditional_inventory(partial, evaluation, spec).values()))
+        # A physically undefined class statistic is a recorded result, not a missing metric.
+        partial = copy.deepcopy(conditional)
+        partial['paired_domains'][0]['paired_comparisons'][0]['metrics']['raw']['class_3_AP'] = {
+            'delta': None, 'CI95': [None, None], 'valid_replicates': 0}
+        self.assertTrue(all(conditional_inventory(partial, evaluation, spec).values()))
 
 
 if __name__ == '__main__':

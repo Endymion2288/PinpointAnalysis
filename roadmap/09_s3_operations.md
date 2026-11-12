@@ -74,4 +74,6 @@ FASERCal本地arXiv v2的architecture Methods再次核对了module-level self-at
 
 `analysis.flavour.s3.monitor --watch`每60秒观察训练产物，只对新发布complete的模型执行14项CPU读回；scheduler liveness另查。最终`analysis.flavour.s3.accept --comparisons <frozen-confirmation-pairs.json>`精确比对所有冻结配对、确认矩阵及raw/common support的34项四类统计和400个有效replicates，不能只凭数量判定通过。
 
+条件域gate还逐项核对七个预定域、全部S3与ParT/ParticleNet模型、适用的单seed/三seed冻结配对，以及raw/common-support的34项统计和bootstrap记录；物理上无定义的统计须明确记录null及有效replicate数。条件域曲线PDF与Parquet同时检查。细节见[阶段76](../workbook/2026-11-13_stage76_s3_conditional_gate_audit.md)。
+
 17首轮和选择后去重的确认项全部真实终态、四轮/80,064 updates/零AMP skips；CPU checkpoint/optimizer/predictions读回通过；冻结数据与配置一致。完成四分类所有配对与两种窗口×表示交互、三seed、模态/资源Pareto、接受度/空响应/高占用/错误组与英文图示、真实终态成本、中文科学报告及gate decision。最终无pending、strict输出门槛exit0并提交后，才能标记S3完成。S4–S6未执行。

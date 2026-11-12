@@ -59,6 +59,50 @@ def confirmation_contract(screen, confirmation):
     return confirmation['experiments'] == expected
 
 
+def conditional_inventory(conditional, evaluation, specification):
+    """Audit every requested model/domain contrast, retaining undefined metrics."""
+    expected_models = {e['name'] for e in evaluation['experiments']
+                       if e['name'].startswith(('s3_', 'part_', 'pn_'))}
+    actual_models = conditional.get('experiments', [])
+    model_complete = (set(actual_models) == expected_models and
+                      len(actual_models) == len(expected_models))
+    expected_domains = {'pixel_centered', 'large_scintillator', 'detector_active',
+                        'all_empty', 'pixel_ge_1000', 'tracker_active', 'tracker_empty'}
+    rows = conditional.get('paired_domains', [])
+    domain_complete = ({row['domain'] for row in rows} == expected_domains and
+                       len(rows) == len(expected_domains))
+    expected_pairs = {(p['a'], p['b']) for p in specification['pairs']
+                      if p['a'] in expected_models and p['b'] in expected_models}
+    expected_means = {g['name']: [(p['a'], p['b']) for p in g['pairs']]
+                      for g in specification['seed_mean_comparisons']
+                      if all(p['a'] in expected_models and p['b'] in expected_models for p in g['pairs'])}
+    contrasts_complete = True
+    metrics_complete = True
+    for row in rows:
+        pairs = row['paired_comparisons']; means = row['seed_mean_comparisons']
+        contrasts_complete &= (len(pairs) == len(expected_pairs) and
+            {(p['a'], p['b']) for p in pairs} == expected_pairs and
+            len(means) == len(expected_means) and
+            {g['name']: [(p['a'], p['b']) for p in g['pairs']] for g in means} == expected_means)
+        for report in [*pairs, *means]:
+            metrics_complete &= report.get('replicates') == 400
+            for scope in ['raw', 'common_support']:
+                details = report.get('metrics', {}).get(scope, {})
+                metrics_complete &= set(details) == set(NAMES)
+                for value in details.values():
+                    valid = value.get('valid_replicates')
+                    ci = value.get('CI95', [])
+                    metrics_complete &= (isinstance(valid, int) and 0 <= valid <= 400 and
+                        len(ci) == 2 and (ci == [None, None] if valid == 0 else
+                                         all(v is not None and np.isfinite(v) for v in ci)))
+                    delta = value.get('delta')
+                    metrics_complete &= delta is None or np.isfinite(delta)
+    return {'conditional_model_inventory_complete': model_complete,
+            'conditional_domain_inventory_complete': domain_complete,
+            'conditional_frozen_contrasts_complete': bool(contrasts_complete),
+            'conditional_four_class_metrics_complete': bool(metrics_complete)}
+
+
 def promotion(comparison, experiments):
     """Research completion and model promotion are separate decisions."""
     raw = comparison['metrics']['raw']
@@ -128,7 +172,9 @@ def main():
         'expected_physical_bootstrap': evaluation['bootstrap_replicates'] == 400 and evaluation['resampling_blocks']['resampling_blocks'] == 128,
         'conditional_diagnostics_complete': conditional.get('requested_complete') is True and
             set(row['name'] for row in records).issubset(conditional.get('experiments', [])) and
-            conditional.get('bootstrap_replicates') == 400,
+            conditional.get('bootstrap_replicates') == 400 and not conditional.get('pending'),
+        'conditional_curves_present': (args.conditional.parent / 'four_class_domain_curves.pdf').is_file() and
+            (args.conditional.parent / 'sampled_curves.parquet').is_file(),
         'terminal_backend_history_complete': accounting['missing_history_records'] == 0 and
             all(a['status'] in [3, 4] and a.get('allocation_complete', True) for a in accounting['allocations']),
         'organization_budget_respected': accounting['organization_GPU_hours_upper_bound'] <= 120,
@@ -138,6 +184,7 @@ def main():
             for name in ['s3_f16_context_latent_s42_e4', 's3_f16_context_latent_tracker_s42_e4']),
     }
     checks.update(comparison_inventory(evaluation, comparisons))
+    checks.update(conditional_inventory(conditional, evaluation, comparisons))
     decisions = [promotion(c, by_name) for c in evaluation['seed_mean_comparisons']
                  if c['name'] != 'primary_native_minus_1mm_three_seed'] if checks['all_frozen_experiments_complete'] else []
     report = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': 'S3', 'checks': checks,
