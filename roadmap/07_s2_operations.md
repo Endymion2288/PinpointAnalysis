@@ -111,6 +111,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 03:10 UTC，正式 ParticleNet native projection（`1573782.5`）与 ParT 1 mm projection（`1573782.2`）均 exit0，14 项读回与最终源表/原节点副本比较全部通过；两族 native joint 也已补齐当前 14 项检查。PN native joint−projection 的 raw τ ΔAP=+0.00712568，pointwise CI95=[+0.00003031,+0.01448372]，固定 common-support 区间跨 0；ParT 1 mm pairing ΔAP=+0.00081170，CI=[−0.00433001,+0.00629580]。当前正式有效评价为 9 results、6 paired/39 pending，5 complete、1 running、29 idle，见[阶段 33](../workbook/2026-11-12_stage33_s2_projection_comparisons.md)。V100 九项辅助全部结束，新增 100 μm 结果见阶段28；03:09:45 UTC 累计 46.45342 GPU-hours、missing=0。Kubeflow v6 仍待 GPU。
 
+正式 `metrics.csv` / `summary.json` 现显式区分 `program_gpu_hours` 与 `allocated_gpu_hours`，并列出 allocation 秒数与额外开销。旧 `gpu_hours` 保留为程序时间别名；实际记录不完整时为空，详见[阶段34](../workbook/2026-11-12_stage34_s2_resource_columns.md)。原有配对的实际成本匹配继续使用同一 accounting。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |

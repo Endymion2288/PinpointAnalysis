@@ -447,6 +447,20 @@ def plot_diagnostics(root,output,experiments,frames):
     plt.close(fig)
 
 
+def resource_metrics(manifest, allocation=None):
+    """Keep committed program time distinct from all terminal backend attempts."""
+    complete = bool(allocation and allocation.get('allocation_complete') and
+                    allocation.get('all_terminal') and allocation.get('model_complete'))
+    return {
+        'gpu_hours': manifest.get('gpu_hours'),
+        'program_gpu_hours': manifest.get('gpu_hours'),
+        'allocated_gpu_hours': allocation['GPU_hours'] if complete else None,
+        'allocated_seconds': allocation['allocated_seconds'] if complete else None,
+        'allocation_overhead_seconds': allocation.get('untracked_allocation_seconds') if complete else None,
+        'allocation_complete': complete,
+    }
+
+
 def run(args):
     args.output.mkdir(parents=True,exist_ok=True)
     experiments=[]
@@ -455,6 +469,9 @@ def run(args):
     examples=[]
     factorial={}
     historical=[]
+    accounting_path=args.root/'campaign_accounting.json'
+    accounting=json.loads(accounting_path.read_text()) if accounting_path.exists() else {}
+    allocations=accounting.get('experiments',{})
     catalog=pd.read_parquet(args.root/'catalog.parquet',columns=['run','chunk','row','all_empty',
                                                                'pixel_channels','bar_channels','tracker_channels'])
     for path in sorted((args.root/'experiments').iterdir()):
@@ -481,7 +498,8 @@ def run(args):
                             'input_response_empty_events':int((~input_active).sum()) if input_active is not None else None,
                             'matched_tau':matched,'common_support':support,
                             'parameters':manifest['parameters'],'gpu':manifest['gpu_name'],
-                            'gpu_hours':manifest.get('gpu_hours'),'peak_gpu_mib':manifest.get('peak_gpu_allocated_mib')})
+                            **resource_metrics(manifest,allocations.get(path.name)),
+                            'peak_gpu_mib':manifest.get('peak_gpu_allocated_mib')})
         masks={'all':np.ones(len(frame),dtype=bool),'pixel_centered':frame.pixel_centered,
                'large_scintillator':frame.large_scintillator}
         if 'all_empty' in frame:
@@ -549,6 +567,13 @@ def run(args):
         'seed_spread':seed_spread(experiments),'factorial_interactions':interactions,
         'pending_comparisons':pending,'requested_comparisons_complete':not pending,
         'seed_mean_comparisons':seed_comparisons,
+        'resource_time_definitions':{
+            'gpu_hours':'legacy alias of program_gpu_hours',
+            'program_gpu_hours':'manifest program wall time on GPU; committed execution only',
+            'allocated_gpu_hours':'recorded terminal backend allocations for every attempt of this experiment in this root',
+            'allocation_overhead_seconds':'allocation absent from committed program wall, including setup and failed/resumed attempts',
+            'missing_allocation':'null; no program-time substitution',
+            'accounting_utc':accounting.get('utc')},
         'response_domain_definitions':{
             'detector_active':'at least one pixel, bar, or accepted tracker channel, independent of model input',
             'all_empty':'no pixel, bar, or accepted tracker channels',
@@ -566,7 +591,9 @@ def run(args):
             'hardware_model':e['hardware_model'],
             'balanced_accuracy':e['metrics']['balanced_accuracy'],'NLL':e['metrics']['NLL'],
             'tau_eff_at_1pct_FPR':e['tau']['FPR_0.01']['tau_efficiency'],
-            'gpu_hours':e['gpu_hours'],'parameters':e['parameters'],'peak_gpu_mib':e['peak_gpu_mib']})
+            **{key:e[key] for key in ['gpu_hours','program_gpu_hours','allocated_gpu_hours',
+                'allocated_seconds','allocation_overhead_seconds','allocation_complete']},
+            'parameters':e['parameters'],'peak_gpu_mib':e['peak_gpu_mib']})
     pd.DataFrame(table).to_csv(args.output/'metrics.csv',index=False)
     plot_diagnostics(args.root,args.output,experiments,frames)
     fig,ax=plt.subplots(figsize=(8,5),constrained_layout=True)

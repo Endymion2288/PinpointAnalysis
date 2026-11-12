@@ -8,10 +8,30 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval, historical_three_class, tau_branch_metrics, input_response_activity
+from analysis.flavour.s2.evaluate import common_support_weights, paired_interval, tau_metrics, factorial_contrast, matched_time, resampling_groups, seed_mean_interval, historical_three_class, tau_branch_metrics, input_response_activity, resource_metrics
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_resource_columns_keep_all_attempt_cost_separate_from_program(self):
+        manifest={'gpu_hours':1.}
+        allocation={'allocation_complete':True,'all_terminal':True,'model_complete':True,
+                    'GPU_hours':1.5,'allocated_seconds':5400.,'untracked_allocation_seconds':1800.}
+        result=resource_metrics(manifest,allocation)
+        self.assertEqual(result['gpu_hours'],1.)
+        self.assertEqual(result['program_gpu_hours'],1.)
+        self.assertEqual(result['allocated_gpu_hours'],1.5)
+        self.assertEqual(result['allocated_seconds'],5400.)
+        self.assertEqual(result['allocation_overhead_seconds'],1800.)
+        self.assertTrue(result['allocation_complete'])
+        for incomplete in [None,{**allocation,'allocation_complete':False},
+                           {**allocation,'all_terminal':False},{**allocation,'model_complete':False}]:
+            result=resource_metrics(manifest,incomplete)
+            self.assertFalse(result['allocation_complete'])
+            self.assertIsNone(result['allocated_gpu_hours'])
+            self.assertIsNone(result['allocated_seconds'])
+            self.assertIsNone(result['allocation_overhead_seconds'])
+            self.assertEqual(result['program_gpu_hours'],1.)
+
     def sample(self):
         rng=np.random.default_rng(42)
         labels=np.repeat(np.arange(4),60)
