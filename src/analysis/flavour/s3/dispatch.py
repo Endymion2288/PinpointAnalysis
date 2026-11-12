@@ -36,7 +36,7 @@ def worker(args):
             assignment = json.loads(assignment_path.read_text())
             if assignment['job'] != args.name or assignment['root'] != str(args.root.resolve()):
                 raise ValueError('assignment belongs to another worker/root')
-            write_json(directory / 'accepted.json', {'utc': datetime.now(timezone.utc).isoformat(), **assignment})
+            write_json(directory / 'accepted.json', {**assignment, 'accepted_utc': datetime.now(timezone.utc).isoformat()})
             os.execv(sys.executable, [sys.executable, '-m', 'analysis.flavour.s3.train', '--root', str(args.root),
                 '--campaign', assignment['campaign'], '--task', str(assignment['task'])])
         time.sleep(2)

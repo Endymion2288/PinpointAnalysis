@@ -1,6 +1,6 @@
 # 分阶段工单、资源与交付
 
-S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3–S6尚未执行；以下工单和建议预算保留为研究路线图。
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3的17项screen已提交，正式H100验证通过，见[执行合同](09_s3_operations.md)与[阶段59](../workbook/2026-11-12_stage59_s3_diagnostics_and_queue_handoff.md)。S4–S6未执行。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
@@ -46,11 +46,11 @@ S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector
 
 **要回答的问题：局部几何和跨探测器 context 如何分工？**
 
-实现 plane-aware local encoder + module context + latent fusion，先用无复杂 decoder 的 direct-supervised 模型。依次比较 late pooling、latent、joint attention；关闭 module/pair geometry；关闭 pixel/bar/tracker/time。不同读出层级分开建表，time 和 charge 需分别证明标定/validity。
+实现 plane-aware local encoder + module context + latent fusion，先用无复杂 decoder 的 direct-supervised 模型。依次比较 late pooling、latent、joint attention；关闭 module/pair geometry，双向pixel/bar模态消融和tracker增量。现有bar proxy信号按用户接受值冻结使用；当前输入没有time或拟合q/p，time白名单证明未使用，不伪造相同输入的重复训练。真实硬件标定不作为S3前置。
 
-记录 all-event 与 active 条件效率，以及高占用、出接受度、缺失子系统情况。按 validation 的 τ 工作点、macro metrics 和实际 GPU-hours 选择两个 Pareto 候选，再用三种子确认。
+记录 all-event 与 active 条件效率，以及高占用、出接受度、缺失子系统情况。按validation完整四分类macro AP、NLL和实际GPU-hours选择两个Pareto候选，再用三种子确认；主native/1 mm也保留三seed，重叠去重。τ工作点作为附加物理指标，不能代替四类选择。
 
-FASER 的增量同时报相同 purity/background acceptance 下的效率、完整曲线和拟合覆盖率；digitized hit、reconstructed track 与简化 12-feature 参照分开。检查 `q/p` uncertainty、fake associations 与动量截顶，不把高纯低覆盖分支当作全样本重建。
+Tracker增量同时报各类相同purity/background acceptance下的效率、完整曲线和accepted-hit覆盖率。当前是用户接受的hit proxy，拟合轨迹、q/p uncertainty、fake associations与拟合重建覆盖属于后续S5，S3不声称已测量。
 
 交付：推荐 backbone、资源 Pareto 图、modal ablation 和解释图。验收：达到 README 的预注册晋级门槛，或在置信区间支持的近等效质量下明显减小资源；若未达标，继续最强简单模型，分层结构保留为解释性结果。
 
@@ -95,7 +95,7 @@ generator variations 需兼容当前能区与 target；尽量匹配 incoming neu
 | Interactive verification | 10–100 events；单 GPU short step 如需要 | 验证后停止交互式批量处理，长作业进入 HTCondor |
 | CPU conversion | 每任务 4–8 CPUs；内存从 8–16 GiB pilot 起 | 根据最大原始 records 和 chunk read size 测 RSS/吞吐再调整 |
 | GPU job | 1 GPU、8 CPUs；batch 依实际 hit budget | 记录 GPU 型号/VRAM、显存峰值、events/s、GPU utilization、CPU wait |
-| Screening budget | S2–S3 合计先封顶约 100 GPU-hours | 按验证结果分轮使用，不预排所有 Cartesian products |
+| Screening budget | S2终态92.73055556 GPUh另列；S3组织上限120 GPUh | S3 screen/probe70、confirmation/诊断50，含失败/恢复/所有后端；不自动耗尽 |
 | Expanded supervised study | 再分配约 100–200 GPU-hours | 仅保留 2 个候选与关键三种子 ablations |
 | Pretraining pilot | MAE 约 25–50 GPU-hours，self-distill 约 25–50 | 决策后再申请至多约 200 GPU-hours continuation；不自动耗尽预算 |
 | Final systematics | 根据独立事件统计和 nuisance 样本估算 | 与训练成本分列；GPU/CPU 型号不同不可直接比较 hours |
@@ -135,4 +135,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-S2已通过验收；下一阶段S3以本次PN/ParT native及1 mm三seed结果为基线，检验plane-aware局部编码、module-aware context与latent fusion。保留bar，tracker同时评价四类收益/覆盖/成本；不把native或某架构的τ AP未确认增量理解为硬件信息无用。具体结论见[总报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)，本次未启动S3。共享输入、冻结proxy与calibration/test角色继续沿用。
+S3正在以PN/ParT native及1 mm三seed结果为基线，检验plane-aware局部编码、module-aware context与latent fusion。保留bar，tracker同时评价四类收益/覆盖/成本；不把native或某架构的τ AP未确认增量理解为硬件信息无用。共享输入、冻结proxy与calibration/test角色继续沿用。先完成冻结17项screen，再按[四类规则](09_s3_operations.md)选确认项。Kubeflow与HTCondor按实际获配速度交接idle任务，Running任务继续执行。

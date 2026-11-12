@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。**S0、S1、S2已完成并验收。**S2的35项H100科学配置及490项CPU读回检查通过，严格评价完成41项单seed配对、4项三seed均值、2项交互、0 pending；组织终态成本92.73055556 GPUh。当前共享压缩/四轮预算下，native相对1 mm及两架构之间的τ AP均值收益未确认；bar增量和完整训练域覆盖有正区间支持，tracker/架构的四分类描述统计另列。[最终科学报告与gate decision](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[版本化数值表](results/s2_summary.json)和[跨层控制](../workbook/2026-11-12_stage54_s2_cross_plane_controls.md)保留完整证据。运行入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与准入见[08_kubeflow.md](08_kubeflow.md)。S3已开始实现与执行验证，四分类完整指标/Plane-aware编码/Module context/latent fusion合同见[09_s3_operations.md](09_s3_operations.md)与[阶段56](../workbook/2026-11-12_stage56_s3_contract_and_encoder.md)。Calibration/test继续冻结，S4–S6未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。**S0、S1、S2已完成并验收。**S2的35项H100科学配置及490项CPU读回检查通过，严格评价完成41项单seed配对、4项三seed均值、2项交互、0 pending；组织终态成本92.73055556 GPUh。当前共享压缩/四轮预算下，native相对1 mm及两架构之间的τ AP均值收益未确认；bar增量和完整训练域覆盖有正区间支持，tracker/架构的四分类描述统计另列。[最终科学报告与gate decision](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[版本化数值表](results/s2_summary.json)和[跨层控制](../workbook/2026-11-12_stage54_s2_cross_plane_controls.md)保留完整证据。运行入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与准入见[08_kubeflow.md](08_kubeflow.md)。S3正式H100/BF16验证已通过，17项screen已提交；四分类完整指标/Plane-aware编码/Module context/latent fusion合同见[09_s3_operations.md](09_s3_operations.md)与[阶段56](../workbook/2026-11-12_stage56_s3_contract_and_encoder.md)。Calibration/test继续冻结，S4–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -115,7 +115,7 @@ flowchart TD
 
 首先要交付可复现、仅使用硬件可观测量的四分类基线，报告 all-event 效率和 detector-active 条件效率。随后用冻结 split 上的配对比较说明每一项信息或训练方法的净贡献。最终成果是有系统效应说明的分类概率与选择效率，而不只是最大 overall accuracy。
 
-方法晋级的预注册目标为：在预先指定的主要指标上，三随机种子均值提高且配对 95% 区间支持正增益；同时报告每类性能，若任一类明显退化须解释取舍。S3/S4 可先用 `ντ` PR-AUC 增加 0.01、或固定背景接受率下 `ντ` 效率相对提高 10%、或同等质量减少一半训练开销，作为值得扩大样本的工程门槛。这些是研究预算选择，不是预测性能或最终物理要求。
+S3方法晋级使用[完整四分类冻结合同](09_s3_operations.md)：三seed平均macro AP、macro F1或balanced accuracy至少增加0.01且对应配对95%物理事件区间支持正收益，NLL增加区间上界不超过0.01，逐类AP退化超过0.01须解释且不称全面晋级；或实际训练成本至少下降50%，且四类质量区间处于预定近等效界限。τ AP+0.01/固定背景效率相对+10%保留为附加物理指标，不能单独决定S3 backbone。研究完成可以得到“继续简单基线”的结论。S4门槛在启动前结合S3结果独立冻结。
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
