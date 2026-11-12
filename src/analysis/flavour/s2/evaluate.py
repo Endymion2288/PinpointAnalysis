@@ -220,7 +220,7 @@ def paired_interval(a,b,replicates=400,seed=2026,weight=None):
 
 
 def factorial_contrast(frames,replicates=400,seed=2026):
-    """Interaction = projection loss at coarse minus loss at native pitch.
+    """Interaction = native pairing benefit minus coarse pairing benefit.
 
     Positive means the combined compression is less damaging than the sum
     of the two individual losses, on the AP scale. Resample identical chunks

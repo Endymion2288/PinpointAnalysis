@@ -46,3 +46,11 @@ commit `9d67e8a` 后，正式 `evaluate` 入口的 Condor 集成检查提交为 
 ## 下一步计划
 
 继续完成 35 项已提交科学任务，以完成模型更新评价，查看真实粒度图、GPU 时间匹配列和三种子图。最终交付仍须覆盖 41 项单 seed 配对、4 项种子均值、两家族 factorial interactions、条件域与 τ 分支，以及两家族原生错误事件显示。
+
+## 2026-11-12：最终评价口径复核
+
+核对 `evaluate.py` 的三种子均值、factorial interaction 和 allocated-time 匹配实现。三种子比较先计算各 seed 的 AP 差值，再取均值；每次 bootstrap 对三种子使用相同物理 blocks，训练 spread 单列。时间匹配从实际后端 allocation 核算读取额外成本，在共同预算内按 validation NLL 选择已完整保存的 epoch；CPU reference 不作 GPU 时间匹配。
+
+发现 `factorial_contrast` 的首句说明将方向写反。实际系数 `[1, −1, −1, 1]`、输出 `definition` 和统计计算一致，均为 `AP_NJ − AP_NP − AP_CJ + AP_CP`，即原生 pairing benefit 减去粗粒度 pairing benefit。已修正说明文字；正值表示两种压缩的联合损失小于各自损失之和。此解释只适用于该 AP 尺度与当前配置。
+
+验证方式为核对代码系数、输出公式和上述代数恒等式；本次仅改 docstring，未重新训练或重新计算指标。正式 H100 的两家族完整四格交互效应仍未测量，待四格模型全部完成后报告数值与区间。
