@@ -62,4 +62,4 @@ CERN推荐`/shared`持久复用小型代码/环境、`/scratch`暂存I/O密集�
 
 核算从PodScheduled开始，包括image pull、init、失败和恢复分配；未调度probe计0。未创建任何Pod的准入拒绝Job，需保留终态和FailedCreate证据才记录0，不能只根据空列表推断。逐GPU resource保留hours；如独立probe使用MIG，每个分区按一张设备计入组织预算，同时单列MIG resource-hours，不作整卡性能等效换算。所有后端成本纳入200 GPUh组织上限。
 
-上游依据：[Kubernetes GPU scheduling](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/)说明GPU extended resource与node selector；[NVIDIA device plugin](https://docs.nvidia.com/datacenter/cloud-native/k8s-device-plugin/latest/index.html)说明MIG混合策略使用独立resource名称。CERN实际准入结果决定本站CPU/RAM配置方式。
+上游依据：[Kubernetes GPU scheduling](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/)说明GPU extended resource与node selector；[NVIDIA device plugin](https://github.com/NVIDIA/k8s-device-plugin#configuration-option-details)说明MIG混合策略使用独立resource名称。CERN实际准入结果决定本站CPU/RAM配置方式。

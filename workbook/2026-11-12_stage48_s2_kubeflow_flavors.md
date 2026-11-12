@@ -33,6 +33,8 @@ python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 
 以上提交命令已执行，不再次运行。14项Kubeflow单元测试和2项accounting测试通过，日志为`h100/kubeflow/flavor_tests.log`、`flavor_accounting_tests.log`；真实Pod dry-run与实际Pod资源一致。语法和diff检查通过。未测量GPU runtime与Kubeflow正式训练性能。
 
+阶段提交`dc73c51`后Git曾将父提交的一个src tree读为空文件；随后该对象自行可读，`git show`及connectivity fsck通过，未修改对象或重写历史。EOS延迟可见性是待确认原因；证据为`h100/git_object_visibility_stage48.json`和connectivity日志。NVIDIA旧文档地址返回404，引用改为实际读取的官方GitHub device-plugin配置说明。
+
 ## 阶段性结论
 
 事实：CERN flavor需要product和resource配对，GPU Pod的CPU/RAM由平台自动分配；仅Job dry-run不足以验证Pod准入。修正请求已创建真实Pod，目前是资源排队。整卡与MIG没有作性能或预算等效声明。
