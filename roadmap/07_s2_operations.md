@@ -203,3 +203,7 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 ## 三域训练控制完整结果
 
 [阶段49](../workbook/2026-11-12_stage49_s2_center_training_domain.md)补齐center-only，14项读回pass；31 results=4 references+27科学配置、835 strata、93历史三类表、31 paired/14 pending、2 factorial、0 seed means，217个target条件组，27 output_complete。Full−center的全域τ ΔAP=+0.05449639，pointwise CI=[+0.04020247,+0.06874907]；固定E/vertex为+0.03210627，CI=[+0.01756088,+0.04732816]；全域1%效率差+0.018，CI=[+0.00576943,+0.02511136]。中心条件域AP区间跨0，large域AP/1%效率区间为正；三域学习曲线已生成并查看，不改变主选点。Center只有7,429 unique train、319,233 exposures、loss使用该域类别权重；其原生通道均值为full的2.84倍。`center_training_comparison.json`保存完整证据，`stage49_execution_snapshot.json`保存5 running/3 idle的实际状态。Kubeflow v9保持正确H100 94GB flavor并Pending、无node；科学任务未迁移。严格S2 gate仍false。
+
+## ParT 1 mm seed17 配对
+
+[阶段50](../workbook/2026-11-12_stage50_s2_part_resolution_seed17.md)：`1573782.25` exit0、14项读回pass；32 results=4 references+28科学配置、862 strata、96历史三类表、32 paired/13 pending、0 seed means，target 224组，28 output_complete。Seed17 native−1 mm raw τ ΔAP=+0.00440110，pointwise CI=[−0.00207130,+0.01145529]；固定E/vertex为−0.00138996，CI=[−0.00768450,+0.00504632]。尚不能确认正收益或排除raw +0.01收益；三seed均值继续等待2026。1 mm综合四分类点估计较好，不能由τ AP代表所有指标。`part_resolution_seed17_comparison.json`及`stage50_execution_snapshot.json`保存主表、终态和实际4 running/3 idle状态。11:15 UTC组织85.50462006 GPUh、missing=0；Kubeflow正确H10094GB flavor仍Pending，严格gate=false。
