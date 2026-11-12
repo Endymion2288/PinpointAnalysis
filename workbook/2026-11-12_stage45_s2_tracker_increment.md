@@ -125,6 +125,8 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 
 本阶段未改训练、配置或评价代码，复用阶段44入口；真实输出读回、条件分析和主评价正常退出，`git diff --check`通过。53项既有回归测试的最近完整通过记录见阶段44，本阶段未重复执行。
 
+09:45:49 UTC实际状态为23 complete、5 running、7 idle；`stage45_execution_snapshot.json`保留各配置进度。09:46–09:47 UTC查询Kubeflow v7时，CERN OIDC登录需要交互式续期，两次非交互查询均失败，当前Job/Pod状态不可观测；这是客户端登录状态，未据此结束或替换既有Job。已提醒用户按所提供CERN文档重新登录，Condor继续；精简证据为`kubeflow/client_auth_expired.json`。
+
 ## 阶段性结论
 
 事实：接受的tracker proxy增加158个事件的输入响应，并改善e/μ/NC AP与四分类综合指标点估计；τ AP、固定背景效率及两个条件域均没有正事件区间支持。当前模型下τ AP至少+0.01的收益可排除，等效或跨seed稳定性未确定。

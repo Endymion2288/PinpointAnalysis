@@ -181,6 +181,8 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 
 ## CERN Kubeflow 文档核对
 
+09:46–09:47 UTC再次查询既有v7 Job/Pod时，OIDC凭据要求交互式重新登录，非交互stdin返回EOF；复查结果一致。此时无法观测Kubeflow当前调度状态，不能把客户端认证失败当作Job终止；不重提既有请求。需要用户按下述CERN命令行文档更新登录，Condor任务继续。精简记录为`h100/kubeflow/client_auth_expired.json`，不保存OAuth授权URL。
+
 根据用户提供的[命令行入门](https://ml.docs.cern.ch/getting-started/#command-line_1)，并核对[GPU flavors](https://ml.docs.cern.ch/#available-flavors)与[单节点训练](https://ml.docs.cern.ch/ml/training/)，单GPU训练可直接创建`batch/v1 Job`。整卡H100 94GB为`nvidia.com/gpu: 1`、`nodeSelector: {nvidia.com/gpu.product: NVIDIA-H100-NVL}`；入门页的`nvidia.com/mig-3g.47gb`示例是47GB分区资源，与本S2整卡预算分开。后续科学Job使用`--gpu-product NVIDIA-H100-NVL`；执行前仍由已有runtime检查确认GPU/Torch/BF16。
 
 文档支持`mount-eos`/`mount-cvmfs`/`mount-afs`标签；现有CPU容器已实测EOS/CVMFS可读，GPU probe v7仍存活，不重提。当前Pod的调度反馈为6节点GPU不足、33节点selector不匹配等，无node；NVIDIA quota=1且被该排队请求占用。`h100/kubeflow/cern_documentation_review.json`保存文档URL、整卡/MIG区别和精简实时证据。没有调整平台注入的`large-images`约束，也没有迁移科学训练。GPU可用后仅承接仍idle的Condor任务，先结束其原副本再启动Kubeflow writer。
