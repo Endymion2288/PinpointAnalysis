@@ -145,19 +145,21 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
 | 100/200 μm curves | 两族完整四点曲线及相邻粒度配对完成（阶段37–38），十二项空间输出全部14项readback pass |
 | OR/count, grid shift | 两族四项控制均完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01；工作点CI和限制见阶段39 |
-| Pixel / bar / pixel+bar / +tracker | PN pixel/bar/pixel+bar三项完整，双向增量见阶段42–43；pixel增量raw AP为正、固定E/vertex区间跨0。+tracker仍运行 |
+| Pixel / bar / pixel+bar / +tracker | PN四项均完整，双向增量见阶段42–44；+tracker改善四分类点估计，τ AP的raw/common差值区间跨0且上界低于+0.01，见阶段45 |
 | No-pair / fixed-graph / local-shuffle | 全部四项均完整、14项读回pass；两族shuffle和ParT no-pair见阶段41，PN dynamic−fixed的raw/common AP区间跨0，资源及评价见阶段42 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
-| Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；新增90k target计数与26个结果的182个Z条件组见阶段43。完整物理解释继续随控制结果更新 |
-| Paired CI / interaction / matched time | 28项预定配对、2组交互及同allocation整轮比较已完成；其余17项配对/种子均值等待控制和确认结果 |
+| Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；90k target计数见阶段43，阶段45已刷新27个结果的189个Z条件组。完整物理解释继续随控制结果更新 |
+| Paired CI / interaction / matched time | 29项预定配对、2组交互及同allocation整轮比较已完成；其余16项配对/种子均值等待控制和确认结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
 
 ## 最新关联控制与输出清单
+
+阶段45补齐PN +tracker，14项读回pass、23/35科学输出完整。27 results、727行分域、81张历史三类条件表、29 paired/16 pending、2 factorial、0 seed means。+Tracker的四类balanced accuracy点估计0.3974→0.4367，τ AP差=−0.00424866、pointwise CI=[−0.01307753,+0.00369210]；固定E/vertex差=−0.00282447、CI=[−0.01101520,+0.00480946]。两者可排除至少+0.01的当前模型收益，不能判等效。输入空事件440→282，四类/分支/条件域与实际成本见[阶段45](../workbook/2026-11-12_stage45_s2_tracker_increment.md)。`tracker_comparison.json`保存独立快照；09:34:40 UTC组织累计78.59287089 GPUh、missing=0。训练域、额外种子和plane-only继续，严格gate仍为false。
 
 阶段44补充已有模态模型的条件配对：large域pixel+bar−bar的τ ΔAP=+0.01429830，pointwise CI=[+0.00374257,+0.02424773]，1% FPR效率差也为正区间；中心域ΔAP=−0.01544100、CI=[−0.05592653,+0.02131973]，方向未确定。Bar在pixel之上的AP增量在两个区域均为正区间。新入口`analysis.flavour.s2.conditional_pairs`复用full-validation NLL选点与既有fiducial标记，未重加权E/vertex；这些结果后的条件诊断不增加主合同。计数、尾部限制、实际验证及英文图见[阶段44](../workbook/2026-11-12_stage44_s2_conditional_modality_intervals.md)。原有53项回归测试全部通过；仍为22/35科学模型完整，+tracker/训练域/额外种子继续，严格gate尚未通过。
 
