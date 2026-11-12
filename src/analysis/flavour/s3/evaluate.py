@@ -100,16 +100,46 @@ def plot_all(output, experiments, frames, root):
             other.set_ylabel('Four-class macro AP', color='C1')
             fig.suptitle(f'{name}: validation sample priors; uncalibrated scores', fontsize=10)
             pdf.savefig(fig); plt.close(fig)
+    plot_resources(output, experiments)
+
+
+def plot_resources(output, experiments):
+    """Keep GPU subtypes separate and identify points without overlapping names."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
     rows = [e for e in experiments if e.get('allocated_gpu_hours') is not None]
-    if rows:
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
-        for e in rows:
-            for axis, metric in zip(axes, ['macro_AP', 'NLL']):
-                axis.scatter(e['allocated_gpu_hours'], e['four_class'][metric])
-                axis.annotate(e['name'].removeprefix('s3_').removesuffix('_s42_e4'),
-                              (e['allocated_gpu_hours'], e['four_class'][metric]), fontsize=6)
-                axis.set(xlabel='Actual allocated training GPU hours', ylabel=metric)
-        fig.savefig(output / 'four_class_resource_tradeoff.pdf'); plt.close(fig)
+    if not rows:
+        return
+    with PdfPages(output / 'four_class_resource_tradeoff.pdf') as pdf:
+        for gpu in sorted({e.get('GPU') or 'Unspecified GPU' for e in rows}):
+            group = [e for e in rows if (e.get('GPU') or 'Unspecified GPU') == gpu]
+            # Small pages remain readable when all confirmation seeds are added.
+            for start in range(0, len(group), 12):
+                page = group[start:start + 12]
+                fig = plt.figure(figsize=(12, 9), layout='constrained')
+                grid = fig.add_gridspec(2, 2, height_ratios=[1, 1.2])
+                axes = [fig.add_subplot(grid[0, i]) for i in range(2)]
+                table_rows = []
+                for index, item in enumerate(page, start + 1):
+                    cost = item['allocated_gpu_hours']
+                    for axis, metric in zip(axes, ['macro_AP', 'NLL']):
+                        axis.scatter(cost, item['four_class'][metric], s=25)
+                        axis.annotate(str(index), (cost, item['four_class'][metric]),
+                                      xytext=(4, 4), textcoords='offset points', fontsize=8)
+                        axis.set(xlabel='Allocated device-hours (bounds / shared charges included)', ylabel=metric)
+                    table_rows.append([index, item['name'], f'{cost:.4f}',
+                                       f'{item["four_class"]["macro_AP"]:.4f}',
+                                       f'{item["four_class"]["NLL"]:.4f}'])
+                table_axis = fig.add_subplot(grid[1, :]); table_axis.axis('off')
+                table = table_axis.table(cellText=table_rows,
+                    colLabels=['ID', 'Frozen experiment', 'Device-hours', 'Macro AP', 'NLL'],
+                    colWidths=[.04, .63, .11, .11, .11], loc='center', cellLoc='left')
+                table.auto_set_font_size(False); table.set_fontsize(8); table.scale(1, 1.6)
+                fig.suptitle(f'{gpu}: frozen validation quality and allocation charges\n'
+                             'GPU subtypes shown separately; operational costs do not measure model-only speedup', fontsize=11)
+                pdf.savefig(fig); plt.close(fig)
 
 
 def run(args):
