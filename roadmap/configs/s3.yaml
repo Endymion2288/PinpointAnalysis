@@ -1,0 +1,13 @@
+status: implementation_and_execution_validation
+stage: S3
+results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12
+source_data: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100
+screen: roadmap/configs/s3_screen.json
+comparisons: roadmap/configs/s3_pairs.json
+acceptance: roadmap/09_s3_operations.md
+primary_metrics: [four_class_macro_AP, four_class_NLL]
+required_metrics: [macro_F1, balanced_accuracy, macro_AUROC, Brier, class_AP, class_AUROC, class_precision, class_recall, class_F1, confusion_matrix, tau_working_points]
+confirmation_seeds: [17, 42, 2026]
+maximum_organization_GPU_hours: 120
+calibration_test_used: false
+S4_S6_executed: false

@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。**S0、S1、S2已完成并验收。**S2的35项H100科学配置及490项CPU读回检查通过，严格评价完成41项单seed配对、4项三seed均值、2项交互、0 pending；组织终态成本92.73055556 GPUh。当前共享压缩/四轮预算下，native相对1 mm及两架构之间的τ AP均值收益未确认；bar增量和完整训练域覆盖有正区间支持，tracker/架构的四分类描述统计另列。[最终科学报告与gate decision](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[版本化数值表](results/s2_summary.json)和[跨层控制](../workbook/2026-11-12_stage54_s2_cross_plane_controls.md)保留完整证据。运行入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与准入见[08_kubeflow.md](08_kubeflow.md)。Calibration/test继续冻结，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。**S0、S1、S2已完成并验收。**S2的35项H100科学配置及490项CPU读回检查通过，严格评价完成41项单seed配对、4项三seed均值、2项交互、0 pending；组织终态成本92.73055556 GPUh。当前共享压缩/四轮预算下，native相对1 mm及两架构之间的τ AP均值收益未确认；bar增量和完整训练域覆盖有正区间支持，tracker/架构的四分类描述统计另列。[最终科学报告与gate decision](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[版本化数值表](results/s2_summary.json)和[跨层控制](../workbook/2026-11-12_stage54_s2_cross_plane_controls.md)保留完整证据。运行入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与准入见[08_kubeflow.md](08_kubeflow.md)。S3已开始实现与执行验证，四分类完整指标/Plane-aware编码/Module context/latent fusion合同见[09_s3_operations.md](09_s3_operations.md)与[阶段56](../workbook/2026-11-12_stage56_s3_contract_and_encoder.md)。Calibration/test继续冻结，S4–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -16,6 +16,7 @@
 | [06_s0_s1_operations.md](06_s0_s1_operations.md) | 新原生通道管线、实际运行命令、事件签名 split 与 detector-proxy 的适用状态 |
 | [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集、完整矩阵、运行命令与最终验收 |
 | [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
+| [09_s3_operations.md](09_s3_operations.md) | S3完整四分类合同、细粒度局部编码/module/融合对照、Pareto与三seed确认 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 

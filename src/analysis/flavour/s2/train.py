@@ -80,7 +80,7 @@ def evaluate(model,loader,device,amp_dtype):
     return np.concatenate(labels)[order],np.concatenate(probabilities)[order]
 
 
-def run(args):
+def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_extra=None):
     config=json.loads(args.campaign.read_text())['experiments'][args.task]
     experiment=config['name']
     output=args.root/'experiments'/experiment
@@ -101,22 +101,23 @@ def run(args):
     device=torch.device(args.device)
     dtype=torch.bfloat16 if device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False) else torch.float16
     started=time.perf_counter()
-    train=SpatialDataset(args.root,'train',config)
-    val=SpatialDataset(args.root,'validation',config)
+    dataset_class=dataset_class or SpatialDataset
+    train=dataset_class(args.root,'train',config)
+    val=dataset_class(args.root,'validation',config)
     if not len(train) or not len(val):
         raise ValueError('train/validation subset empty')
     train_sampler=SpatialBatchSampler(train,config.get('batch_size',4),seed,steps=config.get('steps_per_epoch'))
     val_sampler=SpatialBatchSampler(val,config.get('batch_size',4),seed,shuffle=False)
     workers=config.get('workers',2)
-    options={'num_workers':workers,'collate_fn':collate_spatial,'pin_memory':device.type=='cuda',
+    options={'num_workers':workers,'collate_fn':collate_fn or collate_spatial,'pin_memory':device.type=='cuda',
              'generator':torch.Generator().manual_seed(seed)}
     if workers:
         options.update(multiprocessing_context='spawn',worker_init_fn=init_worker,prefetch_factor=1,persistent_workers=True)
     train_loader=DataLoader(train,batch_sampler=train_sampler,**options)
     val_loader=DataLoader(val,batch_sampler=val_sampler,**options)
-    model=PointClassifier(config['architecture'],dim=config.get('dim',64),k=config.get('k',16),
+    model=(model_factory(config) if model_factory else PointClassifier(config['architecture'],dim=config.get('dim',64),k=config.get('k',16),
                           pair_bias=config.get('pair_bias',True),dynamic=config.get('dynamic',True),
-                          cross_plane=config.get('cross_plane',True)).to(device)
+                          cross_plane=config.get('cross_plane',True))).to(device)
     optimizer=torch.optim.AdamW(model.parameters(),lr=config.get('learning_rate',.0005),weight_decay=.01)
     epochs=config.get('epochs',12)
     scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,epochs,eta_min=1e-5)
@@ -141,6 +142,7 @@ def run(args):
         'response_summary_version':2,
         'cross_plane_message_passing':config.get('cross_plane',True),
         'load_seconds':time.perf_counter()-started}
+    manifest.update(manifest_extra or {})
     history=[]
     epoch_predictions=[]
     best=float('inf')
