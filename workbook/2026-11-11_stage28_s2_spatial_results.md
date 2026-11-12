@@ -196,11 +196,32 @@ python -m analysis.flavour.s2.evaluate --root "$S2_RESULTS" \
 
 02:16:22 UTC组织累计43.30292 GPU-hours、missing history records=0。一轮核算恰逢`.9`从queue转history出现暂缺，重新查询实际history后已补齐，未将缺记录当作零成本。V100辅助只剩`1573747.4`（ParT100μm）仍在运行，26个被正式H100替代的idle任务继续保持移除状态。
 
+## 第九个辅助模型与 V100 执行收尾
+
+2026-11-12 03:02 UTC，最后一个 V100 辅助任务 `1573747.4` 正常结束（JobStatus=4、ExitCode=0、NumJobStarts=1）。ParT 100 μm joint 使用冻结配置、seed42、80k train/10k validation、4 epochs 与 NLL 选模，选中 epoch4。
+
+| Epoch | Validation NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.34160644 | 0.28641637 | 4,228.05752 |
+| 2 | 1.28012814 | 0.32854350 | 8,427.93742 |
+| 3 | 1.25606126 | 0.35177788 | 12,630.05094 |
+| 4 | 1.22219784 | 0.35482189 | 16,825.78142 |
+
+四类 balanced accuracy=0.42010、macro F1=0.41837083，τ ROC AUC=0.63072587，固定 common-support τ AP=0.32132794。1% FPR 阈值=0.44909048，通过 81/2,500 个 τ、75/7,500 个背景，τ 效率=0.0324；electron/muon/hadronic 分别通过 5/5/71。0.1% FPR 通过 10 个 τ、7 个背景，保留尾部统计不足标记。程序 wall=16,826.24807 s，实际 allocation=16,854 s=4.68166667 GPU-hours，额外 allocation=27.75193 s，peak=1,628.67627 MiB。80,064 attempted steps 中 80,026 applied、38 FP16 skips；exposures=320,164。
+
+原写入节点通过现有作业的 `condor_ssh_to_job` 同步源文件并保存四轮表；终态后核对源表与同步副本逐值相同、40k 行与各轮 row 完整、概率有限且归一、逐轮 NLL/AP 与 history 一致、选中 epoch 概率与最终预测一致、applied+skips=80,064，六项辅助核对通过。这是 V100 的输出核对，正式 H100 使用 14 项读回。
+
+部分评价正常退出，commit=`41f3a6d`，当前为 13 个结果（4 references+9 辅助模型）、349 行分域指标、39 个历史三类诊断，13 项配对完成、32 项 pending。新增 native−100 μm joint 的 τ ΔAP=−0.00411932，pointwise 95% CI=[−0.01004242,+0.00203500]；固定 common-support ΔAP=−0.00362992，CI=[−0.01016025,+0.00258360]。事件区间均跨 0，且上界低于预定 +0.01：该 V100/seed42/四轮/局部压缩条件下没有原生粒度的正增量区间支持，可排除至少 +0.01 的 AP 收益，跨种子与正式 H100 结论仍待完成。区间沿用 400 次、128 个 accepted-family/chunk blocks，common-support 权重固定。
+
+同实际 allocation 预算 16,853.53335 s 内按 NLL 分别选 native epoch3 与 100 μm epoch4，τ AP 差为 −0.00731237；native 余 348.38638 s 不足一整轮。这是 epoch 分辨率点估计，时间匹配 CI 未测量。更新后的 resolution 与 paired-effects 首页已实际查看，新增 100 μm 点；200 μm 等未运行辅助配置保持缺测。
+
+固定快照 `ninth_scientific_model.json` 保留 manifest、完整 history、终态、成本、辅助核对、配对与分支；日志为 `evaluation_ninth_model.log`。03:09:45 UTC 组织累计 46.45342 GPU-hours，missing history records=0。V100 九项辅助全部完成，26 项被正式 H100 替代的 idle 配置保持移除；后续科学执行继续使用 H100，父目录辅助无需补齐 45 项比较。
+
 ## 阶段性结论
 
-V100辅助已完成八项冻结配置，两族四格及其交互效应已实际评价，预先固定的NLL选模规则得到保留。ParT的1mm/seed42联合位置AP收益有事件区间支持；ParticleNet的native配对仅在固定common-support条件下有正区间支持。两族交互效应区间均跨0，正式硬件下的完整配置与跨种子稳定性仍待预定矩阵。
+V100辅助已完成九项冻结配置，两族四格、ParT 100 μm 及其预定配对已实际评价，预先固定的NLL选模规则得到保留。ParT的1mm/seed42联合位置AP收益有事件区间支持；ParticleNet的native配对仅在固定common-support条件下有正区间支持。两族交互效应区间均跨0，正式硬件下的完整配置与跨种子稳定性仍待预定矩阵。
 
-正式执行已依据双家族整轮门槛切换H100；V100仅剩1项辅助训练运行。Kubeflow v6仍在等待GPU分配。上述辅助结果与统一H100结果分别保留，正式41+4比较读取H100目录。
+正式执行已依据双家族整轮门槛切换H100；V100辅助训练全部结束。Kubeflow v6仍在等待GPU分配。上述辅助结果与统一H100结果分别保留，正式41+4比较读取H100目录。
 
 ## 下一步计划
 

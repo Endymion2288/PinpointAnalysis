@@ -109,6 +109,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 02:55 UTC，正式 ParT 1 mm joint（`1573782.1`）exit0，14 项 CPU 读回通过，40k 行表与原节点同步副本逐值相同。τ AP=0.35502857；native−1 mm joint ΔAP=+0.00355534，CI95=[−0.00186106,+0.00868839]，fixed-common ΔAP=+0.00297513，CI=[−0.00192093,+0.00846325]。当前 seed42/四轮/表示条件下可排除至少 +0.01 的 AP 收益，跨种子与机制待控制。正式有效部分评价为 7 个结果、4 项配对/41 项 pending，原归档 projection 不进入当前主表；详见[阶段 32](../workbook/2026-11-12_stage32_s2_joint_resolution.md)。当前正式 3 complete、2 running、30 idle。
 
+03:10 UTC，正式 ParticleNet native projection（`1573782.5`）与 ParT 1 mm projection（`1573782.2`）均 exit0，14 项读回与最终源表/原节点副本比较全部通过；两族 native joint 也已补齐当前 14 项检查。PN native joint−projection 的 raw τ ΔAP=+0.00712568，pointwise CI95=[+0.00003031,+0.01448372]，固定 common-support 区间跨 0；ParT 1 mm pairing ΔAP=+0.00081170，CI=[−0.00433001,+0.00629580]。当前正式有效评价为 9 results、6 paired/39 pending，5 complete、1 running、29 idle，见[阶段 33](../workbook/2026-11-12_stage33_s2_projection_comparisons.md)。V100 九项辅助全部结束，新增 100 μm 结果见阶段28；03:09:45 UTC 累计 46.45342 GPU-hours、missing=0。Kubeflow v6 仍待 GPU。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
