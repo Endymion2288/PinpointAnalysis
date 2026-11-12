@@ -75,6 +75,8 @@ exec python -m "$@"
         gpu=f'request_gpus = 1\nrequire_gpus = {GPU_requirement}\n'
     elif args.stage=='audit':
         arguments=f'analysis.flavour.s2.audit --root {args.root}'
+    elif args.stage=='response_diagnostics':
+        arguments=f'analysis.flavour.s2.response_diagnostics --root {args.root} --output {args.root}/response_diagnostics --cpus {cpus}'
     elif args.stage=='toys':
         arguments=f'analysis.flavour.s2.toys --geometry {baseline}/shards/10083/geometry.json --output {args.root}/toys'
     elif args.stage=='refresh_tau':
@@ -136,7 +138,7 @@ transfer_output_files = ""
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage',choices=['plan','convert','train','audit','toys','refresh_tau','profile','reference','evaluate','display','accounting'])
+    parser.add_argument('stage',choices=['plan','convert','train','audit','response_diagnostics','toys','refresh_tau','profile','reference','evaluate','display','accounting'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',help='Selected indices from the frozen training campaign')

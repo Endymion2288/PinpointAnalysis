@@ -12,6 +12,7 @@ S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16�
 | Complete observations | `shards/000`–`031`，约 1.765 GB combined Parquet，原生 pixel、bar、accepted tracker |
 | Occupancy / diagnostics | `catalog.parquet`、`catalog_summary.json`，保留 2,535 全空事件 |
 | Information toys | `toys/`，420 点曲线、projection pairing collision、双轨/kink/shower support |
+| Coarse response exposure | `h100/response_diagnostics/`，10k validation ×4表示；1mm OR在72.02%的pixel-active事件移除multiplicity，pooled excess fraction=35.49%；事后score分层和解释范围见[阶段40](../workbook/2026-11-12_stage40_s2_multiplicity_exposure.md) |
 | B0 / prior reference | `experiments/b0_*_s42` 和 `truth_energy_vertex_s42`，均已完成 |
 | Paired reference evaluation | `evaluation/summary.json`、`metrics.csv`、`tau_PR.png`、`error_event_groups.parquet` |
 | Comparison report figures | 新增 `s2.plots` 并接入 `evaluate`：粒度曲线、配对 CI/等 GPU-time、三种子均值图；真实 B0 的 3 项配对图已查看，完整空间/种子图待结果，见[阶段 22](../workbook/2026-11-11_stage22_s2_comparison_figures.md) |
