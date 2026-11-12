@@ -148,10 +148,10 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Pixel / bar / pixel+bar / +tracker | PN四项均完整，双向增量见阶段42–44；+tracker改善四分类点估计，τ AP的raw/common差值区间跨0且上界低于+0.01，见阶段45 |
 | No-pair / fixed-graph / local-shuffle | 全部四项均完整、14项读回pass；两族shuffle和ParT no-pair见阶段41，PN dynamic−fixed的raw/common AP区间跨0，资源及评价见阶段42 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
-| Full / centered / large evaluation and training domains | Large-only已完成，full−large的全域/固定支持AP区间为正，条件学习曲线显示区域内改善与全域选点不一致；见阶段46。中心训练域仍运行 |
-| Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
+| Full / centered / large evaluation and training domains | 三域已完成、14项读回均pass；full−center的全域/固定支持AP及全域1%效率区间为正，中心域自身AP区间跨0；三域条件学习曲线、重复次数、类别权重与占用见阶段46/49 |
+| Three seeds for retained architectures and coarse inputs | ParT native三seed已齐，AP均值0.35457、SD0.00477；其余组合仍运行/排队，四组预定seed均值差值尚未齐，不以单配置spread代替 |
 | Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；90k target计数见阶段43，阶段45已刷新27个结果的189个Z条件组。完整物理解释继续随控制结果更新 |
-| Paired CI / interaction / matched time | 30项预定配对、2组交互及同allocation整轮比较已完成；其余15项配对/种子均值等待控制和确认结果 |
+| Paired CI / interaction / matched time | 31项预定配对、2组交互及同allocation整轮比较已完成；其余14项配对/种子均值等待控制和确认结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
@@ -198,3 +198,8 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 ## GPU flavor 配置修正
 
 用户明确要求相应flavor后，已修正提交入口为`--gpu-flavor h100-94gb`，同时设置product和GPU resource，GPU请求省略CPU/RAM、由CERN自动注入46 CPU/127G。v7通用请求与v8被拒绝的旧CPU/RAM请求已主动结束并核算各0 GPUh；不是自然排队超时。v9实际Pod已创建，10:33:58 UTC为Pending、无node，selector=`NVIDIA-H100-NVL`、GPU=`nvidia.com/gpu:1`。14项Kubeflow与2项成本测试通过，实际Pod准入dry-run通过；GPU runtime尚未测量。完整flavor表、文档来源、配额/存储和迁移入口见[08_kubeflow](08_kubeflow.md)及[阶段48](../workbook/2026-11-12_stage48_s2_kubeflow_flavors.md)。
+
+
+## 三域训练控制完整结果
+
+[阶段49](../workbook/2026-11-12_stage49_s2_center_training_domain.md)补齐center-only，14项读回pass；31 results=4 references+27科学配置、835 strata、93历史三类表、31 paired/14 pending、2 factorial、0 seed means，217个target条件组，27 output_complete。Full−center的全域τ ΔAP=+0.05449639，pointwise CI=[+0.04020247,+0.06874907]；固定E/vertex为+0.03210627，CI=[+0.01756088,+0.04732816]；全域1%效率差+0.018，CI=[+0.00576943,+0.02511136]。中心条件域AP区间跨0，large域AP/1%效率区间为正；三域学习曲线已生成并查看，不改变主选点。Center只有7,429 unique train、319,233 exposures、loss使用该域类别权重；其原生通道均值为full的2.84倍。`center_training_comparison.json`保存完整证据，`stage49_execution_snapshot.json`保存5 running/3 idle的实际状态。Kubeflow v9保持正确H100 94GB flavor并Pending、无node；科学任务未迁移。严格S2 gate仍false。

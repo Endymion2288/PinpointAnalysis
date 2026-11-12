@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0/S1已验收；S2统一H100的35项正式配置均已提交，26项科学输出已读回并进入主评价，30项主配对完成、15项配对/种子均值待完成。首组ParT native三seed AP均值=0.35457、sample SD=0.00477；这是相同物理事件上的训练波动，预定三seed差值比较仍待完成，见[阶段47](../workbook/2026-11-12_stage47_s2_native_training_seed_spread.md)。训练域与模态结论见[阶段46](../workbook/2026-11-12_stage46_s2_large_training_domain.md)、[阶段45](../workbook/2026-11-12_stage45_s2_tracker_increment.md)及[阶段43–44](../workbook/2026-11-12_stage44_s2_conditional_modality_intervals.md)。其他任务继续，见[S2入口](07_s2_operations.md)。S2尚未整体验收，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0/S1已验收；S2统一H100的35项正式配置均已提交，27项科学输出已读回并进入主评价，31项主配对完成、14项配对/种子均值待完成。Full/center/large训练域控制已完成：完整目标域上full相对center-only的τ ΔAP=+0.05450，pointwise 95%事件区间=[+0.04020,+0.06875]；中心区域自身的差值区间跨0，见[阶段49](../workbook/2026-11-12_stage49_s2_center_training_domain.md)。首组ParT native三seed AP均值=0.35457、sample SD=0.00477，预定三seed差值比较仍待完成，见[阶段47](../workbook/2026-11-12_stage47_s2_native_training_seed_spread.md)。其余既有任务继续，见[S2入口](07_s2_operations.md)和[Kubeflow flavor配置](08_kubeflow.md)。S2尚未整体验收，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
