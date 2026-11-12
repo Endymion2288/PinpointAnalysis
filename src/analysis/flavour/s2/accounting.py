@@ -45,24 +45,42 @@ def submission_jobs(path):
              'experiment':name,'root':str(root),'submission':str(path)} for i,name in enumerate(names)]
 
 
-def run(args):
-    jobs=[]
-    for path in sorted(args.root.rglob('submission_*.json')):
-        jobs.extend(submission_jobs(path))
+def condor_ads(jobs):
+    """Snapshot live jobs before looking up their absent peers in history.
+
+    A job finishing between history-first and queue-second reads disappears
+    from both snapshots. Queue-first retains that live estimate until the
+    next refresh. Limit history to absent IDs and their known count instead
+    of scanning retained history for jobs that are still running or idle.
+    """
     sources={}
     for job in jobs:
-        sources.setdefault(job['schedd'],set()).add(job['cluster'])
+        sources.setdefault(job['schedd'],set()).add((job['cluster'],job['process']))
     ads={}
-    for schedd,clusters in sources.items():
+    for schedd,identifiers in sources.items():
+        clusters={c for c,p in identifiers}
         constraint=' || '.join(f'ClusterId == {c}' for c in sorted(clusters))
-        for command in ['condor_history','condor_q']:
-            result=subprocess.run([command,'-name',schedd,'-constraint',constraint,
-                                   '-json','-attributes',','.join(FIELDS)],capture_output=True,text=True)
+        def query(command, expression, extra=()):
+            result=subprocess.run([command,'-name',schedd,'-constraint',expression,
+                                   '-json','-attributes',','.join(FIELDS),*extra],capture_output=True,text=True)
             if result.returncode:
                 raise RuntimeError(f'{command}: {result.stderr}')
             for raw in json.loads(result.stdout or '[]'):
                 ad={k.lower():v for k,v in raw.items()}
                 ads[(schedd,ad['clusterid'],ad['procid'])]=ad
+        query('condor_q',constraint)
+        missing=[(c,p) for c,p in sorted(identifiers) if (schedd,c,p) not in ads]
+        if missing:
+            history_constraint=' || '.join(f'(ClusterId == {c} && ProcId == {p})' for c,p in missing)
+            query('condor_history',history_constraint,('-limit',str(len(missing))))
+    return ads
+
+
+def run(args):
+    jobs=[]
+    for path in sorted(args.root.rglob('submission_*.json')):
+        jobs.extend(submission_jobs(path))
+    ads=condor_ads(jobs)
     now=time.time()
     allocations=[]
     for job in jobs:
