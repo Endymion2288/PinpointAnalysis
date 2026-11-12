@@ -4,6 +4,7 @@ import argparse
 import copy
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import random
 import resource
@@ -31,7 +32,20 @@ def init_worker(worker):
 
 def save_checkpoint(path,state):
     temporary=path.with_suffix('.tmp')
-    torch.save(state,temporary)
+    with temporary.open('wb') as stream:
+        torch.save(state,stream)
+        stream.flush()
+        os.fsync(stream.fileno())
+    temporary.replace(path)
+
+
+def save_parquet(frame,path):
+    """Finish EOS writes before publishing; each replacement gets a new inode."""
+    temporary=path.with_suffix('.tmp')
+    with temporary.open('wb') as stream:
+        frame.to_parquet(stream,index=False,compression=COMPRESSION)
+        stream.flush()
+        os.fsync(stream.fileno())
     temporary.replace(path)
 
 
@@ -168,7 +182,7 @@ def run(args):
         predictions=val.metadata.copy()
         for c in range(4):
             predictions[f'p{c}']=best_probabilities[:,c]
-        predictions.to_parquet(output/'validation_predictions.parquet',index=False,compression=COMPRESSION)
+        save_parquet(predictions,output/'validation_predictions.parquet')
         write_json(output/'metrics.json',metrics(val.metadata.label.to_numpy(),best_probabilities))
         manifest['resumed_from_epoch']=start_epoch
         manifest['prior_gpu_name']=previous.get('gpu_name')
@@ -229,8 +243,7 @@ def run(args):
         for c in range(4):
             ep[f'p{c}']=p[:,c]
         epoch_predictions.append(ep)
-        pd.concat(epoch_predictions,ignore_index=True).to_parquet(output/'epoch_predictions.parquet',
-                        index=False,compression=COMPRESSION)
+        save_parquet(pd.concat(epoch_predictions,ignore_index=True),output/'epoch_predictions.parquet')
         score=measured['NLL']
         record={'epoch':epoch+1,'train_loss':loss_total/events,'train_seconds':train_seconds,
             'train_events_per_second':events/train_seconds,'validation':measured,
@@ -247,7 +260,7 @@ def run(args):
             predictions=val.metadata.copy()
             for c in range(4):
                 predictions[f'p{c}']=p[:,c]
-            predictions.to_parquet(output/'validation_predictions.parquet',index=False,compression=COMPRESSION)
+            save_parquet(predictions,output/'validation_predictions.parquet')
             write_json(output/'metrics.json',measured)
         scheduler.step()
         checkpoint={'model':model.state_dict(),'optimizer':optimizer.state_dict(),'config':config,

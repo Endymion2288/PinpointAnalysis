@@ -103,6 +103,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 02:08 UTC，第二个正式 H100 模型 ParT native joint（`1573760.0`）exit0，四轮完成、12 项 checkpoint/概率读回通过。τ AP=0.35858；ParT−B0 raw ΔAP=+0.01387，CI95=[+0.00152,+0.02523]，fixed-common ΔAP=+0.01539，CI=[+0.00636,+0.02482]。ParT−ParticleNet raw ΔAP=+0.00348，CI=[−0.00369,+0.01036]，架构优劣尚未确定。正式部分评价为 6 个结果、3 项配对/42 项 pending。两族正式 native 的 20 页错误事件图均完成并实际查看固定混淆页；阶段证据见[阶段 30](../workbook/2026-11-12_stage30_s2_native_h100_comparison.md)。正式队列为 2 complete、4 running、29 idle，S2 尚未完成。
 
+02:31 UTC，正式 ParT native projection（`1573782.0`）exit0，τ AP=0.35733812；best checkpoint/10k predictions 一致，13 项读回中 12 项通过，epoch 概率表的 EOS 两个副本写回不完整。原节点恢复 `1573790.0` 等待资源；输出改为 flush/fsync 后原子发布，四次 EOS 替换与直接 XRootD 读回通过。当前正式部分评价为 7 个结果、4 项配对/41 项 pending；native joint−projection ΔAP=+0.00124580，CI=[−0.00501470,+0.00830354]。完整输出状态仍待恢复，见[阶段 31](../workbook/2026-11-12_stage31_s2_output_integrity.md)。V100 辅助已完成 8 个模型，两族四格均已评价，剩 1 项辅助训练，新增结果见阶段 28。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
