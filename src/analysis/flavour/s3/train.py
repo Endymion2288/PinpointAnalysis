@@ -20,7 +20,11 @@ def main():
     campaign = json.loads(args.campaign.read_text())
     config = campaign['experiments'][args.task]
     if args.device.startswith('cuda'):
-        assert torch.cuda.get_device_name() == campaign['hardware']['GPU']
+        actual_gpu = torch.cuda.get_device_name()
+        expected_gpu = campaign['hardware']['GPU']
+        assert actual_gpu == expected_gpu or (
+            expected_gpu == 'NVIDIA H100 NVL' and actual_gpu.startswith('NVIDIA H100 NVL MIG ')
+        ), (actual_gpu, expected_gpu)
         assert torch.__version__ == campaign['hardware']['torch']
         assert torch.cuda.is_bf16_supported(including_emulation=False)
     run(args, dataset_class=PlaneDataset, model_factory=PlaneModuleClassifier,

@@ -23,8 +23,8 @@ def prepare(args):
     args_list = ['analysis.flavour.s3.probe', '--root', str(root)]
     experiment = 'environment-probe'
     if args.dispatch:
-        if args.task is not None or args.flavor != 'h100-94gb':
-            raise ValueError('dispatch requires the frozen whole H100 flavor and no fixed task')
+        if args.task is not None or args.flavor not in {'h100-94gb', 'h100-47gb'}:
+            raise ValueError('dispatch requires an H100 whole-GPU or 47GB MIG flavor and no fixed task')
         experiment = 'dispatch-unassigned'
         args_list = ['analysis.flavour.s3.dispatch', 'worker', '--root', str(root), '--name', args.name]
     if args.task is not None:

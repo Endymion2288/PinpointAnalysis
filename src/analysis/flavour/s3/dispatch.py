@@ -20,13 +20,16 @@ from analysis.flavour.inventory import write_json
 
 def worker(args):
     import torch
-    assert torch.cuda.get_device_name() == 'NVIDIA H100 NVL'
+    device_name = torch.cuda.get_device_name()
+    assert device_name.startswith('NVIDIA H100 NVL'), device_name
     assert torch.__version__ == '2.7.1' and torch.cuda.is_bf16_supported(including_emulation=False)
+    memory_bytes = torch.cuda.get_device_properties(0).total_memory
+    assert memory_bytes >= 40 * 1024**3, memory_bytes
     x = torch.ones((32, 32), device='cuda'); assert torch.isfinite(x @ x).all()
     directory = args.root / 'kubeflow' / ('dispatch_' + args.name)
     directory.mkdir(exist_ok=True)
     write_json(directory / 'ready.json', {'utc': datetime.now(timezone.utc).isoformat(),
-        'GPU': torch.cuda.get_device_name(), 'torch': torch.__version__, 'BF16': True,
+        'GPU': device_name, 'GPU_memory_bytes': memory_bytes, 'torch': torch.__version__, 'BF16': True,
         'pod': os.environ.get('HOSTNAME'), 'pid': os.getpid(), 'worker_wait_seconds': 300})
     # A bounded startup rendezvous, not a persistent idle GPU allocation.
     end = time.monotonic() + 300
@@ -34,8 +37,10 @@ def worker(args):
         assignment_path = directory / 'assignment.json'
         if assignment_path.exists():
             assignment = json.loads(assignment_path.read_text())
-            if assignment['job'] != args.name or assignment['root'] != str(args.root.resolve()):
-                raise ValueError('assignment belongs to another worker/root')
+            assigned_root = os.path.realpath(assignment['root'])
+            worker_root = os.path.realpath(str(args.root))
+            if assignment['job'] != args.name or assigned_root != worker_root:
+                raise ValueError(f'assignment belongs to another worker/root: job={assignment["job"]!r}/{args.name!r}, root={assigned_root!r}/{worker_root!r}')
             write_json(directory / 'accepted.json', {**assignment, 'accepted_utc': datetime.now(timezone.utc).isoformat()})
             os.execv(sys.executable, [sys.executable, '-m', 'analysis.flavour.s3.train', '--root', str(args.root),
                 '--campaign', assignment['campaign'], '--task', str(assignment['task'])])
@@ -76,7 +81,7 @@ def handoff(args):
             continue
         cluster = int(match[1]); schedd = submission['chosen']
         ads = json.loads(command(['condor_q', '-name', schedd, str(cluster), '-json',
-            '-attributes', 'ClusterId,ProcId,JobStatus']))
+            '-attributes', 'ClusterId,ProcId,JobStatus']) or '[]')
         campaign_line = next(line for line in submission['submit'].splitlines() if line.startswith('arguments ='))
         import shlex
         arguments = shlex.split(campaign_line.split('=', 1)[1])
@@ -92,11 +97,11 @@ def handoff(args):
         expression = f'ClusterId == {cluster} && ProcId == {process} && JobStatus == 1'
         held = command(['condor_hold', '-name', schedd, '-constraint', expression,
                         '-reason', 'S3 runtime-ready Kubeflow handoff; exclude running tasks'])
-        ads = json.loads(command(['condor_q', '-name', schedd, identifier, '-json', '-attributes', 'JobStatus']))
+        ads = json.loads(command(['condor_q', '-name', schedd, identifier, '-json', '-attributes', 'JobStatus']) or '[]')
         if len(ads) != 1 or ads[0]['JobStatus'] != 5:
             continue  # A task that started concurrently remains in Condor.
         removed = command(['condor_rm', '-name', schedd, identifier])
-        ads = json.loads(command(['condor_q', '-name', schedd, identifier, '-json', '-attributes', 'JobStatus']))
+        ads = json.loads(command(['condor_q', '-name', schedd, identifier, '-json', '-attributes', 'JobStatus']) or '[]')
         if any(ad['JobStatus'] not in [3, 4] for ad in ads):
             raise ValueError('old held copy not removed; no assignment published')
         assignment = {'utc': datetime.now(timezone.utc).isoformat(), 'job': args.name, 'root': str(root),
