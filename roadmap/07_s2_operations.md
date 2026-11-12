@@ -1,6 +1,6 @@
 # S2 运行状态与复现入口
 
-S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16，35项均已提交，选定结果目录为父目录下 `h100/`；V100先导结果作为辅助保留。沿用用户接受的 sample/source-family split 与 detector-proxy，不重新设置来源认证或真实硬件标定门槛。科学验收需要完成以下实验及其实际评价。
+S2已完成并验收。35项H100/LCG108/BF16科学配置均四轮完成、各14项CPU读回pass；严格评价与`--require-complete`真实exit0。最终39结果、41单seed配对、4三seed均值、2项交互、0 pending，组织终态成本92.73055556 GPUh，149条后端记录全部终止、无缺失历史。[阶段55总报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[版本化数值表](results/s2_summary.json)给出完整结论。沿用用户接受的samples/split/proxy；calibration/test冻结，S3–S6未执行。下文注明时间的运行记录为历史快照。
 
 ## 当前产物
 
@@ -15,7 +15,7 @@ S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16�
 | Coarse response exposure | `h100/response_diagnostics/`，10k validation ×4表示；1mm OR在72.02%的pixel-active事件移除multiplicity，pooled excess fraction=35.49%；事后score分层和解释范围见[阶段40](../workbook/2026-11-12_stage40_s2_multiplicity_exposure.md) |
 | B0 / prior reference | `experiments/b0_*_s42` 和 `truth_energy_vertex_s42`，均已完成 |
 | Paired reference evaluation | `evaluation/summary.json`、`metrics.csv`、`tau_PR.png`、`error_event_groups.parquet` |
-| Comparison report figures | 新增 `s2.plots` 并接入 `evaluate`：粒度曲线、配对 CI/等 GPU-time、三种子均值图；真实 B0 的 3 项配对图已查看，完整空间/种子图待结果，见[阶段 22](../workbook/2026-11-11_stage22_s2_comparison_figures.md) |
+| Comparison report figures | `h100/evaluation_final/`粒度、配对/等allocation、三seed均值/spread图完整；跨层控制图见阶段54 |
 | Native response displays | `evaluation/event_displays/b0_all_s42/`，20 页 PDF、事件 keys 和首例 PNG |
 | V100 resource study | `resource_profile/` 为 v1；`resource_profile_v2/` 的 576 行已完成，两者分别保留 |
 | H100 resource comparison | `1573759.0` exit0，H100/LCG108/BF16 共 576 行；与 V100 匹配后去 warmup 保留552行，batch1 training compute 比值1.69–2.33；原始/配对图已查看，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；后续两族整轮门槛已通过，见下一行 |
@@ -23,15 +23,15 @@ S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16�
 | H100 complete matrix | [冻结的35项同配置合同](configs/s2_h100_v2.json)；原tasks0/6保留为 `1573760.0/1`，其余33项已提交为 `1573782.0–32`，schedd=`bigbird20.cern.ch`。`h100/activation.json` 保存门槛、完整task/proc映射、优先级和移除旧idle证据；正式评价读取 `h100/` |
 | First completed H100 model | `1573760.1` exit0，ParticleNet native joint四轮完成，80,064 applied、0 AMP skips，12项最终checkpoint/概率读回通过；τ AP=0.35510、NLL=1.23931、allocation=1.75278 GPUh。正式部分评价为5 results、1 pair/44 pending；相对B0 raw ΔAP=+0.01039，CI=[−0.00250,+0.02294]，固定common-support ΔAP=+0.01358，CI=[+0.00324,+0.02458]。20页原生图与代表性错误页已查看；见[阶段29](../workbook/2026-11-12_stage29_s2_first_h100_model.md) |
 | V100 supplementary execution | 九项辅助训练均已完成，26个被替代idle已移除；两族四格及ParT 100 μm的实际结果、全部尝试成本见阶段28。不替代H100正式配置 |
-| Kubeflow execution | `ml-prod/xcheng` 已登录，NVIDIA quota=1；CPU 容器的 LCG108/Python3.12/Torch2.7.1、EOS/CVMFS 路径已实际成功，GPU probe v5全程未分配node，23:14:58 UTC到达deadline（GPU reservation=0）；科学任务未迁移。v6以相同资源保留6小时排队机会，容器探测仍限时300秒。新提交/核算入口与失败环境探测见[阶段 26](../workbook/2026-11-11_stage26_s2_kubeflow.md) |
+| Kubeflow execution | `ml-prod/xcheng`登录正常；CPU路径与GPU flavor Pod server dry-run已通过。v9始终无node，全部任务在Condor运行后主动结束释放配额，0 GPUh；GPU runtime未测量，见[flavor说明](08_kubeflow.md) |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
-| Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
+| Spatial paired evaluation | 12配置/18空间配对完整，统一纳入`h100/evaluation_final/`的41项最终配对 |
 | Prespecified controls | [13 runs](configs/s2_controls_v2.json)：两族 OR/shift/shuffle、各自 pair/graph，以及 ParticleNet modality/domain 控制 |
 | Three-seed confirmation | [8 additional runs](configs/s2_confirmation_v2.json)：两族 native/1mm joint × seed17/2026；复用已有 seed42 |
 | Original comparison contract | [39 individual contrasts and 4 three-seed means](configs/s2_final_pairs_v2.json)；原有 33 项科学训练，保留此文件以对应既有部分评价 |
 | Complete S2 contract | [41 individual contrasts and 4 three-seed means](configs/s2_complete_pairs_v2.json)；另含两族 [plane-only controls](configs/s2_cross_plane_controls_v2.json)，共 35 项科学配置，见[阶段 21](../workbook/2026-11-11_stage21_s2_cross_plane_control.md) |
-| Plane-only GPU execution | `1573755.0/1` 均 exit0，实际 H100/BF16、各 15 applied steps、0 skips，checkpoint/概率有限；`smoke/cross_plane_smoke_checks.json`。原 V100/FP16 `1573757.0/1` idle已移除；H100正式配置为 `1573782.31/32`，见阶段 21 |
-| Historical / branch diagnostics | 初次 `1573753` 已完成；`evaluation_final/summary.json` 含 4 个 references 的 12 张三类表和 τ 分支 AUC/AP |
+| Plane-only GPU execution | 正式H100 `1573782.31/32`均四轮/exit0、14项读回pass；早期smoke只作执行验证，见阶段54 |
+| Historical / branch diagnostics | 最终39结果、117历史三类条件表、195行τ分支、1051行全条件诊断；历史三类并非重训旧模型 |
 | Historical drawing integration | `1573758` exit0（commit `9d67e8a`），当时4个 references、45项 pending；后续科学评价见下一行 |
 | First scientific model / current evaluation | `1573747.6` exit0，ParticleNet native-joint 四轮完成，τ AP=0.35784；相对B0 raw ΔAP=+0.01313，CI95=[−0.00097,+0.02446]；fixed-common ΔAP=+0.01862，CI=[+0.00686,+0.02971]。22:07 UTC 本地部分评价正常退出，5个完成结果、1项配对/44项 pending；20页原生图和3个错误页已查看，见[阶段27](../workbook/2026-11-11_stage27_s2_first_scientific_model.md) |
 | Second scientific model / updated evaluation | `1573747.1` exit0，ParT native-projections 四轮完成，τ AP=0.34989、NLL=1.22890、allocation=3.84833 GPUh。最新部分评价正常退出，6个完成结果、160行分域指标、1项配对/44项pending；新resolution图已查看。22:23 UTC为2 complete/5 running/28 idle，见[阶段28](../workbook/2026-11-11_stage28_s2_spatial_results.md) |
@@ -147,13 +147,13 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | OR/count, grid shift | 两族四项控制均完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01；工作点CI和限制见阶段39 |
 | Pixel / bar / pixel+bar / +tracker | PN四项均完整，双向增量见阶段42–44；+tracker改善四分类点估计，τ AP的raw/common差值区间跨0且上界低于+0.01，见阶段45 |
 | No-pair / fixed-graph / local-shuffle | 全部四项均完整、14项读回pass；两族shuffle和ParT no-pair见阶段41，PN dynamic−fixed的raw/common AP区间跨0，资源及评价见阶段42 |
-| Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
+| Explicit cross-plane messages | 两族完整四轮、14项读回pass、主配对/条件域/分类图审阅完成，见阶段54 |
 | Full / centered / large evaluation and training domains | 三域已完成、14项读回均pass；full−center的全域/固定支持AP及全域1%效率区间为正，中心域自身AP区间跨0；三域条件学习曲线、重复次数、类别权重与占用见阶段46/49 |
-| Three seeds for retained architectures and coarse inputs | ParT native三seed已齐，AP均值0.35457、SD0.00477；其余组合仍运行/排队，四组预定seed均值差值尚未齐，不以单配置spread代替 |
-| Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；90k target计数见阶段43，阶段45已刷新27个结果的189个Z条件组。完整物理解释继续随控制结果更新 |
-| Paired CI / interaction / matched time | 39项单seed配对、全部4项三seed均值、2组交互及同allocation整轮比较已完成；其余2项跨层配对等待结果 |
-| Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
-| Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
+| Three seeds for retained architectures and coarse inputs | 12模型/4组均值全部完成；区间与训练spread分列，见阶段53/55 |
+| Toys / priors / τ branches | toy420行、39结果195行τ分支、273组target诊断完整；先验与适用范围见阶段55 |
+| Paired CI / interaction / matched time | 41单seed+4三seed均值、2项交互完成，pending=0；完整同allocation整轮比较随主表保留 |
+| Resource / error groups | 576行压力测量、35项真实allocation与终态成本、两族20页原生错误显示及新增分类图审阅完成 |
+| Scientific stage report and gate decision | 通过，见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)；strict输出门槛与方法收益分别判定 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
 
@@ -219,3 +219,9 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 ## 全部三seed确认完成
 
 [阶段53](../workbook/2026-11-12_stage53_s2_complete_seed_confirmations.md)：PN 1 mm17/2026均exit0、14项读回pass，12个三seed模型完整。新增PN native−1 mm平均raw τ ΔAP=−0.00013880，CI=[−0.00454523,+0.00421196]；1 mm下ParT−PN为+0.00126795，CI=[−0.00485443,+0.00824882]。全部四组raw/common区间均跨0、上界低于+0.01，条件于当前三次拟合与固定权重，训练spread另列，不作一般信息等效结论。`three_seed_four_class_summary.json`补齐四类AP/recall及综合指标的均值与sample SD，相关综合差值CI未测量。主表37 results、997 strata、111历史三类表、39单seed+4均值、2 pending；target 259组、33 output_complete，严格gate=false。13:05 UTC两项plane-only仍running；12:52组织91.86595936 GPUh、missing=0。`complete_seed_confirmation_comparison.json`与`stage53_execution_snapshot.json`保存证据。Kubeflow备用训练Pod在释放配额后server dry-run通过、自动46CPU/127G/1整卡GPU，实际未提交；详见flavor入口。
+
+## S2最终验收
+
+[阶段54](../workbook/2026-11-12_stage54_s2_cross_plane_controls.md)完成两项跨层控制；[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出完整科学结论和gate decision。最终35/35科学输出完整、490读回checks pass、39结果、1051 strata、117历史三类表、41单seed配对、4三seed均值、2交互、0 pending；target 273组与主模型集合一致。`strict_final_pipeline.json`记录accounting/evaluate/target/inventory顺序exit0，严格评价不含allow-incomplete、inventory含require-complete。组织成本92.73055556 GPUh，149终态记录、missing=0，低于200上限。
+
+S2通过不等于宣布所有新表示有收益。四组三seed τ AP均值raw/common区间均跨0、上界低于+0.01，条件于现有拟合与支持；bar增量、训练域覆盖及四分类/跨层结果在总报告分别说明。S3–S6未执行，calibration/test冻结。

@@ -2,6 +2,8 @@
 
 2026-11-12核对[CERN平台总览](https://ml.docs.cern.ch/)、[命令行入门](https://ml.docs.cern.ch/getting-started/#command-line_1)、[单节点训练](https://ml.docs.cern.ch/ml/training/)、[容器环境](https://ml.docs.cern.ch/environments/)、[监控](https://ml.docs.cern.ch/monitoring/)及Kubernetes/NVIDIA上游文档。用户登录已正常。
 
+S2最终状态：35项科学配置均在Condor完成，严格验收通过，见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)。Kubeflow的flavor入口、CPU环境和GPU Pod准入已落实；备用训练未提交，GPU runtime未测量。后续需要GPU后备时沿用本文的整卡/MIG资源区分与单writer规则。
+
 ## Flavor 选择
 
 必须一起指定`nodeSelector.nvidia.com/gpu.product`和GPU resource。H100整卡与MIG具有相同product，资源键不同。CERN根据flavor自动注入CPU/RAM；GPU Job只填写GPU请求，手工CPU/RAM会被`validate-cpu-memory-resources`准入策略拒绝。下表CPU/RAM是文档分配值，实际Pod注入结果另存证据。

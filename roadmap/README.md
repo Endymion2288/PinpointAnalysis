@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0/S1已验收；S2统一H100的35项正式配置中33项科学输出完整，39项单seed配对和全部4项三seed均值已完成，仅剩两项plane-only训练/配对。四组预定τ AP均值的raw/common事件区间均跨0，且上界均低于+0.01；区间条件于当前已拟合seed和固定权重，训练spread另列，不作一般信息等效结论。四分类均值、工作点、成本和完整区间见[阶段53](../workbook/2026-11-12_stage53_s2_complete_seed_confirmations.md)。Full/center/large训练域控制见[阶段49](../workbook/2026-11-12_stage49_s2_center_training_domain.md)。运行与验收入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与真实准入结果见[08_kubeflow.md](08_kubeflow.md)。S2尚未整体验收，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。**S0、S1、S2已完成并验收。**S2的35项H100科学配置及490项CPU读回检查通过，严格评价完成41项单seed配对、4项三seed均值、2项交互、0 pending；组织终态成本92.73055556 GPUh。当前共享压缩/四轮预算下，native相对1 mm及两架构之间的τ AP均值收益未确认；bar增量和完整训练域覆盖有正区间支持，tracker/架构的四分类描述统计另列。[最终科学报告与gate decision](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[版本化数值表](results/s2_summary.json)和[跨层控制](../workbook/2026-11-12_stage54_s2_cross_plane_controls.md)保留完整证据。运行入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与准入见[08_kubeflow.md](08_kubeflow.md)。Calibration/test继续冻结，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -14,14 +14,14 @@
 | [04_execution.md](04_execution.md) | 分阶段工单、资源预算、HTCondor、产物与验收标准 |
 | [05_local_studies.md](05_local_studies.md) | 更新后四份 PDF 的逐项证据；fiducial、投影损失、FASER 工作点与重建覆盖率 |
 | [06_s0_s1_operations.md](06_s0_s1_operations.md) | 新原生通道管线、实际运行命令、事件签名 split 与 detector-proxy 的适用状态 |
-| [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集/空间矩阵、实测参照、GPU 环境、运行与尚待完成的科学验收 |
+| [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集、完整矩阵、运行命令与最终验收 |
 | [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
 **S0/S1 已完成并验收。**全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图、B0 GPU 验证、多 worker scratch 缓存和 15 项测试已完成。用户确认 samples 满足要求，并接受现有 detector-proxy 参数；缺少的生产认证由用户确认覆盖，不再追查来源或要求真实硬件标定。沿用现有冻结 split 进入 S2。验收依据见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)，实测保留在 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。
 
-**S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 空间矩阵](configs/s2_spatial_screen_v2.json)已记录；加上[控制与种子确认](../workbook/2026-11-11_stage17_s2_controls_and_seed_contract.md)，原有 33 项科学训练已提交。另为落实跨层连通条目，[两项 plane-only 控制](../workbook/2026-11-11_stage21_s2_cross_plane_control.md)已通过专用 H100/BF16 smoke，原V100/FP16任务 `1573757.0/1` 在环境切换时已移除，正式H100对应 `1573782.31/32`；完整合同的35项H100科学配置均已提交，等待完成 41 项单 seed 配对与 4 项三种子均值。S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
+**S2已完成。**固定80k train/10k validation，正式35项全部通过14项读回；最终39结果（4 references+35科学模型）、1051行条件诊断、117张历史三类表、273个target条件组，模型集合同步。严格评价未使用`--allow-incomplete`，`output_inventory --require-complete`真实exit0。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)说明数据、统计口径、成本和方法晋级结论。以下保留先导执行的历史记录，当前状态以上述验收为准。
 
 两项V100任务在Startd关闭后均从checkpoint恢复，现已作为辅助结果完成。H100/LCG108同事件batch1的training compute快约1.69–2.33倍，见[阶段24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；两族[完整首轮门槛](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)通过后统一正式环境。用户授权排队时使用Kubeflow，[容器LCG/EOS/CVMFS路径已成功](../workbook/2026-11-11_stage26_s2_kubeflow.md)；v5/v6均到deadline未获GPU；v7/v8在按flavor修正配置时主动结束，v9已按H100 94GB flavor创建Pod，始终未获node；12:03 UTC因全部剩余科学任务已在Condor运行而主动结束以释放配额，GPU runtime仍未实测。已按用户提供的[CERN命令行文档](https://ml.docs.cern.ch/getting-started/#command-line_1)核对整卡H100的Job资源与selector，详见[S2操作入口](07_s2_operations.md#cern-kubeflow-文档核对)。两后端、旧尝试和候选均计入200 GPU-hours总组织上限。
 

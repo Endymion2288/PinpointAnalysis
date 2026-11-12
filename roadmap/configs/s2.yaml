@@ -1,6 +1,10 @@
 # S2 execution contract; campaign JSON freezes each actual training run.
-status: scientific_spatial_screen_frozen
+status: complete_accepted
 date: "2026-11-11"
+completed_utc: "2026-11-12T13:37:59.362888+00:00"
+final_report: workbook/2026-11-12_stage55_s2_final_acceptance.md
+final_summary: roadmap/results/s2_summary.json
+strict_output_gate_passed: true
 module: analysis.flavour.s2
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11
 accepted_S0_S1: roadmap/configs/s0_s1.yaml

@@ -1,6 +1,6 @@
 # 分阶段工单、资源与交付
 
-S0/S1 已完成，用户已确认 samples 满足要求并接受现有 detector-proxy 参数；生产来源认证和真实硬件标定不再作为前置条件。[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)记录验收决定，[运行入口](06_s0_s1_operations.md)与阶段 04–06 报告保留实现和实测。S2 已完成目录、参照、toy、资源测量和十二项正式空间配置，控制与额外种子正在训练和排队，运行状态见 [S2 入口](07_s2_operations.md)；S3–S6 尚未执行。以下时间与 GPU-hours 仍为建议预算，具体 campaign 以实际配置和测量为准。
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3–S6尚未执行；以下工单和建议预算保留为研究路线图。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
@@ -135,4 +135,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-下一步完成 S2 已冻结的统一H100矩阵中的信息、模态、结构、训练域控制与三种子确认；十二项空间配置及两族完整粒度曲线已完成，结果见[阶段38](../workbook/2026-11-12_stage38_s2_complete_spatial_screen.md)。共享80k/10k子集、完整mixed shards、实际指标及命令见[07_s2_operations.md](07_s2_operations.md)。来源认证和硬件标定按用户决定不再重复执行。
+S2已通过验收；下一阶段S3以本次PN/ParT native及1 mm三seed结果为基线，检验plane-aware局部编码、module-aware context与latent fusion。保留bar，tracker同时评价四类收益/覆盖/成本；不把native或某架构的τ AP未确认增量理解为硬件信息无用。具体结论见[总报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)，本次未启动S3。共享输入、冻结proxy与calibration/test角色继续沿用。
