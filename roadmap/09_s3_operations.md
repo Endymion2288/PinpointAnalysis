@@ -50,6 +50,8 @@ S3组织上限120 GPUh（screen/probe预留70，确认及最终诊断预留50）
 
 按照用户最新要求，Kubeflow和HTCondor哪边实际获配就用哪边，减少等待，不固定后端优先级。Kubeflow使用CERN `h100-94gb` flavor：`NVIDIA-H100-NVL`与`nvidia.com/gpu:1`，CPU/RAM由平台注入46/127G，先server Pod dry-run。Pod真实Scheduled/Running才算获得GPU；Pending观察记录实际scheduler事件，不推断一定更快。`analysis.flavour.s3.backend --dispatch`可在Condor队列继续时申请一个Kubeflow slot；`dispatch watch`在真实CUDA/BF16 ready后，用schedd端`JobStatus == 1`条件hold并移除一个idle副本，再发布唯一冻结任务assignment。已Running的任务保持原地。worker准备好后等待assignment至多300 s，所有占用计入预算。登录已正常，单GPU配额中不创建重复writer。
 
+当前dispatch Job在近3小时Pending后，于2026-11-12 17:27 UTC把包含排队时间的总时限从6小时延长至12小时，保留同一Job UID及完整Pod template，维持原队列位置。GPU flavor、四轮训练与120 GPUh组织预算未变。后台watcher的进程时限独立于Job；到期后确认旧进程退出再续接，避免多个handoff watcher竞争同一slot。
+
 HTCondor入口`analysis.flavour.s3.condor`每次检查schedd排队、EOS兼容性、WRITE和GPU pool。两后端任务分配在提交记录中明确；只迁移真实idle且已确认无writer的原任务，先终止旧副本再提交。训练复用S2已验证的atomic checkpoint/resume loop，通过显式dataset/model/collator hooks接入，S2默认行为保持。
 
 ## 来源与本次补读
