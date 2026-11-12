@@ -29,8 +29,9 @@ def prepare(args):
         args_list = ['analysis.flavour.s3.dispatch', 'worker', '--root', str(root), '--name', args.name]
     if args.task is not None:
         campaign = json.loads(args.campaign.read_text())
-        if product.replace('-', ' ') != campaign['hardware']['GPU'] or resource != 'nvidia.com/gpu':
-            raise ValueError('scientific task must use the frozen whole-GPU flavor')
+        if product.replace('-', ' ') != campaign['hardware']['GPU'] or resource not in {
+                'nvidia.com/gpu', 'nvidia.com/mig-3g.47gb'}:
+            raise ValueError('scientific task must use an H100 whole-GPU or 47GB MIG flavor')
         experiment = campaign['experiments'][args.task]['name']
         args_list = ['analysis.flavour.s3.train', '--root', str(root), '--campaign', str(args.campaign.resolve()), '--task', str(args.task)]
     script = '\n'.join([
