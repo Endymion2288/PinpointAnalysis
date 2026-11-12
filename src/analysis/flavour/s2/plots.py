@@ -126,17 +126,69 @@ def paired_figures(output, rows, seed_mean=False):
     return pages
 
 
+def seed_spread_figure(output, summary):
+    """Show fitted-seed spread separately from physical-event intervals."""
+    groups = [g for g in summary.get('seed_spread', [])
+              if g['three_seed_confirmation_complete']]
+    if not groups:
+        return []
+    seeds = [17, 42, 2026]
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
+    labels, records = [], []
+    for number, group in enumerate(groups):
+        selected = {}
+        for experiment in summary['experiments']:
+            config = {k: v for k, v in experiment['config'].items()
+                      if k not in ['name', 'role', 'seed']}
+            if config == group['config']:
+                selected[experiment['config']['seed']] = experiment
+        models = [selected[seed] for seed in seeds]
+        config = group['config']
+        pitch = 'Native' if config['pitch_mm'] == 0 else f"{config['pitch_mm']:g} mm"
+        labels.append(f"{FAMILIES[config['architecture']]}\n{pitch}, joint")
+        record = {'experiments': [m['name'] for m in models], 'seeds': seeds}
+        for axis, key, getter in zip(axes, ['raw', 'common_support'],
+                [lambda m: m['tau']['PR_AUC'], lambda m: m['matched_tau']['PR_AUC']]):
+            values = np.asarray([getter(model) for model in models])
+            mean, std = float(values.mean()), float(values.std(ddof=1))
+            for j, (seed, value) in enumerate(zip(seeds, values)):
+                axis.scatter(number + (j - 1) * .13, value, color=f'C{j}',
+                             label=f'Seed {seed}' if number == 0 else None, s=25)
+            axis.errorbar(number, mean, yerr=std, fmt='D', color='black',
+                          markersize=4, capsize=5,
+                          label='Mean +/- sample SD' if number == 0 else None)
+            record[key] = {'AP_values': values.tolist(), 'mean': mean, 'sample_std': std}
+        records.append(record)
+    for axis, title in zip(axes, ['Tau AP: observed sample priors',
+                                  'Tau AP: fixed E/vertex common support']):
+        axis.set(title=title, ylabel='Tau average precision',
+                 xticks=range(len(labels)), xticklabels=labels,
+                 xlim=(-.5, len(labels) - .5))
+        axis.legend(fontsize=7)
+        axis.grid(axis='y', alpha=.2)
+    figure.suptitle('S2: three trained seeds on the same physical validation events\n'
+                   'Sample standard deviation across fits; not a confidence interval or an ensemble',
+                   fontsize=10)
+    for suffix in ['png', 'pdf']:
+        figure.savefig(output/f'training_seed_spread.{suffix}', dpi=160)
+    plt.close(figure)
+    return records
+
+
 def plot_evaluation(output):
     summary = json.loads((output/'summary.json').read_text())
     screen = resolution_figure(output, summary['experiments'])
     pairs = paired_figures(output, summary['paired_comparisons'])
     seeds = paired_figures(output, summary.get('seed_mean_comparisons', []), seed_mean=True)
+    spread = seed_spread_figure(output, summary)
     write_json(output/'comparison_figures.json', {
         'source': str(output/'summary.json'), 'evaluation_code_commit': summary['code_commit'],
         'scope': summary['scope'], 'requested_comparisons_complete': summary['requested_comparisons_complete'],
         'pending_comparisons': len(summary['pending_comparisons']),
         'resolution_experiments': screen, 'paired_pages': pairs, 'seed_mean_pages': seeds,
+        'training_seed_spread': spread,
         'statistics': 'read existing estimates and intervals; no refitting or resampling',
+        'training_seed_spread_definition': 'sample standard deviation of AP across fitted seeds 17/42/2026 on the same events; not a confidence interval or an ensemble',
         'resolution_axis': 'categorical native/100um/200um/1mm; no numeric pitch assigned to native',
         'uncertainty': 'pointwise physical-event bootstrap; common-support weights and fitted seeds conditional; not simultaneous intervals',
         'matched_time': 'existing epoch-resolution point estimates; no confidence interval inferred'})

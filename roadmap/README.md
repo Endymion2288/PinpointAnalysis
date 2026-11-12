@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地PDF修订，S0/S1已验收。S2统一H100的35项正式配置均已提交，24项科学输出已读回并进入主评价，30项主配对完成、15项配对/种子均值待完成。最新[large训练域报告](../workbook/2026-11-12_stage46_s2_large_training_domain.md)：按冻结选点规则，full相对large-only训练的全域τ ΔAP=+0.03136，pointwise 95%事件区间=[+0.02176,+0.04089]；条件学习曲线显示large-only的区域内改善与全域选点不同，不能归因于单一空间因素。四分类与τ指标的tracker取舍见[阶段45](../workbook/2026-11-12_stage45_s2_tracker_increment.md)，pixel/bar及条件域互补见[阶段43](../workbook/2026-11-12_stage43_s2_modality_and_target_diagnostics.md)和[阶段44](../workbook/2026-11-12_stage44_s2_conditional_modality_intervals.md)。额外ParT native种子随后完成，正在读回并准备后续种子统计；其他任务继续，见[S2入口](07_s2_operations.md)。S2尚未整体验收，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0/S1已验收；S2统一H100的35项正式配置均已提交，26项科学输出已读回并进入主评价，30项主配对完成、15项配对/种子均值待完成。首组ParT native三seed AP均值=0.35457、sample SD=0.00477；这是相同物理事件上的训练波动，预定三seed差值比较仍待完成，见[阶段47](../workbook/2026-11-12_stage47_s2_native_training_seed_spread.md)。训练域与模态结论见[阶段46](../workbook/2026-11-12_stage46_s2_large_training_domain.md)、[阶段45](../workbook/2026-11-12_stage45_s2_tracker_increment.md)及[阶段43–44](../workbook/2026-11-12_stage44_s2_conditional_modality_intervals.md)。其他任务继续，见[S2入口](07_s2_operations.md)。S2尚未整体验收，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 

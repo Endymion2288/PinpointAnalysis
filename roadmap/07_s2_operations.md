@@ -188,3 +188,8 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 根据用户提供的[命令行入门](https://ml.docs.cern.ch/getting-started/#command-line_1)，并核对[GPU flavors](https://ml.docs.cern.ch/#available-flavors)与[单节点训练](https://ml.docs.cern.ch/ml/training/)，单GPU训练可直接创建`batch/v1 Job`。整卡H100 94GB为`nvidia.com/gpu: 1`、`nodeSelector: {nvidia.com/gpu.product: NVIDIA-H100-NVL}`；入门页的`nvidia.com/mig-3g.47gb`示例是47GB分区资源，与本S2整卡预算分开。后续科学Job使用`--gpu-product NVIDIA-H100-NVL`；执行前仍由已有runtime检查确认GPU/Torch/BF16。
 
 文档支持`mount-eos`/`mount-cvmfs`/`mount-afs`标签；现有CPU容器已实测EOS/CVMFS可读，GPU probe v7仍存活，不重提。当前Pod的调度反馈为6节点GPU不足、33节点selector不匹配等，无node；NVIDIA quota=1且被该排队请求占用。`h100/kubeflow/cern_documentation_review.json`保存文档URL、整卡/MIG区别和精简实时证据。没有调整平台注入的`large-images`约束，也没有迁移科学训练。GPU可用后仅承接仍idle的Condor任务，先结束其原副本再启动Kubeflow writer。
+
+
+## ParT native 三seed训练波动
+
+本批30 results=4 references+26科学配置，808 strata、90历史三类表、30 pairs/15 pending、2 factorial、0 seed means，target诊断210 model×Z组；26项output_complete，完整gate仍false。ParT native的17/42/2026均通过14项读回，raw τ AP=0.35583088/0.35858391/0.34930306，均值0.35457262、sample SD=0.00476665；固定common-support均值0.31906188、SD=0.00413959。逐seed图已实际查看，SD不代表事件CI或ensemble；τ argmax recall=0.4448/0.5488/0.6672，不能以AP spread替代决策稳定性。四组预定三seed配对仍未齐，见[阶段47](../workbook/2026-11-12_stage47_s2_native_training_seed_spread.md)与`h100/part_native_seed_repeatability.json`。
