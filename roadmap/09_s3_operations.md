@@ -24,7 +24,7 @@ S2没有隔离“4 mm compression抹平native优势”的因果；S3把它作为
 
 ## 实现与信息边界
 
-`analysis.flavour.s3`独立实现。Pixel采用16/64个真实pitch的同层二维窗口（约0.3328×0.3648/1.3312×1.4592 mm）；4 mm是独立控制。每块至多32 nodes，超限canonical分块全部处理。局部坐标残差及Fourier features从当前表示计算；1 mm处理不携带native residual或额外原生multiplicity。两层局部set attention后作learned pooling。
+`analysis.flavour.s3`独立实现。Pixel采用16/64个真实pitch的同层二维窗口（约0.3328×0.3648/1.3312×1.4592 mm）；4 mm是独立控制。每块至多32 nodes，超限canonical分块全部处理。局部坐标残差及Fourier features从当前表示计算；1 mm使用冻结的`reducer=count`，保留bin内native hit数，不保留bin内细坐标残差，也不外挂当前表示以外的raw统计。这一对照不是binary OR。16-pitch窗口小于1 mm coarse中心间距，coarse表示中该窗口多数为单node；因此2×2交互描述这组具体表示与编码，不能推成所有native信息的普遍因果结论。两层局部set attention后作learned pooling。
 
 Pixel module为geometry中`layer_is_pixel`真项的有序位置，bar使用已有hardware `layer`，tracker使用station ID；这些是硬件结构。每module/type的4个learned queries读取该组所有局部块。Module context加入module/type embedding、连续z及Δz/same-module/same-type关系；global pair不把bar未知横坐标当精确点。Geometry-off仍保留同一物理分组，只关闭显式embedding/relations，不能解释为去除全部几何信息。
 
