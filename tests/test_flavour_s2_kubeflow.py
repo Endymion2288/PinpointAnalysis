@@ -142,6 +142,35 @@ class KubeflowAccountingTests(unittest.TestCase):
         self.assertEqual(row['GPU_hours'], 0)
         self.assertTrue(row['allocation_complete'])
 
+    def test_deleted_job_without_terminal_evidence_remains_missing(self):
+        execution = {**self.execution, 'uid': 'job-uid', 'backend': 'kubeflow', 'submitted': True}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'execution_test.json').write_text(json.dumps(execution))
+            (root / 'kubeflow').mkdir()
+            with patch('analysis.flavour.s2.kubeflow.kubectl', return_value=json.dumps({'items': []})):
+                row = allocations(root, self.now)[0]
+        self.assertIsNone(row['seconds'])
+        self.assertEqual(row['status'], 'missing_pod_history')
+
+    def test_completed_job_after_pod_gc_has_explicit_upper_bound(self):
+        execution = {**self.execution, 'uid': 'job-uid', 'backend': 'kubeflow', 'submitted': True,
+                     'pod_admission': {'spec': self.pod['spec']}}
+        job = {'metadata': {'uid': 'job-uid'}, 'status': {'succeeded': 1,
+            'startTime': '2026-11-11T21:00:00Z', 'conditions': [
+                {'type': 'Complete', 'status': 'True', 'lastTransitionTime': '2026-11-11T21:30:00Z'}]}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'execution_test.json').write_text(json.dumps(execution))
+            (root / 'kubeflow').mkdir()
+            with patch('analysis.flavour.s2.kubeflow.kubectl', side_effect=[
+                    json.dumps({'items': []}), json.dumps({'items': [job]}), json.dumps({'items': []})]):
+                row = allocations(root, self.now)[0]
+        self.assertEqual(row['GPU_hours'], .5)
+        self.assertEqual(row['allocation_estimate_kind'], 'conservative_upper_bound')
+        self.assertIsNone(row['pod'])
+        self.assertEqual(row['status'], 4)
+
 
 if __name__ == '__main__':
     unittest.main()

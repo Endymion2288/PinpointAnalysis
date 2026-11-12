@@ -266,6 +266,26 @@ def allocations(root, now, app_label='pinpoint-s2'):
                 denied = [e for e in events if e.get('involvedObject', {}).get('uid') == execution['uid']
                           and e.get('reason') == 'FailedCreate']
                 end = terminal_times.get(execution['uid'])
+                if (not names and end and
+                        (job.get('status', {}).get('succeeded') or job.get('status', {}).get('failed'))):
+                    # Pod GC may precede the first poll. A complete Job bounds
+                    # its reservation from above, including any queue wait.
+                    start = job['status'].get('startTime')
+                    admission = execution.get('pod_admission', {}).get('spec')
+                    if start and admission:
+                        safe = {'metadata': {'name': execution['job'] + '-allocation-bound',
+                                             'uid': execution['uid'] + '/allocation-bound'},
+                                'spec': admission,
+                                'status': {'phase': 'Succeeded' if job.get('status', {}).get('succeeded') else 'Failed',
+                                    'conditions': [{'type': 'PodScheduled', 'status': 'True',
+                                                    'lastTransitionTime': start}]},
+                                'job_terminal_time': end}
+                        row = pod_allocation(safe, execution, now)
+                        row.update(pod=None, allocation_estimate_kind='conservative_upper_bound',
+                                   allocation_basis='terminal_Job_start_to_completion_including_queue_no_retained_Pod')
+                        cache[execution['uid'] + '/allocation-bound'] = {
+                            'allocation': row, 'observed_utc': now.isoformat()}
+                        continue
                 if (not names and denied and end and not job.get('status', {}).get('failed', 0)
                         and not job.get('status', {}).get('succeeded', 0)):
                     row = {**{k: execution[k] for k in ['namespace', 'job', 'root', 'experiment', 'stage']},

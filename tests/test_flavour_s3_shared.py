@@ -3,8 +3,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from analysis.flavour.s3.accounting import allocation_transform, shared_seconds
+from analysis.flavour.s3.parallel import main as parallel_main
 
 
 class SharedAllocationTests(unittest.TestCase):
@@ -35,6 +37,46 @@ class SharedAllocationTests(unittest.TestCase):
             self.assertEqual(sum(r['CPU_core_hours'] for r in rows), 22.)
             self.assertEqual(sum(r['GPU_resource_hours']['mig'] for r in rows), 1.)
             self.assertEqual(sum(r['seconds'] for r in rows), 3600.)
+
+
+class ParallelLifecycleTests(unittest.TestCase):
+    def test_first_child_exit_does_not_end_other_training(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'kubeflow').mkdir()
+            campaign = root / 'campaign.json'
+            campaign.write_text(json.dumps({'experiments': [{'name': n} for n in ['a', 'b', 'c']]}))
+            polls = {0: [0], 1: [None, None, 0], 2: [None, 0]}
+            live = set()
+            peak = []
+
+            class Child:
+                def __init__(self, task):
+                    self.task = task
+                    self.pid = task + 10
+
+                def poll(self):
+                    result = polls[self.task].pop(0)
+                    if result is not None:
+                        live.remove(self.task)
+                    return result
+
+            def launch(arguments, **kwargs):
+                task = int(arguments[-1])
+                live.add(task)
+                peak.append(len(live))
+                return Child(task)
+
+            argv = ['parallel', '--root', str(root), '--campaign', str(campaign),
+                    '--name', 'j', '--tasks', '0', '1', '2', '--concurrency', '2']
+            with patch('sys.argv', argv), patch('analysis.flavour.s3.parallel.subprocess.Popen', side_effect=launch), \
+                    patch('analysis.flavour.s3.parallel.time.sleep'):
+                parallel_main()
+            evidence = json.loads((root / 'kubeflow/parallel_j.json').read_text())
+            self.assertFalse(live)
+            self.assertLessEqual(max(peak), 2)
+            self.assertEqual([p['exit_code'] for p in evidence['processes']], [0, 0, 0])
+            self.assertTrue(all('finished_at' in p for p in evidence['processes']))
 
 
 if __name__ == '__main__':

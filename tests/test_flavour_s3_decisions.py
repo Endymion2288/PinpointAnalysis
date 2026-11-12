@@ -30,7 +30,8 @@ class S3DecisionTests(unittest.TestCase):
         raw['macro_AP'].update(delta=.012, CI95=[.002, .02])
         comp = {'name': 'candidate', 'metrics': {'raw': raw, 'common_support': copy.deepcopy(raw)},
                 'pairs': [{'a': f'a{s}', 'b': f'b{s}'} for s in [17, 42, 2026]]}
-        exps = {name: {'allocated_gpu_hours': 1.} for p in comp['pairs'] for name in p.values()}
+        exps = {name: {'allocated_gpu_hours': 1., 'GPU': 'NVIDIA H100 NVL'}
+                for p in comp['pairs'] for name in p.values()}
         return comp, exps
 
     def test_tau_only_gain_cannot_promote(self):
@@ -56,6 +57,15 @@ class S3DecisionTests(unittest.TestCase):
         self.assertTrue(promotion(comp, exp)['efficiency_path'])
         comp['metrics']['raw']['class_0_AP']['CI95'][0] = -.02
         self.assertFalse(promotion(comp, exp)['efficiency_path'])
+
+    def test_mig_device_hours_do_not_imply_whole_gpu_speedup(self):
+        comp, exp = self.example()
+        comp['metrics']['raw']['macro_AP'].update(delta=0., CI95=[-.003, .003])
+        for pair in comp['pairs']:
+            exp[pair['b']].update(allocated_gpu_hours=.2, GPU='NVIDIA H100 NVL MIG 3g.47gb')
+        decision = promotion(comp, exp)
+        self.assertFalse(decision['matched_GPU_type_for_efficiency'])
+        self.assertFalse(decision['efficiency_path'])
         comp, exp = self.example(); exp['a17']['allocated_gpu_hours'] = None
         self.assertFalse(promotion(comp, exp)['efficiency_path'])
 

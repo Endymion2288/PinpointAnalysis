@@ -68,6 +68,8 @@ FASERCal本地arXiv v2的architecture Methods再次核对了module-level self-at
 
 共享GPU通过`analysis.flavour.s3.backend --tasks <task IDs> --concurrency 4 --flavor h100-47gb`启动，父进程等待所有训练退出，各训练保持独立冻结配置、seed、checkpoint和EOS日志。`analysis.flavour.s3.parallel`记录子进程起止时间；accounting以活跃时间等分同一个reservation，启动/退出空档等分到参与者，组织成本只累计一次。旧手动并发的区间依据complete manifest时间与elapsed重建。已删除且失去Pod终态的旧尝试使用明确标注的Job生命周期保守上界；原整卡Pending后被删除的任务以launch到首次观测Job不存在的整段时间作上界，不冒称实测GPU时间。当前组织上界27.277435344 device-hours，包含这项8.269070509小时的保守上界。记录见阶段72。
 
+已按冻结规则选择screen task14与task0，确认结构为task0/5/6/14。`configs/s3_confirmation.json`和`configs/s3_confirmation_pairs.json`记录8项seed17/2026训练与三seed对比；`pinpoint-s3-confirm-mig47-parallel-v1`已获配MIG，按4个进程并发运行。GPU subtype不同的资源比只作运行组织信息，不授予整卡/MIG混合的模型效率晋级；四分类质量路径照常评价。`analysis.flavour.s3.finalize`等待确认训练/readback和Job终态，然后执行accounting、四分类/条件域bootstrap、英文图示和strict gate，阶段状态独立写入`confirmation_finalize_state.json`。当前尚未宣称S3完成。
+
 执行入口：`analysis.flavour.s3.evaluate`对raw/common support同时输出所有四类配对区间与2×2交互，所有seed共享物理block multiplicities；`analysis.flavour.s3.select`仅在完整screen/CPU读回/终态计费通过后按上述规则写独立confirmation campaign和三seed配对。`analysis.flavour.s3.accounting`累计两后端，并单列初次interactive T4保守计费上界。阶段57已在16个只读S2模型上完成统计执行验证；40项S3实验/配对/交互当时仍pending，不作S3验收。
 
 `analysis.flavour.s3.monitor --watch`每60秒观察训练产物，只对新发布complete的模型执行14项CPU读回；scheduler liveness另查。最终`analysis.flavour.s3.accept --comparisons <frozen-confirmation-pairs.json>`精确比对所有冻结配对、确认矩阵及raw/common support的34项四类统计和400个有效replicates，不能只凭数量判定通过。

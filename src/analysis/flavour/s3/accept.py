@@ -71,16 +71,19 @@ def promotion(comparison, experiments):
         a_cost.append(experiments[pair['a']]['allocated_gpu_hours'])
         b_cost.append(experiments[pair['b']]['allocated_gpu_hours'])
     costs_complete = all(v is not None for v in a_cost + b_cost)
+    hardware_comparable = all(experiments[p['a']].get('GPU') is not None and
+        experiments[p['a']]['GPU'] == experiments[p['b']].get('GPU') for p in comparison['pairs'])
     ratio = float(np.mean(b_cost) / np.mean(a_cost)) if costs_complete else None
     # Equivalence requires the event interval to respect every preregistered
     # noninferiority margin, rather than accepting an inconclusive point estimate.
     near_equivalent = raw['macro_AP']['CI95'][0] >= -.005 and nll_safe and all(
         raw[f'class_{c}_AP']['CI95'][0] >= -.01 for c in range(4))
     quality = bool(quality_paths and nll_safe and not class_degradation)
-    efficiency = bool(costs_complete and ratio <= .5 and near_equivalent)
+    efficiency = bool(costs_complete and hardware_comparable and ratio <= .5 and near_equivalent)
     return {'name': comparison['name'], 'quality_path': quality, 'improved_macro_metrics': quality_paths,
         'NLL_noninferiority_interval_pass': nll_safe, 'class_AP_point_degradation_over_0.01': class_degradation,
         'efficiency_path': efficiency, 'quality_near_equivalence_interval_pass': bool(near_equivalent),
+        'matched_GPU_type_for_efficiency': hardware_comparable,
         'mean_seed_allocated_cost_ratio_B_over_A': ratio, 'fully_promoted': quality or efficiency,
         'training_seed_spread': {key: raw[key].get('training_seed_sample_SD') for key in
                                 ['macro_AP', 'NLL', 'macro_F1', 'balanced_accuracy']},
