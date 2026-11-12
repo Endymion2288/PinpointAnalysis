@@ -12,6 +12,8 @@ PN200μm（`1573782.9`）真实终态JobStatus=4、ExitCode=0、allocation=4,604
 
 资源核算及部分评价正常退出，commit=`ba5004f`：16 results（4 references+12空间模型）、430行分域指标、48个历史三类诊断、18项预定配对、27项pending、2 factorial。完整resolution图与paired-effects图已实际查看。
 
+路线图README及执行入口同步标明十二项空间配置完成、控制与额外种子继续执行，避免将历史首轮/部分曲线状态作为当前状态。文档链接与`git diff --check`通过；此次同步没有改动运行配置。
+
 ## 详细数据
 
 PN200μm为ParticleNet dim64、161,156 parameters、pixel+bar、count reducer、seed42、batch4、4 epochs、20,016 attempted steps/epoch；H100 NVL/LCG108/Python3.12.11/Torch2.7.1/BF16。沿用独立train80k/validation10k、每类20k/2,500及accepted split；各轮exposures=80,040/80,044/80,040/80,040，合计320,164。NLL选中epoch4。局部压缩仍为同平面4mm分块、canonical chunks≤32 nodes，随后处理全部全局块；粗表示不含原生cell残差。
