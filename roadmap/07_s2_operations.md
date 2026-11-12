@@ -20,7 +20,7 @@ S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16�
 | H100 resource comparison | `1573759.0` exit0，H100/LCG108/BF16 共 576 行；与 V100 匹配后去 warmup 保留552行，batch1 training compute 比值1.69–2.33；原始/配对图已查看，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；后续两族整轮门槛已通过，见下一行 |
 | H100 selected execution | 两族完整首轮于2026-11-12 00:01:53 UTC总体pass。ParT=2,223.38 s（V100的45.76%），ParticleNet=1,604.22 s（54.60%），均20,016/20,016 applied、0 skips、23项检查通过；无AP/accuracy/NLL硬件选择，见[阶段25](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md) |
 | H100 complete matrix | [冻结的35项同配置合同](configs/s2_h100_v2.json)；原tasks0/6保留为 `1573760.0/1`，其余33项已提交为 `1573782.0–32`，schedd=`bigbird20.cern.ch`。`h100/activation.json` 保存门槛、完整task/proc映射、优先级和移除旧idle证据；正式评价读取 `h100/` |
-| V100 supplementary execution | 原35项中4 complete、5 running、26个被替代idle已移除；保留全部尝试/成本与已完成空间配对。5个运行Job为 `1573747.0/.4/.7/.8/.9`；这些辅助任务完成后继续记录阶段28，不替代H100正式配置 |
+| V100 supplementary execution | 原35项中5 complete、4 running、26个被替代idle已移除；保留全部尝试/成本与已完成空间配对。4个运行Job为 `1573747.4/.7/.8/.9`；这些辅助任务完成后继续记录阶段28，不替代H100正式配置 |
 | Kubeflow execution | `ml-prod/xcheng` 已登录，NVIDIA quota=1；CPU 容器的 LCG108/Python3.12/Torch2.7.1、EOS/CVMFS 路径已实际成功，GPU probe v5全程未分配node，23:14:58 UTC到达deadline（GPU reservation=0）；科学任务未迁移。v6以相同资源保留6小时排队机会，容器探测仍限时300秒。新提交/核算入口与失败环境探测见[阶段 26](../workbook/2026-11-11_stage26_s2_kubeflow.md) |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
 | Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
@@ -35,6 +35,7 @@ S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16�
 | Second scientific model / updated evaluation | `1573747.1` exit0，ParT native-projections 四轮完成，τ AP=0.34989、NLL=1.22890、allocation=3.84833 GPUh。最新部分评价正常退出，6个完成结果、160行分域指标、1项配对/44项pending；新resolution图已查看。22:23 UTC为2 complete/5 running/28 idle，见[阶段28](../workbook/2026-11-11_stage28_s2_spatial_results.md) |
 | Third scientific model / latest evaluation | `1573747.2` exit0，ParT 1mm joint四轮完成，τ AP=0.35845、NLL=1.22922、allocation=4.71833 GPUh。部分评价为7个完成结果、187行分域指标、21个历史三类诊断，仍为1项配对/44项pending；resolution图已查看。23:15队列3 complete/4 running/28 idle，见阶段28 |
 | Fourth scientific model / first spatial contrasts | `1573747.3` exit0，ParT 1mm projection四轮完成，τ AP=0.35210，allocation=3.84250 GPUh。8个完成结果、214行分域指标、3项配对/42项pending；1mm joint−projection AP=+0.00634，pointwise CI=[+0.00101,+0.01250]；native−1mm projection=−0.00221，CI=[−0.00935,+0.00544]。原`.7`已接续运行，累计23.56117 GPUh且missing=0，见阶段28 |
+| Fifth V100 model / complete ParT factorial | `1573747.0` exit0，native joint四轮完成，τ AP=0.35070、NLL=1.21797、allocation=5.70722 GPUh（含中断）。9个完成结果、241行分域指标、7项配对/38项pending；native pairing ΔAP=+0.00081，CI=[−0.00570,+0.00729]；native−1mm joint=−0.00774，CI=[−0.01397,−0.00010]，固定common-support区间跨0；交互效应−0.00553，CI=[−0.01488,+0.00375]。更新图已查看，01:10组织累计34.92273 GPUh、missing=0，见阶段28 |
 | Input response domains | `1573754` 已完成；新增 model-input-active/empty 与 tracker-only，pixel+bar validation 输入空为 440 events，三探测器全空为 282；见[阶段 19](../workbook/2026-11-11_stage19_s2_input_response_domains.md) |
 | First full scientific epoch | ParT 1mm projection epoch1：τ AP=0.30649、NLL=1.32943、3,063.325 s；继续既定 4 epochs，尚未作为完成模型纳入配对，见[阶段 20](../workbook/2026-11-11_stage20_s2_first_complete_epoch.md) |
 
