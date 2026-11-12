@@ -1,6 +1,6 @@
 # 阶段 31：S2 输出完整性与 native 配对比较
 
-正式 H100 ParT native projection 四轮正常结束，best checkpoint 与 10k validation predictions 一致，τ AP=0.35733812。其 40k 行 epoch 概率表在 EOS 两个副本上写回不完整，完整读回尚未通过。已实现同步后原子发布输出，四次 EOS 替换及直接 XRootD 读回验证通过；原文件恢复作业正在等待原节点资源。
+正式 H100 ParT native projection 原尝试四轮正常结束，best checkpoint 与 10k validation predictions 一致，τ AP=0.35733812。其 40k 行 epoch 概率表在 EOS 两个副本上写回不完整，完整读回尚未通过。已实现同步后原子发布输出，四次 EOS 替换及直接 XRootD 读回验证通过。原节点恢复无法匹配资源，已归档原尝试并提交冻结配置的完整替换重跑。
 
 ## 阶段目标
 
@@ -47,6 +47,22 @@
 
 新增 CPU 读回入口也在 `smoke/readback_module/` 通过全部 13 项，使用已有完整 ParticleNet 模型的只读文件链接；原模型验收记录保持原样。projection 的实际损坏文件则使该入口明确返回非零，并保留其余 12 项独立证据。`git diff --check` 通过。
 
+### 原尝试归档与冻结配置替换
+
+02:37 UTC，原节点 GPU 已被另一任务占用；`1573790.0` 仍为 idle、NumJobStarts=0、allocation=0，无法读取该节点的本地 FUSE 视图。已撤下这项恢复作业，history 确认为 JobStatus=3、0 starts、0 s。后续采用完整替换重跑，以补齐不可读的四轮概率表。
+
+原 `experiments/part_native_projection_s42_e4_v2/` 整个目录保留于 `recovery_projection/original_training_attempt/`，包含 best/last checkpoint、有效 best predictions、history、损坏 epoch 表及失败读回记录。正式同名目录标记 `awaiting_complete_reexecution`，原有已完成模型数相应回到 2；先前部分评价的 projection 指标对应归档原尝试。当前正式有效结果待替换任务完成后更新。
+
+替换 `1573791.0` 使用 `s2_h100_v2.json` 的同一个 task1、H100 NVL/LCG108/BF16、seed42、batch4、80k/10k、4 epochs、20,016 steps/epoch及 NLL 选模，代码包含同步与原子发布修复 `d9a5d77`。提交器重新检查 schedd 负载和兼容性，选择 `bigbird20.cern.ch`；作业在启动前 held 以完成原目录归档，确认 NumJobStarts=0 后设置 JobPrio=30 并释放。没有训练副本同时写入正式目录。
+
+替换决定依据是已确认的文件不完整，在读取替换质量指标之前固定。原 5,618 s 与替换尝试的实际 allocation 均按同一实验计入成本。最终科学主表使用替换的完整结果，原尝试保留为历史证据；同耗时比较继续计入失败尝试开销。决定与精确 job 映射为 `recovery_projection/reexecution_decision.json`，提交记录为 `submission_train_023730.json`。
+
+```bash
+python -m analysis.flavour.s2.submit train --root "$S2_RESULTS/h100" \
+  --campaign "$PWD/roadmap/configs/s2_h100_v2.json" --tasks 1 \
+  --lcg-view LCG_108_cuda --gpu-device 'NVIDIA H100 NVL' --training-flavour workday
+```
+
 ### 产物与命令
 
 根目录：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100/`。
@@ -69,8 +85,8 @@ python -m analysis.flavour.s2.readback --root "$S2_RESULTS/h100" \
 
 ## 阶段性结论
 
-新写入流程的 EOS/XRootD 集成验证通过，可复现读回入口能区分完整模型和当前 epoch 表缺损。projection 的最终分类结果有 best checkpoint 与预测一致性证据，整份训练输出尚待恢复。native 配对在当前设置下未显示至少 +0.01 AP 的收益；架构、粒度与物理机制仍由完整冻结矩阵回答。
+新写入流程的 EOS/XRootD 集成验证通过，可复现读回入口能区分完整模型和当前 epoch 表缺损。projection 原尝试的分类结果有 best checkpoint 与预测一致性证据，完整输出由冻结配置替换任务重新生成。原尝试的 native 配对在当前设置下未显示至少 +0.01 AP 的收益；正式结论将在完整替换结果与其余冻结矩阵上更新。
 
 ## 下一步计划
 
-跟进原节点恢复，跨节点读回恢复表后与 checkpoint、keys 和各 epoch history 核对，再发布为有效 epoch 表并重新运行该模型完整读回。继续其余正式训练，按新增终态更新实际成本和配对。全部 35 个正式配置与 41+4 比较齐全后执行严格评价，S2 goal 保持 active。
+跟进替换 `1573791.0`，完成后执行 CPU 完整读回并更新正式配对；全部旧尝试成本保留。继续其余正式训练，按新增终态更新实际成本和配对。全部 35 个正式配置与 41+4 比较齐全后执行严格评价，S2 goal 保持 active。
