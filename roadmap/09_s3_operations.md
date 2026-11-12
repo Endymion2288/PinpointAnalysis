@@ -8,7 +8,7 @@ S2没有隔离“4 mm compression抹平native优势”的因果；S3把它作为
 
 主任务是`CC nu e / CC nu mu / CC nu tau / NC`四分类。预先固定主评价为macro one-vs-rest AP与四类NLL，并联合看macro F1、balanced accuracy、macro AUROC、Brier、各类AP/AUROC/precision/recall/F1和混淆矩阵。τ AP、τ分支及固定背景接受率效率继续保留；不能用τ单项决定backbone。使用full-validation NLL选择checkpoint。
 
-训练均4 epochs、batch4、20,016 attempted steps/epoch、80,064 updates、seed42，AdamW与S2相同。正式环境为整卡H100 NVL/LCG108/Torch2.7.1/BF16；不能将T4或MIG probe混入主比较。dim96，参数实测随消融记录；相对S2容量不同，S2跨架构比较同时呈现实际GPU allocation与参数，S3内部对照用于拆分处理变化。
+训练均4 epochs、batch4、20,016 attempted steps/epoch、80,064 updates、seed42，AdamW与S2相同。环境为H100 NVL/LCG108/Torch2.7.1/BF16；按用户后续资源指令，允许H100 NVL 3g.47gb MIG执行冻结科学任务，逐模型记录实际GPU名称及共享方式。T4仅用于早期验证。整卡与MIG device-hours分列，不能当同等吞吐量用于硬件无关的加速结论。dim96，参数实测随消融记录；相对S2容量不同，S2跨架构比较同时呈现实际GPU allocation与参数，S3内部对照用于拆分处理变化。
 
 `configs/s3_screen.json`冻结首轮17项，`configs/s3_pairs.json`冻结22主配对。输入modalities、feature masks与窗口来自配置，不修改accepted proxy值。科学输出未完成时显式列pending，不能按已完成的有利子集提前验收。
 
@@ -64,7 +64,9 @@ FASERCal本地arXiv v2的architecture Methods再次核对了module-level self-at
 
 阶段69已完成seed42的四单元2×2及配对事件统计，详见[完整报告](../workbook/2026-11-12_stage69_s3_factorial_results.md)。Fine/native和fine/1 mm最终均为常数预测；4 mm/native和4 mm/1 mm的macro AP分别0.261014083/0.321516517。4 mm窗口的native−1 mm为−0.060502435，95%事件区间[−0.067034736, −0.054427614]；交互为+0.060502435，[+0.054427614, +0.067034736]。该交互包含fine模型的优化失败，不能据此确立“4 mm抹平native优势”。四个best checkpoint的同8事件FP32诊断显示fine两项head GELU全零、上游分类梯度为零；4 mm/native的GELU零比例99.09%，4 mm/1 mm为64.84%。这些诊断不改变正式训练与输入。
 
-当前10/17项screen及140个CPU输出读回检查完成；非strict评价可计算15/22项配对和1项交互，仍有7项实验、7项配对pending。尚未选择确认候选。新版本的head normalization或激活干预需要独立冻结对照与预算，当前screen保持原合同；不能把塌缩模型之间的零AP差当分辨率等效。17:41 UTC组织成本保守上界14.163936758 GPUh，属于进行中快照。
+当前17/17项screen和238项CPU输出读回检查完成，22/22项配对及1项交互已计算，screen无pending。新增MIG共享执行的task 11/12/13/15/16全部完成。Tracker候选四分类macro AP为0.368196335、macro F1为0.357889767，4 mm late为0.358741130/0.334572800；pixel-only与关闭pair的latent模型均为常数预测，增加8 queries为0.280445213 macro AP。新版本的head normalization或激活干预需要独立冻结对照与预算，当前screen保持原合同；不能把塌缩模型之间的零AP差当分辨率等效。screen评价保存于results的`evaluation_final`；确认seed与最终strict gate尚待完成。
+
+共享GPU通过`analysis.flavour.s3.backend --tasks <task IDs> --concurrency 4 --flavor h100-47gb`启动，父进程等待所有训练退出，各训练保持独立冻结配置、seed、checkpoint和EOS日志。`analysis.flavour.s3.parallel`记录子进程起止时间；accounting以活跃时间等分同一个reservation，启动/退出空档等分到参与者，组织成本只累计一次。旧手动并发的区间依据complete manifest时间与elapsed重建。已删除且失去Pod终态的旧尝试使用明确标注的Job生命周期保守上界；原整卡Pending后被删除的任务以launch到首次观测Job不存在的整段时间作上界，不冒称实测GPU时间。当前组织上界27.277435344 device-hours，包含这项8.269070509小时的保守上界。记录见阶段72。
 
 执行入口：`analysis.flavour.s3.evaluate`对raw/common support同时输出所有四类配对区间与2×2交互，所有seed共享物理block multiplicities；`analysis.flavour.s3.select`仅在完整screen/CPU读回/终态计费通过后按上述规则写独立confirmation campaign和三seed配对。`analysis.flavour.s3.accounting`累计两后端，并单列初次interactive T4保守计费上界。阶段57已在16个只读S2模型上完成统计执行验证；40项S3实验/配对/交互当时仍pending，不作S3验收。
 

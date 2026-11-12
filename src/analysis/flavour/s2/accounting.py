@@ -99,6 +99,8 @@ def run(args):
             'starts':ad.get('numjobstarts',0),'running_estimate':running,'hold_reason':ad.get('holdreason')})
     allocations.extend(kubeflow_allocations(args.root, datetime.fromtimestamp(now, timezone.utc),
                                            app_label=getattr(args, 'app_label', 'pinpoint-s2')))
+    if getattr(args, 'allocation_transform', None):
+        allocations = args.allocation_transform(args.root, allocations)
     utc=datetime.now(timezone.utc).isoformat()
     scopes={args.root:allocations}
     for directory in {Path(row['root']) for row in allocations}:

@@ -34,6 +34,18 @@ def prepare(args):
             raise ValueError('scientific task must use an H100 whole-GPU or 47GB MIG flavor')
         experiment = campaign['experiments'][args.task]['name']
         args_list = ['analysis.flavour.s3.train', '--root', str(root), '--campaign', str(args.campaign.resolve()), '--task', str(args.task)]
+    if args.tasks:
+        if args.task is not None or args.dispatch or args.flavor not in {'h100-94gb', 'h100-47gb'}:
+            raise ValueError('parallel tasks require one H100 GPU and no other execution mode')
+        campaign = json.loads(args.campaign.read_text())
+        if args.concurrency < 1 or len(set(args.tasks)) != len(args.tasks):
+            raise ValueError('positive concurrency and distinct task IDs required')
+        if any(t < 0 or t >= len(campaign['experiments']) for t in args.tasks):
+            raise ValueError('task ID outside the frozen campaign')
+        experiment = 'shared-parallel-training'
+        args_list = ['analysis.flavour.s3.parallel', '--root', str(root),
+                     '--campaign', str(args.campaign.resolve()), '--name', args.name,
+                     '--concurrency', str(args.concurrency), '--tasks', *map(str, args.tasks)]
     script = '\n'.join([
         'set -o pipefail', 'which() { command -v "$@"; }',
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh',
@@ -51,7 +63,7 @@ def prepare(args):
                                           'nodeSelector': {'nvidia.com/gpu.product': product},
                                           'volumes': [{'name': 'cvmfs', 'persistentVolumeClaim': {'claimName': 'cvmfs'}}],
                                           'containers': [{'name': 's3', 'image': 'docker.io/library/almalinux:9',
-                                                          'command': ([] if args.task is not None or args.dispatch else ['/usr/bin/timeout', '300']) + ['/bin/bash', '-c', script],
+                                                          'command': ([] if args.task is not None or args.tasks or args.dispatch else ['/usr/bin/timeout', '300']) + ['/bin/bash', '-c', script],
                                                           'resources': {'requests': resources, 'limits': resources},
                                                           'volumeMounts': [{'name': 'cvmfs', 'mountPath': '/cvmfs', 'readOnly': True, 'mountPropagation': 'HostToContainer'}]}]}}}}
     path = output / f'{args.name}.job.json'
@@ -63,8 +75,9 @@ def prepare(args):
     admitted = json.loads(kubectl('create', '--dry-run=server', '-f', str(pod_path), '-o', 'json'))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'backend': 'kubeflow', 'context': kubectl('config', 'current-context').strip(),
                 'namespace': 'xcheng', 'job': args.name, 'container_name': 's3',
-                'stage': 'train' if args.task is not None else 'dispatch' if args.dispatch else 'probe',
+                'stage': 'train' if args.task is not None or args.tasks else 'dispatch' if args.dispatch else 'probe',
                 'experiment': experiment, 'task': args.task, 'root': str(root), 'submitted': False,
+                'parallel_experiments': [campaign['experiments'][t]['name'] for t in args.tasks] if args.tasks else [],
                 'gpu_flavor': {'name': args.flavor, 'product': product, 'resource': resource, 'count': 1},
                 'job_spec': job, 'pod_admission': admitted,
                 'code_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()}
@@ -82,6 +95,8 @@ def main():
     parser.add_argument('--flavor', choices=GPU_FLAVORS, default='h100-94gb')
     parser.add_argument('--campaign', type=Path)
     parser.add_argument('--task', type=int)
+    parser.add_argument('--tasks', type=int, nargs='+')
+    parser.add_argument('--concurrency', type=int, default=4)
     parser.add_argument('--dispatch', action='store_true', help='offer an H100 slot to a still-idle Condor task after runtime readiness')
     parser.add_argument('--deadline', type=int, default=21600)
     parser.add_argument('--apply', action='store_true')

@@ -38,9 +38,9 @@ kubectl exec -n xcheng <pod> -c s3 -- nvidia-smi -L
 # 阶段性结论
 
 1. 在当前 quota 约束下，可以通过一个已获配 MIG Pod 内的进程级并发利用 GPU，避免额外 Job 长时间 Pending。
-2. 5 个训练进程的内存总量约 8.98 GiB，明显低于 47GB 分区；截至记录时所有进程都正常运行。
+2. 表中 5 个训练父进程的 VmRSS 合计约 8.56 GiB，属于主机内存，不能与 GPU 分区容量比较。CUDA 实测峰值由各模型 manifest 独立报告。
 3. 进程级并发会增加数据读取竞争，最终吞吐以每个 experiment 的 `progress.json` 和完成时间为准；不能用单进程吞吐直接外推总加速比。
 
 # 下一步计划
 
-继续监控 5 个进程，等待各自 `manifest.json` 进入 `complete`，随后运行 CPU readback、统一四分类评价和 accounting。若某一进程先完成，保留其结果并在同一 Pod 中补充尚未完成的 screen task；不再创建第二个 Kubeflow Job。
+后续结果见阶段72。5 项均完成并通过 CPU readback；更新 accounting，避免将共享 GPU 的各进程时间重复相加。期间曾暂停多个 DataLoader/resource-tracker，导致共同停顿，恢复后训练继续。最后一个 stopped resource-tracker 在模型均发布完成后仍阻止 PID 1 退出，恢复它后 Job 正常 Complete。这些占用全部计入成本。后续使用父进程管理并等待所有子训练退出，不再通过暂停进程维持容器。

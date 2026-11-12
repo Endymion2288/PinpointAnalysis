@@ -260,7 +260,9 @@ def allocations(root, now, app_label='pinpoint-s2'):
                 # A rejected Job can reach its deadline without ever creating
                 # a Pod. Record that terminal zero allocation from controller
                 # status and retained admission events, not from an empty query.
-                job = next(j for j in jobs if j['metadata']['uid'] == execution['uid'])
+                job = next((j for j in jobs if j['metadata']['uid'] == execution['uid']), None)
+                if job is None:
+                    continue  # Deleted Jobs without terminal evidence stay missing.
                 denied = [e for e in events if e.get('involvedObject', {}).get('uid') == execution['uid']
                           and e.get('reason') == 'FailedCreate']
                 end = terminal_times.get(execution['uid'])
