@@ -62,6 +62,10 @@ FASERCal本地arXiv v2的architecture Methods再次核对了module-level self-at
 
 ## 完成门槛
 
+阶段69已完成seed42的四单元2×2及配对事件统计，详见[完整报告](../workbook/2026-11-12_stage69_s3_factorial_results.md)。Fine/native和fine/1 mm最终均为常数预测；4 mm/native和4 mm/1 mm的macro AP分别0.261014083/0.321516517。4 mm窗口的native−1 mm为−0.060502435，95%事件区间[−0.067034736, −0.054427614]；交互为+0.060502435，[+0.054427614, +0.067034736]。该交互包含fine模型的优化失败，不能据此确立“4 mm抹平native优势”。四个best checkpoint的同8事件FP32诊断显示fine两项head GELU全零、上游分类梯度为零；4 mm/native的GELU零比例99.09%，4 mm/1 mm为64.84%。这些诊断不改变正式训练与输入。
+
+当前10/17项screen及140个CPU输出读回检查完成；非strict评价可计算15/22项配对和1项交互，仍有7项实验、7项配对pending。尚未选择确认候选。新版本的head normalization或激活干预需要独立冻结对照与预算，当前screen保持原合同；不能把塌缩模型之间的零AP差当分辨率等效。17:41 UTC组织成本保守上界14.163936758 GPUh，属于进行中快照。
+
 执行入口：`analysis.flavour.s3.evaluate`对raw/common support同时输出所有四类配对区间与2×2交互，所有seed共享物理block multiplicities；`analysis.flavour.s3.select`仅在完整screen/CPU读回/终态计费通过后按上述规则写独立confirmation campaign和三seed配对。`analysis.flavour.s3.accounting`累计两后端，并单列初次interactive T4保守计费上界。阶段57已在16个只读S2模型上完成统计执行验证；40项S3实验/配对/交互当时仍pending，不作S3验收。
 
 `analysis.flavour.s3.monitor --watch`每60秒观察训练产物，只对新发布complete的模型执行14项CPU读回；scheduler liveness另查。最终`analysis.flavour.s3.accept --comparisons <frozen-confirmation-pairs.json>`精确比对所有冻结配对、确认矩阵及raw/common support的34项四类统计和400个有效replicates，不能只凭数量判定通过。
