@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地PDF修订，S0/S1已验收。S2统一H100的35项正式配置均已提交，21项完整输出已读回并评价，共27项配对完成、18项待完成。最新[bar增量/固定图报告](../workbook/2026-11-12_stage42_s2_fixed_graph_bar_increment.md)：ParticleNet pixel+bar相对pixel-only的τ ΔAP=+0.06891，pointwise 95%事件区间=[+0.05663,+0.08443]；固定common support后仍为正，1% FPR效率由1.24%升至3.32%。动态图相对固定图的AP区间跨0。此前ParT平面内关联控制支持正AP增益，见[阶段41](../workbook/2026-11-12_stage41_s2_association_structure_controls.md)。余下模态/训练域/额外种子/跨层控制继续运行与排队，证据见[S2入口](07_s2_operations.md)。S2尚未整体验收，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地PDF修订，S0/S1已验收。S2统一H100的35项正式配置均已提交，22项完整输出已读回并评价，共28项配对完成、17项待完成。最新[双向模态/靶核报告](../workbook/2026-11-12_stage43_s2_modality_and_target_diagnostics.md)：ParticleNet pixel+bar相对bar-only的raw τ ΔAP=+0.01074，pointwise 95%事件区间=[+0.00464,+0.01687]；固定E/vertex支持后差值为+0.00180、区间跨0。Bar在pixel之上的增量在raw/common两种评价中均支持正收益，见[阶段42](../workbook/2026-11-12_stage42_s2_fixed_graph_bar_increment.md)。ParT平面内关联控制也有AP正事件区间，见[阶段41](../workbook/2026-11-12_stage41_s2_association_structure_controls.md)。余下+tracker/训练域/额外种子/跨层控制继续运行与排队，证据见[S2入口](07_s2_operations.md)。S2尚未整体验收，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 

@@ -145,19 +145,23 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
 | 100/200 μm curves | 两族完整四点曲线及相邻粒度配对完成（阶段37–38），十二项空间输出全部14项readback pass |
 | OR/count, grid shift | 两族四项控制均完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01；工作点CI和限制见阶段39 |
-| Pixel / bar / pixel+bar / +tracker | PN pixel-only与pixel+bar完整；bar增量raw/common AP及1% FPR效率差均支持正收益，见阶段42。bar-only/+tracker仍运行 |
+| Pixel / bar / pixel+bar / +tracker | PN pixel/bar/pixel+bar三项完整，双向增量见阶段42–43；pixel增量raw AP为正、固定E/vertex区间跨0。+tracker仍运行 |
 | No-pair / fixed-graph / local-shuffle | 全部四项均完整、14项读回pass；两族shuffle和ParT no-pair见阶段41，PN dynamic−fixed的raw/common AP区间跨0，资源及评价见阶段42 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
-| Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
-| Paired CI / interaction / matched time | 27项预定配对、2组交互及同allocation整轮比较已完成；其余18项配对/种子均值等待控制和确认结果 |
+| Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；新增90k target计数与26个结果的182个Z条件组见阶段43。完整物理解释继续随控制结果更新 |
+| Paired CI / interaction / matched time | 28项预定配对、2组交互及同allocation整轮比较已完成；其余17项配对/种子均值等待控制和确认结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
 
 ## 最新关联控制与输出清单
+
+阶段43补齐PN bar-only：14项读回pass，26 results（4 references+22科学模型）、700行分域、28 paired/17 pending。Pixel+bar−bar raw τ ΔAP=+0.01073932，pointwise CI=[+0.00463872,+0.01687213]；固定E/vertex支持为+0.00180202，CI=[−0.00491768,+0.00812752]。1% FPR效率差区间跨0；等allocation预算下排序与固定四轮不同。`modality_comparison.json`保存三模态完整快照，资源/分域/历史三类及解释见[阶段43](../workbook/2026-11-12_stage43_s2_modality_and_target_diagnostics.md)。08:49:23 UTC组织累计74.11387479 GPUh、missing=0；严格gate仍为false。
+
+新增`analysis.flavour.s2.target_diagnostics`只读现有provenance和概率，输出`target_diagnostics/target_counts.csv`与`summary.json`。90k子集有14个target PDG/8个Z，validation W占92.76%；当前26个完成结果覆盖182个Z条件组。Target用于truth诊断，未加入主E/vertex匹配或模型输入，未改变接受样本。完整结果增加后再次运行此入口以更新条件表。
 
 08:35 UTC输出清单已确认21/35科学模型完整，全部14项读回pass且进入评价；6 running、8尚未启动。阶段42新增25 results（4 references+21科学模型）、673行分域、27 paired/18 pending。PN pixel+bar−pixel-only τ ΔAP=+0.06890803，pointwise CI=[+0.05663332,+0.08443211]；固定common support为+0.04851078，CI=[+0.03602058,+0.06154046]。1% FPR效率从31/2,500升至83/2,500，差值CI=[+0.01034517,+0.03158505]。Dynamic−fixed的raw/common AP区间均跨0，fixed allocation减少24.06%。分域、四类混淆、资源和限制见[阶段42](../workbook/2026-11-12_stage42_s2_fixed_graph_bar_increment.md)，独立快照`graph_pixel_comparison.json`。08:29:35 UTC组织累计72.13702406 GPUh、missing=0；严格输出gate仍为false。
 
