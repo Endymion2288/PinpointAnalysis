@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-11。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地 PDF 修订，S0/S1 已验收；S2 的 90k-event 目录、CPU 参照、toy 和 GPU 资源测量已完成，35项科学配置中2项已完成、5项运行中，其他任务继续；S3–S6 尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地PDF修订，S0/S1已验收；S2的90k-event目录、参照、toy和资源测量完成。两族H100完整首轮通过执行门槛，统一H100的35项均已提交；当前1 running/34 idle，V100先导4项complete、5项继续作为辅助。S2科学验收尚未完成，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -20,15 +20,15 @@
 
 **S0/S1 已完成并验收。**全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图、B0 GPU 验证、多 worker scratch 缓存和 15 项测试已完成。用户确认 samples 满足要求，并接受现有 detector-proxy 参数；缺少的生产认证由用户确认覆盖，不再追查来源或要求真实硬件标定。沿用现有冻结 split 进入 S2。验收依据见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)，实测保留在 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。
 
-**S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 空间矩阵](configs/s2_spatial_screen_v2.json)已记录；加上[控制与种子确认](../workbook/2026-11-11_stage17_s2_controls_and_seed_contract.md)，原有 33 项科学训练已提交。另为落实跨层连通条目，[两项 plane-only 控制](../workbook/2026-11-11_stage21_s2_cross_plane_control.md)已通过专用 H100/BF16 smoke，V100/FP16 科学任务已提交为 `1573757.0/1`；完整合同的 35 项科学配置均已提交，等待完成 41 项单 seed 配对与 4 项三种子均值。S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
+**S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 空间矩阵](configs/s2_spatial_screen_v2.json)已记录；加上[控制与种子确认](../workbook/2026-11-11_stage17_s2_controls_and_seed_contract.md)，原有 33 项科学训练已提交。另为落实跨层连通条目，[两项 plane-only 控制](../workbook/2026-11-11_stage21_s2_cross_plane_control.md)已通过专用 H100/BF16 smoke，原V100/FP16任务 `1573757.0/1` 在环境切换时已移除，正式H100对应 `1573782.31/32`；完整合同的35项H100科学配置均已提交，等待完成 41 项单 seed 配对与 4 项三种子均值。S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
 
 两项 V100 任务在 Startd 关闭后均已从 checkpoint 恢复。新增 H100/LCG108 的同事件 batch1 资源测量显示 training compute 快约1.69–2.33倍，见[阶段 24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)。已在独立目录提交两族 native-joint 的[完整 epoch 候选](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)，纯执行/耗时规则及全部35项配置预先冻结；两者首轮均满足≤V100耗时的80%后，再统一执行环境完成全矩阵。用户授权排队时使用 Kubeflow，[容器的LCG/EOS/CVMFS路径已成功](../workbook/2026-11-11_stage26_s2_kubeflow.md)，GPU探测v5已排队至deadline未获GPU，v6以相同资源和6小时排队期限继续等待，实际探测仍限时300秒。两后端、旧尝试和候选均计入200 GPU-hours总组织上限。
 
-[首个四轮科学结果](../workbook/2026-11-11_stage27_s2_first_scientific_model.md)：ParticleNet native-joint τ AP=0.35784，相对B0 ΔAP=+0.01313，95%配对区间=[−0.00097,+0.02446]；固定common-support条件下ΔAP=+0.01862，区间=[+0.00686,+0.02971]。四类balanced accuracy/NLL没有同时改善。当前完成1项配对、44项pending，尚不能归因于空间粒度或架构差异；原生错误显示已生成并检查。
+[首个四轮科学结果](../workbook/2026-11-11_stage27_s2_first_scientific_model.md)：ParticleNet native-joint τ AP=0.35784，相对B0 ΔAP=+0.01313，95%配对区间=[−0.00097,+0.02446]；固定common-support条件下ΔAP=+0.01862，区间=[+0.00686,+0.02971]。四类balanced accuracy/NLL没有同时改善。首次评价完成1项配对、44项pending，当时尚不能归因于空间粒度或架构差异；原生错误显示已生成并检查。
 
-[空间矩阵部分结果](../workbook/2026-11-11_stage28_s2_spatial_results.md)：目前4个references和4个四轮科学模型，3项预定配对完成、42项pending。ParT在1mm下joint相对projection的τ AP增量=+0.00634，pointwise CI=[+0.00101,+0.01250]；projection中native相对1mm为−0.00221，CI=[−0.00935,+0.00544]。结论限于当前seed42、模型表示和四轮预算；工作点收益与跨种子稳定性仍待结果。
+[空间矩阵部分结果](../workbook/2026-11-11_stage28_s2_spatial_results.md)：V100先导/辅助评价目前有4个references和4个四轮科学模型，3项预定配对完成、42项pending。ParT在1mm下joint相对projection的τ AP增量=+0.00634，pointwise CI=[+0.00101,+0.01250]；projection中native相对1mm为−0.00221，CI=[−0.00935,+0.00544]。结论限于当前seed42、模型表示和四轮预算；工作点收益与跨种子稳定性仍待结果。
 
-23:38 UTC组织总成本24.62590 GPU-hours，H100子目录0.70501，missing=0。H100 ParT首轮2,223.38 s、45.76% V100 wall、执行检查通过；ParticleNet候选已在23:35实际启动，总体环境门槛仍pending。原V100科学队列继续，Kubeflow v6以相同2 CPU/4 GiB/1 NVIDIA资源和6小时排队期限等待，实际探测仍限时300秒。
+2026-11-12 00:01 UTC，两族H100完整首轮执行门槛均通过：ParT 2,223.38 s（V100的45.76%）、ParticleNet 1,604.22 s（54.60%），均0 AMP skips。已按冻结规则选择H100/LCG108/BF16并提交完整35项，正式结果读取父目录下 `h100/`；原V100的26个idle任务已移除，5个running继续作为辅助。00:05 UTC累计27.34940 GPU-hours，其中H100 1.15893，missing=0。H100矩阵尚无四轮完成模型，S2仍进行中；Kubeflow v6继续等待可用GPU。
 
 ## 1. 首先要回答的物理问题
 

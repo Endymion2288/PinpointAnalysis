@@ -77,10 +77,15 @@ training:
   local_block_checkpointing: true
   global_attention_checkpointing: true
   resume: atomic_epoch_checkpoint_with_optimizer_scheduler_scaler_and_RNG
-  GPU_minimum_CUDA_capability: 7.0
-  GPU_execution_environment: LCG_107_cuda_Python3.11.9_Torch2.5.1
-  scientific_GPU_device: Tesla_V100_PCIE_32GB
-  HTCondor_training_flavour: tomorrow
+  GPU_minimum_CUDA_capability: 7.5
+  GPU_execution_environment: LCG_108_cuda_Python3.12.11_Torch2.7.1
+  scientific_GPU_device: NVIDIA_H100_NVL
+  HTCondor_training_flavour: workday
+  selected_execution_campaign: roadmap/configs/s2_h100_v2.json
+  selected_execution_utc: '2026-11-12T00:04:13+00:00'
+  selected_results_subdirectory: h100
+  execution_selection: both_prespecified_full_first_epoch_gates_passed_without_quality_selection
+  supplementary_prior_environment: LCG_107_cuda_Python3.11.9_Torch2.5.1_Tesla_V100_PCIE_32GB_FP16
   complete_event_path: no_truncation
   training_domain_controls: [all, pixel_centered, large_scintillator]
   training_domain_step_match: repeat_complete_domain_cycles_to_full_domain_steps
