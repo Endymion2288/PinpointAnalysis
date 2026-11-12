@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from analysis.flavour.s3.accept import promotion
+from analysis.flavour.s3.accept import promotion, comparison_inventory, confirmation_contract
 from analysis.flavour.s3.conditional import operating_points
 from analysis.flavour.s3.metrics import NAMES
 
@@ -58,6 +58,34 @@ class S3DecisionTests(unittest.TestCase):
         self.assertFalse(promotion(comp, exp)['efficiency_path'])
         comp, exp = self.example(); exp['a17']['allocated_gpu_hours'] = None
         self.assertFalse(promotion(comp, exp)['efficiency_path'])
+
+    def test_exact_contrast_inventory_rejects_partial_or_duplicate_results(self):
+        comp, _ = self.example()
+        for scope in comp['metrics'].values():
+            for value in scope.values():
+                value['valid_replicates'] = 400
+        comp['replicates'] = 400
+        pair = {**comp, 'a': 'a42', 'b': 'b42'}
+        evaluation = {'paired_comparisons': [pair], 'seed_mean_comparisons': [comp], 'factorial_interactions': []}
+        spec = {'pairs': [{'a': 'a42', 'b': 'b42'}], 'seed_mean_comparisons': [{'name': comp['name'], 'pairs': comp['pairs']}]}
+        self.assertTrue(all(comparison_inventory(evaluation, spec).values()))
+        partial = copy.deepcopy(evaluation); partial['seed_mean_comparisons'] = []
+        self.assertFalse(all(comparison_inventory(partial, spec).values()))
+        partial = copy.deepcopy(evaluation); partial['paired_comparisons'].append(pair)
+        self.assertFalse(all(comparison_inventory(partial, spec).values()))
+        partial = copy.deepcopy(evaluation)
+        partial['paired_comparisons'][0]['metrics']['raw']['class_3_AP']['valid_replicates'] = 399
+        self.assertFalse(all(comparison_inventory(partial, spec).values()))
+
+    def test_confirmation_requires_both_extra_seeds_for_primary_and_coarse(self):
+        screen = {'experiments': [{'name': f'model{t}_s42_e4', 'seed': 42, 'role': 'screen'} for t in range(17)]}
+        selection = {'selected_tasks': [0, 5], 'confirmed_tasks': [0, 5, 6]}
+        configs = [{**screen['experiments'][t], 'seed': s, 'name': f'model{t}_s{s}_e4', 'role': 's3_frozen_confirmation'}
+                   for t in [0, 5, 6] for s in [17, 2026]]
+        confirmation = {'screen_selection': selection, 'experiments': configs}
+        self.assertTrue(confirmation_contract(screen, confirmation))
+        partial = copy.deepcopy(confirmation); partial['experiments'].pop()
+        self.assertFalse(confirmation_contract(screen, partial))
 
 
 if __name__ == '__main__':

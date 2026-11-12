@@ -7,6 +7,56 @@ from pathlib import Path
 import numpy as np
 
 from analysis.flavour.inventory import write_json
+from analysis.flavour.s3.metrics import NAMES
+
+
+def comparison_inventory(evaluation, specification):
+    """Require every frozen contrast, domain, metric and bootstrap replicate."""
+    expected_pairs = {(p['a'], p['b']) for p in specification['pairs']}
+    actual_pairs = [(p['a'], p['b']) for p in evaluation['paired_comparisons']]
+    expected_means = {g['name']: [(p['a'], p['b']) for p in g['pairs']]
+                      for g in specification['seed_mean_comparisons']}
+    actual_means = {g['name']: [(p['a'], p['b']) for p in g['pairs']]
+                    for g in evaluation['seed_mean_comparisons']}
+    reports = [*evaluation['paired_comparisons'], *evaluation['seed_mean_comparisons'],
+               *evaluation['factorial_interactions']]
+    metrics_complete = True
+    for report in reports:
+        if report.get('replicates') != 400:
+            metrics_complete = False
+        for scope in ['raw', 'common_support']:
+            details = report.get('metrics', {}).get(scope, {})
+            if set(details) != set(NAMES):
+                metrics_complete = False
+            for value in details.values():
+                numbers = [value.get('delta'), *value.get('CI95', [])]
+                if (len(numbers) != 3 or any(v is None or not np.isfinite(v) for v in numbers)
+                        or value.get('valid_replicates') != 400):
+                    metrics_complete = False
+    return {
+        'all_frozen_single_seed_pairs': len(actual_pairs) == len(expected_pairs) and set(actual_pairs) == expected_pairs,
+        'all_frozen_three_seed_pairs': actual_means == expected_means and len(actual_means) == len(evaluation['seed_mean_comparisons'])
+            and all(len(pairs) == 3 for pairs in expected_means.values()),
+        'all_four_class_contrast_metrics': metrics_complete,
+    }
+
+
+def confirmation_contract(screen, confirmation):
+    """Confirmation must contain both extra seeds for all selected structures."""
+    selection = confirmation.get('screen_selection', {})
+    selected = selection.get('selected_tasks', [])
+    tasks = sorted(set(selected + [5, 6]))
+    if len(selected) != 2 or len(set(selected)) != 2 or selection.get('confirmed_tasks') != tasks:
+        return False
+    expected = []
+    for task in tasks:
+        if task not in [*range(10), 14, 16]:
+            return False
+        for seed in [17, 2026]:
+            original = screen['experiments'][task]
+            expected.append({**original, 'seed': seed, 'name': original['name'].replace('_s42_', f'_s{seed}_'),
+                             'role': 's3_frozen_confirmation'})
+    return confirmation['experiments'] == expected
 
 
 def promotion(comparison, experiments):
@@ -43,6 +93,7 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--confirmation', type=Path, required=True)
+    parser.add_argument('--comparisons', type=Path, required=True)
     parser.add_argument('--evaluation', type=Path, required=True)
     parser.add_argument('--conditional', type=Path, required=True)
     parser.add_argument('--require-complete', action='store_true')
@@ -51,6 +102,7 @@ def main():
     evaluation = json.loads(args.evaluation.read_text())
     accounting = json.loads((args.root / 'campaign_accounting.json').read_text())
     conditional = json.loads(args.conditional.read_text())
+    comparisons = json.loads(args.comparisons.read_text())
     by_name = {e['name']: e for e in evaluation['experiments']}
     records = []
     for config in [c for campaign in campaigns for c in campaign['experiments']]:
@@ -65,6 +117,7 @@ def main():
             'allocation_complete': by_name.get(config['name'], {}).get('allocation_complete', False),
             'calibration_test_unused': manifest.get('calibration_test_used') is False})
     checks = {
+        'frozen_confirmation_matrix_complete': confirmation_contract(*campaigns),
         'all_frozen_experiments_complete': all(all(v for k, v in row.items() if k != 'name') for row in records),
         'all_evaluation_contrasts_complete': not evaluation['pending'],
         'three_seed_confirmation_present': len(evaluation['seed_mean_comparisons']) >= 5,
@@ -81,6 +134,7 @@ def main():
         'native_error_displays_present': all((args.evaluation.parent / 'event_displays' / name / 'native_error_groups.pdf').is_file()
             for name in ['s3_f16_context_latent_s42_e4', 's3_f16_context_latent_tracker_s42_e4']),
     }
+    checks.update(comparison_inventory(evaluation, comparisons))
     decisions = [promotion(c, by_name) for c in evaluation['seed_mean_comparisons']
                  if c['name'] != 'primary_native_minus_1mm_three_seed'] if checks['all_frozen_experiments_complete'] else []
     report = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': 'S3', 'checks': checks,
