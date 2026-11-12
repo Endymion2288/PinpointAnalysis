@@ -53,4 +53,12 @@ python -m unittest tests.test_flavour_atomic_sync tests.test_flavour_s2_training
 
 ## 下一步计划
 
-提交修复与报告后从第一轮恢复task3，监视实际`resumed_from_epoch=1`、后续checkpoint和最终14项CPU读回。继续全部17项，不删除失败分支或缩减预算合同；将失败/重做成本合并进最终accounting。完成全部screen后再冻结确认、评价完整四分类和2×2交互，并执行最终strict gate。
+### 真实恢复完成，2026-11-12 16:33 UTC补记
+
+恢复作业`1573839.0`实际从epoch1启动，重新发布的epoch2/40,032 updates checkpoint已独立读回finite，随后完成四轮。真实history为JobStatus4、ExitCode0、allocation3,480 s。原失败2,363 s与恢复3,480 s合计5,843 s = 1.623055556 GPUh，全部计入该实验，不用只含有效轮次的程序时间替代实际allocation。
+
+最终`last.pt`为epoch4、80,064 updates、零AMP skips，320,164 training exposures；14项CPU读回全部通过。Full-validation NLL选择epoch2，NLL1.386325198、macro AP0.248288286；第四轮最新macro AP0.249834541不是选中的模型指标。Manifest有效轮次时间合计4,614.870396 s，与真实allocation差1,228.129604 s，包含失败重做和setup等开销。
+
+证据为`recovery_task3_epoch2_published.json`、最终`manifest.json`、`final_checkpoint_checks.json`及恢复event log；读回UTC16:33:05。真实恢复结果证明训练已越过原失败点，不能据此推断EOS服务端触发原因。此次分类表现接近prior，训练完成与分类质量分开评价。
+
+继续全部17项，不删除失败分支或缩减预算合同；将失败/重做成本合并进最终accounting。完成全部screen后再冻结确认、评价完整四分类和2×2交互，并执行最终strict gate。
