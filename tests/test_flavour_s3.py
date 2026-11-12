@@ -80,6 +80,21 @@ class S3Tests(unittest.TestCase):
             self.assertTrue(all(torch.isfinite(g).all() for g in grads))
             self.assertGreater(sum(float(g.abs().sum()) for g in grads),0)
 
+    def test_bfloat16_autocast_module_packing_and_optimizer(self):
+        batch=collate_planes([self.item(self.observation([[i,i] for i in range(40)])),
+                              self.item(self.observation([]),1)])
+        for fusion,geometry in [('late',False),('joint',True),('latent',True)]:
+            with self.subTest(fusion=fusion,geometry=geometry):
+                model=PlaneModuleClassifier({'dim':16,'fusion':fusion,'module_geometry':geometry,
+                                              'latents':6,'module_queries':2})
+                optimizer=torch.optim.AdamW(model.parameters(),lr=.0005)
+                with torch.autocast('cpu',dtype=torch.bfloat16):
+                    p=model(batch);loss=torch.nn.functional.cross_entropy(p.float(),batch['label'])
+                loss.backward()
+                self.assertTrue(torch.isfinite(loss))
+                self.assertTrue(all(torch.isfinite(x.grad).all() for x in model.parameters() if x.grad is not None))
+                optimizer.step()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -56,7 +56,7 @@ def prepare(args):
     pod_path.write_text(json.dumps(pod, indent=2) + '\n')
     admitted = json.loads(kubectl('create', '--dry-run=server', '-f', str(pod_path), '-o', 'json'))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'backend': 'kubeflow', 'context': kubectl('config', 'current-context').strip(),
-                'namespace': 'xcheng', 'job': args.name, 'stage': 'train' if args.task is not None else 'probe',
+                'namespace': 'xcheng', 'job': args.name, 'container_name': 's3', 'stage': 'train' if args.task is not None else 'probe',
                 'experiment': experiment, 'task': args.task, 'root': str(root), 'submitted': False,
                 'gpu_flavor': {'name': args.flavor, 'product': product, 'resource': resource, 'count': 1},
                 'job_spec': job, 'pod_admission': admitted,

@@ -15,6 +15,7 @@ from analysis.flavour.s3.models import PlaneModuleClassifier
 
 
 def main():
+    program_started=time.perf_counter();started_utc=datetime.now(timezone.utc).isoformat()
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path,required=True)
@@ -61,7 +62,9 @@ def main():
                 pd.DataFrame(rows).to_parquet(args.output/'measurements.parquet',index=False)
                 if not finite:raise ValueError('nonfinite full-event profile')
         dataset.native.close()
-    summary={'utc':datetime.now(timezone.utc).isoformat(),'GPU':torch.cuda.get_device_name() if device.type=='cuda' else None,
+    summary={'utc':datetime.now(timezone.utc).isoformat(),'started_utc':started_utc,
+             'program_wall_seconds':time.perf_counter()-program_started,
+             'GPU':torch.cuda.get_device_name() if device.type=='cuda' else None,
              'torch':torch.__version__,'precision':'BF16' if bf16 else 'FP32','rows':len(rows),
              'scope':'train occupancy-rank stress events including maximum; first event warmup; no optimizer fitting; no population throughput claim'}
     (args.output/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')

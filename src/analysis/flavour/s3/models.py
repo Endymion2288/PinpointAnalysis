@@ -114,7 +114,9 @@ class PlaneModuleClassifier(nn.Module):
         slot = torch.arange(len(event), device=event.device) - torch.cumsum(counts, 0).sub(counts)[event]
         q = module_tokens.shape[1]
         width = int(counts.max()) * q
-        features = local.new_zeros((b, width, self.dim))
+        # Learned FP32 query/embedding residuals promote the module readout
+        # under autocast. Preserve that dtype during differentiable packing.
+        features = module_tokens.new_zeros((b, width, self.dim))
         valid = torch.zeros((b, width), device=local.device, dtype=torch.bool)
         z = nodes.new_zeros((b, width))
         module = torch.zeros((b, width), device=local.device, dtype=torch.long)

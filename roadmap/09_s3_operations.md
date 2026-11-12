@@ -58,4 +58,6 @@ FASERCal本地arXiv v2的architecture Methods再次核对了module-level self-at
 
 ## 完成门槛
 
+执行入口：`analysis.flavour.s3.evaluate`对raw/common support同时输出所有四类配对区间与2×2交互，所有seed共享物理block multiplicities；`analysis.flavour.s3.select`仅在完整screen/CPU读回/终态计费通过后按上述规则写独立confirmation campaign和三seed配对。`analysis.flavour.s3.accounting`累计两后端，并单列初次interactive T4保守计费上界。阶段57已在16个只读S2模型上完成统计执行验证；40项S3实验/配对/交互当时仍pending，不作S3验收。
+
 17首轮和选择后去重的确认项全部真实终态、四轮/80,064 updates/零AMP skips；CPU checkpoint/optimizer/predictions读回通过；冻结数据与配置一致。完成四分类所有配对与两种窗口×表示交互、三seed、模态/资源Pareto、接受度/空响应/高占用/错误组与英文图示、真实终态成本、中文科学报告及gate decision。最终无pending、strict输出门槛exit0并提交后，才能标记S3完成。S4–S6未执行。

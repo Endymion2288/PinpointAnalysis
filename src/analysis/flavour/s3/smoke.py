@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import time
 
 import numpy as np
 import pyarrow as pa
@@ -14,6 +15,7 @@ from analysis.flavour.s3.models import PlaneModuleClassifier
 
 
 def main():
+    program_started=time.perf_counter();started_utc=datetime.now(timezone.utc).isoformat()
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--campaign',type=Path,required=True)
@@ -45,7 +47,9 @@ def main():
         with torch.no_grad(),torch.autocast('cuda',dtype=torch.bfloat16):p=model(batch).float().softmax(-1).cpu().numpy()
         assert np.isfinite(p).all()
         records.append({'experiment':config['name'],'applied_updates':4,'losses':losses,'tiny_validation':metrics(label,p),'parameters':sum(p.numel() for p in model.parameters())})
-        (args.output/'smoke.json').write_text(json.dumps({'utc':datetime.now(timezone.utc).isoformat(),'GPU':torch.cuda.get_device_name(),'torch':torch.__version__,'scope':'execution only; 16 train and 16 validation per config; no model selection','records':records},indent=2)+'\n')
+        (args.output/'smoke.json').write_text(json.dumps({'utc':datetime.now(timezone.utc).isoformat(),'started_utc':started_utc,
+            'program_wall_seconds':time.perf_counter()-program_started,'GPU':torch.cuda.get_device_name(),'torch':torch.__version__,
+            'scope':'execution only; 16 train and 16 validation per config; no model selection','records':records},indent=2)+'\n')
         train.native.close();val.native.close()
         print(config['name'],'optimizer smoke pass',flush=True)
 

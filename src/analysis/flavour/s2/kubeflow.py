@@ -191,7 +191,7 @@ def pod_allocation(pod, execution, now):
     # retain resource-specific hours instead of claiming whole/MIG equivalence.
     gpu, cpus = sum(gpu_resources.values()), reserved('cpu')
     exits = [s.get('state', {}).get('terminated', {}).get('exitCode')
-             for s in status.get('containerStatuses', []) if s['name'] == 's2']
+             for s in status.get('containerStatuses', []) if s['name'] == execution.get('container_name', 's2')]
     return {
         'backend': 'kubeflow', 'namespace': execution['namespace'], 'job': execution['job'],
         'pod': pod['metadata']['name'], 'pod_uid': pod['metadata']['uid'],
@@ -211,9 +211,11 @@ def pod_allocation(pod, execution, now):
     }
 
 
-def allocations(root, now):
+def allocations(root, now, app_label='pinpoint-s2'):
     executions = [json.loads(p.read_text()) for p in root.rglob('execution_*.json')]
     executions = [e for e in executions if e.get('backend') == 'kubeflow' and e.get('submitted')]
+    for execution in executions:
+        execution.setdefault('container_name', 's3' if app_label == 'pinpoint-s3' else 's2')
     if not executions:
         return []
     evidence_dir = root / 'kubeflow'
@@ -221,8 +223,8 @@ def allocations(root, now):
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
     rows = []
     for namespace in sorted({e['namespace'] for e in executions}):
-        pods = json.loads(kubectl('get', 'pods', '-n', namespace, '-l', 'app=pinpoint-s2', '-o', 'json'))['items']
-        jobs = json.loads(kubectl('get', 'jobs', '-n', namespace, '-l', 'app=pinpoint-s2', '-o', 'json'))['items']
+        pods = json.loads(kubectl('get', 'pods', '-n', namespace, '-l', f'app={app_label}', '-o', 'json'))['items']
+        jobs = json.loads(kubectl('get', 'jobs', '-n', namespace, '-l', f'app={app_label}', '-o', 'json'))['items']
         terminal_times = {j['metadata']['uid']: max(
             [c['lastTransitionTime'] for c in j.get('status', {}).get('conditions', [])
              if c['type'] in ['Complete', 'Failed'] and c['status'] == 'True'], default=None)

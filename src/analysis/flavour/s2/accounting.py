@@ -79,7 +79,8 @@ def run(args):
             'seconds':seconds,'GPUs':gpu_count,'GPU_hours':seconds*gpu_count/3600,
             'CPU_core_hours':seconds*float(ad.get('requestcpus',0))/3600,
             'starts':ad.get('numjobstarts',0),'running_estimate':running,'hold_reason':ad.get('holdreason')})
-    allocations.extend(kubeflow_allocations(args.root, datetime.fromtimestamp(now, timezone.utc)))
+    allocations.extend(kubeflow_allocations(args.root, datetime.fromtimestamp(now, timezone.utc),
+                                           app_label=getattr(args, 'app_label', 'pinpoint-s2')))
     utc=datetime.now(timezone.utc).isoformat()
     scopes={args.root:allocations}
     for directory in {Path(row['root']) for row in allocations}:
