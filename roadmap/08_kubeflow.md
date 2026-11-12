@@ -48,7 +48,7 @@ python -m analysis.flavour.s2.kubeflow prepare --root "$S2_RESULTS" \
   --name UNIQUE_JOB_NAME --gpu-flavor h100-94gb --deadline-seconds 21600
 ```
 
-`--root`为父目录，训练脚本会读取其`h100/`；不要传入`h100/`导致双层目录。默认只生成配置，`--apply`使用create并记录Job UID。环境probe容器运行限时300秒；Job deadline包含排队时间。已提交的Job名不能复用。当前存活probe为`pinpoint-s2-h100-94gb-probe-v9`，不要按示例重复提交。
+`--root`为父目录，训练脚本会读取其`h100/`；不要传入`h100/`导致双层目录。默认只生成配置，`--apply`使用create并记录Job UID。环境probe容器运行限时300秒；Job deadline包含排队时间。已提交的Job名不能复用。`pinpoint-s2-h100-94gb-probe-v9`已在12:03 UTC主动缩短deadline结束：当时全部剩余科学任务已在Condor运行，probe始终未获node；这是主动释放请求配额，不是自然排队到期。GPU runtime尚未实测。
 
 创建Job的server dry-run只验证Job对象，不会证明Pod满足准入。应将其`spec.template`转换成临时`kind: Pod`后执行`kubectl create --dry-run=server -f ...`，检查注入的selector和resources，再提交Job。实际Pod检查`PodScheduled`、`nodeName`、`conditions`、容器状态及logs；`Pending`可能表示资源排队，Job的`FailedCreate`则可能表示Pod准入失败，两者处理不同。
 
@@ -58,7 +58,7 @@ CERN推荐`/shared`持久复用小型代码/环境、`/scratch`暂存I/O密集�
 
 实时可用性由session创建页面的flavor色点与[监控面板](https://ml.docs.cern.ch/monitoring/)查看；红点允许排队，黄色表示配额不足。当前账号无法list cluster nodes，使用自己namespace的Pod和scheduler事件记录实际等待原因，不根据文档总量推断实时空闲卡数。
 
-获得整卡H100且runtime通过后，仅迁移当时仍idle的Condor任务：先确认目标无存活writer，再结束原idle副本、核实队列状态，最后启动Kubeflow训练。已有running训练继续执行，不产生双writer。
+备用训练配置task33/task34均只生成、未提交；task33及task34随后均已在Condor运行。Task34在probe仍Pending时的server Pod dry-run被namespace单GPU配额拒绝，没有创建Pod。未来获得整卡H100且runtime通过后，仅迁移当时仍idle的Condor任务：先确认目标无存活writer，再结束原idle副本、核实队列状态，最后启动Kubeflow训练。已有running训练继续执行，不产生双writer。
 
 核算从PodScheduled开始，包括image pull、init、失败和恢复分配；未调度probe计0。未创建任何Pod的准入拒绝Job，需保留终态和FailedCreate证据才记录0，不能只根据空列表推断。逐GPU resource保留hours；如独立probe使用MIG，每个分区按一张设备计入组织预算，同时单列MIG resource-hours，不作整卡性能等效换算。所有后端成本纳入200 GPUh组织上限。
 
