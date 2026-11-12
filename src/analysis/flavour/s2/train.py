@@ -2,6 +2,7 @@
 
 import argparse
 import copy
+import errno
 from datetime import datetime, timezone
 import json
 import os
@@ -30,23 +31,39 @@ def init_worker(worker):
     pa.set_io_thread_count(1)
 
 
+def atomic_output(path, writer):
+    """Replay full writes after transient EOS errors, then publish atomically.
+
+    A failed fsync left a truncated Torch archive in S3. Repeating only fsync
+    cannot replay lost bytes, so every retry creates a fresh temporary inode.
+    """
+    transient = {errno.EPROTO, errno.EIO, errno.ETIMEDOUT, errno.ECONNRESET, errno.EAGAIN}
+    temporary = path.with_suffix('.tmp')
+    for attempt in range(4):
+        try:
+            if temporary.exists():
+                temporary.unlink()
+            with temporary.open('wb') as stream:
+                writer(stream)
+                stream.flush()
+                os.fsync(stream.fileno())
+            temporary.replace(path)
+            return
+        except OSError as error:
+            if error.errno not in transient or attempt == 3:
+                raise
+            print(json.dumps({'io_full_write_retry': str(path), 'errno': error.errno,
+                              'attempt': attempt + 1}), flush=True)
+            time.sleep([.1, .3, 1.][attempt])
+
+
 def save_checkpoint(path,state):
-    temporary=path.with_suffix('.tmp')
-    with temporary.open('wb') as stream:
-        torch.save(state,stream)
-        stream.flush()
-        os.fsync(stream.fileno())
-    temporary.replace(path)
+    atomic_output(path, lambda stream: torch.save(state, stream))
 
 
 def save_parquet(frame,path):
     """Finish EOS writes before publishing; each replacement gets a new inode."""
-    temporary=path.with_suffix('.tmp')
-    with temporary.open('wb') as stream:
-        frame.to_parquet(stream,index=False,compression=COMPRESSION)
-        stream.flush()
-        os.fsync(stream.fileno())
-    temporary.replace(path)
+    atomic_output(path, lambda stream: frame.to_parquet(stream,index=False,compression=COMPRESSION))
 
 
 def metrics(y,p):

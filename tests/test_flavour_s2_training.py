@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -79,15 +80,22 @@ class TrainingTests(unittest.TestCase):
             with patch.object(train,'metrics',side_effect=interrupt):
                 with self.assertRaisesRegex(RuntimeError,'simulated preemption'):
                     train.run(args('resumed'))
-            train.run(args('resumed'))
             full=base/'full/experiments/test'
             resumed=base/'resumed/experiments/test'
+            # Reproduce the observed EOS failure: best/predictions are ahead
+            # of committed last.pt, and last.tmp is an incomplete archive.
+            for filename in ['best.pt','validation_predictions.parquet','epoch_predictions.parquet','metrics.json']:
+                shutil.copyfile(full/filename,resumed/filename)
+            (resumed/'last.tmp').write_bytes(b'incomplete archive from failed sync')
+            train.run(args('resumed'))
             a=torch.load(full/'last.pt',weights_only=False)
             b=torch.load(resumed/'last.pt',weights_only=False)
             for key,value in a['model'].items():
                 torch.testing.assert_close(value,b['model'][key],rtol=0,atol=0)
             pd.testing.assert_frame_equal(pd.read_parquet(full/'validation_predictions.parquet'),
                                           pd.read_parquet(resumed/'validation_predictions.parquet'))
+            pd.testing.assert_frame_equal(pd.read_parquet(full/'epoch_predictions.parquet'),
+                                          pd.read_parquet(resumed/'epoch_predictions.parquet'))
             self.assertEqual(b['epoch'],2)
             train.run(args('resumed'))  # completed invocation is idempotent
 
