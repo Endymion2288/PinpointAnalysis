@@ -21,7 +21,7 @@ S2 进行中。2026-11-12 00:04 UTC起正式完整矩阵采用H100/LCG108/BF16�
 | H100 selected execution | 两族完整首轮于2026-11-12 00:01:53 UTC总体pass。ParT=2,223.38 s（V100的45.76%），ParticleNet=1,604.22 s（54.60%），均20,016/20,016 applied、0 skips、23项检查通过；无AP/accuracy/NLL硬件选择，见[阶段25](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md) |
 | H100 complete matrix | [冻结的35项同配置合同](configs/s2_h100_v2.json)；原tasks0/6保留为 `1573760.0/1`，其余33项已提交为 `1573782.0–32`，schedd=`bigbird20.cern.ch`。`h100/activation.json` 保存门槛、完整task/proc映射、优先级和移除旧idle证据；正式评价读取 `h100/` |
 | First completed H100 model | `1573760.1` exit0，ParticleNet native joint四轮完成，80,064 applied、0 AMP skips，12项最终checkpoint/概率读回通过；τ AP=0.35510、NLL=1.23931、allocation=1.75278 GPUh。正式部分评价为5 results、1 pair/44 pending；相对B0 raw ΔAP=+0.01039，CI=[−0.00250,+0.02294]，固定common-support ΔAP=+0.01358，CI=[+0.00324,+0.02458]。20页原生图与代表性错误页已查看；见[阶段29](../workbook/2026-11-12_stage29_s2_first_h100_model.md) |
-| V100 supplementary execution | 原35项中5 complete、4 running、26个被替代idle已移除；保留全部尝试/成本与已完成空间配对。4个运行Job为 `1573747.4/.7/.8/.9`；这些辅助任务完成后继续记录阶段28，不替代H100正式配置 |
+| V100 supplementary execution | 九项辅助训练均已完成，26个被替代idle已移除；两族四格及ParT 100 μm的实际结果、全部尝试成本见阶段28。不替代H100正式配置 |
 | Kubeflow execution | `ml-prod/xcheng` 已登录，NVIDIA quota=1；CPU 容器的 LCG108/Python3.12/Torch2.7.1、EOS/CVMFS 路径已实际成功，GPU probe v5全程未分配node，23:14:58 UTC到达deadline（GPU reservation=0）；科学任务未迁移。v6以相同资源保留6小时排队机会，容器探测仍限时300秒。新提交/核算入口与失败环境探测见[阶段 26](../workbook/2026-11-11_stage26_s2_kubeflow.md) |
 | Spatial screen | [current 12-run configuration](configs/s2_spatial_screen_v2.json)；v1 在首个 epoch 完成前停止，计费保留 |
 | Spatial paired evaluation | [18 paired contrasts](configs/s2_spatial_pairs_v2.json)，将输出到 `evaluation_spatial/`，缺项显式列 pending |
@@ -113,13 +113,15 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 正式 `metrics.csv` / `summary.json` 现显式区分 `program_gpu_hours` 与 `allocated_gpu_hours`，并列出 allocation 秒数与额外开销。旧 `gpu_hours` 保留为程序时间别名；实际记录不完整时为空，详见[阶段34](../workbook/2026-11-12_stage34_s2_resource_columns.md)。原有配对的实际成本匹配继续使用同一 accounting。
 
+04:18 UTC，ParT native projection冻结替换`1573791.0`正常结束、14项读回全部pass。正式ParT四格齐全，native pairing τ ΔAP=+0.00124580，pointwise CI=[−0.00501470,+0.00830354]；四格交互=+0.00043410，CI=[−0.00790547,+0.00875624]。四项主配对的raw/common-support区间均跨0、各自上界低于+0.01，跨种子与机制仍待控制。原尝试+替换合计10,017 s=2.78250 GPUh；projection粒度的同成本比较因无法容纳首轮而缺测。有效评价为10 results、8 paired/37 pending、1 factorial；6 complete、6 running、23 idle，组织累计52.32724 GPUh、missing=0。详见[阶段35](../workbook/2026-11-12_stage35_s2_part_factorial.md)。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
 | --- | --- |
 | Shared subset / complete input / empty events | 完成，阶段 08–09 |
 | ParticleNet / ParT execution | CPU/GPU smoke 和完整压力测量完成，阶段 11–13 |
-| Both families native/1mm × joint/projection | 配置冻结，统一H100真实训练/排队进行中 |
+| Both families native/1mm × joint/projection | 正式ParT四格与交互已完成（阶段35），ParticleNet剩余1mm成员正在运行 |
 | 100/200 μm curves | 两族均已冻结，待训练及 paired evaluation |
 | OR/count, grid shift | 待科学对照 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
