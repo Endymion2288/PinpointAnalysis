@@ -159,6 +159,8 @@ calibration/test 始终保留至 S6。统计不足时报告区间和可排除的
 
 ## 最新关联控制与输出清单
 
+阶段44补充已有模态模型的条件配对：large域pixel+bar−bar的τ ΔAP=+0.01429830，pointwise CI=[+0.00374257,+0.02424773]，1% FPR效率差也为正区间；中心域ΔAP=−0.01544100、CI=[−0.05592653,+0.02131973]，方向未确定。Bar在pixel之上的AP增量在两个区域均为正区间。新入口`analysis.flavour.s2.conditional_pairs`复用full-validation NLL选点与既有fiducial标记，未重加权E/vertex；这些结果后的条件诊断不增加主合同。计数、尾部限制、实际验证及英文图见[阶段44](../workbook/2026-11-12_stage44_s2_conditional_modality_intervals.md)。原有53项回归测试全部通过；仍为22/35科学模型完整，+tracker/训练域/额外种子继续，严格gate尚未通过。
+
 阶段43补齐PN bar-only：14项读回pass，26 results（4 references+22科学模型）、700行分域、28 paired/17 pending。Pixel+bar−bar raw τ ΔAP=+0.01073932，pointwise CI=[+0.00463872,+0.01687213]；固定E/vertex支持为+0.00180202，CI=[−0.00491768,+0.00812752]。1% FPR效率差区间跨0；等allocation预算下排序与固定四轮不同。`modality_comparison.json`保存三模态完整快照，资源/分域/历史三类及解释见[阶段43](../workbook/2026-11-12_stage43_s2_modality_and_target_diagnostics.md)。08:49:23 UTC组织累计74.11387479 GPUh、missing=0；严格gate仍为false。
 
 新增`analysis.flavour.s2.target_diagnostics`只读现有provenance和概率，输出`target_diagnostics/target_counts.csv`与`summary.json`。90k子集有14个target PDG/8个Z，validation W占92.76%；当前26个完成结果覆盖182个Z条件组。Target用于truth诊断，未加入主E/vertex匹配或模型输入，未改变接受样本。完整结果增加后再次运行此入口以更新条件表。
