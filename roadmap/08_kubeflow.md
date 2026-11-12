@@ -58,7 +58,7 @@ CERN推荐`/shared`持久复用小型代码/环境、`/scratch`暂存I/O密集�
 
 实时可用性由session创建页面的flavor色点与[监控面板](https://ml.docs.cern.ch/monitoring/)查看；红点允许排队，黄色表示配额不足。当前账号无法list cluster nodes，使用自己namespace的Pod和scheduler事件记录实际等待原因，不根据文档总量推断实时空闲卡数。
 
-备用训练配置task33/task34均只生成、未提交；task33及task34随后均已在Condor运行。Task34在probe仍Pending时的server Pod dry-run被namespace单GPU配额拒绝，没有创建Pod。未来获得整卡H100且runtime通过后，仅迁移当时仍idle的Condor任务：先确认目标无存活writer，再结束原idle副本、核实队列状态，最后启动Kubeflow训练。已有running训练继续执行，不产生双writer。
+备用训练配置task33/task34均只生成、未提交；task33及task34随后均已在Condor运行。Task34在probe仍Pending时的server Pod dry-run被namespace单GPU配额拒绝，没有创建Pod。12:42 UTC在probe终止释放配额后，对同一训练Pod再次server dry-run成功，自动注入46 CPU/127G RAM和1整卡GPU；仍未提交真实训练。证据为results父目录`kubeflow/pn_planeonly_fallback_admission_after_quota_release.json`。未来获得整卡H100且runtime通过后，仅迁移当时仍idle的Condor任务：先确认目标无存活writer，再结束原idle副本、核实队列状态，最后启动Kubeflow训练。已有running训练继续执行，不产生双writer。
 
 核算从PodScheduled开始，包括image pull、init、失败和恢复分配；未调度probe计0。未创建任何Pod的准入拒绝Job，需保留终态和FailedCreate证据才记录0，不能只根据空列表推断。逐GPU resource保留hours；如独立probe使用MIG，每个分区按一张设备计入组织预算，同时单列MIG resource-hours，不作整卡性能等效换算。所有后端成本纳入200 GPUh组织上限。
 

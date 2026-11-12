@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0/S1已验收；S2统一H100的35项正式配置均已提交，31项科学输出完整并进入主评价，35项单seed配对与2项三seed均值完成，8项比较待完成；另有PN 1 mm seed17训练与读回完成、等待下一批评价。ParT native−1 mm的三seed平均τ ΔAP=+0.00079004，pointwise 95%事件区间=[−0.00282494,+0.00445758]；在固定已训练seed的条件下排除预定+0.01平均收益，训练差值sample SD=0.00553825，不作一般信息等效结论，见[阶段51](../workbook/2026-11-12_stage51_s2_part_resolution_three_seeds.md)。Native下ParT−ParticleNet三seed平均τ ΔAP=+0.00220，事件区间=[−0.00401,+0.00795]；四分类均值与成本另列，见[阶段52](../workbook/2026-11-12_stage52_s2_native_architecture_three_seeds.md)。Full/center/large训练域控制已完成，见[阶段49](../workbook/2026-11-12_stage49_s2_center_training_domain.md)。现有其余任务继续，见[S2入口](07_s2_operations.md)和[Kubeflow flavor配置](08_kubeflow.md)。S2尚未整体验收，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0/S1已验收；S2统一H100的35项正式配置中33项科学输出完整，39项单seed配对和全部4项三seed均值已完成，仅剩两项plane-only训练/配对。四组预定τ AP均值的raw/common事件区间均跨0，且上界均低于+0.01；区间条件于当前已拟合seed和固定权重，训练spread另列，不作一般信息等效结论。四分类均值、工作点、成本和完整区间见[阶段53](../workbook/2026-11-12_stage53_s2_complete_seed_confirmations.md)。Full/center/large训练域控制见[阶段49](../workbook/2026-11-12_stage49_s2_center_training_domain.md)。运行与验收入口见[07_s2_operations.md](07_s2_operations.md)，GPU flavor与真实准入结果见[08_kubeflow.md](08_kubeflow.md)。S2尚未整体验收，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 

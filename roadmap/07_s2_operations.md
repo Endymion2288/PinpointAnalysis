@@ -151,7 +151,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Full / centered / large evaluation and training domains | 三域已完成、14项读回均pass；full−center的全域/固定支持AP及全域1%效率区间为正，中心域自身AP区间跨0；三域条件学习曲线、重复次数、类别权重与占用见阶段46/49 |
 | Three seeds for retained architectures and coarse inputs | ParT native三seed已齐，AP均值0.35457、SD0.00477；其余组合仍运行/排队，四组预定seed均值差值尚未齐，不以单配置spread代替 |
 | Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；90k target计数见阶段43，阶段45已刷新27个结果的189个Z条件组。完整物理解释继续随控制结果更新 |
-| Paired CI / interaction / matched time | 35项单seed配对、2项三seed均值、2组交互及同allocation整轮比较已完成；其余8项配对/种子均值等待结果 |
+| Paired CI / interaction / matched time | 39项单seed配对、全部4项三seed均值、2组交互及同allocation整轮比较已完成；其余2项跨层配对等待结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
@@ -215,3 +215,7 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 ## Native架构三seed比较与排队终态
 
 [阶段52](../workbook/2026-11-12_stage52_s2_native_architecture_three_seeds.md)：PN native17/2026均exit0、14项读回pass。ParT−PN三seed平均raw τ ΔAP=+0.00219679，pointwise事件CI=[−0.00401226,+0.00795043]；固定E/vertex平均−0.00244385，CI=[−0.00832807,+0.00308100]，差值训练sample SD=0.00518276。区间条件于已训练seed，排除该条件下+0.01平均收益，不作一般等效判断。ParT三seed四分类均值更好、实际成本更高，详情与非τ差值CI未测量项均列入报告。主表35 results、943 strata、105历史三类表、35单seed+2均值、8 pending；31 output_complete。PN 1 mm17随后训练/读回完成，故实际32 training complete/3 running；target扫描先纳入它，252组对应36结果，主配对待下批同步。12:11组织89.75616158 GPUh、missing=0。所有剩余任务已在Condor运行，Kubeflow v9在12:03主动结束释放配额，0 GPUh、runtime未测量；task33/34备用配置未提交，详见[flavor入口](08_kubeflow.md)。
+
+## 全部三seed确认完成
+
+[阶段53](../workbook/2026-11-12_stage53_s2_complete_seed_confirmations.md)：PN 1 mm17/2026均exit0、14项读回pass，12个三seed模型完整。新增PN native−1 mm平均raw τ ΔAP=−0.00013880，CI=[−0.00454523,+0.00421196]；1 mm下ParT−PN为+0.00126795，CI=[−0.00485443,+0.00824882]。全部四组raw/common区间均跨0、上界低于+0.01，条件于当前三次拟合与固定权重，训练spread另列，不作一般信息等效结论。`three_seed_four_class_summary.json`补齐四类AP/recall及综合指标的均值与sample SD，相关综合差值CI未测量。主表37 results、997 strata、111历史三类表、39单seed+4均值、2 pending；target 259组、33 output_complete，严格gate=false。13:05 UTC两项plane-only仍running；12:52组织91.86595936 GPUh、missing=0。`complete_seed_confirmation_comparison.json`与`stage53_execution_snapshot.json`保存证据。Kubeflow备用训练Pod在释放配额后server dry-run通过、自动46CPU/127G/1整卡GPU，实际未提交；详见flavor入口。
