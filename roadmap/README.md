@@ -1,6 +1,6 @@
 # PINPOINT 中微子反应分类研究路线图
 
-日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地PDF修订，S0/S1已验收；S2的90k-event目录、参照、toy和资源测量完成。统一H100的35项正式配置均已提交，十二项空间配置、两族完整粒度曲线与四格交互已完成，V100九项辅助训练均已结束。两族OR和ParT平移控制完成，正式15/35模型完整；两族count−OR的τ AP事件区间均跨0且上界低于+0.01，见[粗格响应控制](../workbook/2026-11-12_stage39_s2_coarse_response_controls.md)。其他控制和额外种子仍在训练和排队，最新科学结果与运行证据见[S2入口](07_s2_operations.md)及[完整空间报告](../workbook/2026-11-12_stage38_s2_complete_spatial_screen.md)。S2科学验收尚未完成，S3–S6尚未执行。
+日期：2026-11-12。目标输出顺序固定为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。路线图已完成文献核查和本地PDF修订，S0/S1已验收；S2的90k-event目录、参照、toy和资源测量完成。统一H100的35项正式配置均已提交，十二项空间配置和两族四项粗格控制已完成。最新评价纳入19个科学模型、25项配对；ParT保留平面内x–y关联相对shuffle的τ ΔAP=+0.00848，pointwise 95%事件区间=[+0.00281,+0.01296]，固定common-support也支持正增益；PN同项及ParT pair bias的AP区间跨0，见[关联/结构控制](../workbook/2026-11-12_stage41_s2_association_structure_controls.md)。PN fixed-graph随后完成，等待下一批评价。其他控制和额外种子仍在训练和排队；运行证据见[S2入口](07_s2_operations.md)。S2科学验收尚未完成，S3–S6尚未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 

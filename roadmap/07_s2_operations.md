@@ -146,13 +146,31 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | 100/200 μm curves | 两族完整四点曲线及相邻粒度配对完成（阶段37–38），十二项空间输出全部14项readback pass |
 | OR/count, grid shift | 两族四项控制均完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01；工作点CI和限制见阶段39 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
-| No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |
+| No-pair / fixed-graph / local-shuffle | 两族平面内y置换和ParT no-pair均完整、14项读回pass，25项配对评价见阶段41；PN fixed-graph随后完成，待下一批评价 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
-| Paired CI / interaction / matched time | 空间及B0的18项预定配对、2组交互及同allocation整轮比较已完成；其余27项配对/种子均值等待控制和确认结果 |
+| Paired CI / interaction / matched time | 25项预定配对、2组交互及同allocation整轮比较已完成；其余20项配对/种子均值等待控制和确认结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
+
+## 最新关联控制与输出清单
+
+2026-11-12阶段41合并评价：23 results（4 references+19科学模型）、619行分域、25 paired/20 pending、2 factorial、0 seed means。ParT main−shuffle τ ΔAP=+0.00847852，pointwise CI=[+0.00281484,+0.01296334]；固定common support为+0.00794723，CI=[+0.00257296,+0.01269657]。PN同项AP及ParT main−no-pair的raw/common区间跨0，1% FPR效率差的三项区间也均跨0。No-pair参数减少2,520且显存/wall下降，不能只按τ AP判断取舍；详细指标和解释范围见[阶段41](../workbook/2026-11-12_stage41_s2_association_structure_controls.md)。
+
+`association_structure_comparison.json`为本批独立快照；新增`analysis.flavour.s2.output_inventory`读取既有35项配置、输出读回、评价与backend成本，生成`campaign_output_inventory.json`。其backend状态来自注明时刻的accounting，不替代实时`condor_q`。实际未完成状态下`--require-complete`已按预期退出1。最终流程追加：
+
+```bash
+# 先执行上文不含 --allow-incomplete 的严格评价，再核对全部35项输出。
+python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
+  --campaign "$PWD/roadmap/configs/s2_h100_v2.json" --require-complete
+```
+
+## CERN Kubeflow 文档核对
+
+根据用户提供的[命令行入门](https://ml.docs.cern.ch/getting-started/#command-line_1)，并核对[GPU flavors](https://ml.docs.cern.ch/#available-flavors)与[单节点训练](https://ml.docs.cern.ch/ml/training/)，单GPU训练可直接创建`batch/v1 Job`。整卡H100 94GB为`nvidia.com/gpu: 1`、`nodeSelector: {nvidia.com/gpu.product: NVIDIA-H100-NVL}`；入门页的`nvidia.com/mig-3g.47gb`示例是47GB分区资源，与本S2整卡预算分开。后续科学Job使用`--gpu-product NVIDIA-H100-NVL`；执行前仍由已有runtime检查确认GPU/Torch/BF16。
+
+文档支持`mount-eos`/`mount-cvmfs`/`mount-afs`标签；现有CPU容器已实测EOS/CVMFS可读，GPU probe v7仍存活，不重提。当前Pod的调度反馈为6节点GPU不足、33节点selector不匹配等，无node；NVIDIA quota=1且被该排队请求占用。`h100/kubeflow/cern_documentation_review.json`保存文档URL、整卡/MIG区别和精简实时证据。没有调整平台注入的`large-images`约束，也没有迁移科学训练。GPU可用后仅承接仍idle的Condor任务，先结束其原副本再启动Kubeflow writer。
