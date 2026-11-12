@@ -10,6 +10,33 @@ import subprocess
 import sys
 
 
+# https://ml.docs.cern.ch/#available-flavors (reviewed 2026-11-12).
+# Product alone does not distinguish a whole H100 from its MIG partition.
+GPU_FLAVORS = {
+    'h100-94gb': ('NVIDIA-H100-NVL', 'nvidia.com/gpu'),
+    'h100-47gb': ('NVIDIA-H100-NVL', 'nvidia.com/mig-3g.47gb'),
+    'a100-40gb': ('NVIDIA-A100-PCIE-40GB', 'nvidia.com/gpu'),
+    't4-16gb': ('Tesla-T4', 'nvidia.com/gpu'),
+    'v100s-32gb': ('Tesla-V100S-PCIE-32GB', 'nvidia.com/gpu'),
+    'rtx6000-96gb': ('NVIDIA-RTX-PRO-6000-Blackwell-Server-Edition', 'nvidia.com/gpu'),
+}
+
+
+def gpu_flavor(flavor, product=None, cpu_only=False, expected_gpu=None):
+    """Resolve the documented selector/resource pair before creating a Job."""
+    if cpu_only:
+        if expected_gpu:
+            raise ValueError('a frozen GPU training task cannot use --cpu-only')
+        return None
+    selected_product, resource = GPU_FLAVORS[flavor]
+    if product and product != selected_product:
+        raise ValueError('--gpu-product conflicts with --gpu-flavor')
+    if expected_gpu and (selected_product.replace('-', ' ') != expected_gpu or
+                         resource != 'nvidia.com/gpu'):
+        raise ValueError('GPU flavor must match the frozen whole-GPU campaign hardware')
+    return {'name': flavor, 'product': selected_product, 'resource': resource, 'count': 1}
+
+
 def kubectl(*args):
     return subprocess.check_output(
         ['kubectl', '--request-timeout=30s', *args], text=True)
@@ -25,6 +52,7 @@ def probe_runtime(root):
         'python': sys.version, 'torch': torch.__version__,
         'pyarrow': pyarrow.__version__, 'uid': os.getuid(),
         'GPU': torch.cuda.get_device_name() if gpu else None,
+        'GPU_memory_bytes': torch.cuda.get_device_properties(0).total_memory if gpu else None,
         'BF16': torch.cuda.is_bf16_supported(including_emulation=False) if gpu else False,
         'plan_readable': (root / 'h100/plan.json').is_file(),
     }
@@ -54,6 +82,8 @@ def prepare(args):
         experiment = config['name']
         arguments = ['analysis.flavour.s2.train', '--root', str(args.root / 'h100'),
                      '--campaign', str(args.campaign), '--task', str(args.task)]
+    flavor = gpu_flavor(args.gpu_flavor, args.gpu_product, args.cpu_only,
+                        campaign['hardware']['GPU'] if args.task is not None else None)
     script = '\n'.join([
         'set -o pipefail',
         'which() { command -v "$@"; }',
@@ -72,10 +102,11 @@ def prepare(args):
                  f'assert actual == {expected_gpu!r}, (actual, {expected_gpu!r})')
         script = script.replace('exec python -m ',
                                 'python -c ' + shlex.quote(check) + '\nexec python -m ')
-    resources = {'cpu': '4' if args.task is not None else '2',
-                 'memory': '12Gi' if args.task is not None else '4Gi'}
-    if not args.cpu_only:
-        resources['nvidia.com/gpu'] = 1
+    # GPU flavors allocate CPU/RAM automatically. Explicit CPU/RAM requests
+    # are rejected by CERN's validate-cpu-memory-resources admission policy.
+    resources = {} if flavor else {'cpu': '2', 'memory': '4Gi'}
+    if flavor:
+        resources[flavor['resource']] = flavor['count']
     spec = {
         'restartPolicy': 'Never', 'serviceAccountName': 'default-editor',
         'securityContext': {'runAsUser': os.getuid(), 'runAsGroup': os.getgid()},
@@ -89,8 +120,8 @@ def prepare(args):
         'volumes': [{'name': n, 'persistentVolumeClaim': {'claimName': n}}
                     for n in ['cvmfs']],
     }
-    if args.gpu_product:
-        spec['nodeSelector'] = {'nvidia.com/gpu.product': args.gpu_product}
+    if flavor:
+        spec['nodeSelector'] = {'nvidia.com/gpu.product': flavor['product']}
     job = {
         'apiVersion': 'batch/v1', 'kind': 'Job',
         'metadata': {'name': args.name, 'namespace': args.namespace,
@@ -108,6 +139,7 @@ def prepare(args):
         'root': str(args.root / 'h100') if args.task is not None else str(args.root),
         'stage': 'train' if args.task is not None else 'probe',
         'task': args.task, 'job_spec': job, 'submitted': False,
+        'gpu_flavor': flavor,
         'code_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip(),
     }
     if args.apply:
@@ -151,7 +183,13 @@ def pod_allocation(pod, execution, now):
                 peak_init = max(peak_init, sidecars + amount)
         return max(peak_init, sidecars + sum(request(c, resource) for c in pod['spec']['containers']))
 
-    gpu, cpus = reserved('nvidia.com/gpu'), reserved('cpu')
+    resource_names = {r for c in pod['spec']['containers'] + pod['spec'].get('initContainers', [])
+                      for r in c.get('resources', {}).get('requests', {})
+                      if r == 'nvidia.com/gpu' or r.startswith('nvidia.com/mig-')}
+    gpu_resources = {r: reserved(r) for r in sorted(resource_names)}
+    # Charge each partition as one device-hour to the organization budget;
+    # retain resource-specific hours instead of claiming whole/MIG equivalence.
+    gpu, cpus = sum(gpu_resources.values()), reserved('cpu')
     exits = [s.get('state', {}).get('terminated', {}).get('exitCode')
              for s in status.get('containerStatuses', []) if s['name'] == 's2']
     return {
@@ -162,6 +200,9 @@ def pod_allocation(pod, execution, now):
         'pod_phase': status.get('phase'), 'node': pod['spec'].get('nodeName'),
         'exit_code': exits[0] if exits else None, 'seconds': seconds if complete else None,
         'GPUs': gpu, 'GPU_hours': seconds * gpu / 3600,
+        'GPU_resources': gpu_resources,
+        'GPU_resource_hours': {r: seconds * n / 3600 for r, n in gpu_resources.items()},
+        'GPU_hours_definition': 'sum of allocated GPU or MIG resource-hours; each partition charged as one device',
         'CPU_core_hours': seconds * cpus / 3600,
         'running_estimate': bool(start and not terminal),
         'started_at': start.isoformat() if start else None,
@@ -214,6 +255,22 @@ def allocations(root, now):
                          if v['allocation']['namespace'] == namespace and
                          v['allocation']['job'] == execution['job'] and 'pod' in v}
                 names = set(known) | {e['message'].split('Created pod: ', 1)[1] for e in created}
+                # A rejected Job can reach its deadline without ever creating
+                # a Pod. Record that terminal zero allocation from controller
+                # status and retained admission events, not from an empty query.
+                job = next(j for j in jobs if j['metadata']['uid'] == execution['uid'])
+                denied = [e for e in events if e.get('involvedObject', {}).get('uid') == execution['uid']
+                          and e.get('reason') == 'FailedCreate']
+                end = terminal_times.get(execution['uid'])
+                if (not names and denied and end and not job.get('status', {}).get('failed', 0)
+                        and not job.get('status', {}).get('succeeded', 0)):
+                    row = {**{k: execution[k] for k in ['namespace', 'job', 'root', 'experiment', 'stage']},
+                           'backend': 'kubeflow', 'status': 4, 'seconds': 0., 'GPU_hours': 0.,
+                           'CPU_core_hours': 0., 'GPUs': 0., 'allocation_complete': True,
+                           'running_estimate': False, 'finished_at': end,
+                           'allocation_basis': 'terminal_job_zero_pods_and_retained_FailedCreate_admission_events'}
+                    cache[execution['uid'] + '/no-pod-admitted'] = {
+                        'allocation': row, 'observed_utc': now.isoformat()}
                 for name in names:
                     pevents = [e for e in events if e.get('involvedObject', {}).get('name') == name
                                and e.get('involvedObject', {}).get('kind') == 'Pod' and
@@ -269,6 +326,8 @@ def main():
     parser.add_argument('--campaign', type=Path)
     parser.add_argument('--task', type=int)
     parser.add_argument('--gpu-product')
+    parser.add_argument('--gpu-flavor', choices=GPU_FLAVORS, default='h100-94gb',
+                        help='CERN flavor: sets both product selector and GPU resource key')
     parser.add_argument('--deadline-seconds', type=int,
                         help='Job lifetime including queue time; probe runtime stays limited to 300 seconds')
     parser.add_argument('--cpu-only', action='store_true')
@@ -279,8 +338,8 @@ def main():
     if args.action == 'probe-runtime':
         probe_runtime(args.root)
     else:
-        if args.task is not None and (args.cpu_only or args.campaign is None or not args.gpu_product):
-            parser.error('training requires --campaign and --gpu-product matching its frozen hardware')
+        if args.task is not None and (args.cpu_only or args.campaign is None):
+            parser.error('training requires --campaign and a GPU flavor matching its frozen hardware')
         prepare(args)
 
 

@@ -15,6 +15,7 @@
 | [05_local_studies.md](05_local_studies.md) | 更新后四份 PDF 的逐项证据；fiducial、投影损失、FASER 工作点与重建覆盖率 |
 | [06_s0_s1_operations.md](06_s0_s1_operations.md) | 新原生通道管线、实际运行命令、事件签名 split 与 detector-proxy 的适用状态 |
 | [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集/空间矩阵、实测参照、GPU 环境、运行与尚待完成的科学验收 |
+| [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
@@ -22,7 +23,7 @@
 
 **S2 进行中。**固定 80k train/10k validation；完整 B0 的 validation τ AP=0.34471，truth E/vertex 诊断=0.44106，均为 25% τ benchmark prior。它们不是 native 深度模型的比较结果。共同粗分箱支持后分别为 0.30845/0.36474，需保留先验诊断。[实际结果与区间](../workbook/2026-11-11_stage12_s2_reference_results.md)及[当前 12-run 空间矩阵](configs/s2_spatial_screen_v2.json)已记录；加上[控制与种子确认](../workbook/2026-11-11_stage17_s2_controls_and_seed_contract.md)，原有 33 项科学训练已提交。另为落实跨层连通条目，[两项 plane-only 控制](../workbook/2026-11-11_stage21_s2_cross_plane_control.md)已通过专用 H100/BF16 smoke，原V100/FP16任务 `1573757.0/1` 在环境切换时已移除，正式H100对应 `1573782.31/32`；完整合同的35项H100科学配置均已提交，等待完成 41 项单 seed 配对与 4 项三种子均值。S2 尚未通过完整科学验收。初版空间任务已在首个 epoch 完成前停止，v2 为汇聚增加显式计数与信号和，见[阶段 15](../workbook/2026-11-11_stage15_s2_summary_correction.md)。
 
-两项V100任务在Startd关闭后均从checkpoint恢复，现已作为辅助结果完成。H100/LCG108同事件batch1的training compute快约1.69–2.33倍，见[阶段24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；两族[完整首轮门槛](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)通过后统一正式环境。用户授权排队时使用Kubeflow，[容器LCG/EOS/CVMFS路径已成功](../workbook/2026-11-11_stage26_s2_kubeflow.md)；v5/v6均到deadline未获GPU，当前v7仍Pending，实际探测限时300秒。已按用户提供的[CERN命令行文档](https://ml.docs.cern.ch/getting-started/#command-line_1)核对整卡H100的Job资源与selector，详见[S2操作入口](07_s2_operations.md#cern-kubeflow-文档核对)。两后端、旧尝试和候选均计入200 GPU-hours总组织上限。
+两项V100任务在Startd关闭后均从checkpoint恢复，现已作为辅助结果完成。H100/LCG108同事件batch1的training compute快约1.69–2.33倍，见[阶段24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；两族[完整首轮门槛](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)通过后统一正式环境。用户授权排队时使用Kubeflow，[容器LCG/EOS/CVMFS路径已成功](../workbook/2026-11-11_stage26_s2_kubeflow.md)；v5/v6均到deadline未获GPU；v7/v8在按flavor修正配置时主动结束，当前v9已创建H100 94GB Pod并Pending，实际探测限时300秒。已按用户提供的[CERN命令行文档](https://ml.docs.cern.ch/getting-started/#command-line_1)核对整卡H100的Job资源与selector，详见[S2操作入口](07_s2_operations.md#cern-kubeflow-文档核对)。两后端、旧尝试和候选均计入200 GPU-hours总组织上限。
 
 [首个四轮科学结果](../workbook/2026-11-11_stage27_s2_first_scientific_model.md)：ParticleNet native-joint τ AP=0.35784，相对B0 ΔAP=+0.01313，95%配对区间=[−0.00097,+0.02446]；固定common-support条件下ΔAP=+0.01862，区间=[+0.00686,+0.02971]。四类balanced accuracy/NLL没有同时改善。首次评价完成1项配对、44项pending，当时尚不能归因于空间粒度或架构差异；原生错误显示已生成并检查。
 

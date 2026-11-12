@@ -193,3 +193,8 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 ## ParT native 三seed训练波动
 
 本批30 results=4 references+26科学配置，808 strata、90历史三类表、30 pairs/15 pending、2 factorial、0 seed means，target诊断210 model×Z组；26项output_complete，完整gate仍false。ParT native的17/42/2026均通过14项读回，raw τ AP=0.35583088/0.35858391/0.34930306，均值0.35457262、sample SD=0.00476665；固定common-support均值0.31906188、SD=0.00413959。逐seed图已实际查看，SD不代表事件CI或ensemble；τ argmax recall=0.4448/0.5488/0.6672，不能以AP spread替代决策稳定性。四组预定三seed配对仍未齐，见[阶段47](../workbook/2026-11-12_stage47_s2_native_training_seed_spread.md)与`h100/part_native_seed_repeatability.json`。
+
+
+## GPU flavor 配置修正
+
+用户明确要求相应flavor后，已修正提交入口为`--gpu-flavor h100-94gb`，同时设置product和GPU resource，GPU请求省略CPU/RAM、由CERN自动注入46 CPU/127G。v7通用请求与v8被拒绝的旧CPU/RAM请求已主动结束并核算各0 GPUh；不是自然排队超时。v9实际Pod已创建，10:33:58 UTC为Pending、无node，selector=`NVIDIA-H100-NVL`、GPU=`nvidia.com/gpu:1`。14项Kubeflow与2项成本测试通过，实际Pod准入dry-run通过；GPU runtime尚未测量。完整flavor表、文档来源、配额/存储和迁移入口见[08_kubeflow](08_kubeflow.md)及[阶段48](../workbook/2026-11-12_stage48_s2_kubeflow_flavors.md)。

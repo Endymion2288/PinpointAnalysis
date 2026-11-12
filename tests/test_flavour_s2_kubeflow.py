@@ -7,7 +7,28 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from analysis.flavour.s2.kubeflow import allocations, pod_allocation
+from analysis.flavour.s2.kubeflow import allocations, gpu_flavor, pod_allocation
+
+
+class KubeflowFlavorTests(unittest.TestCase):
+    def test_h100_whole_and_mig_share_product_but_not_resource(self):
+        whole = gpu_flavor('h100-94gb', expected_gpu='NVIDIA H100 NVL')
+        mig = gpu_flavor('h100-47gb')
+        self.assertEqual(whole['product'], mig['product'])
+        self.assertEqual(whole['resource'], 'nvidia.com/gpu')
+        self.assertEqual(mig['resource'], 'nvidia.com/mig-3g.47gb')
+
+    def test_frozen_training_rejects_mig_and_other_products(self):
+        for flavor in ['h100-47gb', 'a100-40gb', 't4-16gb']:
+            with self.subTest(flavor=flavor), self.assertRaises(ValueError):
+                gpu_flavor(flavor, expected_gpu='NVIDIA H100 NVL')
+
+    def test_conflicting_legacy_product_rejected(self):
+        with self.assertRaises(ValueError):
+            gpu_flavor('h100-94gb', product='Tesla-T4')
+
+    def test_cpu_probe_has_no_gpu_selection(self):
+        self.assertIsNone(gpu_flavor('h100-94gb', cpu_only=True))
 
 
 class KubeflowAccountingTests(unittest.TestCase):
@@ -35,6 +56,15 @@ class KubeflowAccountingTests(unittest.TestCase):
         self.assertEqual(row['GPU_hours'], 1)
         self.assertEqual(row['CPU_core_hours'], 4)
         self.assertTrue(row['running_estimate'])
+
+    def test_mig_reservation_retains_resource_and_budget_charge(self):
+        self.schedule()
+        resources = self.pod['spec']['containers'][0]['resources']['requests']
+        resources.pop('nvidia.com/gpu')
+        resources['nvidia.com/mig-3g.47gb'] = 1
+        row = pod_allocation(self.pod, self.execution, self.now)
+        self.assertEqual(row['GPU_hours'], 1)
+        self.assertEqual(row['GPU_resource_hours'], {'nvidia.com/mig-3g.47gb': 1})
 
     def test_success_uses_container_finish_not_query_time(self):
         self.schedule()
@@ -93,6 +123,24 @@ class KubeflowAccountingTests(unittest.TestCase):
         row = self.recover_deleted([])
         self.assertEqual(row['status'], 'missing_terminal_pod_history')
         self.assertIsNone(row['seconds'])
+
+    def test_terminal_admission_rejection_without_a_pod_costs_zero(self):
+        execution = {**self.execution, 'uid': 'job-uid', 'backend': 'kubeflow', 'submitted': True}
+        job = {'metadata': {'uid': 'job-uid'}, 'status': {'conditions': [{
+            'type': 'Failed', 'status': 'True', 'lastTransitionTime': '2026-11-11T21:45:00Z'}]}}
+        event = {'reason': 'FailedCreate', 'involvedObject': {'uid': 'job-uid'},
+                 'message': 'Resources are allocated automatically'}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'kubeflow').mkdir()
+            (root / 'execution_test.json').write_text(json.dumps(execution))
+            with patch('analysis.flavour.s2.kubeflow.kubectl', side_effect=[
+                    json.dumps({'items': []}), json.dumps({'items': [job]}),
+                    json.dumps({'items': [event]})]):
+                row = allocations(root, self.now)[0]
+        self.assertEqual(row['status'], 4)
+        self.assertEqual(row['GPU_hours'], 0)
+        self.assertTrue(row['allocation_complete'])
 
 
 if __name__ == '__main__':
