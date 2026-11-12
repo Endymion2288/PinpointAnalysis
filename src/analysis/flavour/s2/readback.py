@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import torch
-from sklearn.metrics import log_loss
+from sklearn.metrics import average_precision_score, log_loss
 
 from analysis.flavour.inventory import write_json
 
@@ -45,6 +45,7 @@ def readback(root, config, hardware, validation):
     same_weights = best['model'].keys() == last['best_model'].keys() and all(
         torch.equal(value, last['best_model'][key]) for key, value in best['model'].items())
     epoch_error = None
+    epoch_metrics_match = False
     try:
         epochs = pd.read_parquet(output / 'epoch_predictions.parquet')
         valid_epochs = len(epochs) == count * n_epochs and not epochs.duplicated(['epoch', 'row']).any()
@@ -58,6 +59,13 @@ def readback(root, config, hardware, validation):
             ((epoch_probabilities >= 0) & (epoch_probabilities <= 1)).all() and
             np.allclose(epoch_probabilities.sum(1), 1, rtol=0, atol=1e-6) and
             np.array_equal(probabilities, selected_probabilities))
+        epoch_metrics_match = bool(valid_epochs) and all(
+            np.isclose(log_loss(predictions.label,
+                group.sort_values('row')[[f'p{c}' for c in range(4)]].to_numpy(), labels=[0, 1, 2, 3]),
+                history[int(epoch) - 1]['validation']['NLL'], rtol=0, atol=1e-8) and
+            np.isclose(average_precision_score(predictions.label.eq(2), group.sort_values('row').p2),
+                history[int(epoch) - 1]['validation']['classwise']['2']['PR_AUC'], rtol=0, atol=1e-10)
+            for epoch, group in epochs.groupby('epoch'))
     except (pa.ArrowInvalid, OSError) as error:
         # Keep independent checkpoint/best-prediction evidence when an EOS
         # epoch-table write is incomplete; the overall readback still fails.
@@ -88,6 +96,7 @@ def readback(root, config, hardware, validation):
         'selected_probabilities_match_checkpoint': same_weights and
             np.array_equal(probabilities, last['best_probabilities']),
         'all_epoch_probabilities_present': bool(valid_epochs),
+        'epoch_metrics_match_history': bool(epoch_metrics_match),
         'exposures_recorded': all(0 < item['train_exposures'] <= config['steps_per_epoch'] * config['batch_size']
                                   for item in history),
     }

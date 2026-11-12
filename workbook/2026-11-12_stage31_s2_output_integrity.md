@@ -47,6 +47,16 @@
 
 新增 CPU 读回入口也在 `smoke/readback_module/` 通过全部 13 项，使用已有完整 ParticleNet 模型的只读文件链接；原模型验收记录保持原样。projection 的实际损坏文件则使该入口明确返回非零，并保留其余 12 项独立证据。`git diff --check` 通过。
 
+02:49:10 UTC，读回入口追加第 14 项 `epoch_metrics_match_history`：按 epoch 内保存的 validation row 顺序重算 NLL 和 τ AP，与该轮 history 核对。完整 ParticleNet 模型在隔离的 smoke 目录通过全部 14 项，NLL 容差为绝对 1e−8、AP 为 1e−10。该项用于后续完整输出及恢复表核对。
+
+### 正在运行的旧写入进程
+
+`1573782.1/.2/.5` 启动于输出修复之前。02:41:55–02:41:58 UTC 已直接通过 XRootD 保存并读回它们已提交的 30k/30k/20k 行概率表，检查轮次/row 覆盖、概率有限性与归一化。副本位于 `recovery_epoch_tables/<experiment>/committed_predictions.parquet`，来源与 history 为同目录 `snapshot.json`。
+
+随后通过 `condor_ssh_to_job` 接入这三项自有运行作业，在原写入节点同步源文件并原子保存副本，复用原有资源。首版只读描述符 fsync 被 EOS 以 EBADF 拒绝，第二版写副本时使用不可用的 zstd codec 而退出；helper 改为单独的 `r+b` 同步描述符和无压缩副本。02:48:32–02:48:37 UTC，三项均成功保存第三轮 30k 行表；辅助进程继续等待第四轮，训练主进程未重启。
+
+helper 的完整代码、wrapper、job 映射与版本问题记录保存在 `recovery_epoch_tables/writer_node_watch_submission.json`；各目录的 `writer_node_watch_v3.log` 和 `writer_node_snapshot.json` 记录实际同步状态。观察到完整第四轮表之后，仍须以训练终态和最终 history/checkpoint 核对，才能作为完整输出证据。
+
 ### 原尝试归档与冻结配置替换
 
 02:37 UTC，原节点 GPU 已被另一任务占用；`1573790.0` 仍为 idle、NumJobStarts=0、allocation=0，无法读取该节点的本地 FUSE 视图。已撤下这项恢复作业，history 确认为 JobStatus=3、0 starts、0 s。后续采用完整替换重跑，以补齐不可读的四轮概率表。
