@@ -151,7 +151,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Full / centered / large evaluation and training domains | 三域已完成、14项读回均pass；full−center的全域/固定支持AP及全域1%效率区间为正，中心域自身AP区间跨0；三域条件学习曲线、重复次数、类别权重与占用见阶段46/49 |
 | Three seeds for retained architectures and coarse inputs | ParT native三seed已齐，AP均值0.35457、SD0.00477；其余组合仍运行/排队，四组预定seed均值差值尚未齐，不以单配置spread代替 |
 | Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；90k target计数见阶段43，阶段45已刷新27个结果的189个Z条件组。完整物理解释继续随控制结果更新 |
-| Paired CI / interaction / matched time | 31项预定配对、2组交互及同allocation整轮比较已完成；其余14项配对/种子均值等待控制和确认结果 |
+| Paired CI / interaction / matched time | 33项单seed配对、1项三seed均值、2组交互及同allocation整轮比较已完成；其余11项配对/种子均值等待结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
@@ -207,3 +207,7 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 ## ParT 1 mm seed17 配对
 
 [阶段50](../workbook/2026-11-12_stage50_s2_part_resolution_seed17.md)：`1573782.25` exit0、14项读回pass；32 results=4 references+28科学配置、862 strata、96历史三类表、32 paired/13 pending、0 seed means，target 224组，28 output_complete。Seed17 native−1 mm raw τ ΔAP=+0.00440110，pointwise CI=[−0.00207130,+0.01145529]；固定E/vertex为−0.00138996，CI=[−0.00768450,+0.00504632]。尚不能确认正收益或排除raw +0.01收益；三seed均值继续等待2026。1 mm综合四分类点估计较好，不能由τ AP代表所有指标。`part_resolution_seed17_comparison.json`及`stage50_execution_snapshot.json`保存主表、终态和实际4 running/3 idle状态。11:15 UTC组织85.50462006 GPUh、missing=0；Kubeflow正确H10094GB flavor仍Pending，严格gate=false。
+
+## ParT native−1 mm 三seed确认
+
+[阶段51](../workbook/2026-11-12_stage51_s2_part_resolution_three_seeds.md)：`1573782.26` exit0、14项读回pass，首个预定三seed差值完整。Raw平均τ ΔAP=+0.00079004，pointwise事件CI=[−0.00282494,+0.00445758]；固定粗E/vertex平均−0.00201089，CI=[−0.00526091,+0.00111996]。区间条件于三次已拟合模型，排除此条件下+0.01平均收益；逐seed差值+0.00440110/+0.00355534/−0.00558631，sample SD=0.00553825，不作一般信息等效或训练seed总体结论。`part_resolution_three_seed_comparison.json`保存六模型与比较，四张新图已实际查看。本批33 results、889 strata、99历史三类表、33单seed+1均值、11 pending，target 231组，29 output_complete，严格gate=false。11:34 UTC组织86.79951360 GPUh、missing=0；11:45实际5 running/1 idle，ParT plane-only已在Condor启动，Kubeflow仍Pending。备用task33配置未提交，不启动运行中任务副本。
