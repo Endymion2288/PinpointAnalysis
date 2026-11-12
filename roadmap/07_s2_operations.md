@@ -121,6 +121,10 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 05:03 UTC，ParticleNet 100μm joint（`1573782.8`）exit0、14项读回全部pass，τ AP=0.35548005。native−100μm ΔAP=−0.00037532，pointwise CI=[−0.00552033,+0.00501993]；固定common-support区间也跨0且上界低于+0.01。同allocation预算内native选epoch3、100μm选epoch4，ΔAP=−0.00829455（无CI）。当前13 results、13 paired/32 pending；9个正式模型完整、3 running、23 idle，组织累计55.82911 GPUh、missing=0。详见[阶段37](../workbook/2026-11-12_stage37_s2_intermediate_resolution.md)。
 
+05:15 UTC，ParT100/200μm均exit0、14项读回pass，ParT完整粒度曲线齐备。native−100μm raw τ ΔAP=+0.00832510，pointwise CI=[+0.00282045,+0.01378043]，固定common-support也支持正收益；100−200μm与200μm−1mm区间跨0，曲线不单调，解释需结合控制和训练波动。当前15 results、16 paired/29 pending；正式11 complete，PN200μm与ParT1mm OR控制运行，其余22 idle，累计56.37795 GPUh、missing=0。详见[阶段37补充](../workbook/2026-11-12_stage37_s2_intermediate_resolution.md)。
+
+05:17:35 UTC，Kubeflow v6到达DeadlineExceeded，保留Job终态与scheduler证据后核算全程0 GPU allocation；`kubeflow/probe_v6_terminal.json`为终态快照。v7按相同2 CPU/4 GiB/1 NVIDIA与六小时deadline继续申请资源，实际probe仍限时300 s。科学任务未迁移，见阶段26补充。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
@@ -128,7 +132,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Shared subset / complete input / empty events | 完成，阶段 08–09 |
 | ParticleNet / ParT execution | CPU/GPU smoke 和完整压力测量完成，阶段 11–13 |
 | Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
-| 100/200 μm curves | PN100μm及native配对已完成（阶段37），其余三项正在运行 |
+| 100/200 μm curves | ParT完整四点曲线及PN100μm完成（阶段37），PN200μm最后一轮运行中 |
 | OR/count, grid shift | 待科学对照 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
 | No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |

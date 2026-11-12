@@ -70,3 +70,5 @@ PYTHONPATH=src /usr/bin/python3 -m analysis.flavour.s2.kubeflow prepare \
 ## 下一步计划
 
 GPU 探测成功后，依据实际型号准备同环境候选。若承接已有 H100 tasks0/6，先确认对应 Condor 副本仍 idle，再移除副本并提交。保留阶段25预先冻结的两族整轮耗时规则；通过后才扩展完整矩阵。继续 V100 四轮训练与终态评价，calibration/test 保持冻结。
+
+2026-11-12 05:17:35 UTC，v6真实终态DeadlineExceeded；全程无node。05:18:48 UTC通过既有精简Pod缓存、同UID scheduler events和Job终态恢复生命周期，GPU/CPU allocation均为0且allocation_complete=true；证据`kubeflow/probe_v6_terminal.json`。正式H100矩阵此时已有11个完整模型，后续控制和种子仍待资源；按用户授权创建v7保留第二后端机会，资源仍为2 CPU/4 GiB/1 NVIDIA、Job deadline21,600 s、实际probe runtime≤300 s。新探测使用独立Job UID，保留旧终态成本；没有重启或替代Condor科学任务。只有探测实际得到H100 NVL、且待承接科学任务仍idle时，先移除其Condor副本，再迁移；原tasks0/6现已完成，不再迁移。
