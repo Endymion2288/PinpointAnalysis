@@ -119,6 +119,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 04:44 UTC，ParticleNet 1mm joint（`1573782.6`）exit0、14项读回全部pass，两族正式八模型四格齐全。PN native−1mm joint τ ΔAP=+0.00206870，pointwise CI=[−0.00485307,+0.00996035]；1mm pairing为+0.00202755，CI=[−0.00647042,+0.00934805]；PN交互=+0.00509813，CI=[−0.00510744,+0.01683727]。1mm ParT−PN区间也跨0；同allocation整轮点估计与固定四轮排序不同，详见[阶段36](../workbook/2026-11-12_stage36_s2_both_factorials.md)。当前12 results、12 paired/33 pending、2 factorial；8 complete、4 running、23 idle，组织累计54.57364 GPUh、missing=0。Kubeflow仍待GPU，无科学任务迁移。
 
+05:03 UTC，ParticleNet 100μm joint（`1573782.8`）exit0、14项读回全部pass，τ AP=0.35548005。native−100μm ΔAP=−0.00037532，pointwise CI=[−0.00552033,+0.00501993]；固定common-support区间也跨0且上界低于+0.01。同allocation预算内native选epoch3、100μm选epoch4，ΔAP=−0.00829455（无CI）。当前13 results、13 paired/32 pending；9个正式模型完整、3 running、23 idle，组织累计55.82911 GPUh、missing=0。详见[阶段37](../workbook/2026-11-12_stage37_s2_intermediate_resolution.md)。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
@@ -126,7 +128,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Shared subset / complete input / empty events | 完成，阶段 08–09 |
 | ParticleNet / ParT execution | CPU/GPU smoke 和完整压力测量完成，阶段 11–13 |
 | Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
-| 100/200 μm curves | 两族均已冻结，待训练及 paired evaluation |
+| 100/200 μm curves | PN100μm及native配对已完成（阶段37），其余三项正在运行 |
 | OR/count, grid shift | 待科学对照 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
 | No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |
