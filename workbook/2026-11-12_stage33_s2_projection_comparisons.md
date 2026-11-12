@@ -114,10 +114,33 @@ python -m analysis.flavour.s2.evaluate --root "$S2_RESULTS/h100" \
 
 03:09:45 UTC 组织累计 46.45342 GPU-hours，missing history records=0，包含所有归档/失败 allocation。正式 5 complete、1 running、29 idle、0 held；V100 九项辅助全部结束。Kubeflow v6 仍 Pending、未分配 node。
 
+## ParticleNet 1 mm projection 与双投影粒度比较补充
+
+04:23:52 UTC，`1573782.7` 正常结束，JobStatus=4、ExitCode=0、NumJobStarts=1。冻结 task9 为 ParticleNet dim64、161,156 parameters，pixel+bar、seed42、batch4、四轮、每轮20,016 attempted steps，环境与本报告既有正式模型一致。训练 commit=`cc19ad8`。04:25:40 UTC 的14项 CPU读回全部通过，读回与评价 commit=`bba5f42`。独立train80k/validation10k、exposures320,164、80,064 applied、0 AMP skips，按NLL选中epoch4。
+
+| Epoch | Validation NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.33807288 | 0.29232667 | 1,023.96858 |
+| 2 | 1.26839655 | 0.33176457 | 1,997.10702 |
+| 3 | 1.25682543 | 0.34310336 | 2,970.52898 |
+| 4 | 1.23785700 | 0.35100848 | 3,944.75469 |
+
+程序wall=3,946.01105 s，实际allocation=3,957 s=1.09916667 GPUh，额外开销=10.98895 s，peak=601.75781 MiB。四类balanced accuracy=0.40480、macro F1=0.40550990、Brier=0.67280623；CC nu_e/CC nu_mu/CC nu_tau/NC的AP分别为0.59907056/0.42474727/0.35100848/0.38679720。τ ROC AUC=0.63021832，固定common-support AP=0.32166112。每类25%的benchmark prior与本报告既有模型一致。
+
+预定native projection−1mm projection的τ ΔAP=−0.00302942，pointwise 95% CI=[−0.01277175,+0.00658906]；固定E/vertex common-support ΔAP=−0.00220817，CI=[−0.01266791,+0.00716999]。区间沿用400次、128个accepted-family/chunk blocks，固定支持为8,559 events、Neff=7,959.41365。两个AP区间均跨0、上界均低于预定+0.01，当前seed42、四轮及既定局部压缩下没有原生双投影粒度的正收益区间支持，可排除至少+0.01的AP收益，不能判定一般等效。1% FPR τ效率差=−0.0040，CI=[−0.01277477,+0.00318884]。
+
+共同实际allocation预算3,682.77606 s内，按NLL分别选native epoch4与1mm epoch3，native−1mm τ ΔAP=+0.00487570；1mm已计开销2,981.51793 s，剩余701.25812 s不足下一整轮。这是整轮分辨率点估计，时间匹配CI未测量。
+
+1mm projection的validation empirical 1% FPR阈值=0.41372472，通过80/2,500个τ、75/7,500个背景，效率=0.0320；electron/muon/hadronic分别为8/4/68，对应native projection为6/5/59。native相对1mm通过数变化为−2/+1/−9，合计−10，分支差值CI未测量。0.1% FPR为9个τ、7个背景，尾部统计不足。pixel-centered AP=0.32782319、large域AP=0.37687616；空pixel+bar输入与tracker-only域仍为prior AP、AUC=0.5。分域配对CI未测量，不能从分域AP点值单独确定粒度机制。
+
+部分评价正常退出，当前11个有效结果（4 references+7正式模型）、295行分域指标、33个历史三类诊断、9项配对完成/36项pending。ParT正式四格与交互效应已完成（阶段35），ParticleNet仍待1mm joint补齐完整四格。新的resolution图与paired-effects首页已实际查看。
+
+正式根目录新增 `pn_projection_resolution_comparison.json`，固定保存manifest/history、14项读回、真实终态、成本、配对、分支和域；日志为`readback_pn_1mm_projection.log`、`evaluation_pn_projection_resolution.log`。复现命令与上文一致，readback选择`pn_1mm_projection_s42_e4_v2`。04:26:27 UTC组织累计53.11281 GPU-hours，missing history records=0；Kubeflow v6仍Pending，无GPU allocation。
+
 ## 阶段性结论
 
-PN native pairing 的原样本 τ AP 有接近零下界的正事件区间支持，固定支持条件与同成本点估计尚未支持相同结论。ParT 1 mm 配对未见正区间支持，当前可排除至少 +0.01 的 AP 增量。上述结果继续由完整四格、信息控制与三种子检验。
+PN native pairing 的原样本 τ AP 有接近零下界的正事件区间支持，固定支持条件与同成本点估计尚未支持相同结论。ParT 1 mm 配对与PN双投影原生粒度未见正区间支持，当前各自可排除至少 +0.01 的 AP 增量。上述结果继续由完整四格、信息控制与三种子检验。
 
 ## 下一步计划
 
-继续 30 项未完整正式配置，先补齐两族四格，再完成中间粒度、控制、训练域与三种子。全部 41 单seed+4 种子均值比较和最终科学报告齐备后才验收 S2；当前 goal 保持 active。
+继续剩余正式配置，补齐ParticleNet四格、中间粒度、控制、训练域与三种子。全部 41 单seed+4 种子均值比较和最终科学报告齐备后才验收 S2；当前 goal 保持 active。

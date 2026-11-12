@@ -115,6 +115,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 04:18 UTC，ParT native projection冻结替换`1573791.0`正常结束、14项读回全部pass。正式ParT四格齐全，native pairing τ ΔAP=+0.00124580，pointwise CI=[−0.00501470,+0.00830354]；四格交互=+0.00043410，CI=[−0.00790547,+0.00875624]。四项主配对的raw/common-support区间均跨0、各自上界低于+0.01，跨种子与机制仍待控制。原尝试+替换合计10,017 s=2.78250 GPUh；projection粒度的同成本比较因无法容纳首轮而缺测。有效评价为10 results、8 paired/37 pending、1 factorial；6 complete、6 running、23 idle，组织累计52.32724 GPUh、missing=0。详见[阶段35](../workbook/2026-11-12_stage35_s2_part_factorial.md)。
 
+04:26 UTC，ParticleNet 1mm projection（`1573782.7`）exit0、14项读回全部pass。双投影native−1mm的τ ΔAP=−0.00302942，pointwise CI=[−0.01277175,+0.00658906]，固定common-support区间也跨0且上界低于+0.01。当前11 results、9 paired/36 pending，7个正式模型完整；组织累计53.11281 GPUh、missing=0。完整结果、分支与同allocation比较见[阶段33补充](../workbook/2026-11-12_stage33_s2_projection_comparisons.md)。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
