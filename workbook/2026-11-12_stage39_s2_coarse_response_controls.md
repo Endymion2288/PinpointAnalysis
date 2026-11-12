@@ -141,3 +141,33 @@ PN OR在validation empirical 1% FPR下阈值=0.43944392，通过90个τ/75个背
 评价commit=`cd5f5c2`，正常退出：19 results（4 references+15科学模型）、511行分域、57个历史三类诊断、21 paired/24 pending、2 factorial。`pn_or_count_comparison.json`保存完整训练/读回/配对/分域/核算快照，`pn_or_count_paired_review.png`和`evaluation_final/pn_1mm_or_diagnostic_review.png`已查看。配对图新增第3页的单行图在默认密集刻度下文字拥挤，`s2.plots`将横轴主刻度限制为约5个；用已保存统计量重绘并实际查看，未重拟合或改变CI。复现使用上文命令、experiment改为`pn_1mm_or_s42_e4_v2`；日志为`readback_pn_1mm_or.log`、`accounting_pn_1mm_or.log`、`evaluation_pn_1mm_or.log`及`plots_coarse_controls.log`。
 
 07:21:48 UTC累计65.22408182 GPUh，H100视图28.98574848 GPUh，missing=0。正式15 complete、6 running、14 idle，pixel-only控制已接续启动；Kubeflow v7仍Pending、无node。接下来完成ParticleNet平移、两族关联/图/跨层控制、模态/域控制与额外种子，共20项科学配置。S2整体尚未验收，calibration/test保持冻结。
+
+## 补充：ParticleNet 平移完成，四项粗格控制齐备
+
+`1573782.14`正常结束，JobStatus=4、ExitCode=0、NumJobStarts=1，原节点`b9pgpun501.cern.ch`。07:55:08 UTC全部14项读回pass；冻结的ParticleNet dim64/161,156 parameters、pixel+bar、seed42、4 epochs、H100/BF16均匹配，80,064 applied、0 skips、320,164 exposures，NLL选epoch4。原点在x/y各平移0.5mm，影响同上文ParT shift，包括后续从粗中心派生的局部分块。
+
+| Epoch | PN shift NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.35680486 | 0.28593941 | 1,597.81870 |
+| 2 | 1.29467705 | 0.30283151 | 3,119.44179 |
+| 3 | 1.26260218 | 0.34790894 | 4,642.35324 |
+| 4 | 1.24961314 | 0.35155353 | 6,167.58404 |
+
+PN shift的τ AP=0.35155353、固定common-support AP=0.32173114、τ AUC=0.62677368、NLL=1.24961314、balanced accuracy=0.39890、macro F1=0.39754700、Brier=0.67902982。e/μ/τ/NC AP=0.58631425/0.40885012/0.35155353/0.35942435，argmax recall=0.4896/0.2880/0.5248/0.2932；四类差值CI未测量。
+
+| PN reference origin−shift metric | Difference [95% pointwise event CI] |
+| --- | --- |
+| Raw tau AP | +0.00148250 [−0.00590075,+0.00831700] |
+| Fixed common-support tau AP | +0.00145118 [−0.00559692,+0.00809617] |
+| Tau ROC AUC | +0.00160771 [−0.00393261,+0.00671921] |
+| Tau efficiency at 1% FPR | +0.00720000 [−0.00241775,+0.01633873] |
+
+1% FPR下shift阈值=0.44358239，通过71个τ/75个背景，reference通过89/75；reference效率点估计高0.0072，事件区间尚跨0。0.1%下shift通过13个τ/7个背景、reference通过9/7，尾部不足；效率差=−0.0016，CI=[−0.00519652,+0.00285182]。τ electron/muon/hadronic在inclusive 1%下通过5/3/63个，分支AP=0.07679466/0.05946267/0.29142727。Pixel-centered AP=0.33929921，large-scintillator AP=0.38713869；分支及域内差值CI未测量。
+
+两族OR/count、reference/shift的四项raw/common-support τ AP区间均跨0，且上界都低于预定+0.01。它们约束当前模型的事件差异，不构成跨种子稳定性或普遍的信息等效结论。工作点差值仍有不小区间，AP接近不能替代尾部效率测量。实际被移除的multiplicity与事件覆盖已在[阶段40](2026-11-12_stage40_s2_multiplicity_exposure.md)测量。
+
+PN shift程序wall=6,168.40482 s，allocation=6,187 s=1.71861111 GPUh，额外18.59518 s，peak=1,548.24463 MiB。同allocation预算5,170.45471 s内shift选epoch3、reference选epoch4（shift余509.50629 s），reference−shift ΔAP=+0.00512709；整轮点估计、无CI。
+
+评价commit=`0330af1`，正常退出：20 results（4 references+16科学模型）、538行分域、60个历史三类诊断、22 paired/23 pending、2 factorial。`pn_grid_origin_comparison.json`保存完整训练/读回/配对/分域/核算快照；`pn_grid_origin_paired_review.png`及`evaluation_final/pn_1mm_shift_diagnostic_review.png`已实际查看。复现同上文、experiment改为`pn_1mm_shift_s42_e4_v2`；日志为`readback_pn_1mm_shift.log`、`accounting_pn_1mm_shift.log`、`evaluation_pn_1mm_shift.log`。
+
+07:57:23 UTC累计68.77621452 GPUh，H100视图32.53788118 GPUh，missing=0；阶段40 CPU作业138 s×2 CPU、0 GPU已实际进入统一台账。随后ParT shuffle也已正常结束并通过14项读回，等待下一轮配对评价；tracker和center-training控制已启动，08:07 UTC为17 complete、7 running、11 idle。接下来补齐局部关联/图/跨层、模态/训练域和种子确认，S2尚未整体验收。

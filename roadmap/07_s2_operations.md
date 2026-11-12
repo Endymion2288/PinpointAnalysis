@@ -134,6 +134,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 07:21 UTC，ParticleNet1mm OR（`1573782.13`）exit0、14项读回pass，两族multiplicity控制完整。PN count−OR τ ΔAP=−0.00289658，pointwise CI=[−0.00956869,+0.00254101]；固定common-support为−0.00094003，CI=[−0.00773349,+0.00441296]。19 results、21 paired/24 pending；PN OR allocation=4,515 s=1.25416667 GPUh，累计65.22408182 GPUh、missing=0。正式15 complete、6 running、14 idle，pixel-only已接续；详见[阶段39补充](../workbook/2026-11-12_stage39_s2_coarse_response_controls.md)。
 
+07:57 UTC，ParticleNet1mm平移（`1573782.14`）exit0、14项读回pass，两族OR和平移四项粗格控制完整。PN reference−shift τ ΔAP=+0.00148250，pointwise CI=[−0.00590075,+0.00831700]；固定common-support为+0.00145118，CI=[−0.00559692,+0.00809617]。20 results、22 paired/23 pending；PN shift allocation=6,187 s=1.71861111 GPUh，累计68.77621452 GPUh、missing=0。ParT shuffle随后也结束，tracker/center-training已启动，08:07为17 complete、7 running、11 idle；详见[阶段39补充](../workbook/2026-11-12_stage39_s2_coarse_response_controls.md)。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
@@ -142,7 +144,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | ParticleNet / ParT execution | CPU/GPU smoke 和完整压力测量完成，阶段 11–13 |
 | Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
 | 100/200 μm curves | 两族完整四点曲线及相邻粒度配对完成（阶段37–38），十二项空间输出全部14项readback pass |
-| OR/count, grid shift | 两族OR/count和ParT shift完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01（阶段39）；ParticleNet shift继续训练 |
+| OR/count, grid shift | 两族四项控制均完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01；工作点CI和限制见阶段39 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
 | No-pair / fixed-graph / local-shuffle | 实现入口已有，待实际对照 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
