@@ -23,7 +23,8 @@ CLASSES=['CC nu_e','CC nu_mu','CC nu_tau','NC']
 def run(args):
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
-    groups=pd.read_parquet(args.root/args.evaluation_tag/'error_event_groups.parquet')
+    groups_path=getattr(args,'groups_file',None) or args.root/args.evaluation_tag/'error_event_groups.parquet'
+    groups=pd.read_parquet(groups_path)
     groups=groups[groups.experiment.eq(args.experiment)]
     confusion=groups[groups.example_group.str.contains('high_confidence')].groupby('example_group',sort=True).head(1)
     random=groups[groups.example_group.eq('random_reference')].head(4)
@@ -79,8 +80,10 @@ def run(args):
                     for axis in panels:
                         axis.text(.5,.5,message,ha='center',va='center',transform=axis.transAxes)
                         axis.set_axis_off()
+            scores=(f'p(e, mu, tau, NC)=({row.p0:.3f}, {row.p1:.3f}, {row.p2:.3f}, {row.p3:.3f})'
+                    if getattr(args,'all_class_scores',False) else f'p(tau)={row.p2:.3f}')
             fig.suptitle(f'{args.experiment}: true {CLASSES[row.label]}, predicted {CLASSES[row.prediction]}; '
-                f'p(tau)={row.p2:.3f}\nRun {row.run}, chunk {row.chunk}, row {row.row}; {row.example_group}\n'
+                f'{scores}\nRun {row.run}, chunk {row.chunk}, row {row.row}; {row.example_group}\n'
                 f'Truth diagnostics: E={row.initE/1000:.1f} GeV, vertex=({row.initX:.1f}, {row.initY:.1f}, {row.initZ:.1f}) mm',fontsize=10)
             pdf.savefig(fig,dpi=160)
             if number==0:

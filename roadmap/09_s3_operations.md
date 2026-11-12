@@ -46,7 +46,7 @@ Late、joint、latent均读取相同module tokens；joint是在这些tokens上�
 
 S3组织上限120 GPUh（screen/probe预留70，确认及最终诊断预留50），包含失败、恢复、旧尝试与所有后端，不自动耗尽。S2的92.73055556 GPUh另列。先做CPU/少量T4完整事件验证，再做H100/BF16最大占用与真实optimizer smoke；正式大训练全部通过HTCondor或Kubeflow。
 
-优先让Kubeflow获取整卡H100，使用CERN `h100-94gb` flavor：`NVIDIA-H100-NVL`与`nvidia.com/gpu:1`，CPU/RAM由平台注入46/127G，先server Pod dry-run。Pod真实Scheduled/Running才算获得GPU；Pending观察记录实际scheduler事件，不推断一定更快。命令入口`analysis.flavour.s3.backend`。登录已正常，单GPU配额中不创建重复writer。
+按照用户最新要求，Kubeflow和HTCondor哪边实际获配就用哪边，减少等待，不固定后端优先级。Kubeflow使用CERN `h100-94gb` flavor：`NVIDIA-H100-NVL`与`nvidia.com/gpu:1`，CPU/RAM由平台注入46/127G，先server Pod dry-run。Pod真实Scheduled/Running才算获得GPU；Pending观察记录实际scheduler事件，不推断一定更快。`analysis.flavour.s3.backend --dispatch`可在Condor队列继续时申请一个Kubeflow slot；`dispatch watch`在真实CUDA/BF16 ready后，用schedd端`JobStatus == 1`条件hold并移除一个idle副本，再发布唯一冻结任务assignment。已Running的任务保持原地。worker准备好后等待assignment至多300 s，所有占用计入预算。登录已正常，单GPU配额中不创建重复writer。
 
 HTCondor入口`analysis.flavour.s3.condor`每次检查schedd排队、EOS兼容性、WRITE和GPU pool。两后端任务分配在提交记录中明确；只迁移真实idle且已确认无writer的原任务，先终止旧副本再提交。训练复用S2已验证的atomic checkpoint/resume loop，通过显式dataset/model/collator hooks接入，S2默认行为保持。
 

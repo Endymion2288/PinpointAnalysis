@@ -10,7 +10,7 @@ import numpy as np
 CLASSES = ('CC nu_e', 'CC nu_mu', 'CC nu_tau', 'NC')
 NAMES = ('macro_AP', 'macro_AUROC', 'macro_F1', 'balanced_accuracy', 'NLL', 'Brier') + tuple(
     f'class_{c}_{name}' for c in range(4)
-    for name in ('AP', 'AUROC', 'precision', 'recall', 'F1'))
+    for name in ('AP', 'AUROC', 'precision', 'recall', 'F1', 'eff_at_0.01_FPR', 'eff_at_0.001_FPR'))
 
 
 class MetricCache:
@@ -67,7 +67,14 @@ class MetricCache:
             if positive > 0 and negative > 0:
                 auc = float(np.dot(tp + np.r_[0., tp[:-1]], np.diff(np.r_[0., fp])) / (2 * positive * negative))
             aps.append(ap); aucs.append(auc)
-            per_class.extend([ap, auc, precision[c], recall[c], f1[c]])
+            efficiencies = []
+            for acceptance in [.01, .001]:
+                if positive > 0 and negative > 0:
+                    allowed = fp <= acceptance * negative
+                    efficiencies.append(float(np.max(tp[allowed], initial=0.) / positive))
+                else:
+                    efficiencies.append(np.nan)
+            per_class.extend([ap, auc, precision[c], recall[c], f1[c], *efficiencies])
         values = [np.mean(aps), np.mean(aucs), np.mean(f1), np.mean(recall[support > 0]),
                   np.dot(weight, self.nll) / total, np.dot(weight, self.brier) / total, *per_class]
         return np.asarray(values), matrix

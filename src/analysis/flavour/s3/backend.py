@@ -22,6 +22,11 @@ def prepare(args):
     product, resource = GPU_FLAVORS[args.flavor]
     args_list = ['analysis.flavour.s3.probe', '--root', str(root)]
     experiment = 'environment-probe'
+    if args.dispatch:
+        if args.task is not None or args.flavor != 'h100-94gb':
+            raise ValueError('dispatch requires the frozen whole H100 flavor and no fixed task')
+        experiment = 'dispatch-unassigned'
+        args_list = ['analysis.flavour.s3.dispatch', 'worker', '--root', str(root), '--name', args.name]
     if args.task is not None:
         campaign = json.loads(args.campaign.read_text())
         if product.replace('-', ' ') != campaign['hardware']['GPU'] or resource != 'nvidia.com/gpu':
@@ -45,7 +50,7 @@ def prepare(args):
                                           'nodeSelector': {'nvidia.com/gpu.product': product},
                                           'volumes': [{'name': 'cvmfs', 'persistentVolumeClaim': {'claimName': 'cvmfs'}}],
                                           'containers': [{'name': 's3', 'image': 'docker.io/library/almalinux:9',
-                                                          'command': ([] if args.task is not None else ['/usr/bin/timeout', '300']) + ['/bin/bash', '-c', script],
+                                                          'command': ([] if args.task is not None or args.dispatch else ['/usr/bin/timeout', '300']) + ['/bin/bash', '-c', script],
                                                           'resources': {'requests': resources, 'limits': resources},
                                                           'volumeMounts': [{'name': 'cvmfs', 'mountPath': '/cvmfs', 'readOnly': True, 'mountPropagation': 'HostToContainer'}]}]}}}}
     path = output / f'{args.name}.job.json'
@@ -56,7 +61,8 @@ def prepare(args):
     pod_path.write_text(json.dumps(pod, indent=2) + '\n')
     admitted = json.loads(kubectl('create', '--dry-run=server', '-f', str(pod_path), '-o', 'json'))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'backend': 'kubeflow', 'context': kubectl('config', 'current-context').strip(),
-                'namespace': 'xcheng', 'job': args.name, 'container_name': 's3', 'stage': 'train' if args.task is not None else 'probe',
+                'namespace': 'xcheng', 'job': args.name, 'container_name': 's3',
+                'stage': 'train' if args.task is not None else 'dispatch' if args.dispatch else 'probe',
                 'experiment': experiment, 'task': args.task, 'root': str(root), 'submitted': False,
                 'gpu_flavor': {'name': args.flavor, 'product': product, 'resource': resource, 'count': 1},
                 'job_spec': job, 'pod_admission': admitted,
@@ -75,6 +81,7 @@ def main():
     parser.add_argument('--flavor', choices=GPU_FLAVORS, default='h100-94gb')
     parser.add_argument('--campaign', type=Path)
     parser.add_argument('--task', type=int)
+    parser.add_argument('--dispatch', action='store_true', help='offer an H100 slot to a still-idle Condor task after runtime readiness')
     parser.add_argument('--deadline', type=int, default=21600)
     parser.add_argument('--apply', action='store_true')
     prepare(parser.parse_args())

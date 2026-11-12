@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import (average_precision_score, roc_auc_score, f1_score,
                              balanced_accuracy_score, log_loss, confusion_matrix,
-                             precision_recall_fscore_support)
+                             precision_recall_fscore_support, roc_curve)
 
 from analysis.flavour.s3.metrics import MetricCache, NAMES, bootstrap_weights, interval_report
 from analysis.flavour.s3.evaluate import contrast
@@ -37,6 +37,10 @@ class FourClassStatisticsTest(unittest.TestCase):
                 self.assertAlmostEqual(result[f'class_{c}_AUROC'], roc_auc_score(self.y == c, self.p[:, c], sample_weight=w), places=12)
                 for name, expected in zip(['precision', 'recall', 'F1'], details[:3]):
                     self.assertAlmostEqual(result[f'class_{c}_{name}'], expected[c], places=12)
+                fpr, tpr, _ = roc_curve(self.y == c, self.p[:, c], sample_weight=w, drop_intermediate=False)
+                for acceptance in [.01, .001]:
+                    self.assertAlmostEqual(result[f'class_{c}_eff_at_{acceptance:g}_FPR'],
+                                           tpr[np.flatnonzero(fpr <= acceptance)[-1]], places=12)
             expected_brier = np.average(np.square(self.p - np.eye(4)[self.y]).sum(1), weights=w)
             self.assertAlmostEqual(result['Brier'], expected_brier, places=12)
 
