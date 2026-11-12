@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 from analysis.flavour.inventory import write_json
@@ -77,6 +78,7 @@ def interval_panel(axis, rows, key):
     axis.axvline(0., color='grey', linewidth=.8)
     axis.axvline(.01, color='grey', linestyle=':', linewidth=.8)
     axis.set(ylim=(len(rows)-.5, -.5), xlabel='Tau AP difference (B - A)')
+    axis.xaxis.set_major_locator(MaxNLocator(nbins=5))
     axis.grid(axis='x', alpha=.2)
 
 

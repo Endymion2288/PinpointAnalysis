@@ -1,4 +1,4 @@
-# 阶段 39：S2 ParT 粗格 multiplicity 与网格原点控制
+# 阶段 39：S2 粗格 multiplicity 与网格原点控制
 
 ParT 1mm OR 控制已完整结束，14项输出读回全部通过。count−OR 的 τ ΔAP=−0.00003083，pointwise 95%事件区间=[−0.00529256,+0.00474363]；固定common-support为+0.00253247，区间=[−0.00249439,+0.00724162]。当前seed42、模型和四轮预算下，未观察到保留multiplicity的正收益，区间上界低于预定+0.01。此结果不等于multiplicity没有分类信息，也不构成跨种子的等效结论。S2其余控制和确认继续执行。
 
@@ -111,3 +111,33 @@ Shift程序wall=5,816.62953 s，实际allocation=5,824 s=1.61777778 GPUh，额�
 评价commit=`5f44e21`，正常退出：18 results（4 references+14科学模型）、484行分域、54个历史三类诊断、20 paired/25 pending、2 factorial。`part_grid_origin_comparison.json`保存本次训练/读回/配对/分域/核算快照；`part_grid_origin_paired_review.png`及`evaluation_final/part_1mm_shift_diagnostic_review.png`已实际查看。复现命令同上，读回experiment改为`part_1mm_shift_s42_e4_v2`；日志为`readback_part_1mm_shift.log`、`accounting_part_1mm_shift.log`、`evaluation_part_1mm_shift.log`。
 
 07:07:06 UTC组织累计63.75366560 GPUh，H100视图27.51533227 GPUh，missing=0；正式14 complete、6 running、15 idle，ParticleNet fixed-graph已接续启动。Kubeflow v7仍Pending、无node。接下来完成余下21项科学配置；ParT两项粗格控制未提供τ正收益支持，局部关联/跨层/模态/训练域/多种子仍按冻结合同继续，最终仍需无`--allow-incomplete`的严格评价。
+
+## 补充：ParticleNet OR 完成，两族 multiplicity 对照齐备
+
+`1573782.13`正常结束，JobStatus=4、ExitCode=0、NumJobStarts=1，原节点`b9pgpun001.cern.ch`。07:20:47 UTC全部14项读回pass；ParticleNet dim64、161,156 parameters、pixel+bar、seed42、4 epochs、20,016 steps/epoch、H100/BF16，NLL选epoch4；80,064 applied、0 skips、320,164 exposures。OR信息处理与上文相同，全局汇总未恢复丢失的native count。
+
+| Epoch | PN OR NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.31932070 | 0.29077937 | 1,136.90129 |
+| 2 | 1.26677756 | 0.33138767 | 2,253.02940 |
+| 3 | 1.25774181 | 0.34698988 | 3,369.29729 |
+| 4 | 1.24245326 | 0.35593261 | 4,506.13683 |
+
+PN OR的τ AP=0.35593261、固定common-support AP=0.32412235、τ AUC=0.63141312、NLL=1.24245326、balanced accuracy=0.40220、macro F1=0.39945714、Brier=0.67542784。e/μ/τ/NC AP=0.59660299/0.41364948/0.35593261/0.37165539，argmax recall=0.5004/0.2948/0.5328/0.2808。OR的NLL和balanced accuracy点估计也优于PN count（1.24970777/0.39770），非τ配对CI未测量。
+
+| PN count−OR metric | Difference [95% pointwise event CI] |
+| --- | --- |
+| Raw tau AP | −0.00289658 [−0.00956869,+0.00254101] |
+| Fixed common-support tau AP | −0.00094003 [−0.00773349,+0.00441296] |
+| Tau ROC AUC | −0.00303173 [−0.00937309,+0.00259286] |
+| Tau efficiency at 1% FPR | −0.00040000 [−0.00898382,+0.00784358] |
+
+相同400次、128 blocks、固定权重合同。PN与ParT的count−OR raw/common-support τ AP区间都跨0、上界都低于+0.01；两族均未显示count的正事件区间支持。两次模型族对照不是额外训练种子，不将一致的方向解释为已测跨种子稳定性。PN的raw区间下界距−0.01较近，400次bootstrap的边界位置不作为精确排除OR收益的依据。
+
+PN OR在validation empirical 1% FPR下阈值=0.43944392，通过90个τ/75个背景；count通过89/75。0.1% FPR下OR通过15个τ/7个背景、count通过9/7，count−OR效率差=−0.0024、CI=[−0.00477869,+0.00200918]，尾部不足。OR的τ electron/muon/hadronic在inclusive 1%下通过7/6/77个，分支AP=0.08260038/0.06292380/0.29134561；分支差值CI未测量。pixel-centered AP=0.31133000，large-scintillator AP=0.39005589；空输入和tracker-only域仍仅有prior型输出。
+
+程序wall=4,507.09343 s，allocation=4,515 s=1.25416667 GPUh，额外7.90657 s，peak=1,552.50732 MiB。同allocation预算4,514.04339 s内OR选epoch4、count选epoch3（余617.95981 s），count−OR τ ΔAP=−0.00718265；整轮点估计、CI未测量。OR/count没有改变occupied-cell token数量，不能把wall差异视为结构复杂度降低。
+
+评价commit=`cd5f5c2`，正常退出：19 results（4 references+15科学模型）、511行分域、57个历史三类诊断、21 paired/24 pending、2 factorial。`pn_or_count_comparison.json`保存完整训练/读回/配对/分域/核算快照，`pn_or_count_paired_review.png`和`evaluation_final/pn_1mm_or_diagnostic_review.png`已查看。配对图新增第3页的单行图在默认密集刻度下文字拥挤，`s2.plots`将横轴主刻度限制为约5个；用已保存统计量重绘并实际查看，未重拟合或改变CI。复现使用上文命令、experiment改为`pn_1mm_or_s42_e4_v2`；日志为`readback_pn_1mm_or.log`、`accounting_pn_1mm_or.log`、`evaluation_pn_1mm_or.log`及`plots_coarse_controls.log`。
+
+07:21:48 UTC累计65.22408182 GPUh，H100视图28.98574848 GPUh，missing=0。正式15 complete、6 running、14 idle，pixel-only控制已接续启动；Kubeflow v7仍Pending、无node。接下来完成ParticleNet平移、两族关联/图/跨层控制、模态/域控制与额外种子，共20项科学配置。S2整体尚未验收，calibration/test保持冻结。
