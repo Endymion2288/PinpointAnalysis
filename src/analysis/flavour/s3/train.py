@@ -28,7 +28,8 @@ def main():
         manifest_extra={'stage': 'S3', 'local_blocks': 'same_plane_pitch_multiple_windows_canonical_chunks32_complete_coverage',
                         'module_layout': 'pixel_ordered_true_layer_flags_bar_stored_layer_tracker_station',
                         'fusion_bottleneck': f"{config.get('module_queries', 4)}_learned_queries_per_physical_module_and_detector_then_declared_fusion",
-                        'module_coordinate_relations': 'known_z_module_and_detector_only_no_invented_bar_point',
+                        'module_coordinate_relations': 'pixel_bar_z_tracker_station_metadata_module_detector_no_invented_bar_point',
+                        'module_z_coordinate_definition': 'pixel_bar_physical_z_mm_div3000_tracker_station_index_div3_not_physical_distance',
                         'schema_whitelist': '18_observation_features_local_Fourier_xy_hardware_module_ID_no_truth'})
 
 

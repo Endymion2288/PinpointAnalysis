@@ -40,6 +40,9 @@ class ModuleAttention(nn.Module):
         q, k, v = self.qkv(self.norm(x)).reshape(b, n, 3, 4, d // 4).permute(2, 0, 3, 1, 4)
         bias = torch.zeros((b, 1, 1, n), device=x.device, dtype=x.dtype)
         if self.pair is not None:
+            # Pixel/bar use z_mm/3000. The accepted tracker proxy uses its
+            # station index/3, so cross-tracker deltas are metadata relations,
+            # not measured flight distances (see manifest definition).
             delta = z[:, :, None] - z[:, None, :]
             relations = torch.stack([delta, (module[:, :, None] == module[:, None, :]).float(),
                                     (detector[:, :, None] == detector[:, None, :]).float()], dim=-1)

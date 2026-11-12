@@ -28,6 +28,8 @@ S2没有隔离“4 mm compression抹平native优势”的因果；S3把它作为
 
 Pixel module为geometry中`layer_is_pixel`真项的有序位置，bar使用已有hardware `layer`，tracker使用station ID；这些是硬件结构。每module/type的4个learned queries读取该组所有局部块。Module context加入module/type embedding、连续z及Δz/same-module/same-type关系；global pair不把bar未知横坐标当精确点。Geometry-off仍保留同一物理分组，只关闭显式embedding/relations，不能解释为去除全部几何信息。
 
+关系坐标的实际定义：pixel/bar为硬件z[mm]/3000；继承S2的accepted tracker proxy把station index编码为station/3。后者是station元数据坐标，跨tracker的Δz输入不能解释成毫米飞行距离。当前17项输入与配置保持冻结，tracker增量按该accepted hit/station表示报告；nominal tracker-plane物理z的替换属于另一个对照，不在当前结果中冒称已实现。
+
 Late、joint、latent均读取相同module tokens；joint是在这些tokens上的全连接attention，latent是24 learned queries的cross-attention与两层latent self-attention。Late仅pooling。所有融合保留三模态独立pool与当前表示的计数/信号和。Module context开启/关闭可能改变参数和算力，实测记录，不作纯参数无关因果声明。
 
 当前输入没有可用channel time或拟合q/p；time关闭由输入白名单直接证明，绝不训练两个相同输入却称timing消融。Charge消融只针对已有bar edep/PE proxy。Tracker仅为用户接受的测量hit proxy，分别报告all-event、active、tracker-active/inactive、输入全空、接受度与固定背景/相同purity曲线。拟合轨迹的q/p、covariance、fake率和真实重建覆盖未测量，不把hit-proxy结果写成track reconstruction的表现；对象/拟合重建仍属于后续S5分支。
