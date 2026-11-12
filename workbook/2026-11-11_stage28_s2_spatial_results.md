@@ -168,11 +168,39 @@ python -m analysis.flavour.s2.evaluate --root "$S2_RESULTS" \
 
 环境沿用上文LCG108单线程CPU；日志为`evaluation_fifth_model.log`。01:10:01 UTC组织累计34.92273 GPU-hours，missing history records=0。V100辅助任务为5 complete、4 running、26 removed；H100正式矩阵为4 running、31 idle。01:13时H100 ParT native joint已保存完整epoch2，native projection已保存epoch1；ParticleNet native joint正在epoch4。Kubeflow v6仍Pending、无node。
 
+## 第六至八个完成模型与完整 ParticleNet 四格
+
+2026-11-12 02:15 UTC前，`1573747.7/.8/.9` 均已 JobStatus=4、ExitCode=0、NumJobStarts=1。三者沿用 V100/LCG107/FP16、seed42、80k train/10k validation、4 epochs 与 NLL 选模，均选择 epoch4。
+
+| Configuration | Tau AP | NLL | Program wall [s] | Actual allocation [s / GPUh] | Peak GPU [MiB] | Applied / skipped steps |
+| --- | ---: | ---: | ---: | --- | ---: | --- |
+| Native projection | 0.35164827 | 1.22995043 | 9,193.37539 | 9,213 / 2.55917 | 556.24072 | 80,032 / 32 |
+| 1mm joint | 0.35225809 | 1.23708975 | 13,578.58711 | 13,614 / 3.78167 | 1,504.58887 | 80,032 / 32 |
+| 1mm projection | 0.35296984 | 1.23333057 | 10,007.24819 | 10,049 / 2.79139 | 554.54053 | 80,030 / 34 |
+
+三者1% FPR均选中75/7,500个背景，分别选中72、78、89个τ，效率为2.88%、3.12%、3.56%。electron/muon/hadronic通过数分别为5/5/62、8/4/66、6/6/77；分支差值CI未测量。0.1% FPR背景通过数均为7，尾部统计不足。
+
+合并部分评价正常退出，commit=`851ffc0`；12个结果（4 references+8辅助模型）、322行分域指标、36个历史三类诊断，12项配对完成、33项pending。两族factorial均可计算，完整标记仍为false。更新后的resolution与paired-effects首页已实际查看。新增结果固定于父目录`sixth_to_eighth_scientific_models.json`，包括history、manifest、真实allocation、分支、配对与交互效应；执行日志为`evaluation_eighth_model.log`。
+
+| Added prespecified B − A | Raw tau ΔAP [95% CI] | Fixed common-support ΔAP [95% CI] |
+| --- | --- | --- |
+| PN native joint − native projection | +0.00618905 [−0.00078595,+0.01350560] | +0.00721615 [+0.00030585,+0.01388341] |
+| PN native joint − 1mm joint | +0.00557923 [−0.00313428,+0.01445837] | +0.00392406 [−0.00421328,+0.01354744] |
+| PN 1mm joint − 1mm projection | −0.00071175 [−0.00692269,+0.00601253] | +0.00262908 [−0.00342282,+0.00943102] |
+| PN native projection − 1mm projection | −0.00132157 [−0.00729322,+0.00466592] | −0.00066301 [−0.00610294,+0.00508985] |
+| ParT 1mm joint − PN 1mm joint | +0.00618933 [−0.00185725,+0.01423282] | −0.00020356 [−0.00754461,+0.00830161] |
+
+区间沿用400次、128个accepted-family/chunk blocks的pointwise事件bootstrap。ParticleNet native配对的固定支持区间为正，原样本区间仍跨0；1mm配对和native双投影粒度收益的raw/common区间均跨0且上界低于预定+0.01。当前设置中可排除这两项至少+0.01的正增量，不能据此作一般等效结论。ParticleNet四格交互效应`AP_NJ−AP_NP−AP_CJ+AP_CP`=+0.00690080，CI=[−0.00117627,+0.01526144]，粒度依赖尚未确定。ParT与ParticleNet在1mm joint的架构差异也未确定。
+
+实际allocation匹配仍受整轮可选checkpoint限制：native joint−projection在9,212.61722 s预算内为epoch3−epoch4，ΔAP=−0.00828459；native−1mm joint在11,378.41902 s内为epoch4−epoch3，ΔAP=+0.01847249；1mm joint−projection在10,048.36737 s内按NLL选择epoch2−epoch4，ΔAP=−0.03929086，joint剩余3,021.46418 s未用；native−1mm projection在9,212.61722 s内为epoch4−epoch3，ΔAP=+0.01018187。以上仅为点估计，区间未测量，不能以这些epoch分辨率结果确认同算力优势。
+
+02:16:22 UTC组织累计43.30292 GPU-hours、missing history records=0。一轮核算恰逢`.9`从queue转history出现暂缺，重新查询实际history后已补齐，未将缺记录当作零成本。V100辅助只剩`1573747.4`（ParT100μm）仍在运行，26个被正式H100替代的idle任务继续保持移除状态。
+
 ## 阶段性结论
 
-V100辅助结果已完成五项冻结配置，ParT四格及其交互效应已实际评价，预先固定的NLL选模规则得到保留。当前1mm/seed42设置下联合位置的AP收益有事件区间支持；native pairing、native粒度收益和工作点效率收益尚未显示一致支持。交互效应区间跨0，正式硬件下的完整配置与跨种子稳定性仍待预定矩阵。
+V100辅助已完成八项冻结配置，两族四格及其交互效应已实际评价，预先固定的NLL选模规则得到保留。ParT的1mm/seed42联合位置AP收益有事件区间支持；ParticleNet的native配对仅在固定common-support条件下有正区间支持。两族交互效应区间均跨0，正式硬件下的完整配置与跨种子稳定性仍待预定矩阵。
 
-正式执行已依据双家族整轮门槛切换H100；目前4项V100辅助训练与4项H100正式训练运行中。Kubeflow v6仍在等待GPU分配。上述辅助结果与统一H100结果分别保留，正式41+4比较读取H100目录。
+正式执行已依据双家族整轮门槛切换H100；V100仅剩1项辅助训练运行。Kubeflow v6仍在等待GPU分配。上述辅助结果与统一H100结果分别保留，正式41+4比较读取H100目录。
 
 ## 下一步计划
 
