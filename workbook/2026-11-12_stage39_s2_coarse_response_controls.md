@@ -1,4 +1,4 @@
-# 阶段 39：S2 ParT 粗格 multiplicity 控制
+# 阶段 39：S2 ParT 粗格 multiplicity 与网格原点控制
 
 ParT 1mm OR 控制已完整结束，14项输出读回全部通过。count−OR 的 τ ΔAP=−0.00003083，pointwise 95%事件区间=[−0.00529256,+0.00474363]；固定common-support为+0.00253247，区间=[−0.00249439,+0.00724162]。当前seed42、模型和四轮预算下，未观察到保留multiplicity的正收益，区间上界低于预定+0.01。此结果不等于multiplicity没有分类信息，也不构成跨种子的等效结论。S2其余控制和确认继续执行。
 
@@ -81,3 +81,33 @@ python -m analysis.flavour.s2.evaluate --root "$S2_RESULTS/h100" \
 ## 下一步计划
 
 完成ParT平移及后续控制，逐项读回并更新配对；完成剩余22项科学配置及41项单seed配对、4项三种子均值。实际结果、资源和物理解释齐备后执行无`--allow-incomplete`的严格评价，再验收S2。calibration/test保留至S6，不进入S3–S6。
+
+## 补充：ParT 半格平移完成
+
+`1573782.11`正常结束，JobStatus=4、ExitCode=0、NumJobStarts=1，原节点`b9pgpun001.cern.ch`；07:06:07 UTC的14项读回全部pass。原点在两个横向坐标各平移0.5 mm，仍用1mm count表示；它改变cell分配和粗格中心，后续4mm局部分块也从改变后的中心计算，因而是整个当前表示对原点的敏感性控制。训练/验证集合、seed42、20,016 steps/epoch、四轮、151,228 parameters、H100/BF16均与主模型一致，80,064 applied、0 skips、320,164 exposures，NLL选epoch4。
+
+| Epoch | Shift NLL | Tau AP | Cumulative program wall [s] |
+| --- | ---: | ---: | ---: |
+| 1 | 1.33265860 | 0.29312442 | 1,453.82434 |
+| 2 | 1.28265792 | 0.32966793 | 2,933.12753 |
+| 3 | 1.25045882 | 0.35366070 | 4,372.96805 |
+| 4 | 1.21677041 | 0.35566398 | 5,815.90250 |
+
+Shift的τ AP=0.35566398、固定common-support AP=0.32141340、τ AUC=0.63382659、balanced accuracy=0.42230、macro F1=0.42380322、Brier=0.65983713。四类e/μ/τ/NC AP=0.60649926/0.47177288/0.35566398/0.42743996，argmax recall=0.4852/0.3136/0.5440/0.3464。NLL和这些总体指标点估计优于reference-origin count，但非τ差值CI未测量，不能仅以τ稳定推断所有分类输出稳定。
+
+400次、同128 blocks的pointwise配对区间，方向为reference origin−shift：
+
+| Metric | Difference [95% event CI] |
+| --- | --- |
+| Raw tau AP | −0.00063541 [−0.00587022,+0.00528142] |
+| Fixed common-support tau AP | −0.00055234 [−0.00760615,+0.00632436] |
+| Tau ROC AUC | −0.00198901 [−0.00642941,+0.00356352] |
+| Tau efficiency at 1% FPR | +0.00200000 [−0.00553201,+0.00880512] |
+
+Raw/common-support τ AP区间均跨0且两端位于±0.01内。这约束了当前两次已训练模型的事件差异，不证明跨种子/其他网格原点稳定，也不构成总体等效检验。1% FPR下shift阈值=0.47906652，通过83个τ/75个背景；reference通过88/75。Shift的0.1% FPR通过15个τ/7个背景，尾部统计不足。τ electron/muon/hadronic在inclusive 1%下通过9/4/70个；分支及域内差值CI未测量。Pixel-centered域AP=0.33175445，large-scintillator域AP=0.38435797，空输入与tracker-only域仍只有prior型输出。
+
+Shift程序wall=5,816.62953 s，实际allocation=5,824 s=1.61777778 GPUh，额外7.37047 s，peak=1,545.10254 MiB。同allocation预算5,823.27298 s内shift选epoch4，reference选epoch3（余347.04366 s），reference−shift ΔAP=−0.00155390；仅整轮点估计、无CI。
+
+评价commit=`5f44e21`，正常退出：18 results（4 references+14科学模型）、484行分域、54个历史三类诊断、20 paired/25 pending、2 factorial。`part_grid_origin_comparison.json`保存本次训练/读回/配对/分域/核算快照；`part_grid_origin_paired_review.png`及`evaluation_final/part_1mm_shift_diagnostic_review.png`已实际查看。复现命令同上，读回experiment改为`part_1mm_shift_s42_e4_v2`；日志为`readback_part_1mm_shift.log`、`accounting_part_1mm_shift.log`、`evaluation_part_1mm_shift.log`。
+
+07:07:06 UTC组织累计63.75366560 GPUh，H100视图27.51533227 GPUh，missing=0；正式14 complete、6 running、15 idle，ParticleNet fixed-graph已接续启动。Kubeflow v7仍Pending、无node。接下来完成余下21项科学配置；ParT两项粗格控制未提供τ正收益支持，局部关联/跨层/模态/训练域/多种子仍按冻结合同继续，最终仍需无`--allow-incomplete`的严格评价。
