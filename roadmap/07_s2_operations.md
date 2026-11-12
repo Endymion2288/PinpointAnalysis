@@ -148,16 +148,18 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Pixel / bar / pixel+bar / +tracker | PN四项均完整，双向增量见阶段42–44；+tracker改善四分类点估计，τ AP的raw/common差值区间跨0且上界低于+0.01，见阶段45 |
 | No-pair / fixed-graph / local-shuffle | 全部四项均完整、14项读回pass；两族shuffle和ParT no-pair见阶段41，PN dynamic−fixed的raw/common AP区间跨0，资源及评价见阶段42 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
-| Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
+| Full / centered / large evaluation and training domains | Large-only已完成，full−large的全域/固定支持AP区间为正，条件学习曲线显示区域内改善与全域选点不一致；见阶段46。中心训练域仍运行 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
 | Toys / priors / τ branches | toy、B0、E/vertex支持及已完成模型的τ分支均有结果；90k target计数见阶段43，阶段45已刷新27个结果的189个Z条件组。完整物理解释继续随控制结果更新 |
-| Paired CI / interaction / matched time | 29项预定配对、2组交互及同allocation整轮比较已完成；其余16项配对/种子均值等待控制和确认结果 |
+| Paired CI / interaction / matched time | 30项预定配对、2组交互及同allocation整轮比较已完成；其余15项配对/种子均值等待控制和确认结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
 
 ## 最新关联控制与输出清单
+
+阶段46完成large-only控制，14项读回pass，24项科学输出进入主评价：28 results、754行分域、84个历史三类条件表、30 paired/15 pending。Full−large训练的全域τ ΔAP=+0.03136247、pointwise CI=[+0.02176243,+0.04088759]；固定E/vertex为+0.01862325、CI=[+0.00830622,+0.02916431]。冻结选点下large区域配对也为正，但large-only自身域NLL持续改善、全域NLL恶化，全域选epoch1与自身域的posthoc epoch4不同。新`analysis.flavour.s2.domain_curves`量化这一差异，不替代主选点；独立样本量/重复次数、尾部与解释范围见[阶段46](../workbook/2026-11-12_stage46_s2_large_training_domain.md)。`large_training_comparison.json`保存快照。09:59:25 UTC组织累计80.65506215 GPUh、missing=0。额外ParT native种子随后完成，先实际读回，再纳入后续评价；S2严格gate仍为false。
 
 阶段45补齐PN +tracker，14项读回pass、23/35科学输出完整。27 results、727行分域、81张历史三类条件表、29 paired/16 pending、2 factorial、0 seed means。+Tracker的四类balanced accuracy点估计0.3974→0.4367，τ AP差=−0.00424866、pointwise CI=[−0.01307753,+0.00369210]；固定E/vertex差=−0.00282447、CI=[−0.01101520,+0.00480946]。两者可排除至少+0.01的当前模型收益，不能判等效。输入空事件440→282，四类/分支/条件域与实际成本见[阶段45](../workbook/2026-11-12_stage45_s2_tracker_increment.md)。`tracker_comparison.json`保存独立快照；09:34:40 UTC组织累计78.59287089 GPUh、missing=0。训练域、额外种子和plane-only继续，严格gate仍为false。
 
@@ -181,7 +183,7 @@ python -m analysis.flavour.s2.output_inventory --root "$S2_RESULTS/h100" \
 
 ## CERN Kubeflow 文档核对
 
-09:46–09:47 UTC再次查询既有v7 Job/Pod时，OIDC凭据要求交互式重新登录，非交互stdin返回EOF；复查结果一致。此时无法观测Kubeflow当前调度状态，不能把客户端认证失败当作Job终止；不重提既有请求。需要用户按下述CERN命令行文档更新登录，Condor任务继续。精简记录为`h100/kubeflow/client_auth_expired.json`，不保存OAuth授权URL。
+09:56:39 UTC用户通知重新登录后，已实际查询确认访问恢复；既有v7 Job UID未变，Pod仍Pending且无node，继续原请求。精简快照为`h100/kubeflow/client_login_restored.json`。此前09:46–09:47 UTC的OIDC凭据过期曾使非交互查询失败，已解决；历史失败保留在`client_auth_expired.json`，未据客户端失败终止或替换Job。
 
 根据用户提供的[命令行入门](https://ml.docs.cern.ch/getting-started/#command-line_1)，并核对[GPU flavors](https://ml.docs.cern.ch/#available-flavors)与[单节点训练](https://ml.docs.cern.ch/ml/training/)，单GPU训练可直接创建`batch/v1 Job`。整卡H100 94GB为`nvidia.com/gpu: 1`、`nodeSelector: {nvidia.com/gpu.product: NVIDIA-H100-NVL}`；入门页的`nvidia.com/mig-3g.47gb`示例是47GB分区资源，与本S2整卡预算分开。后续科学Job使用`--gpu-product NVIDIA-H100-NVL`；执行前仍由已有runtime检查确认GPU/Torch/BF16。
 
