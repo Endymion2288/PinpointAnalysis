@@ -152,17 +152,27 @@ def plot_curves(frame, output):
     from matplotlib.backends.backend_pdf import PdfPages
     with PdfPages(output / 'four_class_domain_curves.pdf') as pdf:
         for domain, part in frame.groupby('domain', sort=False):
-            fig, axes = plt.subplots(2, 4, figsize=(15, 7), constrained_layout=True)
-            for c, label in enumerate(CLASSES):
-                for name, values in part[part['class'].eq(c)].groupby('experiment', sort=False):
-                    for row, curve in enumerate(['ROC', 'PR']):
-                        v = values[values.curve.eq(curve)]
-                        axes[row, c].plot(v.x, v.y, label=name, linewidth=1)
-                axes[0, c].set(title=label, xlabel='Background acceptance', ylabel='Class efficiency', xscale='symlog', xlim=(0, 1))
-                axes[1, c].set(xlabel='Class recall', ylabel='Precision', ylim=(0, 1))
-            axes[1, 0].legend(fontsize=5)
-            fig.suptitle(f'{domain}: validation domain priors; full-domain NLL-selected checkpoints', fontsize=10)
-            pdf.savefig(fig); plt.close(fig)
+            names = list(part.experiment.unique())
+            for start in range(0, len(names), 8):
+                page = names[start:start + 8]
+                fig, axes = plt.subplots(2, 4, figsize=(15, 9))
+                fig.subplots_adjust(bottom=.24, top=.91, hspace=.3, wspace=.3)
+                for c, label in enumerate(CLASSES):
+                    for index, name in enumerate(page):
+                        values = part[part['class'].eq(c) & part.experiment.eq(name)]
+                        for row, curve in enumerate(['ROC', 'PR']):
+                            v = values[values.curve.eq(curve)]
+                            axes[row, c].plot(v.x, v.y, label=name, color=f'C{index}', linewidth=1)
+                    axes[0, c].set(title=label, xlabel='Background acceptance', ylabel='Class efficiency',
+                                   xlim=(0, 1), ylim=(0, 1))
+                    axes[0, c].set_xscale('symlog', linthresh=.001, linscale=.5)
+                    axes[1, c].set(xlabel='Class recall', ylabel='Precision', xlim=(0, 1), ylim=(0, 1))
+                handles, labels = axes[0, 0].get_legend_handles_labels()
+                fig.legend(handles, labels, loc='lower center', ncol=2, fontsize=8,
+                           bbox_to_anchor=(.5, .01))
+                fig.suptitle(f'{domain}: validation domain priors; full-domain NLL-selected checkpoints\n'
+                             f'Models {start + 1}–{start + len(page)} of {len(names)}', fontsize=11)
+                pdf.savefig(fig); plt.close(fig)
 
 
 if __name__ == '__main__':
