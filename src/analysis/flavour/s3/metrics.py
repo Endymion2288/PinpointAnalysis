@@ -13,6 +13,18 @@ NAMES = ('macro_AP', 'macro_AUROC', 'macro_F1', 'balanced_accuracy', 'NLL', 'Bri
     for name in ('AP', 'AUROC', 'precision', 'recall', 'F1', 'eff_at_0.01_FPR', 'eff_at_0.001_FPR'))
 
 
+def prediction_diagnostics(probabilities):
+    """Describe published scores without changing their exact ties."""
+    p = np.asarray(probabilities, dtype=np.float64)
+    unique = len(np.unique(p, axis=0))
+    return {'events': len(p), 'unique_probability_vectors': unique,
+            'all_events_same_probability_vector': unique == 1,
+            'mean_probability': p.mean(0).tolist(), 'probability_std': p.std(0).tolist(),
+            'probability_min': p.min(0).tolist(), 'probability_max': p.max(0).tolist(),
+            'argmax_class_counts': np.bincount(p.argmax(1), minlength=4).tolist(),
+            'scope': 'raw published probabilities; distinct-vector count alone is not a causal diagnosis'}
+
+
 class MetricCache:
     def __init__(self, labels, probabilities):
         self.y = np.asarray(labels, dtype=np.int64)

@@ -12,7 +12,7 @@ import pandas as pd
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s2.evaluate import (common_support_weights, error_groups,
     input_response_activity, resource_metrics, tau_metrics, tau_branch_metrics)
-from analysis.flavour.s3.metrics import MetricCache, NAMES, bootstrap_weights, interval_report
+from analysis.flavour.s3.metrics import MetricCache, NAMES, bootstrap_weights, interval_report, prediction_diagnostics
 
 
 KEY = ['run', 'chunk', 'row']
@@ -153,6 +153,7 @@ def run(args):
         tau = tau_metrics(frame)
         experiments.append({'name': path.name, 'config': manifest['config'], 'source_root': str(source_root),
             'four_class': cache.report(), 'common_support_four_class': cache.report(fixed_weight), 'tau': tau,
+            'prediction_diagnostics': prediction_diagnostics(cache.p),
             'parameters': manifest['parameters'], 'GPU': manifest['gpu_name'],
             'peak_gpu_mib': manifest.get('peak_gpu_allocated_mib'), **resource})
         for domain, mask in domains(frame, manifest['config'], manifest.get('hardware_model', True)).items():
