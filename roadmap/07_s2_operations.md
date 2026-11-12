@@ -107,6 +107,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 02:37 UTC，原节点恢复 `1573790.0` 因 GPU 被其他任务占用而无法匹配，已在 0 starts/0 allocation 时移除。projection 原尝试已完整归档至 `h100/recovery_projection/original_training_attempt/`；正式同名目录等待冻结 task1 替换 `1573791.0`，使用输出修复 `d9a5d77`，JobPrio=30。替换依据是两副本文件不完整，原 5,618 s 与新尝试成本共同保留。正式已完整模型数为 2，先前 7-result 评价的 projection 数值属于归档原尝试；替换完成后更新有效主表，见阶段31补充。
 
+02:55 UTC，正式 ParT 1 mm joint（`1573782.1`）exit0，14 项 CPU 读回通过，40k 行表与原节点同步副本逐值相同。τ AP=0.35502857；native−1 mm joint ΔAP=+0.00355534，CI95=[−0.00186106,+0.00868839]，fixed-common ΔAP=+0.00297513，CI=[−0.00192093,+0.00846325]。当前 seed42/四轮/表示条件下可排除至少 +0.01 的 AP 收益，跨种子与机制待控制。正式有效部分评价为 7 个结果、4 项配对/41 项 pending，原归档 projection 不进入当前主表；详见[阶段 32](../workbook/2026-11-12_stage32_s2_joint_resolution.md)。当前正式 3 complete、2 running、30 idle。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
