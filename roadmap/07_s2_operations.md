@@ -145,19 +145,21 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
 | 100/200 μm curves | 两族完整四点曲线及相邻粒度配对完成（阶段37–38），十二项空间输出全部14项readback pass |
 | OR/count, grid shift | 两族四项控制均完整，raw/common-support的τ AP差值区间均跨0且上界低于+0.01；工作点CI和限制见阶段39 |
-| Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
-| No-pair / fixed-graph / local-shuffle | 两族平面内y置换和ParT no-pair均完整、14项读回pass，25项配对评价见阶段41；PN fixed-graph随后完成，待下一批评价 |
+| Pixel / bar / pixel+bar / +tracker | PN pixel-only与pixel+bar完整；bar增量raw/common AP及1% FPR效率差均支持正收益，见阶段42。bar-only/+tracker仍运行 |
+| No-pair / fixed-graph / local-shuffle | 全部四项均完整、14项读回pass；两族shuffle和ParT no-pair见阶段41，PN dynamic−fixed的raw/common AP区间跨0，资源及评价见阶段42 |
 | Explicit cross-plane messages | CPU 与专用 H100/BF16 smoke 通过；原V100 idle已移除，H100正式任务 `1573782.31/32` 已提交，配对待结果 |
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
-| Paired CI / interaction / matched time | 25项预定配对、2组交互及同allocation整轮比较已完成；其余20项配对/种子均值等待控制和确认结果 |
+| Paired CI / interaction / matched time | 27项预定配对、2组交互及同allocation整轮比较已完成；其余18项配对/种子均值等待控制和确认结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
 
 ## 最新关联控制与输出清单
+
+08:35 UTC输出清单已确认21/35科学模型完整，全部14项读回pass且进入评价；6 running、8尚未启动。阶段42新增25 results（4 references+21科学模型）、673行分域、27 paired/18 pending。PN pixel+bar−pixel-only τ ΔAP=+0.06890803，pointwise CI=[+0.05663332,+0.08443211]；固定common support为+0.04851078，CI=[+0.03602058,+0.06154046]。1% FPR效率从31/2,500升至83/2,500，差值CI=[+0.01034517,+0.03158505]。Dynamic−fixed的raw/common AP区间均跨0，fixed allocation减少24.06%。分域、四类混淆、资源和限制见[阶段42](../workbook/2026-11-12_stage42_s2_fixed_graph_bar_increment.md)，独立快照`graph_pixel_comparison.json`。08:29:35 UTC组织累计72.13702406 GPUh、missing=0；严格输出gate仍为false。
 
 2026-11-12阶段41合并评价：23 results（4 references+19科学模型）、619行分域、25 paired/20 pending、2 factorial、0 seed means。ParT main−shuffle τ ΔAP=+0.00847852，pointwise CI=[+0.00281484,+0.01296334]；固定common support为+0.00794723，CI=[+0.00257296,+0.01269657]。PN同项AP及ParT main−no-pair的raw/common区间跨0，1% FPR效率差的三项区间也均跨0。No-pair参数减少2,520且显存/wall下降，不能只按τ AP判断取舍；详细指标和解释范围见[阶段41](../workbook/2026-11-12_stage41_s2_association_structure_controls.md)。
 
