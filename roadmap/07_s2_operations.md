@@ -101,6 +101,8 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
   --evaluation-tag evaluation_final --experiment pn_native_joint_s42_e4_v2
 ```
 
+02:08 UTC，第二个正式 H100 模型 ParT native joint（`1573760.0`）exit0，四轮完成、12 项 checkpoint/概率读回通过。τ AP=0.35858；ParT−B0 raw ΔAP=+0.01387，CI95=[+0.00152,+0.02523]，fixed-common ΔAP=+0.01539，CI=[+0.00636,+0.02482]。ParT−ParticleNet raw ΔAP=+0.00348，CI=[−0.00369,+0.01036]，架构优劣尚未确定。正式部分评价为 6 个结果、3 项配对/42 项 pending。两族正式 native 的 20 页错误事件图均完成并实际查看固定混淆页；阶段证据见[阶段 30](../workbook/2026-11-12_stage30_s2_native_h100_comparison.md)。正式队列为 2 complete、4 running、29 idle，S2 尚未完成。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
@@ -117,7 +119,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
 | Paired CI / interaction / matched time | 程序已有，reference CI 已完成；空间主表待运行 |
-| Resource / error groups | GPU 曲线与 B0 原生显示完成；深度模型结果待补 |
+| Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
 calibration/test 始终保留至 S6。统计不足时报告区间和可排除的收益范围，不用“不显著”直接判为等效。用户接受的 sample/proxy 决定已固定，后续实验直接使用。
