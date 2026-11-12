@@ -117,13 +117,15 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 
 04:26 UTC，ParticleNet 1mm projection（`1573782.7`）exit0、14项读回全部pass。双投影native−1mm的τ ΔAP=−0.00302942，pointwise CI=[−0.01277175,+0.00658906]，固定common-support区间也跨0且上界低于+0.01。当前11 results、9 paired/36 pending，7个正式模型完整；组织累计53.11281 GPUh、missing=0。完整结果、分支与同allocation比较见[阶段33补充](../workbook/2026-11-12_stage33_s2_projection_comparisons.md)。
 
+04:44 UTC，ParticleNet 1mm joint（`1573782.6`）exit0、14项读回全部pass，两族正式八模型四格齐全。PN native−1mm joint τ ΔAP=+0.00206870，pointwise CI=[−0.00485307,+0.00996035]；1mm pairing为+0.00202755，CI=[−0.00647042,+0.00934805]；PN交互=+0.00509813，CI=[−0.00510744,+0.01683727]。1mm ParT−PN区间也跨0；同allocation整轮点估计与固定四轮排序不同，详见[阶段36](../workbook/2026-11-12_stage36_s2_both_factorials.md)。当前12 results、12 paired/33 pending、2 factorial；8 complete、4 running、23 idle，组织累计54.57364 GPUh、missing=0。Kubeflow仍待GPU，无科学任务迁移。
+
 ## S2 科学验收清单
 
 | Requirement | Current evidence / remaining work |
 | --- | --- |
 | Shared subset / complete input / empty events | 完成，阶段 08–09 |
 | ParticleNet / ParT execution | CPU/GPU smoke 和完整压力测量完成，阶段 11–13 |
-| Both families native/1mm × joint/projection | 正式ParT四格与交互已完成（阶段35），ParticleNet剩余1mm成员正在运行 |
+| Both families native/1mm × joint/projection | 两族正式八模型四格与交互已完成，14项读回全部pass；新增区间与同allocation比较见阶段36 |
 | 100/200 μm curves | 两族均已冻结，待训练及 paired evaluation |
 | OR/count, grid shift | 待科学对照 |
 | Pixel / bar / pixel+bar / +tracker | B0 reference 已有；深度模型消融待完成 |
@@ -132,7 +134,7 @@ python -m analysis.flavour.s2.submit display --root "$S2_RESULTS/h100" \
 | Full / centered / large evaluation and training domains | 分域评价已在 B0 运行；深度训练域控制待完成 |
 | Three seeds for retained architectures and coarse inputs | 两族 native/1mm joint 的 17/42/2026 已冻结，统一H100的35项已全部提交，待实际结果 |
 | Toys / priors / τ branches | toy 与 B0 诊断完成；深度模型物理解释待结果 |
-| Paired CI / interaction / matched time | 程序已有，reference CI 已完成；空间主表待运行 |
+| Paired CI / interaction / matched time | 两族四格的12项预定配对、2组交互及同allocation整轮比较已完成；其余33项配对/种子均值等待结果 |
 | Resource / error groups | 两个正式 native 模型的资源、两族 20 页原生显示及固定混淆页实际审阅完成（阶段 29–30）；其余配置资源待补 |
 | Scientific stage report and gate decision | 尚未完成，不把 smoke/reference 当作 S2 整体验收 |
 
