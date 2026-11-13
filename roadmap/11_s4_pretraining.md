@@ -60,3 +60,18 @@ S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译
 完整路径及v6结果见[stage129](../workbook/2026-11-13_stage129_s4_global_path_and_100k_validation.md)。MAE3 seed42在1k/10k下global置换的NLL增量为0.051899/0.035174，95%区间均为正；local/regional仍有可测作用。100k的macro AP配对增量0.003371，区间跨零；common-support tau AP增量也未确认，不能把低标签收益或global利用直接推广为kinematics-independent tau改进。全部比较仍为固定validation，calibration/test冻结，矩阵未完成。
 
 三seed低标签结果见[stage133](../workbook/2026-11-13_stage133_s4_three_seed_low_label_results.md)。1k时MAE3−Scratch的macro AP均值增量0.057021，物理块CI95=[0.052512,0.061955]；hadronic τ AP在既定common-support诊断中增加0.017168，[0.006759,0.026996]。同时raw τ argmax F1下降0.050129，平均NLL1.450039仍高于ln4，1%FPR效率区间跨零。该结果支持低标签排序收益，过拟合与硬决策问题保留为后续针对性优化依据；不据此直接扩1M。
+
+## 6. 由实测结果驱动的后续优化
+
+v8三个独立seeds的10k macro AP增量为0.014604，[0.010073,0.019366]，τ AP区间跨零；global frozen probe在三种标签预算均有正收益。优先保留可读的预训练表示，区分表示信息和分类readout/优化问题。以下属于下一轮预先冻结的扩展，未执行，不替换当前S4主矩阵。
+
+| 实测问题 | 待比较的改动 | 控制与选择 |
+| --- | --- | --- |
+| 1k最佳NLL均为第一轮，随后过拟合 | 降低重复曝光次数、增加早期checkpoint时间点；分别降低encoder学习率与加强readout正则 | 同设置Scratch/MAE，不只调MAE；记录每个唯一事件的曝光和实际updates |
+| Global frozen可读，但full fine-tuning概率仍差 | 先固定encoder拟合readout，再解冻的LP-FT；与单纯降低encoder学习率分别比较 | readout适配须覆盖相同summary/branch normalization定义，不能直接把sklearn标准化线性系数塞入不同Head |
+| AP与τ argmax F1方向不同 | train-inner选择正则与决策规则，分别检查NLL、Brier、各类confusion和低FPR计数 | 不在现有validation上拟合class bias或温度；S6最终校准继续冻结 |
+| Rel相对MAE5在1k τ AP下降 | 检查冻结/解冻后的语义信息与事件分类冲突；仅在净收益候选上增加独立预训练seeds | 模拟语义监督和计算成本单列，保留MAE continuation对照 |
+
+下一轮的超参数选择只用原nested-label子集内的固定分层train-inner folds，选择过程使用的标签仍计入同一1k/10k预算；按最终选择重新拟合全部该预算事件。验证集仅作冻结协议的后续评价，不能把多次查看validation描述成新的独立证据。追加方案要记录已观察S4结果后设计，沿用同一validation的区间也条件于这一步设计，不使用calibration/test。
+
+2026-11-13 23:18 UTC重新联网读取[Kumar等，ICLR 2022 LP-FT](https://arxiv.org/abs/2202.10054)及[Wortsman等，CVPR 2022 WiSE-FT](https://openaccess.thecvf.com/content/CVPR2022/html/Wortsman_Robust_Fine-Tuning_of_Zero-Shot_Models_CVPR_2022_paper.html)，源文件与URL记录位于输出根`literature/low_label_transfer_sources.json`。LP-FT给出随机Head与encoder同时更新可能扰动预训练特征的可检验假设；其论文主要研究OOD，当前数据尚未证明这种病因。WiSE-FT依赖可用的zero-shot分类模型，当前没有对应分类Head，暂不直接采用权重插值。前述CVPR 2025 Sonata/NOMAE和FASERCal仍为主要预训练依据。
