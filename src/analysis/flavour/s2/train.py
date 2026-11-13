@@ -207,6 +207,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         amp_skipped_steps=state.get('amp_skipped_steps',0)
         random.setstate(state['random_state'])
         health_records=state.get('health_records',[])
+        if health is not None and health_records:
+            health.dead_samples=health_records[-1]['consecutive_exact_zero_encoder_gradient_samples']
         np.random.set_state(state['numpy_state'])
         torch.set_rng_state(state['torch_state'].cpu())
         if device.type=='cuda':
@@ -242,7 +244,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
             optimizer.zero_grad(set_to_none=True)
             diagnostic=health is not None and (optimizer_steps%config.get('health_every_steps',100)==0)
             if diagnostic:
-                health.start()
+                health.start(batch)
             t=time.perf_counter()
             with torch.autocast(device_type=device.type,dtype=dtype,enabled=device.type=='cuda'):
                 logits=model(batch)

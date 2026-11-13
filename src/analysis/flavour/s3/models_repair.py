@@ -50,6 +50,18 @@ class StableAttention(nn.Module):
         if self.pair is not None and relations is not None:
             bias = self.pair(relations).permute(0, 3, 1, 2).to(q.dtype)
         bias = bias.masked_fill(~mask[:, None, None, :], float('-inf'))
+        if getattr(self, 'record_health', False):
+            with torch.no_grad():
+                # This explicitly labelled probe conditions on at most the
+                # first 128 keys; it does not claim full-event entropy.
+                keys = min(128, k.shape[2])
+                logits = (q[:1, :, :8].float() @ k[:1, :, :keys].float().transpose(-1, -2)) / width**.5
+                logits = logits + bias[:1, :, :8, :keys].float()
+                probability = logits.softmax(-1)
+                entropy = -(probability * probability.clamp_min(1e-30).log()).sum(-1).mean()
+                self.health_probe = {'key_count': keys, 'query_count': min(8, nq),
+                                     'conditional_entropy_nats': float(entropy),
+                                     'scope': 'first group, up to eight queries and 128 keys'}
         attended = F.scaled_dot_product_attention(q, k, v, attn_mask=bias)
         attended = attended.transpose(1, 2).reshape(b, nq, dim)
         x = x + self.attention_scale * self.attention_norm(self.out(attended))

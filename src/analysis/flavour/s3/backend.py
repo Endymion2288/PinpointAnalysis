@@ -76,7 +76,7 @@ def prepare(args):
     admitted = json.loads(kubectl('create', '--dry-run=server', '-f', str(pod_path), '-o', 'json'))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'backend': 'kubeflow', 'context': kubectl('config', 'current-context').strip(),
                 'namespace': 'xcheng', 'job': args.name, 'container_name': 's3',
-                'stage': ('repair_pilot' if args.program == 'pilot_repair' else 'train') if args.task is not None or args.tasks else 'dispatch' if args.dispatch else 'probe',
+                'stage': ({'pilot_repair': 'repair_pilot', 'profile': 'repair_profile'}.get(args.program, 'train')) if args.task is not None or args.tasks else 'dispatch' if args.dispatch else 'probe',
                 'experiment': experiment, 'task': args.task, 'root': str(root), 'submitted': False,
                 'parallel_experiments': [campaign['experiments'][t]['name'] for t in args.tasks] if args.tasks else [],
                 'gpu_flavor': {'name': args.flavor, 'product': product, 'resource': resource, 'count': 1},
@@ -95,7 +95,7 @@ def main():
     parser.add_argument('--name', required=True)
     parser.add_argument('--flavor', choices=GPU_FLAVORS, default='h100-94gb')
     parser.add_argument('--campaign', type=Path)
-    parser.add_argument('--program', choices=['train', 'train_repair', 'pilot_repair'], default='train')
+    parser.add_argument('--program', choices=['train', 'train_repair', 'pilot_repair', 'profile'], default='train')
     parser.add_argument('--task', type=int)
     parser.add_argument('--tasks', type=int, nargs='+')
     parser.add_argument('--concurrency', type=int, default=4)

@@ -1,0 +1,78 @@
+{
+  "stage": "S3_revision2",
+  "pairs": [
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_fixed_native_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_fixed_1mm_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_1mm_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_tracker_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_nodirect_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_region8_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_fixed_native_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "fixed queries versus multiscale and direct local route"
+    },
+    {
+      "a": "s3r_fixed_1mm_s42_e4",
+      "b": "s3r_multiscale_1mm_s42_e4",
+      "question": "coarse fixed versus coarse multiscale"
+    },
+    {
+      "a": "s3r_multiscale_1mm_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "multiscale native minus 1 mm"
+    },
+    {
+      "a": "s3r_fixed_1mm_s42_e4",
+      "b": "s3r_fixed_native_s42_e4",
+      "question": "fixed native minus 1 mm"
+    },
+    {
+      "a": "s3r_multiscale_native_s42_e4",
+      "b": "s3r_multiscale_tracker_s42_e4",
+      "question": "accepted tracker increment"
+    },
+    {
+      "a": "s3r_multiscale_nodirect_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "independent all-local readout increment"
+    },
+    {
+      "a": "s3r_multiscale_native_s42_e4",
+      "b": "s3r_multiscale_region8_s42_e4",
+      "question": "regional compression blocks32 versus blocks8"
+    }
+  ],
+  "factorial_interactions": [],
+  "seed_mean_comparisons": [],
+  "legacy_S3_used_for_method_conclusions": false
+}

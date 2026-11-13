@@ -113,6 +113,24 @@ class S3RepairTests(unittest.TestCase):
         self.assertEqual(records[2]['activations']['head.1'][0]['zero_fraction'], 1.)
         self.assertEqual(records[2]['gradient_squared_norms']['input'], 0.)
 
+    def test_health_probes_and_empty_input_do_not_report_disconnection(self):
+        model = self.model()
+        health = TrainingHealth(model)
+        for step, size in enumerate([0, 0, 0, 31], 1):
+            model.zero_grad(set_to_none=True)
+            batch = collate_planes([self.item(size)])
+            health.start(batch)
+            logits = model(batch)
+            torch.nn.functional.cross_entropy(logits, batch['label']).backward()
+            record = health.finish(logits, step)
+            self.assertTrue(record['healthy'])
+            self.assertEqual(record['consecutive_exact_zero_encoder_gradient_samples'], 0)
+            self.assertEqual(record['informative_nodes'], size)
+            self.assertIn('module_read', record['query_diversity'])
+            self.assertTrue(all(np.isfinite(v['conditional_entropy_nats'])
+                                for v in record['sampled_attention'].values()))
+        health.close()
+
 
 if __name__ == '__main__':
     unittest.main()

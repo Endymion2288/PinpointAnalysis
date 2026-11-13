@@ -1,0 +1,232 @@
+{
+  "stage": "S3_revision2",
+  "pairs": [
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_fixed_native_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_fixed_1mm_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_1mm_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_tracker_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_nodirect_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_part_reference_s42_e4",
+      "b": "s3r_multiscale_region8_s42_e4",
+      "question": "same-recipe ParT versus repaired candidate, complete four classes"
+    },
+    {
+      "a": "s3r_fixed_native_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "fixed queries versus multiscale and direct local route"
+    },
+    {
+      "a": "s3r_fixed_1mm_s42_e4",
+      "b": "s3r_multiscale_1mm_s42_e4",
+      "question": "coarse fixed versus coarse multiscale"
+    },
+    {
+      "a": "s3r_multiscale_1mm_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "multiscale native minus 1 mm"
+    },
+    {
+      "a": "s3r_fixed_1mm_s42_e4",
+      "b": "s3r_fixed_native_s42_e4",
+      "question": "fixed native minus 1 mm"
+    },
+    {
+      "a": "s3r_multiscale_native_s42_e4",
+      "b": "s3r_multiscale_tracker_s42_e4",
+      "question": "accepted tracker increment"
+    },
+    {
+      "a": "s3r_multiscale_nodirect_s42_e4",
+      "b": "s3r_multiscale_native_s42_e4",
+      "question": "independent all-local readout increment"
+    },
+    {
+      "a": "s3r_multiscale_native_s42_e4",
+      "b": "s3r_multiscale_region8_s42_e4",
+      "question": "regional compression blocks32 versus blocks8"
+    }
+  ],
+  "factorial_interactions": [],
+  "seed_mean_comparisons": [
+    {
+      "name": "s3r_fixed_native_s42_e4_minus_fresh_ParT_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_part_reference_s17_e4",
+          "b": "s3r_fixed_native_s17_e4"
+        },
+        {
+          "a": "s3r_part_reference_s42_e4",
+          "b": "s3r_fixed_native_s42_e4"
+        },
+        {
+          "a": "s3r_part_reference_s2026_e4",
+          "b": "s3r_fixed_native_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "s3r_multiscale_native_s42_e4_minus_fresh_ParT_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_part_reference_s17_e4",
+          "b": "s3r_multiscale_native_s17_e4"
+        },
+        {
+          "a": "s3r_part_reference_s42_e4",
+          "b": "s3r_multiscale_native_s42_e4"
+        },
+        {
+          "a": "s3r_part_reference_s2026_e4",
+          "b": "s3r_multiscale_native_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "s3r_multiscale_1mm_s42_e4_minus_fresh_ParT_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_part_reference_s17_e4",
+          "b": "s3r_multiscale_1mm_s17_e4"
+        },
+        {
+          "a": "s3r_part_reference_s42_e4",
+          "b": "s3r_multiscale_1mm_s42_e4"
+        },
+        {
+          "a": "s3r_part_reference_s2026_e4",
+          "b": "s3r_multiscale_1mm_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "s3r_multiscale_tracker_s42_e4_minus_fresh_ParT_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_part_reference_s17_e4",
+          "b": "s3r_multiscale_tracker_s17_e4"
+        },
+        {
+          "a": "s3r_part_reference_s42_e4",
+          "b": "s3r_multiscale_tracker_s42_e4"
+        },
+        {
+          "a": "s3r_part_reference_s2026_e4",
+          "b": "s3r_multiscale_tracker_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "s3r_multiscale_region8_s42_e4_minus_fresh_ParT_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_part_reference_s17_e4",
+          "b": "s3r_multiscale_region8_s17_e4"
+        },
+        {
+          "a": "s3r_part_reference_s42_e4",
+          "b": "s3r_multiscale_region8_s42_e4"
+        },
+        {
+          "a": "s3r_part_reference_s2026_e4",
+          "b": "s3r_multiscale_region8_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "multiscale_native_minus_1mm_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_multiscale_1mm_s17_e4",
+          "b": "s3r_multiscale_native_s17_e4"
+        },
+        {
+          "a": "s3r_multiscale_1mm_s42_e4",
+          "b": "s3r_multiscale_native_s42_e4"
+        },
+        {
+          "a": "s3r_multiscale_1mm_s2026_e4",
+          "b": "s3r_multiscale_native_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "multiscale_minus_fixed_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_fixed_native_s17_e4",
+          "b": "s3r_multiscale_native_s17_e4"
+        },
+        {
+          "a": "s3r_fixed_native_s42_e4",
+          "b": "s3r_multiscale_native_s42_e4"
+        },
+        {
+          "a": "s3r_fixed_native_s2026_e4",
+          "b": "s3r_multiscale_native_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "tracker_increment_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_multiscale_native_s17_e4",
+          "b": "s3r_multiscale_tracker_s17_e4"
+        },
+        {
+          "a": "s3r_multiscale_native_s42_e4",
+          "b": "s3r_multiscale_tracker_s42_e4"
+        },
+        {
+          "a": "s3r_multiscale_native_s2026_e4",
+          "b": "s3r_multiscale_tracker_s2026_e4"
+        }
+      ]
+    },
+    {
+      "name": "region8_minus_region32_three_seed",
+      "pairs": [
+        {
+          "a": "s3r_multiscale_native_s17_e4",
+          "b": "s3r_multiscale_region8_s17_e4"
+        },
+        {
+          "a": "s3r_multiscale_native_s42_e4",
+          "b": "s3r_multiscale_region8_s42_e4"
+        },
+        {
+          "a": "s3r_multiscale_native_s2026_e4",
+          "b": "s3r_multiscale_region8_s2026_e4"
+        }
+      ]
+    }
+  ],
+  "legacy_S3_used_for_method_conclusions": false
+}

@@ -60,8 +60,15 @@ class TrainingTests(unittest.TestCase):
         self.assertEqual(sorted(sum(repeated[2:4],[])),list(range(4)))
 
     def test_resume_matches_uninterrupted_weights_and_predictions(self):
+        self.check_resume({})
+
+    def test_step_warmup_resume_matches_uninterrupted_run(self):
+        self.check_resume({'schedule':'warmup_cosine_steps','warmup_steps':1})
+
+    def check_resume(self, overrides):
         config={'name':'test','architecture':'part','dim':8,'pair_bias':False,
                 'epochs':2,'batch_size':4,'workers':0,'seed':42}
+        config.update(overrides)
         with tempfile.TemporaryDirectory() as temporary,patch.object(train,'SpatialDataset',TinySpatialDataset):
             base=Path(temporary)
             campaign=base/'campaign.json'
@@ -90,6 +97,7 @@ class TrainingTests(unittest.TestCase):
             train.run(args('resumed'))
             a=torch.load(full/'last.pt',weights_only=False)
             b=torch.load(resumed/'last.pt',weights_only=False)
+            self.assertEqual(a['scheduler'],b['scheduler'])
             for key,value in a['model'].items():
                 torch.testing.assert_close(value,b['model'][key],rtol=0,atol=0)
             pd.testing.assert_frame_equal(pd.read_parquet(full/'validation_predictions.parquet'),

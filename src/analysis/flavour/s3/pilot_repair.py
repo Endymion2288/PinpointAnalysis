@@ -76,7 +76,7 @@ def main():
         batch = {k: v.to(device) for k, v in batch.items()}
         optimizer.zero_grad(set_to_none=True)
         diagnostic = step % 64 == 0 or step == steps - 1
-        if diagnostic: health.start()
+        if diagnostic: health.start(batch)
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=bf16):
             logits = model(batch); loss = torch.nn.functional.cross_entropy(logits.float(), label)
         loss.backward()

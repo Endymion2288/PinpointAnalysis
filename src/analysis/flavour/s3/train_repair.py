@@ -12,6 +12,18 @@ from analysis.flavour.s3.models_repair import build_model
 from analysis.flavour.s3.pilot_repair import optimizer_for
 
 
+def architecture_metadata(config):
+    if config['architecture'] == 'part':
+        return {'normalization': 'original_ParT_PreLN_body_original_head_same_repair_optimizer_schedule',
+                'fusion_bottleneck': 'original_ParT_local_blocks_event_attention_mean_max',
+                'local_blocks': 'same_plane_4mm_then_canonical_chunks32_no_event_truncation'}
+    return {'normalization': 'fixed_physical_input_scales_PeriLN_LayerScale_QK_LN_independent_fusion_branches_FP32_head',
+            'fusion_bottleneck': ('adaptive_regions_plus_all_local_readout' if config.get('readout_skip') else
+                                  'adaptive_regions_without_direct_readout' if config.get('compression') == 'multiscale' else
+                                  'normalized_fixed_query_control'),
+            'local_blocks': 'same_module_16pixel_windows_then_canonical_chunks32_no_event_truncation'}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
@@ -35,8 +47,7 @@ def main():
         manifest_extra={'stage': 'S3_revision2', 'architecture_revision': 2,
                         'pilot_gate': str(gate_path), 'pilot_gate_passed': True,
                         'internal_health_required': True,
-                        'normalization': 'fixed_physical_input_scales_PeriLN_LayerScale_QK_LN_independent_fusion_branches_FP32_head',
-                        'fusion_bottleneck': 'adaptive_regions_plus_all_local_readout' if config.get('readout_skip') else 'normalized_fixed_query_control',
+                        **architecture_metadata(config),
                         'module_coordinate_relations': 'pixel_bar_z_tracker_station_metadata_not_physical_flight_distance',
                         'schema_whitelist': 'current_observation_18_features_Fourier_hardware_ID_counts_no_truth'})
 
