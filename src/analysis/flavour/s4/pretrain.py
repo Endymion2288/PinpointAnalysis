@@ -79,6 +79,7 @@ def internal_health(model,output,batch,step):
 def evaluate(model,loader,device,bf16,config):
     model.eval()
     rows,features,losses,counts,teacher,covered,permutation,student=[],[],[],[],[],[],[],[]
+    rel_probabilities,rel_targets=[],[]
     for batch in loader:
         batch=to_device(batch,device)
         with torch.autocast(device_type=device.type,dtype=torch.bfloat16,enabled=bf16):
@@ -101,6 +102,10 @@ def evaluate(model,loader,device,bf16,config):
         features.append(model.pool_global(output['features']).cpu())
         if 'teacher_projection' in output:teacher.append(output['teacher_projection'].cpu())
         if 'student_projection' in output:student.append(output['student_projection'].cpu())
+        if 'rel' in output:
+            selected=batch['rel_valid']
+            rel_probabilities.append(output['rel'][selected].float().softmax(-1).cpu())
+            rel_targets.append(batch['rel_target'][selected].float().cpu())
         prediction=output['reconstruction'].float().cpu().numpy()
         target=batch['reconstruction'].cpu().numpy()
         level=batch['query_level'].cpu().numpy();near=batch['query_near'].cpu().numpy()
@@ -134,6 +139,18 @@ def evaluate(model,loader,device,bf16,config):
         'scope':'original train partition inner reconstruction-probe; fixed seeds; mixture query risk, no downstream validation/test'}
     if teacher:report['teacher_features']=feature_statistics(torch.cat(teacher))
     if student:report['student_projection_features']=feature_statistics(torch.cat(student))
+    if rel_targets:
+        truth=torch.cat(rel_targets).numpy();probability=torch.cat(rel_probabilities).numpy()
+        prior=truth.mean(0)
+        cross_entropy=float(-(truth*np.log(np.maximum(probability,1e-12))).sum(1).mean())
+        constant=float(-(truth*np.log(np.maximum(prior,1e-12))).sum(1).mean())
+        report['bar_rel']={'valid_channels':len(truth),'target_fraction_mean':prior.tolist(),
+            'predicted_fraction_mean':probability.mean(0).tolist(),'cross_entropy':cross_entropy,
+            'constant_probe_prior_cross_entropy':constant,'excess_cross_entropy_over_constant':cross_entropy-constant,
+            'target_entropy':float(-(truth*np.log(np.maximum(truth,1e-12))).sum(1).mean()),
+            'fraction_RMSE':float(np.mean((truth-probability)**2)**.5),
+            'mixed_channels':int((np.count_nonzero(truth>0,axis=1)>1).sum()),
+            'constant_scope':'oracle constant fitted on this train-inner probe; descriptive lower bound for a fitted constant, not an independent predictor'}
     report['event_permutation_delta_BCE']={str(level):float(np.average([r['delta_BCE'] for r in permutation if r['level']==level],
         weights=[r['queries'] for r in permutation if r['level']==level])) for level in range(3)} if permutation else {}
     if covered:
@@ -172,6 +189,10 @@ def run(args):
     val_loader=DataLoader(Subset(validation,val_ids),batch_size=config.get('batch_size',16),**options)
     model=PretrainingModel(config).to(device)
     if config.get('initialize_pretraining'):
+        upstream=Path(config['initialize_pretraining']).parent
+        report=json.loads((upstream/'ssl_readback.json').read_text())
+        if not report['integrity_and_internal_health_pass'] or not report['measured_learning_pass']:
+            raise RuntimeError('continuation requires measured-learning readback of its parent')
         state=torch.load(config['initialize_pretraining'],map_location='cpu',weights_only=False)
         model.load_state_dict(state['model'],strict=True)
     optimizer=optimizer_for(model,config)
@@ -237,6 +258,7 @@ def run(args):
         score=measured['loss']['loss']
         record={'epoch':epoch+1,'optimizer_steps':steps,'train_loss':{k:v/seen for k,v in parts_sum.items()},
             'train_exposures':seen,'train_seconds':train_seconds,'events_per_second':seen/train_seconds,
+            'data_wait_seconds':data_wait,'non_data_wait_training_seconds':train_seconds-data_wait,
             'inner_reconstruction_probe':measured,'wall_seconds':prior_seconds+time.perf_counter()-started}
         history.append(record)
         improved=score<best

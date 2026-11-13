@@ -24,7 +24,7 @@ from analysis.flavour.s3.dataset import collate_planes
 from analysis.flavour.s3.models_repair import PlaneModuleClassifierV2
 from analysis.flavour.s4.dataset import LabelDataset
 from analysis.flavour.s4.pretrain import feature_statistics
-from analysis.flavour.s4.train import build_model
+from analysis.flavour.s4.train import build_model,validate_pretraining
 
 
 @torch.no_grad()
@@ -58,6 +58,7 @@ def main():
     output=args.root/'experiments'/config['name'];output.mkdir(parents=True,exist_ok=True)
     started=time.perf_counter();torch.set_num_threads(1);pa.set_cpu_count(1);pa.set_io_thread_count(1)
     torch.manual_seed(config.get('seed',42));np.random.seed(config.get('seed',42))
+    validate_pretraining(config)
     model=build_model(config)
     if config.get('supervised_checkpoint'):
         state=torch.load(config['supervised_checkpoint'],map_location='cpu',weights_only=False)

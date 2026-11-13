@@ -19,6 +19,8 @@ from analysis.flavour.s4.models import PretrainingModel, objective_loss, varianc
 from analysis.flavour.s4.prepare import bar_contributions
 from analysis.flavour.s4.pretrain import evaluate,feature_statistics
 from analysis.flavour.s4.evaluate import evaluate as evaluate_classification
+from analysis.flavour.s4.train import build_model as build_downstream
+from analysis.flavour.s4.query_baseline import QueryOnly
 
 
 class S4Tests(unittest.TestCase):
@@ -109,6 +111,23 @@ class S4Tests(unittest.TestCase):
         clone=PlaneModuleClassifierV2(self.config).eval();clone.load_state_dict(model.state_dict(),strict=True)
         torch.testing.assert_close(clone(batch),expected,rtol=0,atol=0)
 
+    def test_downstream_import_keeps_encoder_and_resets_identical_heads(self):
+        pretrained=PretrainingModel(self.config)
+        with torch.no_grad():pretrained.encoder.input[0].weight.add_(1.)
+        with tempfile.TemporaryDirectory() as temporary:
+            checkpoint=Path(temporary)/'best.pt'
+            torch.save({'model':pretrained.state_dict()},checkpoint)
+            torch.manual_seed(123);scratch=build_downstream(self.config)
+            torch.manual_seed(123);initialized=build_downstream({**self.config,'pretrained_checkpoint':str(checkpoint)})
+            torch.testing.assert_close(initialized.input[0].weight,pretrained.encoder.input[0].weight,rtol=0,atol=0)
+            for prefix in ['head','linear_readout','head_input_norm','branch_norms','summary']:
+                for key,value in getattr(scratch,prefix).state_dict().items():
+                    torch.testing.assert_close(getattr(initialized,prefix).state_dict()[key],value,rtol=0,atol=0)
+            torch.save({'model':scratch.state_dict()},checkpoint)
+            resumed=build_downstream({**self.config,'supervised_initial_checkpoint':str(checkpoint)})
+            for key,value in scratch.state_dict().items():
+                torch.testing.assert_close(resumed.state_dict()[key],value,rtol=0,atol=0)
+
     def test_ema_no_teacher_gradients_and_variance_opposes_constant(self):
         config={**self.config,'objective':'distill'}
         model=PretrainingModel(config)
@@ -129,6 +148,39 @@ class S4Tests(unittest.TestCase):
         ids,energy,fractions,valid=bar_contributions(record,self.geometry)
         np.testing.assert_allclose(energy,[4,8]);np.testing.assert_allclose(fractions,[[.25,.75,0,0],[0,0,1,0]])
         self.assertTrue(valid.all());self.assertEqual(len(ids),2)
+
+    def test_partial_Rel_alone_reaches_global_and_local_encoders(self):
+        config={**self.config,'objective':'mae_rel'};model=PretrainingModel(config)
+        batch=collate_pretrain([self.item(),self.item(19)])
+        batch['rel_query']=batch['query'][:,:8]
+        batch['rel_valid']=torch.ones((2,8),dtype=torch.bool)
+        batch['rel_target']=torch.rand((2,8,4)).softmax(-1)
+        output=model(batch)
+        loss=-(batch['rel_target']*output['rel'].log_softmax(-1)).sum(-1).mean()
+        loss.backward()
+        self.assertGreater(float(model.encoder.input[0].weight.grad.square().sum()),0.)
+        self.assertGreater(float(model.encoder.latent_read.q.weight.grad.square().sum()),0.)
+
+    def test_kept_bar_route_backpropagates_with_global_features_detached(self):
+        config={**self.config,'objective':'mae_rel','rel_source':'global_and_bar_local'}
+        model=PretrainingModel(config);items=[]
+        for shift in [0,19]:
+            obs=self.observation(shift)
+            obs['bar']={'channel_id':self.qg.bar_ids[:4],'bounds_mm':np.array([
+                [x-5,x+5,-20,20,-21] for x in [-15.,-5.,5.,15.]]),
+                'layer':np.zeros(4,dtype=int),'panel':np.zeros(4,dtype=int),
+                'horizontal':np.zeros(4,dtype=int),'bar':np.arange(4),
+                'edep_proxy_MeV':np.arange(1,5,dtype=float),'pe_proxy':np.arange(1,5)*10}
+            n,g,m,c=plane_tokens(obs,self.geometry,self.config)
+            item=self.item(shift);item.update(nodes=n,groups=g,modules=m,raw_counts=c);items.append(item)
+        batch=collate_pretrain(items);batch['rel_query']=batch['query'][:,:8]
+        original=model.encoder.encode
+        def detached_global(value):
+            result=original(value);result['global_tokens']=result['global_tokens'].detach();return result
+        with patch.object(model.encoder,'encode',side_effect=detached_global):
+            logits=model(batch)['rel']
+        loss=-logits.log_softmax(-1)[...,0].mean();loss.backward()
+        self.assertGreater(float(model.encoder.input[0].weight.grad.square().sum()),0.)
 
     def test_checkpoint_restores_ema_optimizer_and_rng(self):
         config={**self.config,'objective':'distill'}
@@ -166,6 +218,15 @@ class S4Tests(unittest.TestCase):
         self.assertEqual(set(frame.level),{0,1,2})
         self.assertEqual(set(report['event_permutation_delta_BCE']),{'0','1','2'})
         self.assertTrue(np.isfinite(frame.to_numpy()).all())
+
+    def test_query_only_baseline_cannot_use_event_encoder_information(self):
+        model=QueryOnly(self.config).eval()
+        batch=collate_pretrain([self.item(),self.item(19)])
+        expected=model(batch)['reconstruction']
+        batch['student']['nodes'].fill_(123.)
+        torch.testing.assert_close(model(batch)['reconstruction'],expected,rtol=0,atol=0)
+        report,_=evaluate(model,[batch],torch.device('cpu'),False,self.config)
+        self.assertEqual(report['event_permutation_delta_BCE'],{'0':0.,'1':0.,'2':0.})
 
     def test_patch_target_retains_binary_count_and_subpixel_centroid(self):
         geometry=QueryGeometry(self.geometry,pixel_query_patch=16)

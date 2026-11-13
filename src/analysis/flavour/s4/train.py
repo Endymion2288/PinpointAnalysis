@@ -13,8 +13,24 @@ from analysis.flavour.s3.pilot_repair import optimizer_for
 from analysis.flavour.s4.dataset import LabelDataset
 
 
+def validate_pretraining(config):
+    if not config.get('pretrained_checkpoint'):return
+    directory=Path(config['pretrained_checkpoint']).parent
+    report=json.loads((directory/'manifest.json').read_text())
+    if report['status']!='complete' or not report['all_internal_health_pass']:
+        raise RuntimeError('pretraining has not completed with internal health')
+    readback=json.loads((directory/'ssl_readback.json').read_text())
+    if not readback['integrity_and_internal_health_pass'] or not readback['measured_learning_pass']:
+        raise RuntimeError('pretraining measured-learning readback required')
+
+
 def build_model(config):
     model=PlaneModuleClassifierV2(config)
+    if config.get('supervised_initial_checkpoint'):
+        if config.get('pretrained_checkpoint'):
+            raise ValueError('choose one supervised/SSL initialization')
+        state=torch.load(config['supervised_initial_checkpoint'],map_location='cpu',weights_only=False)
+        model.load_state_dict(state['model'],strict=True)
     if config.get('pretrained_checkpoint'):
         state=torch.load(config['pretrained_checkpoint'],map_location='cpu',weights_only=False)
         source=state['model']
@@ -41,10 +57,7 @@ def main():
     args=parser.parse_args();config=json.loads(args.campaign.read_text())['experiments'][args.task]
     pilot=json.loads((args.root/'pilot'/'s4_backbone_health_s42'/'gate.json').read_text())
     if not pilot['gate_passed']:raise RuntimeError('same-backbone real-event health gate required')
-    if config.get('pretrained_checkpoint'):
-        report=json.loads(Path(config['pretrained_checkpoint']).with_name('manifest.json').read_text())
-        if report['status']!='complete' or not report['all_internal_health_pass']:
-            raise RuntimeError('pretraining has not completed with internal health')
+    validate_pretraining(config)
     run(args,dataset_class=LabelDataset,model_factory=build_model,collate_fn=collate_planes,
         health_factory=TrainingHealth,optimizer_factory=optimizer_for,
         manifest_extra={'stage':'S4','label_budget':config.get('label_budget'),

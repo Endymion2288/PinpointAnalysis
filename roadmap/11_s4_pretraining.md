@@ -1,6 +1,6 @@
 # S4：可验证的预训练与标签效率
 
-状态：实现与小样本验证中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
+状态：100k corpus 与 pilot 完成，完整预训练和下游 label curves 执行中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
 
 ## 1. 研究问题与固定条件
 
@@ -33,7 +33,7 @@ Decoder queries 仅由几何和 visible 邻域产生，混合邻近、跨层与 
 
 EMA 单独增加 teacher-multiscale 对照：完整 observation 的 local/regional/global pooled features 等权形成 teacher target，student 仍从 global latent 预测，检验 global-only EMA 是否只重复 occupancy 主轴。与原 global-only teacher 分开运行；不将多个目标改变合并归因。
 
-`ScintSD.cc` 的 `barEnergyMap` 以 channel/track/PDG 为 key 累加；ROOT `Hits/scintHits` 保存相应 `pdg/edep`。额外 sidecar 按硬件 channel 累加 EM(11/22)、muon(13)、hadron、other 的能量分数，正能量有效通道才产生目标。质量检查仅针对新增标签的 channel join、能量一致和 simplex，不重复样本认证。Pixel 首贡献 flags、ghost/hierarchy 不冒充精确 soft truth；本轮不用 pixel Rel。模拟贡献只进 loss，不进入 input、mask 或 query 位置。
+`ScintSD.cc` 的 `barEnergyMap` 以 channel/track/PDG 为 key 累加；ROOT `Hits/scintHits` 保存相应 `pdg/edep`。额外 sidecar 按硬件 channel 累加 EM(11/22)、muon(13)、hadron、other 的能量分数，正能量有效通道才产生目标。质量检查仅针对新增标签的 channel join、能量一致和 simplex，不重复样本认证。Pixel 首贡献 flags、ghost/hierarchy 不冒充精确 soft truth；本轮不用 pixel Rel。原 global-only Rel pilot 的语义 cross-entropy 为 0.73062，未超过常量 probe prior 的 0.72388，已停止扩量；新 Rel route 允许读取全部 kept bar local blocks，必须先通过独立语义学习 readback（见 stage96）。MAE reconstruction 仍只读取 global latents。模拟贡献只进 loss，不进入 input、mask 或 query 位置。
 
 ## 4. 分阶段实验与预算
 

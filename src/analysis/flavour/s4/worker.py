@@ -22,13 +22,13 @@ def main():
         if not report['passed']:raise RuntimeError('pretraining requires a passing real-event optimization/stress pilot')
         for key in ['dim','compression','latents','region_queries','region_blocks','readout_skip','modalities',
             'window_pixels','pixel_query_patch','mask_ratio','teacher_multiscale','objective','compile_local','local_chunk_blocks',
-            'variance_gamma','variance_weight','covariance_weight','distill_reconstruction_weight']:
+            'variance_gamma','variance_weight','covariance_weight','distill_reconstruction_weight','rel_source']:
             if report['config'].get(key)!=config.get(key):raise ValueError('full/pilot architecture or objective mismatch: '+key)
         readback=json.loads((args.root/'experiments'/config['required_pilot']/'ssl_readback.json').read_text())
         if not readback['integrity_and_internal_health_pass'] or not readback['measured_learning_pass']:
             raise RuntimeError('corpus pilot must show measured learning before full pretraining')
     importlib.import_module('analysis.flavour.s4.'+program).main()
-    if program=='pretrain':
+    if program=='pretrain' or (program=='pilot' and config.get('objective')!='backbone_health'):
         from analysis.flavour.s4.readback import inspect
         report=inspect(args.root,config['name'])
         if not report['integrity_and_internal_health_pass'] or not report['measured_learning_pass']:

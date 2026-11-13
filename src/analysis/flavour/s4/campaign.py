@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--name',required=True);parser.add_argument('--tasks',type=int,nargs='+',required=True)
     parser.add_argument('--concurrency',type=int,default=6)
     args=parser.parse_args();configs=json.loads(args.campaign.read_text())['experiments']
-    pending=list(args.tasks);active=[];records=[]
+    pending=list(args.tasks);active=[];records=[];blocked=[]
     directory=args.root/'kubeflow';directory.mkdir(exist_ok=True)
     record=directory/f'parallel_{args.name}.json'
     claims=args.root/'claims';claims.mkdir(exist_ok=True)
@@ -32,8 +32,15 @@ def main():
                 pending.remove(task);continue
             dependencies=config.get('dependencies',[])
             if any(status(d) in {'failed','internal_health_failed','learning_review_required'} for d in dependencies):
-                raise RuntimeError('dependency failed: '+name)
+                blocked.append({'experiment':name,'dependencies':dependencies,'reason':'upstream failed or requires learning review'})
+                failed=True;pending.remove(task);continue
             if not all(status(d)=='complete' for d in dependencies):continue
+            readbacks=[args.root/'experiments'/d/'ssl_readback.json' for d in config.get('required_ssl_readbacks',[])]
+            if not all(path.exists() for path in readbacks):continue
+            if any(not (r['integrity_and_internal_health_pass'] and r['measured_learning_pass'])
+                for r in [json.loads(path.read_text()) for path in readbacks]):
+                blocked.append({'experiment':name,'reason':'required SSL readback failed'})
+                failed=True;pending.remove(task);continue
             if len(active)>=args.concurrency:break
             try:(claims/name).mkdir()
             except FileExistsError:
@@ -52,9 +59,9 @@ def main():
             write_json(claims/row['experiment']/'state.json',{'job':args.name,'status':'complete' if code==0 else 'failed',
                 'exit_code':code,'utc':row['finished_at']})
             active.remove((process,stream,row))
-            if code:failed=True;pending=[]
+            if code:failed=True
         write_json(record,{'job':args.name,'pod':os.environ.get('HOSTNAME'),'concurrency_limit':args.concurrency,
-            'processes':records,'pending_tasks':pending,'failed':failed,'utc':datetime.now(timezone.utc).isoformat()})
+            'processes':records,'pending_tasks':pending,'blocked_tasks':blocked,'failed':failed,'utc':datetime.now(timezone.utc).isoformat()})
         if pending or active:time.sleep(3)
     if failed:raise SystemExit('S4 task failed; dependent starts stopped, see recorded logs')
 

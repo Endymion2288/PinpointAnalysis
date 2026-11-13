@@ -65,11 +65,14 @@ def submit(args):
         frozen=root/'code'/f'{name}.campaign.json'
         frozen.write_text(args.campaign.read_text())
         args.campaign=frozen
-    cpu_only = args.stage in {'data','assemble'}
+    cpu_only = args.stage in {'data','assemble','query_baseline'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
     elif args.stage == 'assemble':
         arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
+    elif args.stage == 'query_baseline':
+        if len(args.tasks)!=1:raise ValueError('one geometry baseline per CPU allocation')
+        arguments=['analysis.flavour.s4.query_baseline','--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
     else:
         arguments = ['analysis.flavour.s3.parallel', '--root', str(root), '--campaign', str(args.campaign.resolve()),
             '--name', name, '--concurrency', str(args.concurrency), '--training-module', 'analysis.flavour.s4.'+args.stage,
@@ -157,7 +160,13 @@ transfer_output_files = ""
         path = root/'kubeflow'/f'{name}.job.json'
         pod_path = root/'kubeflow'/f'{name}.admission.json'
         write_json(path,job);write_json(pod_path,pod)
-        admitted = json.loads(kubectl('create','--dry-run=server','-f',str(pod_path),'-o','json'))
+        try:
+            admitted = json.loads(kubectl('create','--dry-run=server','-f',str(pod_path),'-o','json'))
+        except subprocess.CalledProcessError as error:
+            evidence.update(flavor=args.flavor,job_spec=job,admission_rejected=True,
+                admission_response=error.output,allocated_device_hours=0.)
+            write_json(record,evidence)
+            raise
         evidence.update(job_spec=job,pod_admission=admitted,flavor=args.flavor)
         if args.apply:
             result = json.loads(kubectl('create','-f',str(path),'-o','json'))
@@ -170,7 +179,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','pilot','pretrain','train','probes','worker','campaign'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','query_baseline','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)

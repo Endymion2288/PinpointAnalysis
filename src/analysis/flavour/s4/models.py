@@ -18,12 +18,12 @@ class QueryDecoder(nn.Module):
         self.output=nn.Sequential(nn.Linear(dim,dim),nn.LayerNorm(dim),nn.SiLU(),nn.Linear(dim,8))
         self.apply(PlaneModuleClassifierV2.initialize)
 
-    def forward(self,queries,latents):
+    def forward(self,queries,latents,mask=None):
         xyz=queries[...,:3]
         fourier=torch.cat([torch.sin(2*torch.pi*xyz),torch.cos(2*torch.pi*xyz),
             torch.sin(8*torch.pi*xyz),torch.cos(8*torch.pi*xyz)],-1)
         q=self.position(torch.cat([queries,fourier],-1))
-        mask=torch.ones(latents.shape[:2],device=latents.device,dtype=torch.bool)
+        if mask is None:mask=torch.ones(latents.shape[:2],device=latents.device,dtype=torch.bool)
         x=self.norm(self.read(q,latents,mask))
         with torch.autocast(device_type=queries.device.type,enabled=False):
             return self.output(x.float())
@@ -85,7 +85,24 @@ class PretrainingModel(nn.Module):
         features=self.encoder.encode(batch['student'])
         result={'features':features,'reconstruction':self.decoder(batch['query'],features['global_tokens'])}
         if 'rel_query' in batch:
-            result['rel']=self.decoder(batch['rel_query'],features['global_tokens'])[...,4:8]
+            source=features['global_tokens'];valid=None
+            if self.config.get('rel_source')=='global_and_bar_local':
+                # Kept bar semantics need their retained detector information.
+                # MAE reconstruction still reads ONLY global tokens. Rel can
+                # also read every visible bar local block, without truth-based
+                # routing, truncation, or changing the downstream classifier.
+                selected=batch['student']['block_detector']==1
+                local=features['local_tokens'][selected]
+                event=batch['student']['event_index'][selected]
+                counts=torch.bincount(event,minlength=len(source))
+                width=int(counts.max())
+                packed=source.new_zeros((len(source),width,source.shape[-1]))
+                mask=torch.zeros((len(source),width),device=source.device,dtype=torch.bool)
+                slot=torch.arange(len(event),device=source.device)-(counts.cumsum(0)-counts)[event]
+                packed[event,slot]=local.to(source.dtype);mask[event,slot]=True
+                valid=torch.cat([torch.ones(source.shape[:2],device=source.device,dtype=torch.bool),mask],1)
+                source=torch.cat([source,packed],1)
+            result['rel']=self.decoder(batch['rel_query'],source,valid)[...,4:8]
         if self.teacher is not None:
             with torch.autocast(device_type=batch['query'].device.type,enabled=False):
                 projected=self.projector(self.pool_global(features))
