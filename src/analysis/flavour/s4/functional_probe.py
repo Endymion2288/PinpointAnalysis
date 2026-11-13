@@ -58,7 +58,8 @@ def contrast_report(original, changes, raw_weights, common_weights, multipliciti
     return result
 
 
-def inspect(root, name, config, output):
+def inspect(root, name, config, output, device='cpu'):
+    device = torch.device(device)
     directory = root / 'experiments' / name
     manifest = json.loads((directory / 'manifest.json').read_text())
     readback = json.loads((directory / 'final_checkpoint_checks.json').read_text())
@@ -68,24 +69,28 @@ def inspect(root, name, config, output):
     model = PlaneModuleClassifierV2(settings).eval().requires_grad_(False)
     state = torch.load(directory / 'best.pt', map_location='cpu', weights_only=False)
     model.load_state_dict(state['model'], strict=True)
+    if device.type == 'cuda':
+        torch.cuda.reset_peak_memory_stats(device)
+    model.to(device)
     if state['epoch'] != manifest['best_epoch']:
         raise ValueError('checkpoint epoch differs from completed manifest')
     data = LabelDataset(root, 'validation', settings)
     if len(data) != config['probe_events']:
         raise ValueError('complete fixed validation partition required')
     sampler = SpatialBatchSampler(data, config.get('batch_size', 16), 42, shuffle=False)
-    loader = DataLoader(data, batch_sampler=sampler, num_workers=2, collate_fn=collate_planes,
+    loader = DataLoader(data, batch_sampler=sampler, num_workers=2, collate_fn=collate_planes, pin_memory=device.type=='cuda',
         multiprocessing_context='spawn', worker_init_fn=init_worker, prefetch_factor=1)
     contexts, logits, presences, indices = [], [], [], []
     handle = model.head_input_norm.register_forward_pre_hook(
-        lambda module, inputs: contexts.append(inputs[0].detach().clone()))
+        lambda module, inputs: contexts.append(inputs[0].detach().cpu().clone()))
     started = time.perf_counter()
     encoded = 0
     try:
         with torch.inference_mode():
             for batch_number, batch in enumerate(loader, 1):
                 indices.append(batch['index'].numpy())
-                logits.append(model(batch))
+                moved = {key: value.to(device, non_blocking=True) for key, value in batch.items()}
+                logits.append(model(moved).cpu())
                 encoded += len(batch['index'])
                 presence = torch.zeros((len(batch['index']), 3), dtype=torch.bool)
                 for modality in range(3):
@@ -109,7 +114,7 @@ def inspect(root, name, config, output):
     reference = reference.iloc[event_order].reset_index(drop=True)
     context, original, presence = context[event_order], original[event_order], presence[event_order]
     with torch.inference_mode():
-        replay = head_logits(model, context)
+        replay = head_logits(model, context.to(device)).cpu()
         torch.testing.assert_close(replay, original, rtol=1e-5, atol=2e-6)
     saved = align_frame(pd.read_parquet(directory / 'validation_predictions.parquet'), reference)
     for c in range(4):
@@ -135,8 +140,8 @@ def inspect(root, name, config, output):
         for group, members in groups.items():
             caches = []
             for mapping in mappings:
-                changed = head_logits(model, permute_context(context, mapping, [slices[k] for k in members]))
-                caches.append(MetricCache(baseline.y, changed.softmax(-1).numpy()))
+                changed = head_logits(model, permute_context(context, mapping, [slices[k] for k in members]).to(device))
+                caches.append(MetricCache(baseline.y, changed.softmax(-1).cpu().numpy()))
             changes[group] = contrast_report(baseline, caches, np.ones(len(data)), common, multiplicities)
             write_json(output / 'progress.json', {'experiment': name, 'phase': 'paired_branch_metrics',
                 'encoded_events': len(data), 'total_events': len(data), 'completed_groups': list(changes),
@@ -148,7 +153,9 @@ def inspect(root, name, config, output):
     report = {'experiment': name, 'checkpoint_epoch': state['epoch'], 'events': len(data),
         'seconds': time.perf_counter() - started, 'checkpoint_config': manifest['config'],
         'training_code_commit': manifest.get('code_commit'),
-        'precision': 'CPU FP32; same complete checkpoint, compilation disabled, evaluation mode',
+        'precision': f'{device.type.upper()} FP32; same complete checkpoint, compilation disabled, evaluation mode; TF32 disabled',
+        'GPU': torch.cuda.get_device_name(device) if device.type=='cuda' else None,
+        'peak_gpu_allocated_mib': torch.cuda.max_memory_allocated(device)/2**20 if device.type=='cuda' else None,
         'baseline': {'raw': baseline.report(), 'common_support': baseline.report(common)},
         'saved_BF16_comparison': {
             'probability_change_RMS': float(np.mean((baseline.p - published.p)**2)**.5),
@@ -176,19 +183,26 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--task', type=int, required=True)
+    parser.add_argument('--device', choices=['cpu', 'cuda'])
     args = parser.parse_args()
     config = json.loads(args.campaign.read_text())['experiments'][args.task]
+    device = torch.device(args.device or config.get('device', 'cpu'))
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
     output = args.root / 'experiments' / config['name']
     output.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(1); pa.set_cpu_count(1); pa.set_io_thread_count(1)
     started = time.perf_counter()
     manifest = {'utc': datetime.now(timezone.utc).isoformat(), 'status': 'running', 'config': config,
-        'GPU': None, 'code_commit': os.environ.get('PINPOINT_CODE_COMMIT') or
+        'GPU': torch.cuda.get_device_name(device) if device.type=='cuda' else None,
+        'precision': f'{device.type.upper()} FP32; TF32 disabled',
+        'code_commit': os.environ.get('PINPOINT_CODE_COMMIT') or
             subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()}
     write_json(output / 'manifest.json', manifest)
-    rows = [inspect(args.root, name, config, output) for name in config['checkpoints']]
+    rows = [inspect(args.root, name, config, output, device) for name in config['checkpoints']]
     write_json(output / 'functional_paths.json', {'experiments': rows,
         'calibration_test_used': False, 'fitting_or_selection': False,
+        'precision': f'{device.type.upper()} FP32',
         'scope': 'fixed-weight fitted-path reliance on complete 10k validation; correlations between branches are broken; not retrained ablations or causal physical importance',
         'contrast_sign': 'changed minus original, using the FP32 replay baseline for both',
         'interval_scope': 'pointwise paired connected-chunk bootstrap of recipient events, conditional on checkpoint and three fixed presence-preserving donor mappings; mapping spread is not training-seed uncertainty',

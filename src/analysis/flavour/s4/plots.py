@@ -78,7 +78,7 @@ def functional_plots(report_path, output):
             ax.set_visible(False)
         axes.flat[0].legend(fontsize=8)
         fig.suptitle('Fixed-checkpoint path reliance: complete 10k validation\n'
-            'Changed minus original CPU FP32; mean of three presence-preserving mappings; paired chunk 95% intervals', fontsize=10)
+            f"Changed minus original {report.get('precision', 'CPU FP32')}; mean of three presence-preserving mappings; paired chunk 95% intervals", fontsize=10)
         fig.savefig(output/f'functional_paths_{metric}.pdf')
         fig.savefig(output/f'functional_paths_{metric}.png', dpi=170)
         plt.close(fig)
