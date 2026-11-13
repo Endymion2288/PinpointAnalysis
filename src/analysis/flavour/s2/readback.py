@@ -3,6 +3,7 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 
@@ -116,7 +117,8 @@ def readback(root, config, hardware, validation):
         'checks': {key: bool(value) for key, value in checks.items()},
         'checkpoint_epoch': last['epoch'], 'best_epoch': best['epoch'],
         'training_exposures': sum(item['train_exposures'] for item in history),
-        'code_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+        'code_commit': os.environ.get('PINPOINT_CODE_COMMIT') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+        'training_code_commit': manifest.get('code_commit'),
         'scope': 'completed-model CPU checkpoint, optimizer and prediction readback; accepted catalog unchanged',
         'epoch_predictions_error': epoch_error,
     }

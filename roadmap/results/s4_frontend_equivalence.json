@@ -1,0 +1,23 @@
+{
+  "events": 32,
+  "workload_range": [
+    0,
+    36549
+  ],
+  "all_arrays_and_collated_tensors_bitwise_equal": true,
+  "transform_seconds": {
+    "complete": {
+      "original": 7.950491409748793,
+      "skip_unused_groups": 4.49209245480597,
+      "transform_speedup": 1.7698859695647566
+    },
+    "visible": {
+      "original": 2.5412990264594555,
+      "skip_unused_groups": 1.5908977761864662,
+      "transform_speedup": 1.59739932037066
+    }
+  },
+  "scope": "fixed train events at per-class occupancy quantiles, complete and .75 masked views; CPU transform timings exclude native I/O, collation and model; not end-to-end GPU throughput",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_frontend_equivalence_s42/equivalence.json",
+  "code_commit": "29b9cf8747d8d6803e3fce518f376181eb1a265c"
+}

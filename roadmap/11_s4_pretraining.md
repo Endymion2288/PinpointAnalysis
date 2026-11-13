@@ -1,6 +1,6 @@
 # S4：可验证的预训练与标签效率
 
-状态：100k corpus、完整 MAE3 和监督 seed42 三预算完成；独立 SSL seeds、下游矩阵、Rel/EMA 修复与等计算监督控制执行中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
+状态：100k corpus、三个独立 seeds 的完整 MAE3 和监督 seed42 三预算完成；下游矩阵、Rel/EMA 修复与等计算监督控制执行中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
 
 ## 1. 研究问题与固定条件
 
