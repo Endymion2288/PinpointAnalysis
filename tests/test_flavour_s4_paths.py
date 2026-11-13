@@ -1,14 +1,32 @@
 """S4 full-validation interventions retain branches and paired metric weights."""
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import torch
 
 from analysis.flavour.s3.metrics import MetricCache
-from analysis.flavour.s4.functional_probe import contrast_report, permute_context
+from analysis.flavour.s4.functional_probe import contrast_report, permute_context, replay_head
 
 
 class S4FunctionalPathTests(unittest.TestCase):
+    def test_replay_keeps_original_batch_shapes_order_and_event_positions(self):
+        # Canonical sorting moves recipients across the original ragged batches.
+        context = torch.arange(24.).reshape(6, 4)
+        batches = [np.array([4, 1, 5]), np.array([0, 3]), np.array([2])]
+        seen = []
+
+        def fake_head(model, value):
+            seen.append(value.clone())
+            return value * 2
+
+        with patch('analysis.flavour.s4.functional_probe.head_logits', side_effect=fake_head):
+            actual = replay_head(None, context, batches, torch.device('cpu'))
+        self.assertEqual([len(x) for x in seen], [3, 2, 1])
+        for values, positions in zip(seen, batches):
+            torch.testing.assert_close(values, context[positions])
+        torch.testing.assert_close(actual, context * 2)
+
     def test_intervention_preserves_other_branches_and_uses_one_donor(self):
         context = torch.arange(48).reshape(4, 12)
         mapping = np.array([2, 3, 0, 1])

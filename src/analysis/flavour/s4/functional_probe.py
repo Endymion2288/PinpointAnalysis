@@ -33,6 +33,14 @@ def permute_context(context, permutation, intervals):
     return result
 
 
+def replay_head(model, context, batches, device):
+    """Retain the original head GEMM shapes and recipient order in FP32."""
+    result = context.new_empty((len(context), 4))
+    for positions in batches:
+        result[positions] = head_logits(model, context[positions].to(device)).cpu()
+    return result
+
+
 def contrast_report(original, changes, raw_weights, common_weights, multiplicities):
     """Average fixed mappings; resample recipient physical blocks in pairs."""
     result = {}
@@ -104,8 +112,9 @@ def inspect(root, name, config, output, device='cpu'):
     finally:
         handle.remove()
         data.native.close()
-    order = np.argsort(np.concatenate(indices))
-    if not np.array_equal(np.concatenate(indices)[order], np.arange(len(data))):
+    original_indices = np.concatenate(indices)
+    order = np.argsort(original_indices)
+    if not np.array_equal(original_indices[order], np.arange(len(data))):
         raise ValueError('functional probe must cover every validation event exactly once')
     context, original = torch.cat(contexts)[order], torch.cat(logits)[order]
     presence = torch.cat(presences)[order].numpy()
@@ -113,8 +122,12 @@ def inspect(root, name, config, output, device='cpu'):
     event_order = reference.sort_values(['run', 'chunk', 'row']).index.to_numpy()
     reference = reference.iloc[event_order].reset_index(drop=True)
     context, original, presence = context[event_order], original[event_order], presence[event_order]
+    # A single 10k-row GEMM can select a different CUDA kernel from the
+    # original ragged batches and change near-zero logits by a few FP32 ULPs.
+    # Preserve those exact shapes/order for baseline and every intervention.
+    batches = np.split(np.argsort(order[event_order]), np.cumsum([len(x) for x in indices])[:-1])
     with torch.inference_mode():
-        replay = head_logits(model, context.to(device)).cpu()
+        replay = replay_head(model, context, batches, device)
         torch.testing.assert_close(replay, original, rtol=1e-5, atol=2e-6)
     saved = align_frame(pd.read_parquet(directory / 'validation_predictions.parquet'), reference)
     for c in range(4):
@@ -140,8 +153,8 @@ def inspect(root, name, config, output, device='cpu'):
         for group, members in groups.items():
             caches = []
             for mapping in mappings:
-                changed = head_logits(model, permute_context(context, mapping, [slices[k] for k in members]).to(device))
-                caches.append(MetricCache(baseline.y, changed.softmax(-1).cpu().numpy()))
+                changed = replay_head(model, permute_context(context, mapping, [slices[k] for k in members]), batches, device)
+                caches.append(MetricCache(baseline.y, changed.softmax(-1).numpy()))
             changes[group] = contrast_report(baseline, caches, np.ones(len(data)), common, multiplicities)
             write_json(output / 'progress.json', {'experiment': name, 'phase': 'paired_branch_metrics',
                 'encoded_events': len(data), 'total_events': len(data), 'completed_groups': list(changes),
@@ -164,6 +177,8 @@ def inspect(root, name, config, output, device='cpu'):
             'NLL_delta': baseline.report()['NLL'] - published.report()['NLL'],
             'macro_AP_delta': baseline.report()['macro_AP'] - published.report()['macro_AP']},
         'cached_head_matches_original': True,
+        'head_replay_batch_shapes_and_recipient_order_preserved': True,
+        'head_replay_batch_sizes': [len(x) for x in batches],
         'cached_head_logit_maximum_error': float((replay - original).abs().max()),
         'presence_preserved': True,
         'presence_strata': [{'presence': pattern.tolist(), 'events': int(np.all(presence == pattern, axis=1).sum())}
