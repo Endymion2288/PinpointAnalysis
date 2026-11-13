@@ -1,5 +1,7 @@
 # S3：Plane-aware 局部编码、Module context 与四分类融合
 
+**S3已重新打开。以下旧批次结果保留为故障诊断，方法结论撤回；当前修复/重训/重新评价以[revision 2合同](10_s3_repair.md)为准。**
+
 S3已完成并验收，新模型未晋级，保留S2 ParT reference与1 mm控制。继承S2接受的80k train/10k validation、原生通道、geometry和detector-proxy；calibration/test冻结。正式根目录为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12`，其中输入通过symlink引用S2，输出独立保存。S2结果只读复用，S4–S6未执行。
 
 ## 问题与实验合同

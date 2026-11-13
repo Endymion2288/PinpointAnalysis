@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--name', required=True)
     parser.add_argument('--tasks', type=int, nargs='+', required=True)
     parser.add_argument('--concurrency', type=int, default=4)
+    parser.add_argument('--training-module', default='analysis.flavour.s3.train')
     args = parser.parse_args()
     if args.concurrency < 1 or len(set(args.tasks)) != len(args.tasks):
         raise ValueError('positive concurrency and distinct task IDs required')
@@ -36,7 +37,7 @@ def main():
             task = queue.pop(0)
             log = directory / f'{args.name}_task{task}.log'
             stream = log.open('w')
-            child = subprocess.Popen([sys.executable, '-m', 'analysis.flavour.s3.train',
+            child = subprocess.Popen([sys.executable, '-m', args.training_module,
                 '--root', str(args.root), '--campaign', str(args.campaign), '--task', str(task)],
                 stdout=stream, stderr=subprocess.STDOUT)
             row = {'task': task, 'experiment': configs[task]['name'], 'pid': child.pid,

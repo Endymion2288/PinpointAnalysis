@@ -81,7 +81,8 @@ class PlaneDataset(SpatialDataset):
         event = self.native[int(self.indexes[index])]
         nodes, groups, modules, counts = plane_tokens(event['observations'], self.geometry, self.config, seed=index + 42)
         return {'nodes': nodes, 'groups': groups, 'modules': modules,
-                'label': event['targets']['label'], 'index': index, 'raw_counts': counts}
+                'label': event['targets']['label'], 'index': index, 'raw_counts': counts,
+                'region_blocks': self.config.get('region_blocks', 32)}
 
 
 def collate_planes(events):
@@ -132,4 +133,24 @@ def collate_planes(events):
     np.add.at(geo, inverse, np.asarray(geometry))
     geo /= counts[:, None]
     batch['module_geometry'] = torch.from_numpy(geo)
+    # Revision 2 partitions each physical module into an uncapped number of
+    # canonical spatial regions. Every original block belongs to one region.
+    region_sizes = np.asarray([events[i].get('region_blocks', 32) for i in unique[inverse, 0]])
+    region_keys, region_inverse = np.unique(
+        np.column_stack([inverse, positions // region_sizes]), axis=0, return_inverse=True)
+    region_counts = np.bincount(region_inverse)
+    region_positions = np.empty(len(inverse), dtype='int64')
+    region_order = np.argsort(region_inverse, kind='stable')
+    region_positions[region_order] = np.arange(len(inverse)) - np.repeat(
+        np.r_[0, np.cumsum(region_counts)[:-1]], region_counts)
+    batch['region_group'] = torch.from_numpy(region_inverse)
+    batch['region_position'] = torch.from_numpy(region_positions)
+    batch['region_mask'] = torch.from_numpy(np.arange(region_counts.max())[None] < region_counts[:, None])
+    for name, column in [('event', 0), ('id', 1), ('detector', 2)]:
+        batch['region_' + name] = torch.from_numpy(unique[region_keys[:, 0], column])
+    region_geo = np.zeros((len(region_keys), 18), dtype='float32')
+    np.add.at(region_geo, region_inverse, np.asarray(geometry))
+    region_geo /= region_counts[:, None]
+    batch['region_geometry'] = torch.from_numpy(region_geo)
+    batch['block_detector'] = torch.from_numpy(unique[inverse, 2])
     return batch

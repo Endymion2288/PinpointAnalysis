@@ -1,5 +1,7 @@
 # S3最终验收与收尾审计
 
+**2026-11-13更正：本报告的方法结论已撤回，原结果仅作架构/训练故障诊断。S3已重新打开，须以修复后重训与测试结果重新判断。见[修复合同](../roadmap/10_s3_repair.md)。以下保留当时的数值与执行记录。**
+
 S3完成，研究结论为保留S2 ParT native reference及1 mm控制；8项新模型晋级决定均false。25模型、350项CPU读回、完整四分类统计和19项strict输出门槛通过。最终科学解释见[阶段77](2026-11-13_stage77_s3_scientific_analysis.md)，机器可读数值见[最终摘要](../roadmap/results/s3_summary.json)。Calibration/test继续冻结，S4–S6未执行。
 
 ## 阶段目标

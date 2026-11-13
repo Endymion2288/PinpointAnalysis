@@ -1,5 +1,5 @@
 {
-  "status": "strict_scientific_outputs_complete",
+  "status": "legacy_execution_outputs_architecture_failed_not_method_conclusion",
   "scope": "S3 frozen validation only; calibration/test unused",
   "evaluation_utc": "2026-11-13T02:52:14.032652+00:00",
   "evaluation_code_commit": "7bf85af884707a491d4e680fcb263770d2c6ad17",
@@ -52425,5 +52425,7 @@
       "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12/evaluation_final/event_displays/s3_f16_context_latent_tracker_s42_e4/native_error_groups.pdf"
     ]
   },
-  "manual_review": "scientific interpretation and visual review documented separately in workbook stage77"
+  "manual_review": "scientific interpretation and visual review documented separately in workbook stage77",
+  "method_conclusion_withdrawn": true,
+  "superseded_by": "roadmap/10_s3_repair.md"
 }

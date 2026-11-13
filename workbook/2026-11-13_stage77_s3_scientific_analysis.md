@@ -1,5 +1,7 @@
 # S3科学分析与最终结论
 
+**2026-11-13更正：本报告的方法结论已撤回，原结果仅作架构/训练故障诊断。S3已重新打开，须以修复后重训与测试结果重新判断。见[修复合同](../roadmap/10_s3_repair.md)。以下保留当时的数值与执行记录。**
+
 S3已完成。17项screen和8项新增seed确认共25个科学模型全部完成四轮训练、每项80,064 applied optimizer updates、零AMP skips，350/350项CPU checkpoint/optimizer/prediction读回通过。完整四分类评价及19项strict输出门槛通过，8项候选晋级决定均为false。推荐保留S2 ParT native作为reference backbone，同时保留1 mm控制；当前证据没有确立native优于1 mm。Calibration/test继续冻结，S4–S6未执行。
 
 ## 阶段目标

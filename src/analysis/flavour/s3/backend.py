@@ -33,7 +33,7 @@ def prepare(args):
                 'nvidia.com/gpu', 'nvidia.com/mig-3g.47gb'}:
             raise ValueError('scientific task must use an H100 whole-GPU or 47GB MIG flavor')
         experiment = campaign['experiments'][args.task]['name']
-        args_list = ['analysis.flavour.s3.train', '--root', str(root), '--campaign', str(args.campaign.resolve()), '--task', str(args.task)]
+        args_list = ['analysis.flavour.s3.' + args.program, '--root', str(root), '--campaign', str(args.campaign.resolve()), '--task', str(args.task)]
     if args.tasks:
         if args.task is not None or args.dispatch or args.flavor not in {'h100-94gb', 'h100-47gb'}:
             raise ValueError('parallel tasks require one H100 GPU and no other execution mode')
@@ -45,6 +45,7 @@ def prepare(args):
         experiment = 'shared-parallel-training'
         args_list = ['analysis.flavour.s3.parallel', '--root', str(root),
                      '--campaign', str(args.campaign.resolve()), '--name', args.name,
+                     '--training-module', 'analysis.flavour.s3.' + args.program,
                      '--concurrency', str(args.concurrency), '--tasks', *map(str, args.tasks)]
     script = '\n'.join([
         'set -o pipefail', 'which() { command -v "$@"; }',
@@ -75,7 +76,7 @@ def prepare(args):
     admitted = json.loads(kubectl('create', '--dry-run=server', '-f', str(pod_path), '-o', 'json'))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'backend': 'kubeflow', 'context': kubectl('config', 'current-context').strip(),
                 'namespace': 'xcheng', 'job': args.name, 'container_name': 's3',
-                'stage': 'train' if args.task is not None or args.tasks else 'dispatch' if args.dispatch else 'probe',
+                'stage': ('repair_pilot' if args.program == 'pilot_repair' else 'train') if args.task is not None or args.tasks else 'dispatch' if args.dispatch else 'probe',
                 'experiment': experiment, 'task': args.task, 'root': str(root), 'submitted': False,
                 'parallel_experiments': [campaign['experiments'][t]['name'] for t in args.tasks] if args.tasks else [],
                 'gpu_flavor': {'name': args.flavor, 'product': product, 'resource': resource, 'count': 1},
@@ -94,6 +95,7 @@ def main():
     parser.add_argument('--name', required=True)
     parser.add_argument('--flavor', choices=GPU_FLAVORS, default='h100-94gb')
     parser.add_argument('--campaign', type=Path)
+    parser.add_argument('--program', choices=['train', 'train_repair', 'pilot_repair'], default='train')
     parser.add_argument('--task', type=int)
     parser.add_argument('--tasks', type=int, nargs='+')
     parser.add_argument('--concurrency', type=int, default=4)

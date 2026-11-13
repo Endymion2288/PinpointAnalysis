@@ -5,6 +5,7 @@ import copy
 import errno
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -97,7 +98,8 @@ def evaluate(model,loader,device,amp_dtype):
     return np.concatenate(labels)[order],np.concatenate(probabilities)[order]
 
 
-def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_extra=None):
+def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_extra=None,
+        health_factory=None, optimizer_factory=None):
     config=json.loads(args.campaign.read_text())['experiments'][args.task]
     experiment=config['name']
     output=args.root/'experiments'/experiment
@@ -135,9 +137,24 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
     model=(model_factory(config) if model_factory else PointClassifier(config['architecture'],dim=config.get('dim',64),k=config.get('k',16),
                           pair_bias=config.get('pair_bias',True),dynamic=config.get('dynamic',True),
                           cross_plane=config.get('cross_plane',True))).to(device)
-    optimizer=torch.optim.AdamW(model.parameters(),lr=config.get('learning_rate',.0005),weight_decay=.01)
+    optimizer=(optimizer_factory(model,config) if optimizer_factory else
+               torch.optim.AdamW(model.parameters(),lr=config.get('learning_rate',.0005),weight_decay=.01))
     epochs=config.get('epochs',12)
-    scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,epochs,eta_min=1e-5)
+    step_schedule=config.get('schedule')=='warmup_cosine_steps'
+    if step_schedule:
+        total_steps=epochs*len(train_sampler)
+        warmup=config.get('warmup_steps',500)
+        minimum=config.get('minimum_learning_rate',1e-5)/config.get('learning_rate',.0005)
+        def factor(step):
+            if step<warmup:
+                return (step+1)/warmup
+            fraction=min(1.,(step-warmup)/max(1,total_steps-warmup))
+            return minimum+(1-minimum)*.5*(1+math.cos(math.pi*fraction))
+        scheduler=torch.optim.lr_scheduler.LambdaLR(optimizer,factor)
+    else:
+        scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,epochs,eta_min=1e-5)
+    health=health_factory(model) if health_factory else None
+    health_records=[]
     scaler=torch.amp.GradScaler('cuda',enabled=device.type=='cuda' and dtype==torch.float16)
     if device.type=='cuda':
         torch.cuda.reset_peak_memory_stats()
@@ -189,6 +206,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         optimizer_steps=state.get('optimizer_steps',start_epoch*len(train_sampler))
         amp_skipped_steps=state.get('amp_skipped_steps',0)
         random.setstate(state['random_state'])
+        health_records=state.get('health_records',[])
         np.random.set_state(state['numpy_state'])
         torch.set_rng_state(state['torch_state'].cpu())
         if device.type=='cuda':
@@ -222,6 +240,9 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                 torch.cuda.synchronize()
             timing['transfer']+=time.perf_counter()-t
             optimizer.zero_grad(set_to_none=True)
+            diagnostic=health is not None and (optimizer_steps%config.get('health_every_steps',100)==0)
+            if diagnostic:
+                health.start()
             t=time.perf_counter()
             with torch.autocast(device_type=device.type,dtype=dtype,enabled=device.type=='cuda'):
                 logits=model(batch)
@@ -230,7 +251,14 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                 raise ValueError(f'nonfinite loss at epoch {epoch}, all observations retained')
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(),5.)
+            if diagnostic:
+                health_records.append(health.finish(logits,optimizer_steps+1))
+                write_json(output/'training_health.json',{'records':health_records})
+                if not health_records[-1]['healthy']:
+                    manifest.update(status='internal_health_failed',failure=health_records[-1])
+                    write_json(output/'manifest.json',manifest)
+                    raise RuntimeError('internal training health failed; inspect architecture and optimizer before resuming')
+            torch.nn.utils.clip_grad_norm_(model.parameters(),config.get('clip_grad_norm',5.),error_if_nonfinite=True)
             scale_before=scaler.get_scale()
             scaler.step(optimizer)
             scaler.update()
@@ -238,6 +266,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                 amp_skipped_steps+=1
             else:
                 optimizer_steps+=1
+                if step_schedule:
+                    scheduler.step()
             if device.type=='cuda':
                 torch.cuda.synchronize()
             timing['forward_backward']+=time.perf_counter()-t
@@ -258,6 +288,16 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         y,p=evaluate(model,val_loader,device,dtype)
         timing['validation']+=time.perf_counter()-t
         measured=metrics(y,p)
+        if health is not None:
+            from analysis.flavour.s3.metrics import prediction_diagnostics
+            measured['prediction_diagnostics']=prediction_diagnostics(p)
+            # All-empty inputs may be constant; the complete validation set
+            # includes many active responses, so a single vector is a defect.
+            if measured['prediction_diagnostics']['all_events_same_probability_vector']:
+                manifest.update(status='internal_health_failed',failure='constant full-validation prediction')
+                write_json(output/'manifest.json',manifest)
+                write_json(output/'failed_validation_health.json',measured)
+                raise RuntimeError('constant complete validation predictions; architecture/optimization review required')
         ep=pd.DataFrame({'row':np.arange(len(y),dtype='int32'),'epoch':np.full(len(y),epoch+1,dtype='int16')})
         for c in range(4):
             ep[f'p{c}']=p[:,c]
@@ -281,11 +321,13 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                 predictions[f'p{c}']=p[:,c]
             save_parquet(predictions,output/'validation_predictions.parquet')
             write_json(output/'metrics.json',measured)
-        scheduler.step()
+        if not step_schedule:
+            scheduler.step()
         checkpoint={'model':model.state_dict(),'optimizer':optimizer.state_dict(),'config':config,
             'epoch':epoch+1,'seed':seed,'scheduler':scheduler.state_dict(),'scaler':scaler.state_dict(),
             'optimizer_steps':optimizer_steps,'amp_skipped_steps':amp_skipped_steps,
             'history':history,'timing':timing.copy(),'best_NLL':best,'best_epoch':best_epoch,
+            'health_records':health_records,
             'best_model':best_model,'best_probabilities':best_probabilities,
             'elapsed_seconds':prior_seconds+time.perf_counter()-started,
             'random_state':random.getstate(),'numpy_state':np.random.get_state(),
@@ -305,6 +347,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         optimizer_steps=optimizer_steps,amp_skipped_steps=amp_skipped_steps,
         timing_seconds=timing)
     write_json(output/'manifest.json',manifest)
+    if health is not None:
+        health.close()
     train.native.close()
     val.native.close()
 

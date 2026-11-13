@@ -1,4 +1,4 @@
-status: completed
+status: architecture_repair_in_progress
 stage: S3
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12
 source_data: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100
@@ -22,3 +22,6 @@ strict_output_checks_passed: 19
 new_models_promoted: 0
 recommended_reference: S2_ParT_native_with_1mm_control
 organization_device_hours_upper_bound: 31.23826867780241
+revision2_contract: roadmap/10_s3_repair.md
+revision2_results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13
+legacy_method_conclusion_withdrawn: true
