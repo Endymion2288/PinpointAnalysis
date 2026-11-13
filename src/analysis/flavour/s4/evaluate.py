@@ -14,6 +14,35 @@ from analysis.flavour.s3.evaluate import domains,align_frame
 from analysis.flavour.s3.metrics import MetricCache,NAMES,bootstrap_weights,interval_report,prediction_diagnostics
 
 
+TAU_NAMES=('AP','AUROC','eff_at_0.01_FPR','eff_at_0.001_FPR')
+
+
+def tau_statistics(cache,weight):
+    """Tie-aware tau statistics after excluding the other tau decay branches."""
+    order,ends,truth=cache.orders[2]
+    w=np.asarray(weight,dtype=float)[order]
+    tp=np.cumsum(w*truth)[ends];fp=np.cumsum(w*~truth)[ends]
+    positive=float(np.sum(w*truth));negative=float(np.sum(w*~truth))
+    if not positive or not negative:return np.full(len(TAU_NAMES),np.nan)
+    precision=np.divide(tp,tp+fp,out=np.zeros_like(tp),where=tp+fp>0)
+    ap=float(np.dot(np.diff(np.r_[0.,tp]),precision)/positive)
+    auc=float(np.dot(tp+np.r_[0.,tp[:-1]],np.diff(np.r_[0.,fp]))/(2*positive*negative))
+    return np.array([ap,auc,*[float(np.max(tp[fp<=a*negative],initial=0.)/positive) for a in [.01,.001]]])
+
+
+def tau_interval(observed,samples,per_seed=None):
+    result={}
+    for i,name in enumerate(TAU_NAMES):
+        finite=np.isfinite(samples[:,i]);value=observed[i]
+        result[name]={'delta':float(value) if np.isfinite(value) else None,
+            'CI95':np.quantile(samples[finite,i],[.025,.975]).tolist() if finite.any() else [None,None],
+            'valid_replicates':int(finite.sum())}
+        if per_seed is not None:
+            result[name].update(per_seed_deltas=[float(v) if np.isfinite(v) else None for v in per_seed[:,i]],
+                training_seed_sample_SD=float(np.std(per_seed[:,i],ddof=1)) if len(per_seed)>1 else None)
+    return result
+
+
 def classwise_operating_points(frame):
     """Retain actual selected event counts for all four empirical ROC tails."""
     from scipy.stats import beta
@@ -40,6 +69,7 @@ def classwise_operating_points(frame):
 
 def evaluate(args):
     started=time.perf_counter();args.output.mkdir(parents=True,exist_ok=True)
+    specifications=json.loads(args.comparisons.read_text()) if args.comparisons else {'pairs':[]}
     configs={c['name']:c for path in args.campaign for c in json.loads(path.read_text())['experiments']}
     candidates=[];pending=[]
     for name,config in configs.items():
@@ -51,6 +81,11 @@ def evaluate(args):
         if not manifest.exists() or json.loads(manifest.read_text()).get('status')!='complete' or not predictions.exists():
             pending.append({'name':name,'program':program});continue
         candidates.append((name,config,json.loads(manifest.read_text()),predictions))
+        if program=='probes' and specifications.get('include_global_frozen',False):
+            global_path=directory/'global_linear_predictions.parquet'
+            if not global_path.exists():pending.append({'name':name+'__global','program':'probes'})
+            else:candidates.append((name+'__global',{**config,'probe_representation':'global'},
+                json.loads(manifest.read_text()),global_path))
     if not candidates:raise RuntimeError('no completed independent validation predictions')
     key=['run','chunk','row']
     reference=pd.read_parquet(candidates[0][3]).sort_values(key).reset_index(drop=True)
@@ -59,7 +94,13 @@ def evaluate(args):
     catalog=pd.read_parquet(args.root/'catalog.parquet')
     columns=key+['pixel_channels','bar_channels','tracker_channels','all_empty']
     occupancy=catalog[columns]
-    experiments=[];strata=[];points={};samples={};frames={}
+    experiments=[];strata=[];points={};samples={};frames={};tau_points={};tau_samples={}
+    tau_domains={}
+    if specifications.get('paired_tau_branches',False):
+        for branch in ['electron','muon','hadronic']:
+            mask=reference.label.ne(2).to_numpy()|reference.tau_branch.eq(branch).to_numpy()
+            for domain,w in [('raw',np.ones(len(reference))),('common_support',common)]:
+                tau_domains[branch+'__'+domain]=mask*w
     for name,config,manifest,path in candidates:
         frame=align_frame(pd.read_parquet(path),reference)
         missing=[c for c in columns if c not in frame]
@@ -69,6 +110,9 @@ def evaluate(args):
         points[name]={'raw':cache.compute()[0],'common_support':cache.compute(common)[0]}
         samples[name]={domain:np.stack([cache.compute(bw*w)[0] for bw in weights])
             for domain,w in [('raw',np.ones(len(frame))),('common_support',common)]}
+        tau_points[name]={domain:tau_statistics(cache,w) for domain,w in tau_domains.items()}
+        tau_samples[name]={domain:np.stack([tau_statistics(cache,bw*w) for bw in weights])
+            for domain,w in tau_domains.items()}
         tau=tau_metrics(frame)
         experiments.append({'name':name,'config':config,'program':config.get('program','train'),
             'four_class':cache.report(),'common_support_four_class':cache.report(common),
@@ -83,7 +127,6 @@ def evaluate(args):
             strata.append({'name':name,'stratum':'tau_'+branch,
                 'tau':tau_branch_metrics(frame,branch,tau.get('FPR_0.01',{}).get('threshold'))})
         print(name,'paired-validation statistics complete',flush=True)
-    specifications=json.loads(args.comparisons.read_text()) if args.comparisons else {'pairs':[]}
     comparisons=[]
     for spec in specifications.get('pairs',[]):
         a,b=spec['a'],spec['b']
@@ -91,7 +134,9 @@ def evaluate(args):
             pending.append({'pair':spec});continue
         contrasts={domain:interval_report(points[b][domain]-points[a][domain],samples[b][domain]-samples[a][domain])
             for domain in ['raw','common_support']}
-        comparisons.append({**spec,'metrics':contrasts})
+        branch_contrasts={domain:tau_interval(tau_points[b][domain]-tau_points[a][domain],
+            tau_samples[b][domain]-tau_samples[a][domain]) for domain in tau_domains}
+        comparisons.append({**spec,'metrics':contrasts,'tau_branches':branch_contrasts})
     means=[]
     for spec in specifications.get('seed_mean_comparisons',[]):
         pairs=spec['pairs']
@@ -101,16 +146,25 @@ def evaluate(args):
             delta=np.stack([points[p['b']][domain]-points[p['a']][domain] for p in pairs])
             bootstrap=np.stack([samples[p['b']][domain]-samples[p['a']][domain] for p in pairs]).mean(0)
             result[domain]=interval_report(delta.mean(0),bootstrap,delta)
-        means.append({**spec,'metrics':result})
+        branch_result={}
+        for domain in tau_domains:
+            delta=np.stack([tau_points[p['b']][domain]-tau_points[p['a']][domain] for p in pairs])
+            bootstrap=np.stack([tau_samples[p['b']][domain]-tau_samples[p['a']][domain] for p in pairs]).mean(0)
+            branch_result[domain]=tau_interval(delta.mean(0),bootstrap,delta)
+        means.append({**spec,'metrics':result,'tau_branches':branch_result})
     summary={'utc':datetime.now(timezone.utc).isoformat(),'scope':'S4 independent complete 10k validation; calibration/test frozen',
         'experiments':experiments,'strata':strata,'paired_comparisons':comparisons,'seed_mean_comparisons':means,
         'common_support':support,'resampling_blocks':blocks,'bootstrap_replicates':args.bootstrap,
         'pending':pending,'requested_complete':not pending,'seconds':time.perf_counter()-started,
         'finite_MC_scope':'1%/0.1% FPR efficiency and tau branch counts reported; low selected backgrounds retain finite-MC intervals',
         'resource_scope':'per-task elapsed seconds are not allocation sums when sharing GPU; see campaign_accounting and matched_compute separately'}
+    summary['interval_scope']='pointwise paired connected-chunk intervals conditional on the trained seeds and fixed common-support weights; seed SD reported separately'
+    summary['tau_branch_comparison_scope']='only the stated tau branch versus all non-tau backgrounds; raw and common-support weights use identical physical block multiplicities'
+    summary['tau_branch_points']={name:{domain:dict(zip(TAU_NAMES,[float(v) if np.isfinite(v) else None for v in values]))
+        for domain,values in item.items()} for name,item in tau_points.items()}
     global_probes=[]
     for name,config,manifest,path in candidates:
-        if config.get('program')!='probes':continue
+        if config.get('program')!='probes' or config.get('probe_representation')=='global':continue
         global_path=path.with_name('global_linear_predictions.parquet')
         if not global_path.exists():continue
         frame=align_frame(pd.read_parquet(global_path),reference)
@@ -137,19 +191,20 @@ def plot_curves(output,experiments,frames):
     fig,axes=plt.subplots(2,2,figsize=(11,8),constrained_layout=True)
     groups={}
     for e in experiments:
-        c=e['config'];identity=(c.get('initialization','scratch'),e['program'])
+        c=e['config'];representation=c.get('probe_representation','full')
+        identity=(c.get('initialization','scratch'),e['program'],representation)
         groups.setdefault(identity,[]).append(e)
     curve_rows=[]
-    for (initialization,program),group in groups.items():
+    for (initialization,program,representation),group in groups.items():
         budgets=sorted({e['config'].get('label_budget',100000) for e in group})
         for ax,metric in zip(axes.flat,['macro_AP','NLL','class_2_AP','class_2_eff_at_0.01_FPR']):
             values=[[e['four_class'][metric] for e in group if e['config'].get('label_budget',100000)==budget]
                 for budget in budgets]
             mean=[float(np.mean(v)) for v in values]
             spread=[float(np.std(v,ddof=1)) if len(v)>1 else 0. for v in values]
-            ax.errorbar(budgets,mean,yerr=spread,marker='.',capsize=2,label=initialization+' / '+program)
+            ax.errorbar(budgets,mean,yerr=spread,marker='.',capsize=2,label=initialization+' / '+program+' / '+representation)
             curve_rows.extend({'initialization':initialization,'program':program,'label_budget':budget,
-                'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
+                'representation':representation,'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
                 for budget,m,s,v in zip(budgets,mean,spread,values))
             ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=metric)
     axes[0,0].legend(fontsize=7)

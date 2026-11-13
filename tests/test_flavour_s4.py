@@ -18,10 +18,12 @@ from analysis.flavour.s4.dataset import QueryGeometry, collate_pretrain
 from analysis.flavour.s4.models import PretrainingModel, objective_loss, variance_covariance
 from analysis.flavour.s4.prepare import bar_contributions
 from analysis.flavour.s4.pretrain import evaluate,feature_statistics
-from analysis.flavour.s4.evaluate import evaluate as evaluate_classification,classwise_operating_points
+from analysis.flavour.s4.evaluate import evaluate as evaluate_classification,classwise_operating_points,tau_statistics
+from analysis.flavour.s3.metrics import MetricCache
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
 from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operations
+from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix
 
 
 class S4Tests(unittest.TestCase):
@@ -292,6 +294,17 @@ class S4Tests(unittest.TestCase):
             counter.backward=True;loss.backward();counter.close()
             self.assertEqual(shape_operations(config,batch)['matrix_operations'],sum(counter.counts.values()),objective)
 
+    def test_compact_shapes_preserve_real_ragged_batch_cost_and_budget_rounding(self):
+        items=[self.item(),self.item(19),self.item(172)]
+        items[1]['region_blocks']=1;items[2]['region_blocks']=2
+        actual=collate_planes(items)
+        compact=compact_batch([event_shape(item) for item in items])
+        config={**self.config,'objective':'classification'}
+        self.assertEqual(shape_operations(config,actual),shape_operations(config,compact))
+        costs=[[10,20,30],[12,25,35]]
+        self.assertEqual(nearest_prefix(costs,70),(2,67))
+        self.assertEqual(nearest_prefix(costs,110),(3,132))
+
     def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);n=80;y=np.arange(n)%4
@@ -313,17 +326,39 @@ class S4Tests(unittest.TestCase):
                 (directory/'manifest.json').write_text(json.dumps({'status':'complete'}))
                 filename='full_linear_predictions.parquet' if program=='probes' else 'validation_predictions.parquet'
                 frame.to_parquet(directory/filename,index=False)
+                if program=='probes':frame.to_parquet(directory/'global_linear_predictions.parquet',index=False)
             campaign=root/'campaign.json';campaign.write_text(json.dumps({'experiments':configurations}))
-            pairs=root/'pairs.json';pairs.write_text(json.dumps({'pairs':[{'a':'a','b':'b'}]}))
+            pairs=root/'pairs.json';pairs.write_text(json.dumps({'pairs':[{'a':'a','b':'b'},
+                {'a':'b__global','b':'b'}],'include_global_frozen':True,'paired_tau_branches':True,
+                'seed_mean_comparisons':[{'name':'identical','pairs':[{'a':'a','b':'b'}]}]}))
             args=SimpleNamespace(root=root,output=root/'evaluation',campaign=[campaign],comparisons=pairs,bootstrap=4,strict=True)
             with patch('analysis.flavour.s4.evaluate.plot_curves'):
                 evaluate_classification(args)
             result=json.loads((args.output/'summary.json').read_text())
-            self.assertEqual(len(result['experiments']),2)
+            self.assertEqual(len(result['experiments']),3)
             self.assertTrue(result['requested_complete'])
             self.assertEqual(result['common_support']['retained_events'],n)
             self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['delta'],0.)
             self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['CI95'],[0.,0.])
+            self.assertEqual(result['paired_comparisons'][1]['metrics']['raw']['macro_AP']['CI95'],[0.,0.])
+            for comparison in [result['paired_comparisons'][0],result['seed_mean_comparisons'][0]]:
+                self.assertEqual(comparison['tau_branches']['hadronic__common_support']['AP']['CI95'],[0.,0.])
+                self.assertEqual(comparison['tau_branches']['electron__raw']['AP']['CI95'],[None,None])
+
+    def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
+        from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve
+        labels=np.array([2,2,0,1,3,2,0,1])
+        score=np.array([.8,.8,.8,.3,.3,.2,.2,.1])
+        probabilities=np.tile((1-score[:,None])/3,(1,4));probabilities[:,2]=score
+        weights=np.array([2.,0.,1.,.4,.6,3.,2.,1.])
+        result=tau_statistics(MetricCache(labels,probabilities),weights)
+        truth=labels==2
+        self.assertAlmostEqual(result[0],average_precision_score(truth,score,sample_weight=weights))
+        self.assertAlmostEqual(result[1],roc_auc_score(truth,score,sample_weight=weights))
+        fpr,tpr,_=roc_curve(truth,score,sample_weight=weights,drop_intermediate=False)
+        for measured,acceptance in zip(result[2:],[.01,.001]):
+            self.assertEqual(measured,tpr[fpr<=acceptance][-1])
+        self.assertTrue(np.isnan(tau_statistics(MetricCache(labels,probabilities),weights*(~truth))).all())
 
     def test_four_class_operating_points_preserve_ties_and_finite_counts(self):
         frame=pd.DataFrame({'label':np.arange(40)%4,**{f'p{c}':np.full(40,.25) for c in range(4)}})

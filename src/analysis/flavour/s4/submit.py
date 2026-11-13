@@ -51,15 +51,18 @@ def submit(args):
         (root / name).mkdir(exist_ok=True)
     name = args.name
     prototype_pool=args.gpu_pool=='fp32-prototype'
+    compact_pool=args.gpu_pool=='native-bf16-compact'
+    if compact_pool and (args.backend!='condor' or args.concurrency>2):
+        raise ValueError('compact native BF16 pool supports at most two concurrent fits')
     if prototype_pool:
         if args.backend!='condor' or args.stage not in {'pilot','campaign'}:
-            raise ValueError('V100 pool is limited to explicit Condor optimization prototypes')
+            raise ValueError('FP32 pool is limited to explicit Condor optimization prototypes')
         selected=json.loads(args.campaign.read_text())['experiments']
         for task in args.tasks:
             config=selected[task]
             if (not config.get('fp32_prototype') or config.get('program')!='pilot'
                 or config.get('epochs',1)>1 or config.get('steps_per_epoch',0)>1024):
-                raise ValueError('V100 tasks must be labeled one-epoch FP32 pilots of at most 1024 steps')
+                raise ValueError('FP32 tasks must be labeled one-epoch pilots of at most 1024 steps')
     commit=command(['git','rev-parse','HEAD']).strip()
     if subprocess.run(['git','diff','--quiet','HEAD','--','src/analysis/flavour'],check=False).returncode:
         raise ValueError('commit source changes before freezing a batch snapshot')
@@ -83,12 +86,12 @@ def submit(args):
         frozen=root/'code'/f'{name}.campaign.json'
         frozen.write_text(args.campaign.read_text())
         args.campaign=frozen
-    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay'}
+    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
     elif args.stage == 'assemble':
         arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
-    elif args.stage in {'query_baseline','compute_profile','budget_replay'}:
+    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan'}:
         if len(args.tasks)!=1:raise ValueError('one CPU diagnostic task per allocation')
         arguments=['analysis.flavour.s4.'+args.stage,'--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
     else:
@@ -141,16 +144,20 @@ request_cpus = {gpu_cpus if gpu else 4}
 request_memory = {max(12,args.concurrency*5) if gpu else 12}GB
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
 requirements = (OpSysAndVer == "AlmaLinux9")
-+JobFlavour = "{'workday' if gpu or args.stage=='budget_replay' else 'microcentury'}"
++JobFlavour = "{'workday' if gpu or args.stage in {'budget_replay','matched_plan'} else 'microcentury'}"
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 transfer_output_files = ""
 '''
         if gpu:
             if prototype_pool:
-                requirement='((DeviceName == "Tesla V100-PCIE-32GB") || (DeviceName == "Tesla V100S-PCIE-32GB")) && (GlobalMemoryMb >= 30000)'
+                # This LCG108 torch build has sm75+ kernels; V100/sm70 fails
+                # even in FP32 before the first optimizer step.
+                requirement='(DeviceName == "Tesla T4") && (GlobalMemoryMb >= 15000)'
+            elif compact_pool:
+                requirement='((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA H200") || (DeviceName == "NVIDIA A100-PCIE-40GB") || (DeviceName == "NVIDIA H100L-2-24C MIG 2g.24gb")) && (GlobalMemoryMb >= 20000)'
             else:
-                requirement='((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA A100-PCIE-40GB")) && (GlobalMemoryMb >= 39000)'
+                requirement='((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA H200") || (DeviceName == "NVIDIA A100-PCIE-40GB")) && (GlobalMemoryMb >= 39000)'
             text += 'request_gpus = 1\nrequire_gpus = '+requirement+'\nqueue 1\n'
         elif args.stage == 'data':
             text += 'queue task in '+','.join(map(str,args.tasks))+'\n'
@@ -207,13 +214,13 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','pilot','pretrain','train','probes','worker','campaign'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
     parser.add_argument('--concurrency',type=int,default=6)
     parser.add_argument('--flavor',choices=GPU_FLAVORS,default='h100-47gb')
-    parser.add_argument('--gpu-pool',choices=['native-bf16','fp32-prototype'],default='native-bf16')
+    parser.add_argument('--gpu-pool',choices=['native-bf16','native-bf16-compact','fp32-prototype'],default='native-bf16')
     parser.add_argument('--deadline',type=int,default=21600)
     parser.add_argument('--apply',action='store_true')
     submit(parser.parse_args())

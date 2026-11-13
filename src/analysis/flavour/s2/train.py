@@ -228,7 +228,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
     write_json(output/'manifest.json',manifest)
     for epoch in range(start_epoch,epochs):
         epoch_start=time.perf_counter()
-        train_sampler.epoch=epoch
+        train_sampler.epoch=epoch+config.get('sampler_epoch_offset',0)
         model.train()
         loss_total,events=0.,0
         ready=time.perf_counter()
