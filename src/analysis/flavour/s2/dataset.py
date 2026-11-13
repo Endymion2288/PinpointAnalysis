@@ -1,6 +1,7 @@
 """Observation-only S2 transforms and complete-coverage ragged block batches."""
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -19,7 +20,9 @@ class SpatialDataset(Dataset):
         plan=json.loads((self.root/'plan.json').read_text())
         self.geometry=json.loads(Path(plan['geometry']).read_text())
         self.paths=sorted(p for p in (self.root/'shards').iterdir() if (p/'observations.parquet').exists())
-        self.native=CachedNativeDataset(self.paths,cache_dir=cache_dir,max_shards=config.get('cache_shards',2))
+        staged=os.environ.get('PINPOINT_NATIVE_SHARD_ROOT')
+        native_paths=[Path(staged)/p.name for p in self.paths] if staged else self.paths
+        self.native=CachedNativeDataset(native_paths,cache_dir=cache_dir,max_shards=config.get('cache_shards',2))
         indexes,metadata=[],[]
         for i,path in enumerate(self.paths):
             frame=pd.read_parquet(path/'provenance.parquet')

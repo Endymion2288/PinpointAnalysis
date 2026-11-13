@@ -1,0 +1,13 @@
+{
+  "stage": "S4",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_native_staging_profile_v1",
+      "program": "staging_profile",
+      "shards": 4,
+      "events_per_shard": 8,
+      "repeats": 2
+    }
+  ]
+}

@@ -100,12 +100,12 @@ def submit(args):
             payload=json.dumps(specification,indent=2)+'\n'
         frozen.write_text(payload)
         args.campaign=frozen
-    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','frontend_profile','functional_probe'}
+    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','frontend_profile','functional_probe','staging_profile'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
     elif args.stage == 'assemble':
         arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
-    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','frontend_profile','functional_probe'}:
+    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','frontend_profile','functional_probe','staging_profile'}:
         if len(args.tasks)!=1:raise ValueError('one CPU diagnostic task per allocation')
         arguments=['analysis.flavour.s4.'+args.stage,'--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
     else:
@@ -125,10 +125,17 @@ def submit(args):
         f'export PINPOINT_CODE_COMMIT={shlex.quote(commit)}',f'cd {shlex.quote(str(repo))}']
     if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
+    stage_native_inputs=not cpu_only and not prototype_pool
+    if stage_native_inputs:
+        script.extend(['export PINPOINT_NATIVE_SHARD_ROOT="${_CONDOR_SCRATCH_DIR:-/tmp}/pinpoint_s4_native_inputs"',
+            'python -m analysis.flavour.s4.stage_inputs --root '+shlex.quote(str(root))+
+            ' --output "$PINPOINT_NATIVE_SHARD_ROOT" --record '+shlex.quote(str(root/'runtime'/f'{name}.native_staging.json'))+
+            ' --workers 3'])
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': args.stage, 'name': name,
         'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,'gpu_pool':args.gpu_pool,
         'code_commit': commit,'source_snapshot':str(code),'source_archive':str(source_archive),
         'worker_source':'local scratch extracted from committed archive',
+        'native_input_source':'one shared local compressed copy per allocation, bounded per-reader decoded LRU' if stage_native_inputs else 'direct EOS compressed shards with bounded per-reader LRU',
         'frozen_campaign':str(args.campaign) if args.campaign else None,
         'code_diff':command(['git','diff','--','src/analysis/flavour/s4']), 'submitted': False}
     record = root/'logs'/f'submission_{name}.json'
@@ -231,7 +238,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','frontend_profile','functional_probe','pilot','pretrain','train','probes','worker','campaign'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','frontend_profile','functional_probe','staging_profile','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
