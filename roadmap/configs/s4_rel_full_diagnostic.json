@@ -1,0 +1,15 @@
+{
+  "stage": "S4",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_rel_full_channel_diagnostic_s42",
+      "program": "rel_diagnostic",
+      "checkpoints": [
+        "s4_mae_barrel_channels_e2_s42"
+      ],
+      "probe_events": 512,
+      "bootstrap": 400
+    }
+  ]
+}
