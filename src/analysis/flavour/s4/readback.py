@@ -52,6 +52,10 @@ def inspect(root,name):
     learning={'coarse_and_bar_AP_above_query_prior':bool(informative) and all(v['AP_over_prevalence']>1.05 for v in informative),
         'coarse_or_bar_AP_improves_initialization':any(v['AP']>max(v['initial_AP'] or 0.,v['prevalence']) for v in informative),
         'inner_reconstruction_loss_improves':measured['loss']['reconstruction']<initial['loss']['reconstruction']}
+    if config.get('pixel_query_patch',1)>1:
+        fine=sample_aps['0']
+        learning['fine_pixel_patch_learns_with_at_least_25_positives']=(fine['positives']>=25
+            and fine['AP_over_prevalence'] is not None and fine['AP_over_prevalence']>1.05)
     checks={key:bool(value) for key,value in checks.items()}
     learning={key:bool(value) for key,value in learning.items()}
     report={'utc':datetime.now(timezone.utc).isoformat(),'experiment':name,'checks':checks,

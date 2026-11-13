@@ -10,7 +10,7 @@ import pandas as pd
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s2.evaluate import common_support_weights,tau_metrics,tau_branch_metrics
-from analysis.flavour.s3.evaluate import domains
+from analysis.flavour.s3.evaluate import domains,align_frame
 from analysis.flavour.s3.metrics import MetricCache,NAMES,bootstrap_weights,interval_report,prediction_diagnostics
 
 
@@ -37,9 +37,7 @@ def evaluate(args):
     occupancy=catalog[columns]
     experiments=[];strata=[];points={};samples={};frames={}
     for name,config,manifest,path in candidates:
-        frame=pd.read_parquet(path).sort_values(key).reset_index(drop=True)
-        if not frame[key+['label','family_hi','family_lo']].equals(reference[key+['label','family_hi','family_lo']]):
-            raise ValueError('S4 comparison validation event/family mismatch')
+        frame=align_frame(pd.read_parquet(path),reference)
         missing=[c for c in columns if c not in frame]
         if missing:frame=frame.merge(occupancy[key+missing],on=key,how='left',validate='one_to_one')
         frames[name]=frame
@@ -104,15 +102,23 @@ def plot_curves(output,experiments,frames):
     for e in experiments:
         c=e['config'];identity=(c.get('initialization','scratch'),e['program'])
         groups.setdefault(identity,[]).append(e)
+    curve_rows=[]
     for (initialization,program),group in groups.items():
-        group=sorted(group,key=lambda e:e['config'].get('label_budget',100000))
-        x=[e['config'].get('label_budget',100000) for e in group]
+        budgets=sorted({e['config'].get('label_budget',100000) for e in group})
         for ax,metric in zip(axes.flat,['macro_AP','NLL','class_2_AP','class_2_eff_at_0.01_FPR']):
-            ax.plot(x,[e['four_class'][metric] for e in group],marker='.',label=initialization+' / '+program)
+            values=[[e['four_class'][metric] for e in group if e['config'].get('label_budget',100000)==budget]
+                for budget in budgets]
+            mean=[float(np.mean(v)) for v in values]
+            spread=[float(np.std(v,ddof=1)) if len(v)>1 else 0. for v in values]
+            ax.errorbar(budgets,mean,yerr=spread,marker='.',capsize=2,label=initialization+' / '+program)
+            curve_rows.extend({'initialization':initialization,'program':program,'label_budget':budget,
+                'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
+                for budget,m,s,v in zip(budgets,mean,spread,values))
             ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=metric)
     axes[0,0].legend(fontsize=7)
-    fig.suptitle('S4 label efficiency: fixed complete validation, equal class priors')
+    fig.suptitle('S4 label efficiency: fixed validation; bars show training-seed SD')
     fig.savefig(output/'label_efficiency.pdf');fig.savefig(output/'label_efficiency.png',dpi=160);plt.close(fig)
+    pd.DataFrame(curve_rows).to_csv(output/'label_efficiency.csv',index=False)
     with PdfPages(output/'four_class_diagnostics.pdf') as pdf:
         for e in experiments:
             name=e['name'];frame=frames[name]

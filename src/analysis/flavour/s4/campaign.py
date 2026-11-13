@@ -31,7 +31,7 @@ def main():
             if status(name)=='complete' or (claims/name).exists():
                 pending.remove(task);continue
             dependencies=config.get('dependencies',[])
-            if any(status(d) in {'failed','internal_health_failed'} for d in dependencies):
+            if any(status(d) in {'failed','internal_health_failed','learning_review_required'} for d in dependencies):
                 raise RuntimeError('dependency failed: '+name)
             if not all(status(d)=='complete' for d in dependencies):continue
             if len(active)>=args.concurrency:break

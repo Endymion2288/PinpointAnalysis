@@ -42,7 +42,11 @@ def feature_statistics(x):
     return {'event_count':len(x),'feature_dim':x.shape[-1],
         'RMS':float(x.square().mean().sqrt()),'between_event_RMS':float(std.square().mean().sqrt()),
         'dimension_std_median':float(std.median()),'fraction_dimensions_std_below_1e_minus5':float((std<1e-5).float().mean()),
-        'centered_effective_rank':rank,'all_finite':bool(torch.isfinite(x).all())}
+        'centered_effective_rank':rank,
+        'leading_variance_fraction':float(probability[0]) if len(probability) else 0.,
+        'first_eight_variance_fractions':probability[:8].tolist(),
+        'dimensions_for_90pct_variance':int((probability.cumsum(0)<.9).sum()+1) if eigen.sum()>0 else 0,
+        'all_finite':bool(torch.isfinite(x).all())}
 
 
 def internal_health(model,output,batch,step):
@@ -74,7 +78,7 @@ def internal_health(model,output,batch,step):
 @torch.no_grad()
 def evaluate(model,loader,device,bf16,config):
     model.eval()
-    rows,features,losses,counts,teacher,covered,permutation=[],[],[],[],[],[],[]
+    rows,features,losses,counts,teacher,covered,permutation,student=[],[],[],[],[],[],[],[]
     for batch in loader:
         batch=to_device(batch,device)
         with torch.autocast(device_type=device.type,dtype=torch.bfloat16,enabled=bf16):
@@ -96,6 +100,7 @@ def evaluate(model,loader,device,bf16,config):
                 permutation.append({'level':level,'queries':int(selected.sum()),'delta_BCE':float(difference.mean())})
         features.append(model.pool_global(output['features']).cpu())
         if 'teacher_projection' in output:teacher.append(output['teacher_projection'].cpu())
+        if 'student_projection' in output:student.append(output['student_projection'].cpu())
         prediction=output['reconstruction'].float().cpu().numpy()
         target=batch['reconstruction'].cpu().numpy()
         level=batch['query_level'].cpu().numpy();near=batch['query_near'].cpu().numpy()
@@ -128,6 +133,7 @@ def evaluate(model,loader,device,bf16,config):
         'empirical_hidden_fraction':[float(a[1]/max(1,a[0])) for a in data],
         'scope':'original train partition inner reconstruction-probe; fixed seeds; mixture query risk, no downstream validation/test'}
     if teacher:report['teacher_features']=feature_statistics(torch.cat(teacher))
+    if student:report['student_projection_features']=feature_statistics(torch.cat(student))
     report['event_permutation_delta_BCE']={str(level):float(np.average([r['delta_BCE'] for r in permutation if r['level']==level],
         weights=[r['queries'] for r in permutation if r['level']==level])) for level in range(3)} if permutation else {}
     if covered:

@@ -2,8 +2,14 @@
 import copy
 import unittest
 import io
+import json
+from pathlib import Path
+import tempfile
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import torch
 
 from analysis.flavour.s3.dataset import plane_tokens, collate_planes
@@ -11,7 +17,8 @@ from analysis.flavour.s3.models_repair import PlaneModuleClassifierV2
 from analysis.flavour.s4.dataset import QueryGeometry, collate_pretrain
 from analysis.flavour.s4.models import PretrainingModel, objective_loss, variance_covariance
 from analysis.flavour.s4.prepare import bar_contributions
-from analysis.flavour.s4.pretrain import evaluate
+from analysis.flavour.s4.pretrain import evaluate,feature_statistics
+from analysis.flavour.s4.evaluate import evaluate as evaluate_classification
 
 
 class S4Tests(unittest.TestCase):
@@ -183,6 +190,47 @@ class S4Tests(unittest.TestCase):
         out=model(batch);loss,_=objective_loss(out,batch,config);loss.backward()
         self.assertGreater(float(model.encoder.latent_read.q.weight.grad.square().sum()),0)
         self.assertTrue(all(p.grad is None for p in model.teacher.parameters()))
+
+    def test_feature_spectrum_detects_rank_one_despite_nonzero_variance(self):
+        x=torch.linspace(-1,1,128)[:,None].expand(-1,16)
+        measured=feature_statistics(x)
+        self.assertGreater(measured['between_event_RMS'],.5)
+        self.assertAlmostEqual(measured['centered_effective_rank'],1.,places=5)
+        self.assertAlmostEqual(measured['leading_variance_fraction'],1.,places=5)
+        self.assertEqual(measured['dimensions_for_90pct_variance'],1)
+
+    def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);n=80;y=np.arange(n)%4
+            frame=pd.DataFrame({'run':10081+y,'chunk':np.arange(n)//20,'row':np.arange(n),
+                'label':y,'family_hi':np.zeros(n,dtype='uint64'),'family_lo':np.arange(n,dtype='uint64'),
+                'initE':np.full(n,200000.),'initX':np.full(n,10.),'initY':np.full(n,10.),'initZ':np.full(n,-2400.),
+                'pixel_centered':np.ones(n,dtype=bool),'large_scintillator':np.ones(n,dtype=bool),
+                'all_empty':np.zeros(n,dtype=bool),'pixel_channels':np.full(n,100),
+                'bar_channels':np.full(n,20),'tracker_channels':np.ones(n,dtype=int),
+                'tau_branch':np.full(n,'hadronic')})
+            p=np.eye(4)[y]*.6+.1
+            for c in range(4):frame[f'p{c}']=p[:,c]
+            frame.to_parquet(root/'catalog.parquet',index=False)
+            configurations=[]
+            for name,program in [('a','train'),('b','probes'),('ssl','pretrain')]:
+                config={'name':name,'program':program,'label_budget':1000,'modalities':['pixel','bar','tracker']}
+                configurations.append(config)
+                directory=root/'experiments'/name;directory.mkdir(parents=True)
+                (directory/'manifest.json').write_text(json.dumps({'status':'complete'}))
+                filename='full_linear_predictions.parquet' if program=='probes' else 'validation_predictions.parquet'
+                frame.to_parquet(directory/filename,index=False)
+            campaign=root/'campaign.json';campaign.write_text(json.dumps({'experiments':configurations}))
+            pairs=root/'pairs.json';pairs.write_text(json.dumps({'pairs':[{'a':'a','b':'b'}]}))
+            args=SimpleNamespace(root=root,output=root/'evaluation',campaign=[campaign],comparisons=pairs,bootstrap=4,strict=True)
+            with patch('analysis.flavour.s4.evaluate.plot_curves'):
+                evaluate_classification(args)
+            result=json.loads((args.output/'summary.json').read_text())
+            self.assertEqual(len(result['experiments']),2)
+            self.assertTrue(result['requested_complete'])
+            self.assertEqual(result['common_support']['retained_events'],n)
+            self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['delta'],0.)
+            self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['CI95'],[0.,0.])
 
 
 if __name__=='__main__':unittest.main()

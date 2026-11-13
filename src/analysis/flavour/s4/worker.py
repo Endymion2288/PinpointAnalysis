@@ -28,6 +28,17 @@ def main():
         if not readback['integrity_and_internal_health_pass'] or not readback['measured_learning_pass']:
             raise RuntimeError('corpus pilot must show measured learning before full pretraining')
     importlib.import_module('analysis.flavour.s4.'+program).main()
+    if program=='pretrain':
+        from analysis.flavour.s4.readback import inspect
+        report=inspect(args.root,config['name'])
+        if not report['integrity_and_internal_health_pass'] or not report['measured_learning_pass']:
+            # Preserve the fit and full evidence; downstream dependencies must
+            # stop until objective/architecture/optimization have been reviewed.
+            from analysis.flavour.inventory import write_json
+            path=args.root/'experiments'/config['name']/'manifest.json'
+            manifest=json.loads(path.read_text());manifest['status']='learning_review_required'
+            write_json(path,manifest)
+            raise RuntimeError('full pretraining readback or measured-learning check failed')
 
 
 if __name__=='__main__':main()
