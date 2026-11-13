@@ -97,8 +97,15 @@ def shape_operations(config,batch):
         decoder('reconstruction_',batch['query'].shape[1],latents)
         if 'rel_query' in batch:
             nk=latents
-            if config.get('rel_source')=='global_and_bar_local':
-                events=observed['event_index'][observed['block_detector']==1]
+            if config.get('rel_source') in {'global_and_bar_local','global_and_bar_channels'}:
+                selected=observed['block_detector']==1
+                events=observed['event_index'][selected]
+                if config['rel_source']=='global_and_bar_channels' and selected.any():
+                    mask=observed['local_mask'][selected]
+                    nb,nt=mask.shape
+                    events=events[:,None].expand_as(mask)[mask]
+                    linear('kept_bar_input',nb*nt,26,dim,False)
+                    for i in range(2):attention(f'kept_bar_local{i}',nb,nt,nt)
                 nk+=int(torch.bincount(events,minlength=b).max())
             decoder('rel_',batch['rel_query'].shape[1],nk)
         if config.get('objective')=='distill':

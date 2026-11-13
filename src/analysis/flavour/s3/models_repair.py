@@ -132,13 +132,18 @@ class PlaneModuleClassifierV2(nn.Module):
             if isinstance(module, nn.Linear) and module.bias is not None:
                 nn.init.zeros_(module.bias)
 
-    def encode_features(self, nodes, mask):
+    def encode_channel_features(self, nodes, mask):
+        """Per-channel features before pooling, also available to SSL decoders."""
         xy = nodes[..., 16:18] * (2 * torch.pi)
         fourier = torch.cat([xy.sin(), xy.cos(), (2 * xy).sin(), (2 * xy).cos()], -1)
         fourier = fourier * nodes[..., 3:5].repeat(1, 1, 4)
         x = self.input(torch.cat([nodes, fourier], -1))
         for layer in self.local:
             x = layer(x, x, mask) * mask[..., None]
+        return x
+
+    def encode_features(self, nodes, mask):
+        x = self.encode_channel_features(nodes, mask)
         summary = scale_totals(response_totals(nodes, mask)).to(x.dtype)
         return torch.cat([masked_pool(x, mask), summary], -1)
 

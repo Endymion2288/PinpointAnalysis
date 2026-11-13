@@ -86,14 +86,21 @@ class PretrainingModel(nn.Module):
         result={'features':features,'reconstruction':self.decoder(batch['query'],features['global_tokens'])}
         if 'rel_query' in batch:
             source=features['global_tokens'];valid=None
-            if self.config.get('rel_source')=='global_and_bar_local':
+            if self.config.get('rel_source') in {'global_and_bar_local','global_and_bar_channels'}:
                 # Kept bar semantics need their retained detector information.
                 # MAE reconstruction still reads ONLY global tokens. Rel can
                 # also read every visible bar local block, without truth-based
                 # routing, truncation, or changing the downstream classifier.
                 selected=batch['student']['block_detector']==1
-                local=features['local_tokens'][selected]
                 event=batch['student']['event_index'][selected]
+                if self.config['rel_source']=='global_and_bar_channels' and selected.any():
+                    mask=batch['student']['local_mask'][selected]
+                    nodes=batch['student']['nodes'][selected]
+                    channel=self.encoder.encode_channel_features(nodes,mask)
+                    local=channel[mask]
+                    event=event[:,None].expand_as(mask)[mask]
+                else:
+                    local=features['local_tokens'][selected]
                 counts=torch.bincount(event,minlength=len(source))
                 width=int(counts.max())
                 packed=source.new_zeros((len(source),width,source.shape[-1]))

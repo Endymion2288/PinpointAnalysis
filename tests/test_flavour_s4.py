@@ -163,8 +163,7 @@ class S4Tests(unittest.TestCase):
         self.assertGreater(float(model.encoder.latent_read.q.weight.grad.square().sum()),0.)
 
     def test_kept_bar_route_backpropagates_with_global_features_detached(self):
-        config={**self.config,'objective':'mae_rel','rel_source':'global_and_bar_local'}
-        model=PretrainingModel(config);items=[]
+        items=[]
         for shift in [0,19]:
             obs=self.observation(shift)
             obs['bar']={'channel_id':self.qg.bar_ids[:4],'bounds_mm':np.array([
@@ -175,13 +174,21 @@ class S4Tests(unittest.TestCase):
             n,g,m,c=plane_tokens(obs,self.geometry,self.config)
             item=self.item(shift);item.update(nodes=n,groups=g,modules=m,raw_counts=c);items.append(item)
         batch=collate_pretrain(items);batch['rel_query']=batch['query'][:,:8]
-        original=model.encoder.encode
-        def detached_global(value):
-            result=original(value);result['global_tokens']=result['global_tokens'].detach();return result
-        with patch.object(model.encoder,'encode',side_effect=detached_global):
-            logits=model(batch)['rel']
-        loss=-logits.log_softmax(-1)[...,0].mean();loss.backward()
-        self.assertGreater(float(model.encoder.input[0].weight.grad.square().sum()),0.)
+        for source in ['global_and_bar_local','global_and_bar_channels']:
+            config={**self.config,'objective':'mae_rel','rel_source':source};model=PretrainingModel(config)
+            original=model.encoder.encode
+            def detached_global(value):
+                result=original(value);result['global_tokens']=result['global_tokens'].detach();return result
+            with patch.object(model.encoder,'encode',side_effect=detached_global):
+                logits=model(batch)['rel']
+            loss=-logits.log_softmax(-1)[...,0].mean();loss.backward()
+            self.assertGreater(float(model.encoder.input[0].weight.grad.square().sum()),0.)
+            batch['rel_valid']=torch.ones((2,8),dtype=torch.bool)
+            batch['rel_target']=torch.rand((2,8,4)).softmax(-1)
+            model.zero_grad(set_to_none=True);counter=MatrixOperations(model)
+            loss,_=objective_loss(model(batch),batch,config)
+            counter.backward=True;loss.backward();counter.close()
+            self.assertEqual(shape_operations(config,batch)['matrix_operations'],sum(counter.counts.values()),source)
 
     def test_checkpoint_restores_ema_optimizer_and_rng(self):
         config={**self.config,'objective':'distill'}
