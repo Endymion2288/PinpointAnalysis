@@ -1,0 +1,303 @@
+{
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/progress_v5/summary.json",
+  "utc": "2026-11-13T21:05:19.268257+00:00",
+  "scope": "S4 independent complete 10k validation; calibration/test frozen",
+  "verified_train_models": 9,
+  "health_samples": 819,
+  "checkpoint_checks_per_model": 14,
+  "evaluated_models": 21,
+  "pending_items": 145,
+  "requested_complete": false,
+  "supervised_results": [
+    {
+      "name": "s4_scratch_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "macro_AP": 0.2972086761466784,
+      "tau_AP": 0.2595344005450073,
+      "NLL": 1.5161884338148683
+    },
+    {
+      "name": "s4_scratch_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "macro_AP": 0.4271001720153702,
+      "tau_AP": 0.3212960492871188,
+      "NLL": 1.2770602031512976
+    },
+    {
+      "name": "s4_scratch_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "macro_AP": 0.46976868987508114,
+      "tau_AP": 0.35133805879500807,
+      "NLL": 1.213802330633579
+    },
+    {
+      "name": "s4_scratch_n1000_s17",
+      "label_budget": 1000,
+      "seed": 17,
+      "macro_AP": 0.2866641318525832,
+      "tau_AP": 0.26370358082099804,
+      "NLL": 1.5482681203393465
+    },
+    {
+      "name": "s4_scratch_n10000_s17",
+      "label_budget": 10000,
+      "seed": 17,
+      "macro_AP": 0.42583541449689766,
+      "tau_AP": 0.32450085831411535,
+      "NLL": 1.2728804250386938
+    },
+    {
+      "name": "s4_scratch_n1000_s2026",
+      "label_budget": 1000,
+      "seed": 2026,
+      "macro_AP": 0.28787999822065413,
+      "tau_AP": 0.26030673057523024,
+      "NLL": 1.558338005804337
+    },
+    {
+      "name": "s4_scratch_n10000_s2026",
+      "label_budget": 10000,
+      "seed": 2026,
+      "macro_AP": 0.42693989556891365,
+      "tau_AP": 0.3253358889139129,
+      "NLL": 1.2728289833165742
+    },
+    {
+      "name": "s4_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "macro_AP": 0.3617916345511127,
+      "tau_AP": 0.2843211430417706,
+      "NLL": 1.4022619154288036
+    },
+    {
+      "name": "s4_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "macro_AP": 0.44504900483823817,
+      "tau_AP": 0.3337849454683427,
+      "NLL": 1.2546071529226672
+    }
+  ],
+  "scratch_three_seed_statistics": {
+    "1000": {
+      "macro_AP": {
+        "mean": 0.2905842687399719,
+        "sample_SD": 0.005769026163380806
+      },
+      "tau_AP": {
+        "mean": 0.26118157064707853,
+        "sample_SD": 0.002218000204443446
+      },
+      "NLL": {
+        "mean": 1.540931519986184,
+        "sample_SD": 0.022011721497428794
+      }
+    },
+    "10000": {
+      "macro_AP": {
+        "mean": 0.4266251606937272,
+        "sample_SD": 0.0006886192172581276
+      },
+      "tau_AP": {
+        "mean": 0.3237109321717157,
+        "sample_SD": 0.0021326189381576806
+      },
+      "NLL": {
+        "mean": 1.2742565371688552,
+        "sample_SD": 0.002428182194260195
+      }
+    }
+  },
+  "primary_seed42_pairs": [
+    {
+      "a": "s4_scratch_n1000_s42",
+      "b": "s4_mae3_n1000_s42",
+      "question": "independent MAE pretraining and downstream seed versus paired Scratch",
+      "group": "primary",
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": 0.06458295840443429,
+            "CI95": [
+              0.05791726401583799,
+              0.0713145301156362
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.02478674249676327,
+            "CI95": [
+              0.014041540519741874,
+              0.03596568452310996
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.11392651838606471,
+            "CI95": [
+              -0.12667732826483472,
+              -0.10258086820336176
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0023999999999999994,
+            "CI95": [
+              -0.004644877031292353,
+              0.008289316815822319
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.00039999999999999986,
+            "CI95": [
+              -0.0020302100414029884,
+              0.0008180042774090549
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": 0.05987637741970592,
+            "CI95": [
+              0.05206827314877667,
+              0.0675286349984341
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.010151658520282048,
+            "CI95": [
+              -0.001191175567912575,
+              0.022243832149679628
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.10829193722320363,
+            "CI95": [
+              -0.12306518047304373,
+              -0.09451013694813858
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0015769810030553336,
+            "CI95": [
+              -0.005406986275722899,
+              0.006904133451000059
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0009991191078891817,
+            "CI95": [
+              -0.0029230260554963597,
+              0.0007755888525462859
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "a": "s4_scratch_n10000_s42",
+      "b": "s4_mae3_n10000_s42",
+      "question": "independent MAE pretraining and downstream seed versus paired Scratch",
+      "group": "primary",
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": 0.017948832822867966,
+            "CI95": [
+              0.01254785673815609,
+              0.024082118804967887
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.012488896181223896,
+            "CI95": [
+              0.004659240209933686,
+              0.020967239522253333
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.022453050228630422,
+            "CI95": [
+              -0.02910775303289387,
+              -0.015330635356856808
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0016000000000000007,
+            "CI95": [
+              -0.004925290300546452,
+              0.009492953936989524
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0012000000000000001,
+            "CI95": [
+              -0.004738837126290789,
+              0.002843354906019589
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": 0.015982825818753543,
+            "CI95": [
+              0.010052874929988364,
+              0.02276946248867687
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.008667137356097865,
+            "CI95": [
+              0.0003009727740104745,
+              0.017026875250235104
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.020664854768526197,
+            "CI95": [
+              -0.027783562626993292,
+              -0.013326766518783112
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.00096629636986173,
+            "CI95": [
+              -0.007013960180598146,
+              0.0075415668696737674
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0005446995948442442,
+            "CI95": [
+              -0.003518325747497998,
+              0.00474849718905467
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    }
+  ],
+  "interval_scope": "pointwise paired connected-chunk intervals conditional on the trained seeds and fixed common-support weights; seed SD reported separately",
+  "calibration_test_used": false
+}
