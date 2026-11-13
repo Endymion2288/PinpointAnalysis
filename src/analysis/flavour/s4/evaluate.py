@@ -14,6 +14,30 @@ from analysis.flavour.s3.evaluate import domains,align_frame
 from analysis.flavour.s3.metrics import MetricCache,NAMES,bootstrap_weights,interval_report,prediction_diagnostics
 
 
+def classwise_operating_points(frame):
+    """Retain actual selected event counts for all four empirical ROC tails."""
+    from scipy.stats import beta
+    from analysis.flavour.s3.metrics import CLASSES
+    result={}
+    for c,name in enumerate(CLASSES):
+        binary=pd.DataFrame({'label':np.where(frame.label.to_numpy()==c,2,0),'p2':frame[f'p{c}'].to_numpy()})
+        measured=tau_metrics(binary)
+        points={}
+        for acceptance in [.01,.001]:
+            key=f'FPR_{acceptance:g}'
+            if key not in measured:continue
+            point=dict(measured[key]);ns=int(frame.label.eq(c).sum());nb=len(frame)-ns
+            for kind,k,n in [('signal',point['signal_selected'],ns),('background',point['background_selected'],nb)]:
+                point[kind+'_count_interval_95']=[float(beta.ppf(.025,k,n-k+1)) if k else 0.,
+                    float(beta.ppf(.975,k+1,n-k)) if k<n else 1.]
+            point.update(signal_events=ns,background_events=nb,
+                threshold_scope='S4 validation empirical ROC; final calibrated operating point not selected',
+                count_interval_scope='descriptive Clopper-Pearson counts at validation-selected thresholds; no independent operating-point coverage claim')
+            points[key]=point
+        result[name]=points
+    return result
+
+
 def evaluate(args):
     started=time.perf_counter();args.output.mkdir(parents=True,exist_ok=True)
     configs={c['name']:c for path in args.campaign for c in json.loads(path.read_text())['experiments']}
@@ -49,6 +73,7 @@ def evaluate(args):
         experiments.append({'name':name,'config':config,'program':config.get('program','train'),
             'four_class':cache.report(),'common_support_four_class':cache.report(common),
             'tau':tau,'prediction_diagnostics':prediction_diagnostics(cache.p),
+            'classwise_operating_points':classwise_operating_points(frame),
             'training_seconds':manifest.get('seconds'),'GPU':manifest.get('gpu_name',manifest.get('GPU')),
             'peak_gpu_mib':manifest.get('peak_gpu_allocated_mib'),'code_commit':manifest.get('code_commit')})
         for domain,mask in domains(frame,config,True).items():

@@ -18,7 +18,7 @@ from analysis.flavour.s4.dataset import QueryGeometry, collate_pretrain
 from analysis.flavour.s4.models import PretrainingModel, objective_loss, variance_covariance
 from analysis.flavour.s4.prepare import bar_contributions
 from analysis.flavour.s4.pretrain import evaluate,feature_statistics
-from analysis.flavour.s4.evaluate import evaluate as evaluate_classification
+from analysis.flavour.s4.evaluate import evaluate as evaluate_classification,classwise_operating_points
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
 from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operations
@@ -313,6 +313,17 @@ class S4Tests(unittest.TestCase):
             self.assertEqual(result['common_support']['retained_events'],n)
             self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['delta'],0.)
             self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['CI95'],[0.,0.])
+
+    def test_four_class_operating_points_preserve_ties_and_finite_counts(self):
+        frame=pd.DataFrame({'label':np.arange(40)%4,**{f'p{c}':np.full(40,.25) for c in range(4)}})
+        result=classwise_operating_points(frame)
+        self.assertEqual(len(result),4)
+        for points in result.values():
+            for point in points.values():
+                self.assertEqual(point['signal_selected'],0)
+                self.assertEqual(point['background_selected'],0)
+                self.assertEqual(point['background_events'],30)
+                self.assertGreater(point['background_count_interval_95'][1],0)
 
 
 if __name__=='__main__':unittest.main()
