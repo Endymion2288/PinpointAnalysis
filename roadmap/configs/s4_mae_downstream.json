@@ -124,10 +124,12 @@
       "required_pilot": "s4p5_barrel_local_s42",
       "initialize_pretraining": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4p5_barrel_local_s42"
       ],
       "required_ssl_readbacks": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4p5_barrel_local_s42"
       ],
       "rel_source": "global_and_bar_local"
     },
@@ -378,6 +380,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -441,6 +447,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -504,6 +514,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -753,6 +767,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_cont_e2_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -816,6 +834,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_cont_e2_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -879,6 +901,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_cont_e2_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -1128,6 +1154,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_barrel_e2_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -1191,6 +1221,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_barrel_e2_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {
@@ -1254,6 +1288,10 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_barrel_e2_s42"
+      ],
+      "probe_branches": [
+        "full",
+        "global"
       ]
     },
     {

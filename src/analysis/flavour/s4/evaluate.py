@@ -83,6 +83,18 @@ def evaluate(args):
         'pending':pending,'requested_complete':not pending,'seconds':time.perf_counter()-started,
         'finite_MC_scope':'1%/0.1% FPR efficiency and tau branch counts reported; low selected backgrounds retain finite-MC intervals',
         'resource_scope':'per-task elapsed seconds are not allocation sums when sharing GPU; see campaign_accounting and matched_compute separately'}
+    global_probes=[]
+    for name,config,manifest,path in candidates:
+        if config.get('program')!='probes':continue
+        global_path=path.with_name('global_linear_predictions.parquet')
+        if not global_path.exists():continue
+        frame=align_frame(pd.read_parquet(global_path),reference)
+        cache=MetricCache(frame.label.to_numpy(),frame[[f'p{c}' for c in range(4)]].to_numpy())
+        global_probes.append({'name':name,'label_budget':config['label_budget'],
+            'initialization':config.get('initialization','scratch'),
+            'four_class':cache.report(),'common_support_four_class':cache.report(common),
+            'scope':'global-only frozen linear probe; same fitted-label subset and fixed validation'})
+    summary['global_only_linear_probes']=global_probes
     write_json(args.output/'summary.json',summary)
     np.savez_compressed(args.output/'bootstrap_statistics.npz',metric_names=np.array(NAMES),
         **{f'{name}__{domain}':x for name,value in samples.items() for domain,x in value.items()})

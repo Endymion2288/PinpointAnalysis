@@ -81,7 +81,7 @@ def main():
         xfit=features;xhold=extract(model,val,config,torch.device(args.device))
         yfit=train.metadata.label.to_numpy();yhold=val.metadata.label.to_numpy();holdmeta=val.metadata.copy()
     measured={};statistics={}
-    for branch in (list(features) if train_only else ['full']):
+    for branch in (list(features) if train_only else config.get('probe_branches',['full','global'])):
         statistics[branch]={'fit':feature_statistics(torch.from_numpy(xfit[branch])),
             'probe':feature_statistics(torch.from_numpy(xhold[branch]))}
         modes=['linear','MLP'] if train_only else ['linear']

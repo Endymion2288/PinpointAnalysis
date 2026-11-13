@@ -396,7 +396,11 @@
       "required_pilot": "s4_backbone_health_s42",
       "train_domain": "all",
       "program": "probes",
-      "probe_scope": "independent_validation"
+      "probe_scope": "independent_validation",
+      "probe_branches": [
+        "full",
+        "global"
+      ]
     },
     {
       "seed": 42,
@@ -452,7 +456,11 @@
       "required_pilot": "s4_backbone_health_s42",
       "train_domain": "all",
       "program": "probes",
-      "probe_scope": "independent_validation"
+      "probe_scope": "independent_validation",
+      "probe_branches": [
+        "full",
+        "global"
+      ]
     },
     {
       "seed": 42,
@@ -508,7 +516,11 @@
       "required_pilot": "s4_backbone_health_s42",
       "train_domain": "all",
       "program": "probes",
-      "probe_scope": "independent_validation"
+      "probe_scope": "independent_validation",
+      "probe_branches": [
+        "full",
+        "global"
+      ]
     },
     {
       "seed": 42,
