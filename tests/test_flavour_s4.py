@@ -21,6 +21,7 @@ from analysis.flavour.s4.pretrain import evaluate,feature_statistics
 from analysis.flavour.s4.evaluate import evaluate as evaluate_classification
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
+from analysis.flavour.s4.compute_profile import MatrixOperations
 
 
 class S4Tests(unittest.TestCase):
@@ -259,6 +260,13 @@ class S4Tests(unittest.TestCase):
         self.assertAlmostEqual(measured['centered_effective_rank'],1.,places=5)
         self.assertAlmostEqual(measured['leading_variance_fraction'],1.,places=5)
         self.assertEqual(measured['dimensions_for_90pct_variance'],1)
+
+    def test_training_matrix_count_includes_only_required_linear_backwards(self):
+        for needs_input_gradient,expected in [(False,96),(True,144)]:
+            model=torch.nn.Linear(3,4,bias=False);counter=MatrixOperations(model)
+            value=torch.ones((2,3),requires_grad=needs_input_gradient)
+            result=model(value).sum();counter.backward=True;result.backward();counter.close()
+            self.assertEqual(sum(counter.counts.values()),expected)
 
     def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
         with tempfile.TemporaryDirectory() as temporary:

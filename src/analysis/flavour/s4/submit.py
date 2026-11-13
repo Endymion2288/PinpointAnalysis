@@ -54,6 +54,8 @@ def submit(args):
     if subprocess.run(['git','diff','--quiet','HEAD','--','src/analysis/flavour'],check=False).returncode:
         raise ValueError('commit source changes before freezing a batch snapshot')
     code=root/'code'/commit
+    source_archive=root/'code'/f'{commit}.source.tar'
+    archive=None
     if not (code/'.ready').exists():
         archive=subprocess.check_output(['git','archive','--format=tar','HEAD','--',
             'src/analysis/__init__.py','src/analysis/flavour'])
@@ -61,18 +63,24 @@ def submit(args):
         with tarfile.open(fileobj=io.BytesIO(archive)) as stream:
             stream.extractall(code,filter='data')
         (code/'.ready').write_text(commit+'\n')
+    if not source_archive.exists():
+        if archive is None:
+            archive=subprocess.check_output(['git','archive','--format=tar','HEAD','--',
+                'src/analysis/__init__.py','src/analysis/flavour'])
+        from analysis.flavour.s2.train import atomic_output
+        atomic_output(source_archive,lambda stream:stream.write(archive))
     if args.campaign:
         frozen=root/'code'/f'{name}.campaign.json'
         frozen.write_text(args.campaign.read_text())
         args.campaign=frozen
-    cpu_only = args.stage in {'data','assemble','query_baseline'}
+    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
     elif args.stage == 'assemble':
         arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
-    elif args.stage == 'query_baseline':
-        if len(args.tasks)!=1:raise ValueError('one geometry baseline per CPU allocation')
-        arguments=['analysis.flavour.s4.query_baseline','--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
+    elif args.stage in {'query_baseline','compute_profile'}:
+        if len(args.tasks)!=1:raise ValueError('one CPU diagnostic task per allocation')
+        arguments=['analysis.flavour.s4.'+args.stage,'--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
     else:
         arguments = ['analysis.flavour.s3.parallel', '--root', str(root), '--campaign', str(args.campaign.resolve()),
             '--name', name, '--concurrency', str(args.concurrency), '--training-module', 'analysis.flavour.s4.'+args.stage,
@@ -83,13 +91,18 @@ def submit(args):
     script = ['#!/bin/bash', 'set -o pipefail', 'which() { command -v "$@"; }',
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh', 'set -e',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1',
-        f'export PYTHONPATH={shlex.quote(str(code/"src"))}:${{PYTHONPATH:-}}',
+        f'PINPOINT_S4_LOCAL_CODE="${{_CONDOR_SCRATCH_DIR:-/tmp}}/pinpoint_s4_code/{commit}"',
+        'mkdir -p "$PINPOINT_S4_LOCAL_CODE"',
+        'tar -xf '+shlex.quote(str(source_archive))+' -C "$PINPOINT_S4_LOCAL_CODE"',
+        'export PYTHONPATH="$PINPOINT_S4_LOCAL_CODE/src:${PYTHONPATH:-}"',
         f'export PINPOINT_CODE_COMMIT={shlex.quote(commit)}',f'cd {shlex.quote(str(repo))}']
     if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': args.stage, 'name': name,
         'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,
-        'code_commit': commit,'source_snapshot':str(code),'frozen_campaign':str(args.campaign) if args.campaign else None,
+        'code_commit': commit,'source_snapshot':str(code),'source_archive':str(source_archive),
+        'worker_source':'local scratch extracted from committed archive',
+        'frozen_campaign':str(args.campaign) if args.campaign else None,
         'code_diff':command(['git','diff','--','src/analysis/flavour/s4']), 'submitted': False}
     record = root/'logs'/f'submission_{name}.json'
     if record.exists() and json.loads(record.read_text()).get('submitted'):
@@ -179,7 +192,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','query_baseline','pilot','pretrain','train','probes','worker','campaign'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
