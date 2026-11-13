@@ -17,6 +17,8 @@ from analysis.flavour.inventory import write_json
 
 def compatible_gpu_name(actual, expected):
     """Accept H100 MIG partitions when the campaign requires the H100 family."""
+    if isinstance(expected, list):
+        return any(compatible_gpu_name(actual, candidate) for candidate in expected)
     return actual == expected or (
         expected == 'NVIDIA H100 NVL' and isinstance(actual, str)
         and actual.startswith('NVIDIA H100 NVL MIG ')
@@ -83,7 +85,7 @@ def readback(root, config, hardware, validation):
         'complete_epochs': last['epoch'] == n_epochs and
             [item['epoch'] for item in history] == list(range(1, n_epochs + 1)) and last['history'] == history,
         'frozen_configuration': manifest['config'] == last['config'] == best['config'] == config,
-        'execution_environment': compatible_gpu_name(manifest['gpu_name'], hardware['GPU']) and
+        'execution_environment': compatible_gpu_name(manifest['gpu_name'], hardware.get('allowed_GPUs',hardware['GPU'])) and
             manifest['torch'] == hardware['torch'] and manifest['mixed_precision'] == 'torch.bfloat16',
         'all_optimizer_steps_applied': last['optimizer_steps'] == manifest['optimizer_steps'] == steps and
             last['amp_skipped_steps'] == manifest['amp_skipped_steps'] == 0 and

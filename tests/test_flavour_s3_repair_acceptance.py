@@ -8,9 +8,16 @@ import unittest
 from analysis.flavour.s3.accept_repair import confirmation_contract, experiment_record
 from analysis.flavour.s3.evaluate import factorial_specifications
 from analysis.flavour.s3.inspect_repair import summarize_samples
+from analysis.flavour.s2.readback import compatible_gpu_name
 
 
 class RepairAcceptanceTests(unittest.TestCase):
+    def test_recorded_BF16_hardware_allowlist_keeps_actual_device(self):
+        allowed=['NVIDIA H100 NVL','NVIDIA A100-PCIE-40GB']
+        self.assertTrue(compatible_gpu_name('NVIDIA A100-PCIE-40GB',allowed))
+        self.assertTrue(compatible_gpu_name('NVIDIA H100 NVL MIG 3g.47gb',allowed))
+        self.assertFalse(compatible_gpu_name('Tesla V100-PCIE-32GB',allowed))
+
     def test_no_legacy_factorial_is_invented_for_revision2(self):
         self.assertEqual(factorial_specifications({'factorial_interactions': []}), [])
         self.assertEqual(len(factorial_specifications({})), 1)

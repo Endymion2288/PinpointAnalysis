@@ -63,6 +63,30 @@ class SharedAllocationTests(unittest.TestCase):
 
 
 class ParallelLifecycleTests(unittest.TestCase):
+    def test_repair_backends_claim_each_fit_only_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root/'kubeflow').mkdir()
+            campaign=root/'campaign.json'
+            campaign.write_text(json.dumps({'experiments':[{'name':'a'},{'name':'b'}]}))
+            (root/'claims/b').mkdir(parents=True)
+            (root/'claims/b/state.json').write_text(json.dumps({'status':'complete','job':'other'}))
+            for name in ['a','b']:
+                (root/'experiments'/name).mkdir(parents=True)
+                (root/'experiments'/name/'manifest.json').write_text(json.dumps({'status':'complete'}))
+            class Child:
+                pid=1
+                def poll(self):
+                    return 0
+            argv=['parallel','--root',str(root),'--campaign',str(campaign),'--name','j',
+                  '--tasks','0','1','--training-module','analysis.flavour.s3.train_repair']
+            with patch('sys.argv',argv),patch('analysis.flavour.s3.parallel.subprocess.Popen',return_value=Child()) as launch:
+                parallel_main()
+            self.assertEqual(launch.call_count,1)
+            self.assertEqual(launch.call_args.args[0][-1],'0')
+            record=json.loads((root/'kubeflow/parallel_j.json').read_text())
+            self.assertEqual([p['experiment'] for p in record['processes']],['a'])
+            self.assertEqual(json.loads((root/'claims/b/state.json').read_text())['job'],'other')
+
     def test_first_child_exit_does_not_end_other_training(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

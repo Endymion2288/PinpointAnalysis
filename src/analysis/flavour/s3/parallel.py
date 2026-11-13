@@ -20,7 +20,9 @@ def main():
     parser.add_argument('--concurrency', type=int, default=4)
     parser.add_argument('--training-module', default='analysis.flavour.s3.train')
     parser.add_argument('--append-record', action='store_true')
+    parser.add_argument('--claim-tasks', action='store_true')
     args = parser.parse_args()
+    args.claim_tasks = args.claim_tasks or args.training_module == 'analysis.flavour.s3.train_repair'
     if args.concurrency < 1 or len(set(args.tasks)) != len(args.tasks):
         raise ValueError('positive concurrency and distinct task IDs required')
     configs = json.loads(args.campaign.read_text())['experiments']
@@ -43,6 +45,16 @@ def main():
     while queue or active:
         while queue and len(active) < args.concurrency:
             task = queue.pop(0)
+            claim = args.root/'claims'/configs[task]['name']
+            if args.claim_tasks:
+                claim.parent.mkdir(exist_ok=True)
+                try:
+                    claim.mkdir()
+                except FileExistsError:
+                    print(f'{configs[task]["name"]}: claimed by another allocated worker; no duplicate fit',flush=True)
+                    continue
+                write_json(claim/'state.json',{'job':args.name,'status':'running',
+                    'host':os.environ.get('HOSTNAME'),'utc':datetime.now(timezone.utc).isoformat()})
             log = directory / f'{args.name}_task{task}.log'
             stream = log.open('w')
             child = subprocess.Popen([sys.executable, '-m', args.training_module,
@@ -58,6 +70,10 @@ def main():
             if code is not None:
                 stream.close()
                 row.update(exit_code=code, finished_at=datetime.now(timezone.utc).isoformat())
+                if args.claim_tasks:
+                    write_json(args.root/'claims'/row['experiment']/'state.json',
+                               {'job':args.name,'status':'complete' if code==0 else 'failed',
+                                'exit_code':code,'utc':row['finished_at']})
                 active.remove((child, stream, row))
                 write_json(record, evidence)
         if active:
@@ -66,6 +82,16 @@ def main():
     write_json(record, evidence)
     if any(p['exit_code'] != 0 for p in evidence['processes']):
         raise SystemExit('one or more independent training processes failed; see per-task logs')
+    if args.claim_tasks:
+        while True:
+            manifests=[args.root/'experiments'/name/'manifest.json' for name in names]
+            statuses=[json.loads(p.read_text()).get('status') if p.exists() else None for p in manifests]
+            claims=[args.root/'claims'/name/'state.json' for name in names]
+            if any(p.exists() and json.loads(p.read_text()).get('status')=='failed' for p in claims):
+                raise SystemExit('a peer fit failed; review its claim and logs before reassignment')
+            if all(value=='complete' for value in statuses):
+                break
+            time.sleep(30)
 
 
 if __name__ == '__main__':

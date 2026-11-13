@@ -59,6 +59,8 @@ def main():
         module('conditional', '--comparisons', args.comparisons, '--experiments', *names,
                '--bootstrap', 400, '--output', evaluation / 'conditional')
         module('plot_repair_health', '--experiments', *names, '--output', evaluation / 'internal_training_health.pdf')
+        stage('plot_repair_comparisons', [sys.executable,'-m','analysis.flavour.s3.plot_repair_comparisons',
+            '--evaluation',str(evaluation/'summary.json'),'--output',str(evaluation)])
         module('token_census', '--campaign', args.campaign, '--confirmation', args.confirmation,
                '--output', evaluation / 'token_census')
         for name in ['s3r_multiscale_native_s42_e4', 's3r_multiscale_tracker_s42_e4']:

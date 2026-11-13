@@ -2,7 +2,12 @@
   "stage": "S3_revision2_architecture_representation_pilots",
   "hardware": {
     "GPU": "NVIDIA H100 NVL",
-    "torch": "2.7.1"
+    "torch": "2.7.1",
+    "allowed_GPUs": [
+      "NVIDIA H100 NVL",
+      "NVIDIA A100-PCIE-40GB"
+    ],
+    "scope": "BF16 native GPUs; architecture-quality comparisons retain actual hardware and seed; no cross-device speedup claim"
   },
   "data_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100",
   "scope": "architecture repair; full accepted 80k train and 10k validation; old S3 conclusions withdrawn",

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 from analysis.flavour.inventory import write_json
 
@@ -31,8 +32,17 @@ def main():
             subprocess.run([sys.executable, '-m', 'analysis.flavour.s3.parallel', '--root', str(args.root),
                 '--campaign', str(args.campaign), '--name', args.name, '--tasks', *map(str, tasks),
                 '--concurrency', str(args.concurrency), '--training-module', 'analysis.flavour.s3.train_repair',
-                '--append-record'], check=True)
+                '--append-record','--claim-tasks'], check=True)
             names = [configurations[t]['name'] for t in tasks]
+            while True:
+                manifests=[args.root/'experiments'/name/'manifest.json' for name in names]
+                statuses=[json.loads(p.read_text()).get('status') if p.exists() else None for p in manifests]
+                claims=[args.root/'claims'/name/'state.json' for name in names]
+                if any(p.exists() and json.loads(p.read_text()).get('status')=='failed' for p in claims):
+                    raise RuntimeError('an allocated peer failed; inspect before reassigning its claim')
+                if all(value=='complete' for value in statuses):
+                    break
+                time.sleep(30)
             for module in ['analysis.flavour.s2.readback', 'analysis.flavour.s3.inspect_repair']:
                 command = [sys.executable, '-m', module, '--root', str(args.root), '--experiments', *names]
                 if module.endswith('readback'):

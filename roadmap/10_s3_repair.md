@@ -25,6 +25,9 @@
 | LitePT | [2025-12全文](https://arxiv.org/html/2512.13689v1) | 补读局部处理/低分辨率attention分工，不引入未验证custom sparse kernels |
 | Transformers without Normalization | [CVPR 2025](https://openaccess.thecvf.com/content/CVPR2025/html/Zhu_Transformers_without_Normalization_CVPR_2025_paper.html) | 已评估DyT备选；本轮优先明确可监控的LN，不同时引入额外饱和函数 |
 | FASERCal foundation-style framework | [2026 v2](https://arxiv.org/html/2604.07037v2), local source in docs | module-aware+Perceiver-IO的多尺度融合；监督修复先于预训练，未运行S4 |
+| Stabilizing Transformer Training by Preventing Attention Entropy Collapse | [ICML 2023](https://proceedings.mlr.press/v202/zhai23a.html) | 将attention entropy作为不稳定诊断；本文的spectral reparameterization不与本轮QK-LN同时新增，避免引入无对照的额外变量 |
+| Attention is not all you need: pure attention loses rank doubly exponentially with depth | [ICML 2021](https://proceedings.mlr.press/v139/dong21a.html) | 检查token同质化，保留FF/残差与local旁路；其纯attention理论不能直接证明本模型的queries已塌缩 |
+| mHC: Manifold-Constrained Hyper-Connections | [2026-01 v2 preprint](https://arxiv.org/html/2512.24880v2) | 残差连接的可控信号传播与实际内存开销；本轮浅层网络采用小LayerScale与明确LN，不扩宽为多残差流/Sinkhorn网络 |
 
 ## Revision 2架构
 
@@ -38,6 +41,14 @@
 6. Head concat再归一化，Linear后独立LayerNorm+SiLU，另有直接linear logits路径。Head使用FP32，encoder可BF16。归一化及线性路径共同避免所有梯度依赖一个饱和激活。
 
 区域划分只使用现有硬件module和canonical空间顺序；绝不截断原始节点。全局分类最终仍须聚合，不能称可逆编码；用同输入的fixed/multiscale/no-direct控制测量瓶颈，而非仅凭token数量断言性能。
+
+### 因果解释与尚未回答的问题
+
+残差方差满足 `Var(x+αf)=Var(x)+α²Var(f)+2αCov(x,f)`，因此仅有Pre-LN不控制残差流的累积幅度。多模态concat还受协方差影响，Head投影方差为`WΣWᵀ`；把相关context重复加入三模态会重复放大某些方向。修复同时约束分支尺度、残差增量和Head隐藏尺度，不能把效果归于单独更换GELU。GELU数学上在x<−5不是恒等零；旧checkpoint中全零来自具体数值范围及实现精度。
+
+最大train事件下fixed读取124个module query tokens和24个latents；multiscale region32/region8分别读取958/3,690个regional tokens和64个latents，另有14,597个local blocks的mean/max直接读出。完整节点覆盖证明未进行事件截断；局部池化与全局汇聚仍非可逆，不能据此声称全部微观信息均已无损编码。Region8/32、direct/no-direct、native/1 mm控制分别测量更细区域、独立读出与原生粒度的净影响。
+
+已观察到同region的query向量cosine偏高，但分组平均、BF16舍入和共同region内容均可造成这一现象；单独cosine高不等于训练失败。用FP32 cosine、query variation、采样attention entropy、上游梯度、完整validation和压缩控制共同判断。若完整学习结果显示latent或module路径弱而旁路承担大部分分类，明确记录路径贡献，不把旁路的有效学习当作所有attention层均充分工作的证明。
 
 ## 训练与内部健康要求
 
@@ -60,3 +71,5 @@ Pilot通过后冻结独立科学矩阵，至少覆盖稳定fixed、multiscale na
 实测局部编码以2048个blocks为计算chunk并使用`torch.compile(dynamic=True)`可显著减少高占用尾部的launch开销，不改变每block至多32节点、窗口、region或latent定义。当前执行版本2在编译区外观测local pool，健康采样与普通训练使用同一编码器计算路径；每worker scratch安装匹配Torch2.7.1的Triton3.3.1及EL9编译支持。workers1，所有配置使用同一执行方式，全部从头拟合。第一次尚未完成epoch的eager输出移入`audit/eager_execution_before_compile`，只作执行诊断并照常计费。编译先导版本1曾在健康采样切换eager路径，fixed末次拟合失败；已保留证据并修复，不用失败gate启动正式训练。
 
 最终入口`analysis.flavour.s3.finalize_repair`先执行14项CPU读回、所有采样内部健康和独立best-checkpoint FP32 backward，再完成四分类、条件域、工作点、token census与英文图。`accept_repair`要求实际validation NLL优于constant class-prior NLL、完整validation分数非常数、encoder连通、所有计划健康采样齐全，同时检查冻结矩阵、三seed对照、400次128块bootstrap、终态allocation与累计120预算。只通过checkpoint读回不足以验收；故障模型必须修复重训。共享/混合backend allocation成本不直接用于声称模型本体加速，质量晋级仍遵守原四分类阈值。
+
+调度补充：确认任务同时进入HTCondor，实际获配后才以原子`claims/<experiment>`领取；Kubeflow后续确认波也使用同一领取机制，已有writer不重复启动。允许H100（含47GB MIG）与A10040GB原生BF16执行，同Torch2.7.1和模型/更新预算；硬件作为实测元数据保留，跨设备allocation不称模型加速。未获配任务可由另一backend先领取。完整验收还报告NLL相对constant prior的400次物理块bootstrap差值区间，区间支持学习后才通过有效学习项；这是固定validation checkpoint的诊断，仍不是冻结test结论。

@@ -82,11 +82,24 @@ def inspect(root, name):
     prior = np.asarray(manifest['validation_class_counts'], dtype=float)
     prior /= prior.sum()
     constant_nll = float(-(prior[prior > 0] * np.log(prior[prior > 0])).sum())
+    from analysis.flavour.s3.metrics import bootstrap_weights
+    weights, block_summary = bootstrap_weights(predictions, 400)
+    p = predictions[[f'p{c}' for c in range(4)]].to_numpy(dtype='float64')
+    p = np.clip(p, np.finfo(float).eps, 1 - np.finfo(float).eps)
+    p /= p.sum(axis=1, keepdims=True)
+    labels_array = predictions.label.to_numpy(dtype='int64')
+    excess = -np.log(p[np.arange(len(p)), labels_array]) + np.log(prior[labels_array])
+    bootstrap_excess = (weights @ excess) / weights.sum(axis=1)
+    learning_interval = np.quantile(bootstrap_excess, [.025, .975]).tolist()
     report['checks'].update(validation_NLL_better_than_constant_prior=selected['NLL'] < constant_nll,
+                            paired_block_CI_supports_learning_over_constant_prior=learning_interval[1] < 0,
                             full_validation_scores_nonconstant=not diagnostics['all_events_same_probability_vector'])
     report.update(utc=datetime.now(timezone.utc).isoformat(), experiment=name,
                   best_epoch=state['epoch'], constant_prior_NLL=constant_nll,
                   selected_validation_NLL=selected['NLL'], prediction_diagnostics=diagnostics,
+                  NLL_minus_constant_prior={'delta':float(excess.mean()),'CI95':learning_interval,
+                                            'bootstrap_replicates':400,'blocks':block_summary,
+                                            'scope':'fixed NLL-selected checkpoint on validation; diagnostic evidence of learning, conditional on selection; no held-out test claim'},
                   independent_best_FP32_probe=probe,
                   probe_events=metadata.iloc[ids][key + ['label']].to_dict('records'),
                   scope='all scheduled BF16 training health samples plus independent CPU FP32 backward on eight nonempty validation events; no fit or threshold selection')

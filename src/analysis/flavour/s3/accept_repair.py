@@ -72,7 +72,8 @@ def main():
             and accounting['organization_GPU_hours_upper_bound'] <= 120,
         'plots_and_error_tables_present': all((args.evaluation.parent / p).is_file() for p in
             ['four_class_diagnostics.pdf', 'four_class_resource_tradeoff.pdf', 'error_groups.parquet',
-             'internal_training_health.pdf', 'token_census/counts.parquet'])
+             'internal_training_health.pdf', 'token_census/counts.parquet',
+             'repaired_model_overview.pdf','repaired_paired_intervals.pdf'])
             and all((args.conditional.parent / p).is_file() for p in ['four_class_domain_curves.pdf', 'sampled_curves.parquet']),
         'native_error_displays_present': all((args.evaluation.parent / 'event_displays' / name / 'native_error_groups.pdf').is_file()
             for name in ['s3r_multiscale_native_s42_e4', 's3r_multiscale_tracker_s42_e4']),

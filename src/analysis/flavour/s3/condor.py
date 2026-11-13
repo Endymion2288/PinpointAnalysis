@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--tasks',type=int,nargs='+')
     parser.add_argument('--tag',required=True)
     parser.add_argument('--concurrency',type=int,default=1)
+    parser.add_argument('--gpu-products',nargs='+',default=['NVIDIA H100 NVL'])
     args=parser.parse_args()
     snapshot=command(['condor_status','-schedd','-af','Name','TotalRunningJobs','TotalIdleJobs','TotalHeldJobs'])
     candidates=[]
@@ -58,11 +59,14 @@ def main():
         arguments=['analysis.flavour.s3.parallel','--root',str(root),'--campaign',str(args.campaign.resolve()),
                    '--name',parallel_name,'--training-module','analysis.flavour.s3.'+args.stage,
                    '--concurrency',str(args.concurrency),'--tasks',*map(str,tasks)]
+        if args.stage=='train_repair':
+            arguments+=['--claim-tasks']
     elif training:
         arguments+=['--task','$(task)'];queue='queue task in '+','.join(map(str,tasks))
     elif args.stage=='profile':arguments+=['--tasks',*map(str,tasks),'--events','3','--output',str(root/args.tag)]
     else:arguments+=['--tasks',*map(str,tasks),'--output',str(root/args.tag)]
     arguments=' '.join(shlex.quote(a) if a!='$(task)' else a for a in arguments)
+    gpu_requirement='('+ ' || '.join('DeviceName == '+json.dumps(name) for name in args.gpu_products)+')'
     submit=f'''universe = vanilla
 executable = {wrapper}
 arguments = {arguments}
@@ -73,7 +77,7 @@ request_cpus = {max(4,args.concurrency*3) if parallel_name else 4}
 request_memory = {max(12,args.concurrency*10) if parallel_name else 12}GB
 request_disk = 12GB
 request_gpus = 1
-require_gpus = (DeviceName == "NVIDIA H100 NVL") && (GlobalMemoryMb >= 80000)
+require_gpus = {gpu_requirement} && (GlobalMemoryMb >= 39000)
 +JobFlavour = "{'workday' if training else 'microcentury'}"
 requirements = (OpSysAndVer == "AlmaLinux9")
 should_transfer_files = YES

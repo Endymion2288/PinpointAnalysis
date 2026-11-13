@@ -1,0 +1,19 @@
+{
+  "scope": "S3 revision2 execution in progress; no full-validation scientific conclusion yet",
+  "legacy_method_conclusions_withdrawn": true,
+  "screen_models": 8,
+  "confirmation_models": 12,
+  "screen_campaign": "roadmap/configs/s3_repair_screen.json",
+  "confirmation_campaign": "roadmap/configs/s3_repair_confirmation.json",
+  "pilot_all_passed": true,
+  "full_event_stress_all_passed": true,
+  "current_GPU_job": "pinpoint-s3r-campaign-compiled-v2",
+  "current_concurrency": 8,
+  "queued_Condor_clusters": [
+    1574083,
+    1574084
+  ],
+  "accepted_samples_and_detector_proxy_unchanged": true,
+  "calibration_test_used": false,
+  "S4_S6_executed": false
+}

@@ -7,6 +7,7 @@ import torch
 import pandas as pd
 
 from analysis.flavour.s2.train import run
+from analysis.flavour.s2.readback import compatible_gpu_name
 from analysis.flavour.s3.dataset import PlaneDataset, collate_planes
 from analysis.flavour.s3.health import TrainingHealth
 from analysis.flavour.s3.models_repair import build_model
@@ -55,8 +56,8 @@ def main():
         raise RuntimeError('complete-event stress gradients/activations must pass before fitting')
     if args.device.startswith('cuda'):
         actual = torch.cuda.get_device_name()
-        expected = campaign['hardware']['GPU']
-        assert actual == expected or (expected == 'NVIDIA H100 NVL' and actual.startswith('NVIDIA H100 NVL MIG '))
+        expected = campaign['hardware'].get('allowed_GPUs',campaign['hardware']['GPU'])
+        assert compatible_gpu_name(actual,expected)
         assert torch.__version__ == campaign['hardware']['torch']
         assert torch.cuda.is_bf16_supported(including_emulation=False)
     run(args, dataset_class=PlaneDataset, model_factory=build_model, collate_fn=collate_planes,
