@@ -145,6 +145,8 @@ Validation的tracker-active域有5,630事件，tracker-empty有4,370，所有探
 
 最终条件域配对、固定背景/相同purity曲线及尾部计数等待确认训练后统一计算。1%/0.1%阈值为validation经验工作点，不是部署阈值；低背景计数必须与效率一起解释。Purity只针对本benchmark prior，不推算真实产额。
 
+已实测各域四类分母，详见[阶段78](2026-11-13_stage78_s3_domain_denominators.md)。完整域0.1% FPR最多允许每类7个背景，pixel-centered、高占用和全空域为0个；全部域该工作点均低于25个背景的尾部充分性标记。高占用域e类prior为43.7968%，全空域tau类为31.9149%。原始计数保存在`validation_domain_denominators.json`，最终实际选择数仍由完整条件域评价输出。
+
 ### 执行、成本与产物
 
 所有正式训练通过HTCondor或Kubeflow执行。确认批次使用一个`nvidia.com/mig-3g.47gb` reservation、四个独立训练进程；supervisor等待所有子进程退出并自动补入队列。每项具有独立seed/config/checkpoint，未重复提交writer。显存占用与MIG device-hours均不替代GPU compute utilization。
