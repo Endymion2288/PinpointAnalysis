@@ -21,3 +21,5 @@ Condor cluster2198296获得24GB H100 MIG后，三项matched-supervised在首个�
 新增回归直接运行缺省program的worker分发，以及缺省program的已完成模型readback/health汇总。修复后25项S4测试全部通过（49.088秒）。另将图中单seed的SD记为未定义、不画误差棒，使用英文物理指标名称。重新提交matched-supervised与CPU v2，继续完成下游、Rel语义事件置换、最终配对图表和成本。
 
 完整1k MAE3 seed42已完成，best epoch1：macro AP0.36179163、τ AP0.28432114、NLL1.40226192；Scratch对应0.29720868/0.25953440/1.51618843。仅为单seed初步比较，完整paired interval、独立seeds与matched-supervised尚待。
+
+重提wave同时带上已通过pilot的完整EMA及MAE/Rel继续训练，复用原冻结任务配置与互斥claims，先获配的后端领取；分类matrix与资源预算不变。这样在HTCondor获得紧凑MIG时，也能提前推进关键预训练依赖。
