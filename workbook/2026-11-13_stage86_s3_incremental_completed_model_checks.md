@@ -80,6 +80,12 @@ JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed na
 
 14:31:11 UTC费用刷新：修复上界8.035463658 device-hours；累计S3上界39.273732336 /120，余额下界80.726267664，缺失history=0。终态、全部恢复模型读回及最终科学评价尚未完成。
 
+14:52 UTC增量：16/20模型已完整训练，16个全部通过CPU读回、内部健康和适用的分支诊断。原H100六个seed17训练均正常结束，Condor1574083实际exit0、RemoteWallClockTime=9,251s；A100已从epoch2恢复region8_2026和tracker2026，两个ParT在正式新MIG Job继续。没有因读回或激活故障缩短训练。14:40:42 UTC费用上界为修复8.511474027、累计S3 39.749742705 /120；这是当时快照，最终费用待终态后刷新。
+
+人工查看已完成健康图的native seed17/2026及tracker seed42三页：英文标题/图例清楚，local pool与归一化Head尺度稳定；Head第一层Linear RMS仍有增长，隐藏层LN持续控制尺度，不能把所有中间层误写成unit RMS。Regional queries高度相似且global分支较弱的现象保留为解释对象。采样attention entropy只限首组/前128keys，真实有效key数不同，低entropy不单独构成collapse诊断。记录在`audit/completed_health_visual_review.json`；最终全矩阵图尚待生成与复核。
+
+最终比较图新增raw/common-support各一页的四类AP配对95%物理块区间，`repaired_class_intervals.pdf`，与原四项macro统计及seed spread图并列；严格产物检查同步要求新图。相关六项验收回归0.007s通过，两个修改模块`compileall`及`git diff --check`通过；最终真实数据渲染尚未发生。
+
 ## 阶段性结论
 
 已确认修复结构可以完成全量四轮训练并取得统计支持的有效学习；首个模型的全部计划内部健康及checkpoint读回通过。其余19模型尚未全部完成，因此尚无最终结构/粒度/tracker净增益结论；旧S3结论继续撤回。

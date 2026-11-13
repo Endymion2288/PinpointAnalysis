@@ -38,23 +38,31 @@ def main():
                      'Dots are seed fits; bars are one sample SD, not physical-event confidence intervals', fontsize=11)
         pdf.savefig(fig); plt.close(fig)
     comparisons = data['seed_mean_comparisons']
-    with PdfPages(args.output / 'repaired_paired_intervals.pdf') as pdf:
-        for scope in ['raw', 'common_support']:
-            fig, axes = plt.subplots(1, 4, figsize=(18, 6), constrained_layout=True)
-            y = np.arange(len(comparisons))
-            for axis, metric in zip(axes, ['macro_AP', 'NLL', 'macro_F1', 'balanced_accuracy']):
-                for i, row in enumerate(comparisons):
-                    measured = row['metrics'][scope][metric]
-                    delta = measured['delta']; low, high = measured['CI95']
-                    axis.plot([low, high], [i, i], color=f'C{i%10}')
-                    axis.scatter([delta], [i], color=f'C{i%10}', s=20)
-                axis.axvline(0, color='gray', linestyle='--')
-                axis.set(yticks=y, yticklabels=[label(c['name']) for c in comparisons] if axis is axes[0] else [],
-                         xlabel=f'Delta {metric} (B - A)', title=metric)
-                axis.grid(axis='x', alpha=.25)
-            fig.suptitle(f'Repaired S3, {scope}: prespecified three-seed mean contrasts\n'
-                         '95% paired physical-block intervals, 400 replicates; conditional on fitted seeds', fontsize=11)
-            pdf.savefig(fig); plt.close(fig)
+    from analysis.flavour.s3.metrics import CLASSES
+    metric_groups = [
+        ('repaired_paired_intervals.pdf', ['macro_AP', 'NLL', 'macro_F1', 'balanced_accuracy'],
+         ['Macro AP', 'NLL', 'Macro F1', 'Balanced accuracy']),
+        ('repaired_class_intervals.pdf', [f'class_{c}_AP' for c in range(4)],
+         [f'{name} AP' for name in CLASSES]),
+    ]
+    for filename, metrics, titles in metric_groups:
+        with PdfPages(args.output / filename) as pdf:
+            for scope in ['raw', 'common_support']:
+                fig, axes = plt.subplots(1, 4, figsize=(18, 6), constrained_layout=True)
+                y = np.arange(len(comparisons))
+                for axis, metric, title in zip(axes, metrics, titles):
+                    for i, row in enumerate(comparisons):
+                        measured = row['metrics'][scope][metric]
+                        delta = measured['delta']; low, high = measured['CI95']
+                        axis.plot([low, high], [i, i], color=f'C{i%10}')
+                        axis.scatter([delta], [i], color=f'C{i%10}', s=20)
+                    axis.axvline(0, color='gray', linestyle='--')
+                    axis.set(yticks=y, yticklabels=[label(c['name']) for c in comparisons] if axis is axes[0] else [],
+                             xlabel=f'Delta {title} (B - A)', title=title)
+                    axis.grid(axis='x', alpha=.25)
+                fig.suptitle(f'Repaired S3, {scope}: prespecified three-seed mean contrasts\n'
+                             '95% paired physical-block intervals, 400 replicates; conditional on fitted seeds', fontsize=11)
+                pdf.savefig(fig); plt.close(fig)
 
 
 if __name__ == '__main__':
