@@ -1,6 +1,6 @@
 # S3科学分析：screen完成，确认批次进行中
 
-本文为最终报告的进行中版本。17项screen及八项确认中的两项已完成，4 mm late已有三seed结果；完整三seed配对区间、最终条件域比较和组织成本尚未完成，S3未最终验收。以下表格仅使用已经发布的完整结果。
+本文为最终报告的进行中版本。17项screen及八项确认中的四项已完成，4 mm late与tracker两个候选均有三seed结果；完整三seed配对区间、最终条件域比较和组织成本尚未完成，S3未最终验收。以下表格仅使用已经发布的完整结果。
 
 ## 阶段目标
 
@@ -77,7 +77,7 @@
 
 三seed平均AP[e, mu, tau, NC]=[0.457055, 0.341811, 0.286026, 0.316254]。相对S2 native ParT/ParticleNet，macro AP均值差分别−0.106209457/−0.081498885，NLL差+0.106559213/+0.090724464；四类平均AP均更低。这些是给定三个训练seed的描述差值，物理事件CI与正式晋级检查仍等待统一400次bootstrap。不能把训练sample SD作为配对事件CI。
 
-部分确认统计保存在结果根`confirmation_partial_summary.json`，包含三模型的34项统计、混淆矩阵、mean/sample SD和基线差值，明确标记`S3_complete=false`、区间与成本pending。此处只读取已完成的validation输出，没有新增训练、使用calibration/test或重跑完整bootstrap。
+部分确认统计保存在结果根`confirmation_partial_summary.json`，按候选分组保存三模型的34项统计、混淆矩阵、mean/sample SD和基线差值，明确标记`S3_complete=false`、区间与成本pending。此处只读取已完成的validation输出，没有新增训练、使用calibration/test或重跑完整bootstrap。
 
 另读取两项新增seed的epoch4 best checkpoint，在同一组每类2事件、共8事件上执行CPU FP32/eval前向和一次分类损失反向，无optimizer更新。两项全部参数finite，均有8组不同score，上游分类梯度均非零：
 
@@ -95,6 +95,29 @@ python -m analysis.flavour.s3.diagnose --root "$S3_ROOT" \
   --experiment s3_a4_late_s17_e4 --checkpoint best \
   --output "$S3_ROOT/diagnostic_confirmation_late_s17_best.json"
 ```
+
+### 第二个完整三seed候选：fine/context/latent加tracker
+
+新增seed17/2026均完成四轮、80,064 applied updates、零AMP skips，各14项CPU读回通过，best NLL均在epoch4。确认批次现有四项完成、56项CPU读回通过；其余四项为主模型native/1 mm的两个新增seed，均已在同一Pod中运行。
+
+| Seed | Macro AP | Macro F1 | Balanced accuracy | NLL |
+|---|---:|---:|---:|---:|
+| 17 | 0.371025 | 0.361652 | 0.364900 | 1.317594 |
+| 42 | 0.368196 | 0.357890 | 0.359600 | 1.324486 |
+| 2026 | 0.372647 | 0.364919 | 0.367000 | 1.318925 |
+| Mean | 0.370623 | 0.361487 | 0.363833 | 1.320335 |
+| Sample SD | 0.002252 | 0.003517 | 0.003814 | 0.003656 |
+
+三seed平均AP[e, mu, tau, NC]=[0.463373, 0.372400, 0.291391, 0.355326]。相对S2 native ParT/ParticleNet，macro AP均值差−0.085873475/−0.061162903，NLL差+0.092500892/+0.076666143，四类平均AP均更低。该候选的质量均值高于4 mm late，但参数量为749,868，后者为373,060；两者还同时改变了窗口、context、fusion和模态，不能把候选间差值解释为单独tracker贡献。正式配对CI和方法晋级决定仍等待完整冻结评价。
+
+两项新增seed的best checkpoint也完成同8事件CPU FP32/eval诊断，全部参数finite，各有8组不同score：
+
+| Seed | Head GELU exact-zero fraction | Input gradient squared norm | Module-read gradient squared norm |
+|---|---:|---:|---:|
+| 17 | 0.792968750 | 5.541955e-10 | 0.000862623 |
+| 2026 | 0.841145813 | 0.230910013 | 0.005662644 |
+
+上游梯度非零与主fine/latent seed42的完全切断不同；seed17的input梯度平方范数很小，仍不能单凭一个小样本梯度值判定优化充分。原始记录为`diagnostic_confirmation_tracker_s{17,2026}_best.json`，均实际exit0，复现时将上节diagnose模板的experiment/output替换为对应tracker模型。没有更新训练参数。
 
 ### 配对统计与条件化范围
 
@@ -114,7 +137,7 @@ CPU token census进一步定位了结构压缩边界。在同一最高occupancy 
 
 ### 模态、接受度与空响应
 
-Tracker候选相对主模型的seed42 macro AP差为+0.118196335，[+0.109862158, +0.127902741]。对照模型已塌缩，增加tracker同时改变了输入、参数与优化状态，因而不能把这个差值全部归因于tracker测量的独立信息。类似地，塌缩模型之间的geometry/bar零差不证明这些信息没有用。
+Tracker候选相对主模型的seed42 macro AP差为+0.118196335，[+0.109862158, +0.127902741]。两项manifest均为749,868参数；此前阶段74将这一对照描述为增加参数量不准确，现已更正。该同参数量、同训练预算对照中的主模型已塌缩，差值包含增加tracker响应后优化轨迹的变化，尚不能将两者分解为独立的测量信息与优化稳定性贡献。类似地，塌缩模型之间的geometry/bar零差不证明这些信息没有用。
 
 Validation的tracker-active域有5,630事件，tracker-empty有4,370，所有探测器响应全空有282；pixel-centered域885，large-scintillator域4,494，pixel channels>=1,000域1,201。各域保持全部事件及本域class priors。Seed42 tracker候选在pixel-centered/large-scintillator域macro AP为0.503675/0.427976，tracker-active/empty为0.335919/0.370482；域间AP差同时受到prior与样本难度影响，不能作为同一事件的tracker消融证据。
 
@@ -154,4 +177,4 @@ python -m analysis.flavour.s3.finalize --root "$S3_ROOT" \
 
 ## 下一步计划
 
-完成其余六项confirmation与CPU读回，联合报告三seed均值、sample SD、四类配对区间、条件域/尾部统计、native错误事件图和终态成本。逐项审阅strict gate覆盖及英文图示，更新本报告和roadmap完成状态，提交版本化最终汇总与推荐backbone。S4–S6不执行。
+完成其余四项confirmation与CPU读回，联合报告三seed均值、sample SD、四类配对区间、条件域/尾部统计、native错误事件图和终态成本。逐项审阅strict gate覆盖及英文图示，更新本报告和roadmap完成状态，提交版本化最终汇总与推荐backbone。S4–S6不执行。

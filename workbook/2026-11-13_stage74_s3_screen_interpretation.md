@@ -32,7 +32,7 @@
 | Pixel+bar context latent → +tracker | +0.118196335 | [+0.109862158, +0.127902741] |
 | Four → eight module queries | +0.030445213 | [+0.026691102, +0.035132058] |
 
-Tracker增量的对照模型本身为常数预测。增加tracker同时改变输入、参数和训练状态，所以此差值证明当前两份训练模型性能不同，不能全部归因于tracker测量的独立信息。Fine context latent的geometry/pair和模态消融也受同类优化问题影响；零差不构成无几何贡献或无bar贡献的证据。
+Tracker增量的对照模型本身为常数预测。两项manifest均为749,868参数，增加tracker没有增加参数量；它改变输入响应，并改变本次训练得到的优化状态。此差值证明同参数量、同训练预算下两份模型性能不同，但尚不能将tracker信息与输入引起的优化轨迹变化分解。Fine context latent的geometry/pair和模态消融也受同类优化问题影响；零差不构成无几何贡献或无bar贡献的证据。
 
 Tracker候选的若干条件域如下，均保留该域全部事件和原始class priors：
 
