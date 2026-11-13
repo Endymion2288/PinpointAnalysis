@@ -29,6 +29,9 @@ class SharedAllocationTests(unittest.TestCase):
                 {'experiment': 'b', 'started_at': '2026-11-12T00:30:00+00:00',
                  'finished_at': '2026-11-12T01:00:00+00:00'}]}))
             row = {'job': 'j', 'status': 4, 'seconds': 3600., 'GPU_hours': 1.,
+                   'allocation_estimate_kind': 'conservative_upper_bound',
+                   'allocation_basis': 'retained_scheduler_events_to_job_terminal_time_conservative_upper_bound',
+                   'pod_phase': None, 'job_terminal_conditions': [{'type': 'Complete', 'status': 'True'}],
                    'CPU_core_hours': 22., 'GPU_resource_hours': {'mig': 1.},
                    'started_at': '2026-11-12T00:00:00+00:00',
                    'finished_at': '2026-11-12T01:00:00+00:00'}
@@ -37,6 +40,11 @@ class SharedAllocationTests(unittest.TestCase):
             self.assertEqual(sum(r['CPU_core_hours'] for r in rows), 22.)
             self.assertEqual(sum(r['GPU_resource_hours']['mig'] for r in rows), 1.)
             self.assertEqual(sum(r['seconds'] for r in rows), 3600.)
+            for shared in rows:
+                self.assertEqual(shared['allocation_estimate_kind'], 'conservative_upper_bound')
+                self.assertEqual(shared['reservation_allocation_basis'], row['allocation_basis'])
+                self.assertIsNone(shared['pod_phase'])
+                self.assertEqual(shared['job_terminal_conditions'][0]['type'], 'Complete')
 
 
 class ParallelLifecycleTests(unittest.TestCase):

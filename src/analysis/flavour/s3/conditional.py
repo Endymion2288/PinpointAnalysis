@@ -162,7 +162,8 @@ def plot_curves(frame, output):
                         values = part[part['class'].eq(c) & part.experiment.eq(name)]
                         for row, curve in enumerate(['ROC', 'PR']):
                             v = values[values.curve.eq(curve)]
-                            axes[row, c].plot(v.x, v.y, label=name, color=f'C{index}', linewidth=1)
+                            axes[row, c].plot(v.x, v.y, label=name, color=f'C{index}', linewidth=1,
+                                              drawstyle='steps-post' if curve == 'PR' else 'default')
                     axes[0, c].set(title=label, xlabel='Background acceptance', ylabel='Class efficiency',
                                    xlim=(0, 1), ylim=(0, 1))
                     axes[0, c].set_xscale('symlog', linthresh=.001, linscale=.5)

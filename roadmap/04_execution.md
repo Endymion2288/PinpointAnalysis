@@ -1,6 +1,6 @@
 # 分阶段工单、资源与交付
 
-S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3的17项screen及238项CPU读回已完成，8项新增seed确认中6项完成、其余2项1 mm任务并发运行，见[执行合同](09_s3_operations.md)与[阶段59](../workbook/2026-11-12_stage59_s3_diagnostics_and_queue_handoff.md)。S4–S6未执行。
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3已完成25项科学模型及350项CPU读回，完整四分类22单seed/9三seed/1交互、七条件域及19项strict门槛通过；新模型未晋级，保留ParT reference与1 mm控制。组织成本上界31.238268678 device-hours，见[科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)与[最终验收](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。S4–S6未执行。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
@@ -135,4 +135,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-S3正在以PN/ParT native及1 mm三seed结果为基线，检验plane-aware局部编码、module-aware context与latent fusion。保留bar，tracker同时评价四类收益/覆盖/成本；不把native或某架构的τ AP未确认增量理解为硬件信息无用。共享输入、冻结proxy与calibration/test角色继续沿用。冻结17项screen已完成，按[四类规则](09_s3_operations.md)选出的两个候选及主native/1 mm结构正在完成三seed确认；完整区间、条件域、终态成本及strict gate完成后更新[科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)。Kubeflow与HTCondor按实际获配速度交接idle任务，Running任务继续执行。
+S3已完成以PN/ParT native及1 mm三seed为基线的plane-aware局部编码、module context和latent fusion检验。25项科学模型、350项读回及完整条件评价已通过严格验收，八项晋级决定均为false，保留S2 ParT native reference及1 mm控制。Tracker的NC argmax F1收益与四类AP/固定背景效率退化分别报告。主模型弱学习/常数输出干扰分辨率推断，当前未确立shared 4 mm压缩抹平native优势。下一项研究先独立冻结优化稳定性与压缩控制，再决定S4；本轮S4–S6未执行。详见[科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)与[最终数值](results/s3_summary.json)。

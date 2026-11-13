@@ -86,7 +86,7 @@ def plot_all(output, experiments, frames, root):
                 fpr, tpr, _ = roc_curve(truth, frame[f'p{c}'])
                 precision, recall, _ = precision_recall_curve(truth, frame[f'p{c}'])
                 axes[0, 1].plot(fpr, tpr, label=label)
-                axes[1, 0].plot(recall, precision, label=label)
+                axes[1, 0].step(recall, precision, where='post', label=label)
             axes[0, 1].set(xlabel='Background acceptance', ylabel='Class efficiency', title='One-vs-rest ROC')
             axes[1, 0].set(xlabel='Recall', ylabel='Precision', title='One-vs-rest precision-recall')
             axes[0, 1].legend(fontsize=7); axes[1, 0].legend(fontsize=7)

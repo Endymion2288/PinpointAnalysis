@@ -1,4 +1,4 @@
-status: confirmation_in_progress
+status: completed
 stage: S3
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12
 source_data: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100
@@ -11,3 +11,14 @@ confirmation_seeds: [17, 42, 2026]
 maximum_organization_GPU_hours: 120
 calibration_test_used: false
 S4_S6_executed: false
+confirmation: roadmap/configs/s3_confirmation.json
+confirmation_comparisons: roadmap/configs/s3_confirmation_pairs.json
+final_summary: roadmap/results/s3_summary.json
+final_acceptance_report: workbook/2026-11-13_stage80_s3_final_acceptance.md
+scientific_report: workbook/2026-11-13_stage77_s3_scientific_analysis.md
+scientific_models: 25
+readback_checks_passed: 350
+strict_output_checks_passed: 19
+new_models_promoted: 0
+recommended_reference: S2_ParT_native_with_1mm_control
+organization_device_hours_upper_bound: 31.23826867780241

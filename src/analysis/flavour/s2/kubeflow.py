@@ -155,7 +155,7 @@ def pod_allocation(pod, execution, now):
     status = pod['status']
     scheduled = next((c for c in status.get('conditions', [])
                       if c['type'] == 'PodScheduled' and c['status'] == 'True'), None)
-    terminal = status.get('phase') in ['Succeeded', 'Failed']
+    terminal = status.get('phase') in ['Succeeded', 'Failed'] or pod.get('termination_inferred_from_job', False)
     finished = [s['state']['terminated']['finishedAt']
                 for s in status.get('containerStatuses', []) + status.get('initContainerStatuses', [])
                 if s.get('state', {}).get('terminated', {}).get('finishedAt')]
@@ -211,6 +211,19 @@ def pod_allocation(pod, execution, now):
     }
 
 
+def label_job_terminal_bound(row, job):
+    """Keep inferred allocation endpoints separate from observed Pod phases."""
+    row.update(pod_phase=None, pod_phase_observed=False,
+               termination_inferred_from_job=True,
+               allocation_estimate_kind='conservative_upper_bound')
+    if job:
+        row['job_terminal_conditions'] = [
+            {k: c[k] for k in ['type', 'status', 'lastTransitionTime'] if k in c}
+            for c in job.get('status', {}).get('conditions', [])
+            if c['type'] in ['Complete', 'Failed'] and c['status'] == 'True']
+    return row
+
+
 def allocations(root, now, app_label='pinpoint-s2'):
     executions = [json.loads(p.read_text()) for p in root.rglob('execution_*.json')]
     executions = [e for e in executions if e.get('backend') == 'kubeflow' and e.get('submitted')]
@@ -225,6 +238,18 @@ def allocations(root, now, app_label='pinpoint-s2'):
     for namespace in sorted({e['namespace'] for e in executions}):
         pods = json.loads(kubectl('get', 'pods', '-n', namespace, '-l', f'app={app_label}', '-o', 'json'))['items']
         jobs = json.loads(kubectl('get', 'jobs', '-n', namespace, '-l', f'app={app_label}', '-o', 'json'))['items']
+        # Older fallback records contained a synthetic phase and omitted their
+        # upper-bound label. Normalize metadata only, preserving charged time.
+        bound_bases = {
+            'retained_scheduler_events_to_job_terminal_time_conservative_upper_bound',
+            'terminal_Job_start_to_completion_including_queue_no_retained_Pod',
+        }
+        for cached in cache.values():
+            row = cached['allocation']
+            if (row['namespace'] == namespace and 'pod' not in cached and
+                    row.get('allocation_basis') in bound_bases):
+                job = next((j for j in jobs if j['metadata']['name'] == row['job']), None)
+                label_job_terminal_bound(row, job)
         terminal_times = {j['metadata']['uid']: max(
             [c['lastTransitionTime'] for c in j.get('status', {}).get('conditions', [])
              if c['type'] in ['Complete', 'Failed'] and c['status'] == 'True'], default=None)
@@ -276,11 +301,11 @@ def allocations(root, now, app_label='pinpoint-s2'):
                         safe = {'metadata': {'name': execution['job'] + '-allocation-bound',
                                              'uid': execution['uid'] + '/allocation-bound'},
                                 'spec': admission,
-                                'status': {'phase': 'Succeeded' if job.get('status', {}).get('succeeded') else 'Failed',
-                                    'conditions': [{'type': 'PodScheduled', 'status': 'True',
+                                'status': {'conditions': [{'type': 'PodScheduled', 'status': 'True',
                                                     'lastTransitionTime': start}]},
+                                'termination_inferred_from_job': True,
                                 'job_terminal_time': end}
-                        row = pod_allocation(safe, execution, now)
+                        row = label_job_terminal_bound(pod_allocation(safe, execution, now), job)
                         row.update(pod=None, allocation_estimate_kind='conservative_upper_bound',
                                    allocation_basis='terminal_Job_start_to_completion_including_queue_no_retained_Pod')
                         cache[execution['uid'] + '/allocation-bound'] = {
@@ -319,9 +344,10 @@ def allocations(root, now, app_label='pinpoint-s2'):
                     safe = {'metadata': known[name]['metadata'] if name in known else
                                         {'name': name, 'uid': pevents[0]['involvedObject']['uid']},
                             'spec': known[name]['spec'] if name in known else job['spec']['template']['spec'],
-                            'status': {'phase': 'Failed', 'conditions': conditions},
+                            'status': {'conditions': conditions},
+                            'termination_inferred_from_job': True,
                             'job_terminal_time': end}
-                    row = pod_allocation(safe, execution, now)
+                    row = label_job_terminal_bound(pod_allocation(safe, execution, now), job)
                     row['allocation_basis'] = 'retained_scheduler_events_to_job_terminal_time_conservative_upper_bound'
                     cache[safe['metadata']['uid']] = {'allocation': row, 'observed_utc': now.isoformat()}
     cache_path.write_text(json.dumps(cache, indent=2) + '\n')

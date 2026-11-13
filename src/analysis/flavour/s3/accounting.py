@@ -55,6 +55,7 @@ def allocation_transform(root, allocations):
             shared = {**row, 'experiment': name, 'seconds': seconds,
                       'shared_job_total_seconds': row['seconds'],
                       'allocation_fraction': fraction,
+                      'reservation_allocation_basis': row.get('allocation_basis'),
                       'allocation_basis': 'equal_share_of_active_process_intervals_with_equal_startup_teardown_shares',
                       'process_interval_evidence': str(record)}
             for key in ['GPU_hours', 'CPU_core_hours']:

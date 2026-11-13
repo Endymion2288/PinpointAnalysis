@@ -1,6 +1,6 @@
 # S3：Plane-aware 局部编码、Module context 与四分类融合
 
-S3进行中。继承S2接受的80k train/10k validation、原生通道、geometry和detector-proxy；calibration/test冻结。不重复生成或认证样本。正式根目录为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12`，其中输入通过symlink引用S2，输出独立保存。S2结果只读复用。
+S3已完成并验收，新模型未晋级，保留S2 ParT reference与1 mm控制。继承S2接受的80k train/10k validation、原生通道、geometry和detector-proxy；calibration/test冻结。正式根目录为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12`，其中输入通过symlink引用S2，输出独立保存。S2结果只读复用，S4–S6未执行。
 
 ## 问题与实验合同
 
@@ -64,16 +64,16 @@ FASERCal本地arXiv v2的architecture Methods再次核对了module-level self-at
 
 阶段69已完成seed42的四单元2×2及配对事件统计，详见[完整报告](../workbook/2026-11-12_stage69_s3_factorial_results.md)。Fine/native和fine/1 mm最终均为常数预测；4 mm/native和4 mm/1 mm的macro AP分别0.261014083/0.321516517。4 mm窗口的native−1 mm为−0.060502435，95%事件区间[−0.067034736, −0.054427614]；交互为+0.060502435，[+0.054427614, +0.067034736]。该交互包含fine模型的优化失败，不能据此确立“4 mm抹平native优势”。四个best checkpoint的同8事件FP32诊断显示fine两项head GELU全零、上游分类梯度为零；4 mm/native的GELU零比例99.09%，4 mm/1 mm为64.84%。这些诊断不改变正式训练与输入。
 
-当前17/17项screen和238项CPU输出读回检查完成，22/22项配对及1项交互已计算，screen无pending。新增MIG共享执行的task 11/12/13/15/16全部完成。Tracker候选四分类macro AP为0.368196335、macro F1为0.357889767，4 mm late为0.358741130/0.334572800；pixel-only与关闭pair的latent模型均为常数预测，增加8 queries为0.280445213 macro AP。新版本的head normalization或激活干预需要独立冻结对照与预算，当前screen保持原合同；不能把塌缩模型之间的零AP差当分辨率等效。screen评价保存于results的`evaluation_final`，最终流程将覆盖为完整confirmation评价；8项新增seed已有6项完成，84项CPU读回通过，剩余2项1 mm任务并发运行。完整三seed配对区间与最终strict gate尚待完成，见[科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)。
+最终17/17项screen与8/8项确认完成，共25模型、350/350项CPU读回通过；每模型四轮、80,064 applied updates、零AMP skips。完整评价为41模型、22单seed配对、9三seed比较及1交互，pending=0；条件评价37模型、七个子域、1,184条逐类工作点记录，pending=0。19项strict输出门槛全部通过，八项质量/效率晋级决定均false。Tracker候选与4 mm late的三seed macro AP均值分别0.370622738/0.350286756，ParT native为0.456496213；tracker−ParT差−0.085873475，事件CI [−0.094277671,−0.077817008]。保留ParT native reference及1 mm控制，不能从当前塌缩模型认定native等效或压缩抹平优势。
 
-共享GPU通过`analysis.flavour.s3.backend --tasks <task IDs> --concurrency 4 --flavor h100-47gb`启动，父进程等待所有训练退出，各训练保持独立冻结配置、seed、checkpoint和EOS日志。`analysis.flavour.s3.parallel`记录子进程起止时间；accounting以活跃时间等分同一个reservation，启动/退出空档等分到参与者，组织成本只累计一次。旧手动并发的区间依据complete manifest时间与elapsed重建。已删除且失去Pod终态的旧尝试使用明确标注的Job生命周期保守上界；原整卡Pending后被删除的任务以launch到首次观测Job不存在的整段时间作上界，不冒称实测GPU时间。screen结束时的历史组织上界为27.277435344 device-hours，包含这项8.269070509小时的保守上界。记录见阶段72；进行中confirmation的最终终态成本尚未测量。
+共享GPU执行以`analysis.flavour.s3.backend --tasks <task IDs> --concurrency 4 --flavor h100-47gb`启动，独立冻结配置、seed、checkpoint和EOS日志；父进程等待所有训练退出，`parallel`记录子进程区间。确认Job `pinpoint-s3-confirm-mig47-parallel-v1`已Complete，8子进程exit0，当前无S3 Pod。Accounting按活跃时间等分reservation及启动/退出空档，总成本只计一次。确认reservation上界14,259秒=3.960833333 MIG device-hours，端点依据Scheduled事件与Job Complete condition；没有观测到清理后的Pod phase/exit code，缓存已改为null并标注推定终态。已删除整卡尝试仍以8.269070509小时生命周期上界计费。
 
-已按冻结规则选择screen task14与task0，确认结构为task0/5/6/14。`configs/s3_confirmation.json`和`configs/s3_confirmation_pairs.json`记录8项seed17/2026训练与三seed对比；`pinpoint-s3-confirm-mig47-parallel-v1`已获配MIG，按4个进程并发运行。GPU subtype不同的资源比只作运行组织信息，不授予整卡/MIG混合的模型效率晋级；四分类质量路径照常评价。`analysis.flavour.s3.finalize`等待确认训练/readback和Job终态，然后执行accounting、四分类/条件域bootstrap、英文图示和strict gate，阶段状态独立写入`confirmation_finalize_state.json`。4 mm late与tracker候选的三seed macro AP均值分别为0.350286756与0.370622738，S2 native ParT为0.456496213；这些描述均值尚未包含最终配对事件区间。S3仍未最终验收。
+最终S3组织上界31.238268678 device-hours（含interactive T4上界0.181142613），预算120，S2另列。18条显式上界分摊记录对应7个Job、含两个零小时记录，缺失历史0；整卡/MIG不是吞吐等价设备，不据混合成本授予效率晋级。详见[最终科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)、[最终验收审计](../workbook/2026-11-13_stage80_s3_final_acceptance.md)和[版本化摘要](results/s3_summary.json)。英文诊断/资源/条件曲线PDF分别41/4/40页，主模型/tracker的native事件图分别8/20页，已人工复核。
 
-执行入口：`analysis.flavour.s3.evaluate`对raw/common support同时输出所有四类配对区间与2×2交互，所有seed共享物理block multiplicities；`analysis.flavour.s3.select`仅在完整screen/CPU读回/终态计费通过后按上述规则写独立confirmation campaign和三seed配对。`analysis.flavour.s3.accounting`累计两后端，并单列初次interactive T4保守计费上界。阶段57已在16个只读S2模型上完成统计执行验证；40项S3实验/配对/交互当时仍pending，不作S3验收。
+执行入口：`analysis.flavour.s3.evaluate`对raw/common support同时输出所有四类配对区间与2×2交互，所有seed共享物理block multiplicities；`analysis.flavour.s3.select`仅在完整screen/CPU读回/终态计费通过后按上述规则写独立confirmation campaign和三seed配对。`analysis.flavour.s3.accounting`累计两后端，并单列初次interactive T4保守计费上界。阶段57记录早期只读执行验证；最终验收以全部confirmation产物为准。
 
 `analysis.flavour.s3.monitor --watch`每60秒观察训练产物，只对新发布complete的模型执行14项CPU读回；scheduler liveness另查。最终`analysis.flavour.s3.accept --comparisons <frozen-confirmation-pairs.json>`精确比对所有冻结配对、确认矩阵及raw/common support的34项四类统计和400个有效replicates，不能只凭数量判定通过。
 
 条件域gate还逐项核对七个预定域、全部S3与ParT/ParticleNet模型、适用的单seed/三seed冻结配对，以及raw/common-support的34项统计和bootstrap记录；物理上无定义的统计须明确记录null及有效replicate数。条件域曲线PDF与Parquet同时检查。细节见[阶段76](../workbook/2026-11-13_stage76_s3_conditional_gate_audit.md)。
 
-17首轮和选择后去重的确认项全部真实终态、四轮/80,064 updates/零AMP skips；CPU checkpoint/optimizer/predictions读回通过；冻结数据与配置一致。完成四分类所有配对与两种窗口×表示交互、三seed、模态/资源Pareto、接受度/空响应/高占用/错误组与英文图示、真实终态成本、中文科学报告及gate decision。最终无pending、strict输出门槛exit0并提交后，才能标记S3完成。S4–S6未执行。
+以上退出条件已满足：冻结25模型、350项读回、完整四分类配对/交互/三seed、模态和资源图、条件域/尾部计数、native事件图、终态资源证据和明确上界、中文科学报告及gate decision均已完成。最终strict输出门槛exit0，图示人工复核完成。S3研究完成，新模型不晋级；S4–S6未执行。

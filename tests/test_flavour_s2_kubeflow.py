@@ -90,10 +90,10 @@ class KubeflowAccountingTests(unittest.TestCase):
         ]
         self.assertAlmostEqual(pod_allocation(self.pod, self.execution, self.now)['CPU_core_hours'], 4.1)
 
-    def recover_deleted(self, events):
+    def recover_deleted(self, events, terminal_condition='Failed'):
         execution = {**self.execution, 'uid': 'job-uid', 'backend': 'kubeflow', 'submitted': True}
         job = {'metadata': {'uid': 'job-uid'}, 'status': {'conditions': [{
-            'type': 'Failed', 'status': 'True', 'lastTransitionTime': '2026-11-11T21:45:00Z'}]},
+            'type': terminal_condition, 'status': 'True', 'lastTransitionTime': '2026-11-11T21:45:00Z'}]},
             'spec': {'template': {'spec': self.pod['spec']}}}
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -118,6 +118,45 @@ class KubeflowAccountingTests(unittest.TestCase):
         row = self.recover_deleted([])
         self.assertEqual(row['status'], 4)
         self.assertEqual(row['GPU_hours'], .75)
+        self.assertIsNone(row['pod_phase'])
+        self.assertEqual(row['allocation_estimate_kind'], 'conservative_upper_bound')
+        self.assertEqual(row['job_terminal_conditions'][0]['type'], 'Failed')
+
+    def test_successful_job_gc_does_not_invent_a_failed_pod(self):
+        self.schedule()
+        row = self.recover_deleted([], terminal_condition='Complete')
+        self.assertEqual(row['GPU_hours'], .75)
+        self.assertEqual(row['status'], 4)
+        self.assertIsNone(row['pod_phase'])
+        self.assertIsNone(row['exit_code'])
+        self.assertFalse(row['pod_phase_observed'])
+        self.assertTrue(row['termination_inferred_from_job'])
+        self.assertEqual(row['job_terminal_conditions'][0]['type'], 'Complete')
+
+    def test_cached_synthetic_phase_normalizes_without_recharging(self):
+        self.schedule()
+        execution = {**self.execution, 'uid': 'job-uid', 'backend': 'kubeflow', 'submitted': True}
+        self.pod['status']['phase'] = 'Failed'
+        self.pod['job_terminal_time'] = '2026-11-11T21:45:00Z'
+        row = pod_allocation(self.pod, execution, self.now)
+        row['allocation_basis'] = 'retained_scheduler_events_to_job_terminal_time_conservative_upper_bound'
+        job = {'metadata': {'uid': 'job-uid', 'name': 'j'}, 'status': {'conditions': [
+            {'type': 'Complete', 'status': 'True', 'lastTransitionTime': '2026-11-11T21:45:00Z'}]}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'kubeflow').mkdir()
+            (root / 'execution_test.json').write_text(json.dumps(execution))
+            cache_path = root / 'kubeflow/pod_accounting_snapshots.json'
+            cache_path.write_text(json.dumps({'uid': {'allocation': row, 'observed_utc': 'old'}}))
+            with patch('analysis.flavour.s2.kubeflow.kubectl', side_effect=[
+                    json.dumps({'items': []}), json.dumps({'items': [job]})]):
+                recovered = allocations(root, self.now)[0]
+            self.assertNotIn('pod', json.loads(cache_path.read_text())['uid'])
+        self.assertEqual(recovered['GPU_hours'], row['GPU_hours'])
+        self.assertEqual(recovered['seconds'], row['seconds'])
+        self.assertIsNone(recovered['pod_phase'])
+        self.assertEqual(recovered['allocation_estimate_kind'], 'conservative_upper_bound')
+        self.assertEqual(recovered['job_terminal_conditions'][0]['type'], 'Complete')
 
     def test_deleted_pending_pod_without_events_stays_unknown(self):
         row = self.recover_deleted([])
@@ -170,6 +209,8 @@ class KubeflowAccountingTests(unittest.TestCase):
         self.assertEqual(row['allocation_estimate_kind'], 'conservative_upper_bound')
         self.assertIsNone(row['pod'])
         self.assertEqual(row['status'], 4)
+        self.assertIsNone(row['pod_phase'])
+        self.assertEqual(row['job_terminal_conditions'][0]['type'], 'Complete')
 
 
 if __name__ == '__main__':
