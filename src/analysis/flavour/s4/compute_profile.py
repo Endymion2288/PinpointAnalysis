@@ -59,11 +59,9 @@ def shape_operations(config,batch):
     """Eager training matrix-operation proxy from actual ragged batch shapes."""
     ssl='student' in batch
     observed=batch['student'] if ssl else batch
-    b=observed['event_mask'].shape[0];blocks,nodes=observed['nodes'].shape[:2]
+    b=observed['event_mask'].shape[0]
     dim=config.get('dim',96);queries=config.get('region_queries',2)
-    regions,width=observed['region_mask'].shape
-    per_event=torch.bincount(observed['region_event'],minlength=b)
-    event_width=int(per_event.max())*queries;latents=config.get('latents',64)
+    latents=config.get('latents',64)
     values={}
     def linear(name,n,input_dim,output_dim,input_grad=True,parameter_grad=True,recompute=False):
         multiplier=1+int(input_grad)+int(parameter_grad)+int(recompute)

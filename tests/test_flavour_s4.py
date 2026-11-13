@@ -269,7 +269,7 @@ class S4Tests(unittest.TestCase):
             self.assertEqual(sum(counter.counts.values()),expected)
 
     def test_shape_budget_matches_actual_forward_backward_hooks(self):
-        for objective in ['mae','distill','classification']:
+        for objective in ['mae','mae_rel','distill','classification']:
             config={**self.config,'objective':objective}
             if objective=='classification':
                 model=PlaneModuleClassifierV2(config).train();batch=collate_planes([self.item(),self.item(19)])
@@ -277,6 +277,10 @@ class S4Tests(unittest.TestCase):
             else:
                 model=PretrainingModel(config).train()
                 batch=collate_pretrain([self.item(0,objective),self.item(19,objective)])
+                if objective=='mae_rel':
+                    batch['rel_query']=batch['query'][:,:8]
+                    batch['rel_valid']=torch.ones((2,8),dtype=torch.bool)
+                    batch['rel_target']=torch.rand((2,8,4)).softmax(-1)
                 counter=MatrixOperations(model);loss,_=objective_loss(model(batch),batch,config)
             counter.backward=True;loss.backward();counter.close()
             self.assertEqual(shape_operations(config,batch)['matrix_operations'],sum(counter.counts.values()),objective)
