@@ -231,6 +231,11 @@ def plot_curves(output,experiments,frames):
                         'representation':representation,'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
                         for budget,m,s,v in zip(budgets,mean,spread,values))
                     ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=labels[metric])
+            shown_budgets=sorted({e['config'].get('label_budget',100000) for e in experiments
+                if (e['program'],e['config'].get('probe_representation','full'))==(program,representation)})
+            for ax in axes.flat:
+                ax.set_xlim(shown_budgets[0]*.8,shown_budgets[-1]*1.25)
+                ax.set_xticks(shown_budgets,labels=[f'{budget:,}' for budget in shown_budgets])
             axes[0,0].legend(fontsize=7)
             fig.suptitle(f'S4 {program} / {representation}: fixed validation; seed SD shown for n >= 2')
             pdf.savefig(fig);fig.savefig(output/f'label_efficiency_{program}_{representation}.png',dpi=160)
