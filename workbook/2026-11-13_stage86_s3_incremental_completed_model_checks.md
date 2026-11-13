@@ -8,6 +8,8 @@
 
 新增`live_repair`依次执行已完成模型的CPU读回、内部健康/学习检查和固定checkpoint分支诊断。最终流程仅复用配置、best epoch和checkpoint NLL一致且全部通过的健康证据；分支诊断还要求最终complete状态、64个事件、非interim、Head重建及presence一致。配置/epoch变化或失败检查均不复用。中途诊断写入`audit/path_interim/`，与最终验收分开。
 
+JSON证据发布改为各writer独立临时文件后原子替换，避免原共享`.json.tmp`在读回observer重叠时被另一个writer抢先rename；不改变内容或训练计算。并发8个writer×8次发布的回归检查验证中文及完整payload、无残留临时文件。
+
 新增`summarize_repair`在严格科学验收通过后生成版本化数值摘要和中文表格；目前未执行最终汇总，避免将进行中的训练写成完成。对每个模型保留实际训练曝光，不用80,000乘以epoch数代替采样器实测曝光。
 
 为避免旧campaign supervisor与新backfill竞争，在Pod内暂停只负责调度的PID1；其已启动的screen child继续运行。worker watchdog从冻结20配置读取模型名，全部complete后恢复PID1，执行原读回与正常退出；确认任务统一由总并发上限8的backfill或先获配的Condor领取。状态保存在`audit/supervisor_coordination.json`。另启动终态捕获，每30秒读取Pod，只保存去除注入认证信息后的资源/状态；用于保留实际终态及设备时，避免Pod清理后退化为时间上界。
@@ -47,6 +49,8 @@ Token census新增padding占用统计；同一个最高occupancy train事件：
 12:41:51 UTC资源快照：本轮上界2.650698906 device-hours，累计S3上界33.888967583，余额下界86.111032417，missing history=0。
 
 针对性17项测试、0.232s通过，覆盖缓存不能复用interim/不同best checkpoint/失败健康报告、presence置换、谱诊断、并发名额、成本守恒和任务领取。`compileall`、`git diff --check`通过。实际首个完成模型的检查进一步验证了完整数据路径。
+
+JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed native确认模型也完成全部CPU读回、健康及分支诊断，累计2个完整模型的增量检查通过。
 
 ## 阶段性结论
 

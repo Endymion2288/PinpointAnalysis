@@ -12,6 +12,7 @@ import hashlib
 import json
 from pathlib import Path
 import resource
+import tempfile
 import time
 
 import awkward as ak
@@ -37,9 +38,11 @@ COMPRESSION = next((c for c in ['zstd', 'snappy', 'gzip'] if pa.Codec.is_availab
 def write_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + '.tmp')
-    temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
-    temporary.replace(path)
+    content = json.dumps(value, indent=2, ensure_ascii=False) + '\n'
+    with tempfile.NamedTemporaryFile('w', encoding='utf-8', dir=path.parent,
+                                     prefix='.' + path.name + '.', suffix='.tmp', delete=False) as stream:
+        stream.write(content)
+    Path(stream.name).replace(path)
 
 
 def short_id(value):
