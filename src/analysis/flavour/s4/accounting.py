@@ -48,6 +48,11 @@ def refresh(root):
                     if container['name']=='s4':
                         gpu_start=ended.get('startedAt',running.get('startedAt',start))
                         gpu_end=ended.get('finishedAt')
+                # The GPU belongs to the Pod during init, dependency setup and
+                # sidecar termination, including time outside the main process.
+                gpu_start=start or gpu_start
+                if status.get('phase') in {'Succeeded','Failed'} and terminated:
+                    gpu_end=max(terminated).isoformat()
                 stopped=root/'logs'/f'{submission["name"]}_allocation_end.json'
                 if stopped.exists():gpu_end=json.loads(stopped.read_text())['allocation_end_utc']
                 duration=(utc(gpu_end)-utc(gpu_start)).total_seconds() if gpu_start and gpu_end else (now-utc(gpu_start or start)).total_seconds() if (gpu_start or start) else 0.
@@ -69,9 +74,9 @@ def refresh(root):
                 history=None
             ads={}
             if history is not None and history.returncode==0:
-                for ad in json.loads(history.stdout):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                for ad in json.loads(history.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
             if queue.returncode==0:
-                for ad in json.loads(queue.stdout):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                for ad in json.loads(queue.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
             cache=snapshots/(submission['name']+'.condor.json')
             if not ads and cache.exists():
                 for ad in json.loads(cache.read_text()):ads[(ad['ClusterId'],ad['ProcId'])]=ad

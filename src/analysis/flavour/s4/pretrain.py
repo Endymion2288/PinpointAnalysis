@@ -133,10 +133,13 @@ def evaluate(model,loader,device,bf16,config):
     if covered:
         unique=np.concatenate(covered).sum(0)
         report['positive_unique_queries_by_native_coarse_bar']=unique.tolist()
-        report['native_masked_support_coverage_per_view']=float(unique[0]/max(1,data[0,1]))
+        coverage_key=('native_masked_support_coverage_per_view' if config.get('pixel_query_patch',1)==1
+            else 'fine_pixel_patch_positive_queries_per_hidden_native_channel')
+        report[coverage_key]=float(unique[0]/max(1,data[0,1]))
+        report['fine_pixel_query_patch_pixels']=config.get('pixel_query_patch',1)
         report['bar_masked_support_coverage_per_view']=float(unique[2]/max(1,data[1,1]))
-    frame=pd.DataFrame(values,columns=['level','near','occupied','log_count','log_energy','log_PE',
-        'occupancy_logit','predicted_log_count','predicted_log_energy','predicted_log_PE'])
+    frame=pd.DataFrame(values,columns=['level','near','occupied','log_count','target_aux0','target_aux1',
+        'occupancy_logit','predicted_log_count','predicted_aux0','predicted_aux1'])
     return report,frame
 
 

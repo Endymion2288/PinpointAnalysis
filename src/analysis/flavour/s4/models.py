@@ -76,6 +76,11 @@ class PretrainingModel(nn.Module):
         x=features['global_tokens']
         return torch.cat([x.mean(1),x.amax(1)],-1).float()
 
+    @staticmethod
+    def pool_teacher_multiscale(features):
+        branches=features['branches'].float()
+        return (branches[:,:3].mean(1)+branches[:,3]+branches[:,4:].mean(1))/3
+
     def forward(self,batch):
         features=self.encoder.encode(batch['student'])
         result={'features':features,'reconstruction':self.decoder(batch['query'],features['global_tokens'])}
@@ -89,7 +94,9 @@ class PretrainingModel(nn.Module):
             with torch.no_grad():
                 teacher_features=self.teacher.encode(batch['teacher'])
                 with torch.autocast(device_type=batch['query'].device.type,enabled=False):
-                    result['teacher_projection']=self.teacher_projector(self.pool_global(teacher_features))
+                    teacher_input=(self.pool_teacher_multiscale(teacher_features)
+                        if self.config.get('teacher_multiscale',False) else self.pool_global(teacher_features))
+                    result['teacher_projection']=self.teacher_projector(teacher_input)
         return result
 
     @torch.no_grad()
@@ -130,10 +137,13 @@ def objective_loss(output,batch,config):
         count=F.smooth_l1_loss(estimate[positive,1],truth[positive,1]) if positive.any() else estimate[:,1].sum()*0
         signal=(F.smooth_l1_loss(estimate[positive,2:4],truth[positive,2:4])
             if level==2 and positive.any() else estimate[:,2:4].sum()*0)
-        losses.append(occupancy+count+signal)
+        moments=(F.smooth_l1_loss(estimate[positive,2:4],truth[positive,2:4])
+            if level==0 and config.get('pixel_query_patch',1)>1 and positive.any() else estimate[:,2:4].sum()*0)
+        losses.append(occupancy+count+signal+moments)
         parts[f'level{level}_occupancy']=occupancy
         parts[f'level{level}_count']=count
         parts[f'level{level}_signal']=signal
+        parts[f'level{level}_moments']=moments
     reconstruction=torch.stack(losses).mean()
     parts['reconstruction']=reconstruction
     loss=reconstruction

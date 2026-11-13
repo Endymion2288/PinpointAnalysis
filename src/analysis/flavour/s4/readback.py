@@ -52,6 +52,8 @@ def inspect(root,name):
     learning={'coarse_and_bar_AP_above_query_prior':bool(informative) and all(v['AP_over_prevalence']>1.05 for v in informative),
         'coarse_or_bar_AP_improves_initialization':any(v['AP']>max(v['initial_AP'] or 0.,v['prevalence']) for v in informative),
         'inner_reconstruction_loss_improves':measured['loss']['reconstruction']<initial['loss']['reconstruction']}
+    checks={key:bool(value) for key,value in checks.items()}
+    learning={key:bool(value) for key,value in learning.items()}
     report={'utc':datetime.now(timezone.utc).isoformat(),'experiment':name,'checks':checks,
         'integrity_and_internal_health_pass':all(checks.values()),'learning_checks':learning,
         'measured_learning_pass':all(learning.values()),'query_AP':sample_aps,

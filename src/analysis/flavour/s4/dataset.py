@@ -19,11 +19,13 @@ def hash_uniform(keys, seed):
 
 
 class QueryGeometry:
-    def __init__(self, geometry, tile_pixels=16):
+    def __init__(self, geometry, tile_pixels=16, pixel_query_patch=1):
         self.geometry = geometry
         self.nx, self.ny, self.nz = [len(geometry[k]) for k in ['pixel_Xpos','pixel_Ypos','pixel_Zpos']]
         self.x, self.y, self.z = [np.asarray(geometry[k]) for k in ['pixel_Xpos','pixel_Ypos','pixel_Zpos']]
         self.tile = tile_pixels
+        self.pixel_query_patch=pixel_query_patch
+        self.qx,self.qy=(self.nx+pixel_query_patch-1)//pixel_query_patch,(self.ny+pixel_query_patch-1)//pixel_query_patch
         self.tx, self.ty = (self.nx+tile_pixels-1)//tile_pixels, (self.ny+tile_pixels-1)//tile_pixels
         self.dx, self.dy = np.median(np.diff(self.x)), np.median(np.diff(self.y))
         self.cx, self.cy = int(np.ceil(self.nx*self.dx/4)), int(np.ceil(self.ny*self.dy/4))
@@ -117,8 +119,9 @@ class QueryGeometry:
                         plane = plane+rng.choice([-1,0,0,0,1],size=n)
                         col[~near],row[~near],plane[~near] = (rng.integers(limit,size=(~near).sum()) for limit in [self.nx,self.ny,self.nz])
                         valid = (col>=0)&(col<self.nx)&(row>=0)&(row<self.ny)&(plane>=0)&(plane<self.nz)
-                        ids = (plane*self.ny+row)*self.nx+col
-                        valid &= self.mask(0,ids,seed,ratio)
+                        channel_ids = (plane*self.ny+row)*self.nx+col
+                        valid &= self.mask(0,channel_ids,seed,ratio)
+                        ids = (plane*self.qy+row//self.pixel_query_patch)*self.qx+col//self.pixel_query_patch
                     else:
                         col = np.floor((self.x[np.clip(col,0,self.nx-1)]-self.x[0])/4).astype('int64')
                         row = np.floor((self.y[np.clip(row,0,self.ny-1)]-self.y[0])/4).astype('int64')
@@ -153,9 +156,10 @@ class QueryGeometry:
             q[:,18+level]=1
             if level<2:
                 if level==0:
-                    col,row,plane=self.pixel_parts(ids)
-                    x,y=self.x[col],self.y[row]
-                    q[:,8:10]=[self.dx/420,self.dy/420]
+                    col,row,plane=ids%self.qx,(ids//self.qx)%self.qy,ids//(self.qx*self.qy)
+                    x=self.x[0]+(col*self.pixel_query_patch+(self.pixel_query_patch-1)/2)*self.dx
+                    y=self.y[0]+(row*self.pixel_query_patch+(self.pixel_query_patch-1)/2)*self.dy
+                    q[:,8:10]=[self.pixel_query_patch*self.dx/420,self.pixel_query_patch*self.dy/420]
                 else:
                     col,row,plane=ids%self.cx,(ids//self.cx)%self.cy,ids//(self.cx*self.cy)
                     x,y=self.x[0]+(col+.5)*4,self.y[0]+(row+.5)*4
@@ -180,9 +184,19 @@ class QueryGeometry:
         ids,level=queries['query_id'],queries['query_level']
         target=np.zeros((len(ids),4),dtype='float32')
         pixel=np.asarray(full['pixel']['channel_id'],dtype='int64')[hidden[0]]
-        target[level==0,0]=np.isin(ids[level==0],pixel)
-        target[level==0,1]=target[level==0,0]*np.log(2)/10
         col,row,plane=self.pixel_parts(pixel)
+        patch=(plane*self.qy+row//self.pixel_query_patch)*self.qx+col//self.pixel_query_patch
+        unique,inverse,counts=np.unique(patch,return_inverse=True,return_counts=True)
+        mapping={key:i for i,key in enumerate(unique)}
+        offsets=np.column_stack([(col%self.pixel_query_patch+.5)/self.pixel_query_patch-.5,
+            (row%self.pixel_query_patch+.5)/self.pixel_query_patch-.5])
+        moments=np.zeros((len(unique),2))
+        np.add.at(moments,inverse,offsets)
+        if len(counts):moments/=counts[:,None]
+        for j in np.flatnonzero(level==0):
+            k=mapping.get(ids[j])
+            if k is not None:
+                target[j,0]=1;target[j,1]=np.log1p(counts[k])/10;target[j,2:4]=moments[k]
         xcell=np.floor((self.x[col]-self.x[0])/4).astype('int64')
         ycell=np.floor((self.y[row]-self.y[0])/4).astype('int64')
         coarse=(plane*self.cy+ycell)*self.cx+xcell
@@ -237,7 +251,7 @@ class PretrainDataset(PlaneDataset):
     def __init__(self,root,split,config,cache_dir=None):
         # Both sides of SSL live within the original train partition.
         super().__init__(root,'train',config,cache_dir)
-        self.query_geometry=QueryGeometry(self.geometry)
+        self.query_geometry=QueryGeometry(self.geometry,pixel_query_patch=config.get('pixel_query_patch',1))
         self.epoch=torch.zeros((),dtype=torch.int64).share_memory_()
         rng=np.random.default_rng(20261114)
         order=rng.permutation(len(self))

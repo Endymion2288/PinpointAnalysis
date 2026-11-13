@@ -160,5 +160,29 @@ class S4Tests(unittest.TestCase):
         self.assertEqual(set(report['event_permutation_delta_BCE']),{'0','1','2'})
         self.assertTrue(np.isfinite(frame.to_numpy()).all())
 
+    def test_patch_target_retains_binary_count_and_subpixel_centroid(self):
+        geometry=QueryGeometry(self.geometry,pixel_query_patch=16)
+        obs=self.observation();visible,hidden=geometry.visible(obs,42,.75)
+        queries=geometry.queries(visible,42,.75,64)
+        target=geometry.targets(obs,hidden,queries)
+        ids=np.asarray(obs['pixel']['channel_id'])[hidden[0]]
+        col,row,plane=geometry.pixel_parts(ids)
+        patch=(plane*geometry.qy+row//16)*geometry.qx+col//16
+        for j in np.flatnonzero(queries['query_level']==0):
+            selected=patch==queries['query_id'][j]
+            self.assertEqual(target[j,0],bool(selected.any()))
+            self.assertAlmostEqual(float(target[j,1]),float(np.log1p(selected.sum())/10),places=6)
+            if selected.any():
+                expected=np.column_stack([(col[selected]%16+.5)/16-.5,(row[selected]%16+.5)/16-.5]).mean(0)
+                np.testing.assert_allclose(target[j,2:4],expected,rtol=1e-6,atol=1e-6)
+
+    def test_multiscale_ema_target_still_backpropagates_through_global(self):
+        config={**self.config,'objective':'distill','teacher_multiscale':True}
+        model=PretrainingModel(config)
+        batch=collate_pretrain([self.item(0,'distill'),self.item(73,'distill')])
+        out=model(batch);loss,_=objective_loss(out,batch,config);loss.backward()
+        self.assertGreater(float(model.encoder.latent_read.q.weight.grad.square().sum()),0)
+        self.assertTrue(all(p.grad is None for p in model.teacher.parameters()))
+
 
 if __name__=='__main__':unittest.main()
