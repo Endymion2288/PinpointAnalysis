@@ -55,6 +55,63 @@ class MatrixOperations:
         for handle in self.handles:handle.remove()
 
 
+def shape_operations(config,batch):
+    """Eager training matrix-operation proxy from actual ragged batch shapes."""
+    ssl='student' in batch
+    observed=batch['student'] if ssl else batch
+    b=observed['event_mask'].shape[0];blocks,nodes=observed['nodes'].shape[:2]
+    dim=config.get('dim',96);queries=config.get('region_queries',2)
+    regions,width=observed['region_mask'].shape
+    per_event=torch.bincount(observed['region_event'],minlength=b)
+    event_width=int(per_event.max())*queries;latents=config.get('latents',64)
+    values={}
+    def linear(name,n,input_dim,output_dim,input_grad=True,parameter_grad=True,recompute=False):
+        multiplier=1+int(input_grad)+int(parameter_grad)+int(recompute)
+        values[name]=values.get(name,0)+2*n*input_dim*output_dim*multiplier
+    def attention(name,groups,nq,nk,recompute=False,grad=True):
+        linear(name+'_q',groups*nq,dim,dim,grad,grad,recompute)
+        linear(name+'_kv',groups*nk,dim,2*dim,grad,grad,recompute)
+        linear(name+'_out',groups*nq,dim,dim,grad,grad,recompute)
+        linear(name+'_up',groups*nq,dim,4*dim,grad,grad,recompute)
+        linear(name+'_down',groups*nq,2*dim,dim,grad,grad,recompute)
+        values[name+'_attention']=4*groups*nq*nk*dim*(3 if grad else 1)+4*groups*nq*nk*dim*int(recompute)
+    def encoder(prefix,view,grad):
+        nb,nt=view['nodes'].shape[:2];nr,nk=view['region_mask'].shape
+        event_width=int(torch.bincount(view['region_event'],minlength=b).max())*queries
+        linear(prefix+'input',nb*nt,26,dim,False,grad,grad)
+        for i in range(2):attention(prefix+f'local{i}',nb,nt,nt,grad,grad)
+        linear(prefix+'local_pool',nb,2*dim+8,dim,grad,grad,grad)
+        attention(prefix+'regional',nr,queries,nk,False,grad)
+        linear(prefix+'position0',nr,1,dim,False,grad)
+        linear(prefix+'position1',nr,dim,dim,grad,grad)
+        attention(prefix+'latent_read',b,latents,event_width,False,grad)
+        for i in range(2):attention(prefix+f'global{i}',b,latents,latents,False,grad)
+        linear(prefix+'summary',b,11,dim,False,grad and not ssl)
+    encoder('encoder_',observed,True)
+    if not ssl:
+        head=(15 if config.get('readout_skip',True) else 9)*dim
+        linear('head0',b,head,2*dim);linear('head1',b,2*dim,4);linear('linear_route',b,head,4)
+    else:
+        def decoder(prefix,nq,nk):
+            linear(prefix+'position',b*nq,34,dim,False)
+            attention(prefix+'read',b,nq,nk)
+            linear(prefix+'output0',b*nq,dim,dim);linear(prefix+'output1',b*nq,dim,8)
+        decoder('reconstruction_',batch['query'].shape[1],latents)
+        if 'rel_query' in batch:
+            nk=latents
+            if config.get('rel_source')=='global_and_bar_local':
+                events=observed['event_index'][observed['block_detector']==1]
+                nk+=int(torch.bincount(events,minlength=b).max())
+            decoder('rel_',batch['rel_query'].shape[1],nk)
+        if config.get('objective')=='distill':
+            encoder('teacher_',batch['teacher'],False)
+            linear('projector0',b,2*dim,2*dim);linear('projector1',b,2*dim,dim)
+            linear('predictor0',b,dim,2*dim);linear('predictor1',b,2*dim,dim)
+            linear('teacher_projector0',b,2*dim,2*dim,False,False)
+            linear('teacher_projector1',b,2*dim,dim,False,False)
+    return {'matrix_operations':sum(values.values()),'components':values}
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True);parser.add_argument('--campaign',type=Path,required=True)

@@ -21,7 +21,7 @@ from analysis.flavour.s4.pretrain import evaluate,feature_statistics
 from analysis.flavour.s4.evaluate import evaluate as evaluate_classification
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
-from analysis.flavour.s4.compute_profile import MatrixOperations
+from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operations
 
 
 class S4Tests(unittest.TestCase):
@@ -267,6 +267,19 @@ class S4Tests(unittest.TestCase):
             value=torch.ones((2,3),requires_grad=needs_input_gradient)
             result=model(value).sum();counter.backward=True;result.backward();counter.close()
             self.assertEqual(sum(counter.counts.values()),expected)
+
+    def test_shape_budget_matches_actual_forward_backward_hooks(self):
+        for objective in ['mae','distill','classification']:
+            config={**self.config,'objective':objective}
+            if objective=='classification':
+                model=PlaneModuleClassifierV2(config).train();batch=collate_planes([self.item(),self.item(19)])
+                counter=MatrixOperations(model);loss=model(batch).square().mean()
+            else:
+                model=PretrainingModel(config).train()
+                batch=collate_pretrain([self.item(0,objective),self.item(19,objective)])
+                counter=MatrixOperations(model);loss,_=objective_loss(model(batch),batch,config)
+            counter.backward=True;loss.backward();counter.close()
+            self.assertEqual(shape_operations(config,batch)['matrix_operations'],sum(counter.counts.values()),objective)
 
     def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
         with tempfile.TemporaryDirectory() as temporary:
