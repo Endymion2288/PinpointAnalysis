@@ -70,11 +70,11 @@ def contrast(original, changed, labels):
             'argmax_change_fraction': float((p.argmax(-1) != q.argmax(-1)).float().mean())}
 
 
-def diagnose(root, name, per_class=16):
+def diagnose(root, name, per_class=16, interim=False):
     directory = root / 'experiments' / name
     manifest = json.loads((directory / 'manifest.json').read_text())
     config = manifest['config']
-    if manifest['status'] != 'complete' or config['architecture'] != 'plane_module_v2':
+    if (manifest['status'] != 'complete' and not interim) or config['architecture'] != 'plane_module_v2':
         raise ValueError('completed revision 2 model required')
     dataset = PlaneDataset(root, 'validation', config)
     key = ['run', 'chunk', 'row']
@@ -149,6 +149,7 @@ def diagnose(root, name, per_class=16):
             'linear_readout_only': contrast(original, head_logits(model, context, nonlinear=False), labels)}
     report = {
         'utc': datetime.now(timezone.utc).isoformat(), 'experiment': name, 'best_epoch': state['epoch'],
+        'training_status_at_probe_start': manifest['status'], 'interim_diagnostic': interim,
         'scope': 'CPU FP32 fixed-checkpoint diagnostic; occupancy-quantile balanced nonempty validation probe; no fit or model selection; not population or held-out test metrics',
         'events': metadata.iloc[indexes][key + ['label']].to_dict('records'),
         'occupancy_range_nodes': [int(occupancy[indexes].min()), int(occupancy[indexes].max())],
@@ -162,7 +163,9 @@ def diagnose(root, name, per_class=16):
         'token_spectrum': spectral,
         'token_spectrum_scope': 'first at most 128 groups of each 8-event batch; uncentered squared-singular-spectrum entropy rank; no collapse threshold',
         'interpretation': 'permutation measures fitted path reliance with event-wise correlations broken; redundancy and interactions can hide useful information; head-only removals are interventions without retraining; low query rank alone does not establish training failure'}
-    write_json(directory / 'path_diagnostics.json', report)
+    destination = root / 'audit/path_interim' / f'{name}.json' if interim else directory / 'path_diagnostics.json'
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    write_json(destination, report)
     print(json.dumps({'experiment': name, 'probe_NLL': report['probe_NLL'],
                       'permuted_fraction': report['permuted_fraction'],
                       'branch_delta_NLL': {k: v['probe_delta_NLL'] for k, v in changed.items()}}), flush=True)
@@ -174,12 +177,13 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--experiments', nargs='+', required=True)
     parser.add_argument('--per-class', type=int, default=16)
+    parser.add_argument('--interim', action='store_true', help='write an explicitly interim probe under audit, outside final acceptance')
     args = parser.parse_args()
     if args.per_class < 2:
         parser.error('--per-class must be at least 2')
     torch.set_num_threads(1); pa.set_cpu_count(1); pa.set_io_thread_count(1)
     for name in args.experiments:
-        diagnose(args.root, name, args.per_class)
+        diagnose(args.root, name, args.per_class, args.interim)
 
 
 if __name__ == '__main__':
