@@ -52,6 +52,9 @@ def submit(args):
     name = args.name
     prototype_pool=args.gpu_pool=='fp32-prototype'
     compact_pool=args.gpu_pool=='native-bf16-compact'
+    small_pool=args.gpu_pool=='native-bf16-small'
+    if small_pool and (args.backend!='condor' or args.concurrency!=1):
+        raise ValueError('12GB native BF16 pool requires one fit per allocation')
     if compact_pool and (args.backend!='condor' or args.concurrency>2):
         raise ValueError('compact native BF16 pool supports at most two concurrent fits')
     if prototype_pool:
@@ -166,6 +169,8 @@ transfer_output_files = ""
                 # This LCG108 torch build has sm75+ kernels; V100/sm70 fails
                 # even in FP32 before the first optimizer step.
                 requirement='(DeviceName == "Tesla T4") && (GlobalMemoryMb >= 15000)'
+            elif small_pool:
+                requirement='(DeviceName == "NVIDIA H100L-1-12C MIG 1g.12gb") && (GlobalMemoryMb >= 10000)'
             elif compact_pool:
                 requirement='((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA H200") || (DeviceName == "NVIDIA A100-PCIE-40GB") || (DeviceName == "NVIDIA H100L-2-24C MIG 2g.24gb")) && (GlobalMemoryMb >= 20000)'
             else:
@@ -232,7 +237,7 @@ def main():
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
     parser.add_argument('--concurrency',type=int,default=6)
     parser.add_argument('--flavor',choices=GPU_FLAVORS,default='h100-47gb')
-    parser.add_argument('--gpu-pool',choices=['native-bf16','native-bf16-compact','fp32-prototype'],default='native-bf16')
+    parser.add_argument('--gpu-pool',choices=['native-bf16','native-bf16-compact','native-bf16-small','fp32-prototype'],default='native-bf16')
     parser.add_argument('--deadline',type=int,default=21600)
     parser.add_argument('--apply',action='store_true')
     submit(parser.parse_args())
