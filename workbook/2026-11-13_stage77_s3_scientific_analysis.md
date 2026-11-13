@@ -1,6 +1,6 @@
 # S3科学分析：screen完成，确认批次进行中
 
-本文为最终报告的进行中版本。17项screen已完成，八项确认训练尚未全部完成；三seed方法晋级、最终条件域比较和组织成本尚未测得，S3未最终验收。以下表格仅使用已经发布的完整结果。
+本文为最终报告的进行中版本。17项screen及八项确认中的两项已完成，4 mm late已有三seed结果；完整三seed配对区间、最终条件域比较和组织成本尚未完成，S3未最终验收。以下表格仅使用已经发布的完整结果。
 
 ## 阶段目标
 
@@ -61,11 +61,29 @@
 | particlenet, 1 mm | 0.435660 +/- 0.006379 | 1.242295 +/- 0.006693 | 0.597374, 0.415034, 0.352515, 0.377719 |
 | particlenet, native | 0.431786 +/- 0.003102 | 1.243669 +/- 0.004225 | 0.596544, 0.411017, 0.352376, 0.367206 |
 
+### 首个完整三seed候选：4 mm late
+
+2026-11-13 00:18:27/00:18:32 UTC，新增seed17/2026的训练子进程分别exit0。两项各完成四轮、80,064 applied updates、零AMP skips，14项CPU读回均通过，best NLL均在epoch4。当前相同MIG reservation中的其余任务继续执行，不能把这两个子进程终态当作整个Job终态。
+
+从三份发布的validation Parquet重新用统一`MetricCache`计算，得到下表；不是概率ensemble。
+
+| Seed | Macro AP | Macro F1 | Balanced accuracy | NLL |
+|---|---:|---:|---:|---:|
+| 17 | 0.350327 | 0.332082 | 0.343500 | 1.332526 |
+| 42 | 0.358741 | 0.334573 | 0.346000 | 1.330101 |
+| 2026 | 0.341792 | 0.326585 | 0.336700 | 1.340553 |
+| Mean | 0.350287 | 0.331080 | 0.342067 | 1.334393 |
+| Sample SD | 0.008475 | 0.004087 | 0.004813 | 0.005471 |
+
+三seed平均AP[e, mu, tau, NC]=[0.457055, 0.341811, 0.286026, 0.316254]。相对S2 native ParT/ParticleNet，macro AP均值差分别−0.106209457/−0.081498885，NLL差+0.106559213/+0.090724464；四类平均AP均更低。这些是给定三个训练seed的描述差值，物理事件CI与正式晋级检查仍等待统一400次bootstrap。不能把训练sample SD作为配对事件CI。
+
+部分确认统计保存在结果根`confirmation_partial_summary.json`，包含三模型的34项统计、混淆矩阵、mean/sample SD和基线差值，明确标记`S3_complete=false`、区间与成本pending。此处只读取已完成的validation输出，没有新增训练、使用calibration/test或重跑完整bootstrap。
+
 ### 配对统计与条件化范围
 
 首轮22/22个冻结配对与1个2×2交互已计算，pending为0。每个比较同时输出raw/common-support的34项统计，包括macro AP/AUROC/F1、balanced accuracy、NLL/Brier及四类AP/AUROC/precision/recall/F1、1%与0.1%背景接受率效率。英文诊断图包含逐类ROC/PR、混淆矩阵和学习曲线。
 
-400次bootstrap共享128个accepted-family/chunk blocks、每类32个。区间是条件于已训练模型的pointwise物理事件区间，未作多重比较修正，不包含训练随机性；三seed的sample SD将单独报告。固定S2 energy/vertex common-support保留8,559个正权重事件，Neff=7,959.413646535，target Z未匹配。它是固定粗相空间诊断，不是物理flux重加权或完整generator独立检验。
+400次bootstrap共享128个accepted-family/chunk blocks、每类32个。区间是条件于已训练模型的pointwise物理事件区间，未作多重比较修正，不包含训练随机性；各结构的三seed sample SD单独报告。固定S2 energy/vertex common-support保留8,559个正权重事件，Neff=7,959.413646535，target Z未匹配。它是固定粗相空间诊断，不是物理flux重加权或完整generator独立检验。
 
 Seed42的4 mm late→16-pitch late，macro AP差为−0.020058880，95%事件区间[−0.025400125, −0.015137736]；fine joint→context joint为−0.014432757，[−0.017992908, −0.011131464]；fine context joint→context latent为−0.082316853，[−0.089566596, −0.076320669]。这些是当前实现、参数容量和冻结训练配方的比较，不能推广为架构类别的一般优劣。
 
@@ -119,4 +137,4 @@ python -m analysis.flavour.s3.finalize --root "$S3_ROOT" \
 
 ## 下一步计划
 
-完成八项confirmation与CPU读回，联合报告三seed均值、sample SD、四类配对区间、条件域/尾部统计、native错误事件图和终态成本。逐项审阅strict gate覆盖及英文图示，更新本报告和roadmap完成状态，提交版本化最终汇总与推荐backbone。S4–S6不执行。
+完成其余六项confirmation与CPU读回，联合报告三seed均值、sample SD、四类配对区间、条件域/尾部统计、native错误事件图和终态成本。逐项审阅strict gate覆盖及英文图示，更新本报告和roadmap完成状态，提交版本化最终汇总与推荐backbone。S4–S6不执行。
