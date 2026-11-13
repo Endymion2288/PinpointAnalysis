@@ -83,6 +83,13 @@ def main():
         np.save(output/f'shapes_n{case["label_budget"]}.npy',table)
         del loader;data.native.close()
         epochs=case['epochs'];offset=epochs
+        baseline_operations=0;baseline_exposures=0
+        baseline=SpatialBatchSampler(data,case.get('batch_size',16),case['seed'],steps=case['steps_per_epoch'])
+        for epoch in range(epochs):
+            baseline.epoch=epoch
+            for indexes in baseline:
+                baseline_operations+=shape_operations(case,compact_batch(table[indexes]))['matrix_operations']
+                baseline_exposures+=len(indexes)
         samplers=[SpatialBatchSampler(data,case.get('batch_size',16),case['seed'],steps=1000000) for _ in range(epochs)]
         for epoch,sampler in enumerate(samplers):sampler.epoch=epoch+offset
         iterators=[iter(s) for s in samplers];costs=[[] for _ in samplers];exposures=[[] for _ in samplers]
@@ -97,7 +104,11 @@ def main():
                 'per_epoch_steps':steps,'additional_matrix_operations':cumulative,'target':target,'seconds':time.perf_counter()-started})
         selected,operations=nearest_prefix(costs,target)
         row={'label_budget':case['label_budget'],'pretraining_matrix_operations':target,
+            'baseline_supervised_matrix_operations':baseline_operations,
             'additional_supervised_matrix_operations':operations,'relative_matching_error':(operations-target)/target,
+            'MAE3_plus_finetuning_matrix_operations':target+baseline_operations,
+            'supervised_total_matrix_operations':baseline_operations+operations,
+            'baseline_train_exposures':baseline_exposures,
             'epochs':epochs,'steps_per_epoch':selected,'sampler_epoch_offset':offset,
             'additional_train_exposures':sum(sum(x[:selected]) for x in exposures),
             'per_epoch_matrix_operations':[sum(x[:selected]) for x in costs]}
