@@ -155,6 +155,58 @@
       },
       "bootstrap_replicates": 400,
       "precision": "FP32 CPU, same weights and fixed original train-inner events/queries; no refitting"
+    },
+    {
+      "name": "s4_mae_barrel_channels_e2_s42",
+      "checkpoint_epoch": 2,
+      "probe_events": 512,
+      "valid_channels": 37567,
+      "hardware_channels": 3676,
+      "cross_entropy": {
+        "trained": 0.6427558064460754,
+        "event_permuted": 0.7979105710983276,
+        "oracle_constant": 0.723883330821991,
+        "oracle_channel_geometry": 0.6629191795039376,
+        "target_entropy": 0.1990140676498413
+      },
+      "paired_contrasts": {
+        "event_permuted_minus_trained": {
+          "delta": 0.1551547646522522,
+          "CI95": [
+            0.13984213354209238,
+            0.17272598667818884
+          ]
+        },
+        "oracle_constant_minus_trained": {
+          "delta": 0.08112752437591553,
+          "CI95": [
+            0.07211605007744402,
+            0.09042362308720236
+          ]
+        },
+        "oracle_channel_geometry_minus_trained": {
+          "delta": 0.0201633730578622,
+          "CI95": [
+            0.011855178374961764,
+            0.02956380364208492
+          ]
+        }
+      },
+      "resampling_blocks": {
+        "chunks": 44,
+        "resampling_blocks": 44,
+        "accepted_family_links_used": true,
+        "multi_chunk_blocks": 0,
+        "blocks_by_class_signature": {
+          "(0,)": 11,
+          "(1,)": 11,
+          "(2,)": 11,
+          "(3,)": 11
+        }
+      },
+      "bootstrap_replicates": 400,
+      "precision": "FP32 CPU, same weights and fixed original train-inner events/queries; no refitting"
     }
-  ]
+  ],
+  "full_channel_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_rel_full_channel_diagnostic_s42/semantics.json"
 }
