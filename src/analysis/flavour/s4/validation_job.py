@@ -40,7 +40,7 @@ def main():
     write_json(output/'manifest.json',manifest)
     campaigns=[Path(p) for p in config['campaigns']]
     configurations={c['name']:c for p in campaigns for c in json.loads(p.read_text())['experiments']}
-    catalog=pd.read_parquet(args.root/'catalog.parquet',columns=['run','chunk','row','label','split'])
+    catalog=pd.read_parquet(args.root/'catalog.parquet')
     validation=catalog[catalog.split.eq('validation')];verified=[];pending=[];health=[]
     for name,c in configurations.items():
         if c.get('program','train' if c.get('objective')=='classification' else 'pretrain')!='train':continue
@@ -50,6 +50,11 @@ def main():
         m=json.loads(path.read_text())
         frozen=checkpoint_configuration(c,m['config'])
         report=readback(args.root,frozen,{'GPU':m['gpu_name'],'torch':'2.7.1'},validation)
+        if config.get('inspect_best_health',False):
+            from analysis.flavour.s4.health import inspect
+            diagnostic=inspect(args.root,name,catalog)
+            if not diagnostic['passed']:
+                raise RuntimeError(name+': selected checkpoint FP32 health failed; review model and training')
         rows=json.loads((directory/'training_health.json').read_text())['records']
         if not rows or not all(r['healthy'] for r in rows):raise RuntimeError(name+': internal training health failed')
         if not all(r['gradient_squared_norms'].get('input',0)>0 for r in rows if r.get('informative_nodes',0)>0):

@@ -28,6 +28,7 @@ from analysis.flavour.s4.campaign import host_memory
 from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
 from analysis.flavour.s4.validation_job import main as validate_completed_campaign, checkpoint_configuration
 from analysis.flavour.s4.worker import main as run_campaign_worker
+from analysis.flavour.s4.health import inspect as inspect_best_health
 from analysis.flavour.s2.train import atomic_output
 
 
@@ -159,6 +160,35 @@ class S4Tests(unittest.TestCase):
             resumed=build_downstream({**self.config,'supervised_initial_checkpoint':str(checkpoint)})
             for key,value in scratch.state_dict().items():
                 torch.testing.assert_close(resumed.state_dict()[key],value,rtol=0,atol=0)
+
+    def test_selected_FP32_probe_rejects_disconnected_constant_head(self):
+        metadata=pd.DataFrame({'run':np.repeat(np.arange(10081,10085),2),
+            'chunk':np.zeros(8,dtype=int),'row':np.tile([0,1],4),'label':np.repeat(np.arange(4),2)})
+        catalog=metadata.assign(pixel_channels=150,bar_channels=0,tracker_channels=0)
+        items=[{**self.item(i*19),'index':i,'label':int(metadata.label.iloc[i])} for i in range(8)]
+        class FixedData:
+            def __init__(self,*args,**kwargs):
+                self.metadata=metadata;self.native=SimpleNamespace(close=lambda:None)
+            def __getitem__(self,i):return items[i]
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);directory=root/'experiments/probe';directory.mkdir(parents=True)
+            manifest={'status':'complete','config':self.config,'best_epoch':1,'best_NLL':1.}
+            (directory/'manifest.json').write_text(json.dumps(manifest))
+            model=PlaneModuleClassifierV2(self.config)
+            torch.save({'model':model.state_dict(),'epoch':1},directory/'best.pt')
+            with patch('analysis.flavour.s4.health.LabelDataset',FixedData):
+                report=inspect_best_health(root,'probe',catalog)
+                self.assertTrue(report['passed'])
+                self.assertEqual(len(report['events']),8)
+                (directory/'best_checkpoint_health.json').unlink()
+                with torch.no_grad():
+                    for layer in [model.head[-1],model.linear_readout]:
+                        layer.weight.zero_();layer.bias.zero_()
+                torch.save({'model':model.state_dict(),'epoch':1},directory/'best.pt')
+                report=inspect_best_health(root,'probe',catalog)
+                self.assertFalse(report['passed'])
+                self.assertFalse(report['checks']['input_gradient_connected'])
+                self.assertFalse(report['checks']['scores_vary'])
 
     def test_ema_no_teacher_gradients_and_variance_opposes_constant(self):
         config={**self.config,'objective':'distill'}

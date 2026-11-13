@@ -50,7 +50,7 @@ class S4AcceptanceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary);directory = root / 'experiments/a';directory.mkdir(parents=True)
             config = {'name': 'a', 'objective': 'classification'}
-            manifest = {'config': config, 'status': 'complete', 'best_epoch': 1,
+            manifest = {'config': config, 'status': 'complete', 'best_epoch': 1, 'best_NLL': 1.,
                 'calibration_test_used': False, 'optimizer_steps': 1}
             (directory / 'manifest.json').write_text(json.dumps(manifest))
             (directory / 'final_checkpoint_checks.json').write_text(json.dumps({'status': 'pass',
@@ -59,6 +59,9 @@ class S4AcceptanceTests(unittest.TestCase):
             self.assertTrue(record['checks']['checkpoint_readback'])
             self.assertFalse(record['passed'])
             (directory / 'training_health.json').write_text(json.dumps({'records': [self.health()]}))
+            self.assertFalse(fit_record(root, config, {'a': {}})['passed'])
+            (directory / 'best_checkpoint_health.json').write_text(json.dumps({'version': 1,
+                'config': config, 'passed': True, 'checks': {'connected': True}, 'best_epoch': 1, 'selected_NLL': 1.}))
             self.assertTrue(fit_record(root, config, {'a': {}})['passed'])
 
     def test_active_and_missing_reservations_cannot_pass(self):

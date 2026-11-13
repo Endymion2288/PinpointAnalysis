@@ -47,6 +47,12 @@ def fit_record(root, config, evaluated):
         checks['checkpoint_readback'] = (readback.get('status') == 'pass'
             and len(readback.get('checks', {})) == 14 and all(readback['checks'].values())
             and readback.get('best_epoch') == manifest.get('best_epoch'))
+        best_health = load(directory / 'best_checkpoint_health.json')
+        checks['independent_best_FP32_backward'] = (best_health.get('version') == 1
+            and best_health.get('passed') is True and bool(best_health.get('checks'))
+            and all(best_health['checks'].values()) and best_health.get('config') == manifest.get('config')
+            and best_health.get('best_epoch') == manifest.get('best_epoch')
+            and best_health.get('selected_NLL') == manifest.get('best_NLL'))
         records = load(directory / 'training_health.json').get('records', [])
         checks.update(training_health(records, manifest.get('optimizer_steps', 0), config.get('health_every_steps', 100)))
         samples = len(records)
