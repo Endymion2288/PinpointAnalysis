@@ -52,5 +52,36 @@
       "first_AdamW_head_parameter_delta_squared_norm": 3.9757581138396373e-07
     }
   ],
-  "calibration_test_used": false
+  "calibration_test_used": false,
+  "cuda_bf16_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/initial_gradient_decomposition_cuda_bf16.json",
+  "cuda_bf16_measurements": [
+    {
+      "name": "s4_scratch_n10000_s17",
+      "empty_response_bypass": false,
+      "preclip_gradient_norm": 6464194215936.0,
+      "input_gradient_squared_norm": 4.178578553049629e+25,
+      "empty_loss_input_gradient_squared_norm": 4.178578553049629e+25
+    },
+    {
+      "name": "s4_scratch_n10000_s17",
+      "empty_response_bypass": true,
+      "preclip_gradient_norm": 156.09999084472656,
+      "input_gradient_squared_norm": 54.82419113580672,
+      "empty_loss_input_gradient_squared_norm": 0.0
+    },
+    {
+      "name": "s4_scratch_n1000_s2026",
+      "empty_response_bypass": false,
+      "preclip_gradient_norm": 1832989229056.0,
+      "input_gradient_squared_norm": 3.3598470633692616e+24,
+      "empty_loss_input_gradient_squared_norm": 3.3598470633692616e+24
+    },
+    {
+      "name": "s4_scratch_n1000_s2026",
+      "empty_response_bypass": true,
+      "preclip_gradient_norm": 59.731204986572266,
+      "input_gradient_squared_norm": 163.87724775634544,
+      "empty_loss_input_gradient_squared_norm": 0.0
+    }
+  ]
 }

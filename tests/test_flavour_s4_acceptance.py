@@ -72,6 +72,25 @@ class S4AcceptanceTests(unittest.TestCase):
         self.assertFalse(terminal_allocations({'allocations': []}))
         self.assertFalse(terminal_allocations({}))
 
+    def test_repaired_fits_require_every_update_gradient_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary);directory = root / 'experiments/a';directory.mkdir(parents=True)
+            config = {'name': 'a', 'objective': 'classification', 'empty_response_bypass': True}
+            manifest = {'config': config, 'status': 'complete', 'best_epoch': 1, 'best_NLL': 1.,
+                'calibration_test_used': False, 'optimizer_steps': 1}
+            (directory / 'final_checkpoint_checks.json').write_text(json.dumps({'status': 'pass',
+                'best_epoch': 1, 'checks': {str(i): True for i in range(14)}}))
+            (directory / 'training_health.json').write_text(json.dumps({'records': [self.health()]}))
+            (directory / 'best_checkpoint_health.json').write_text(json.dumps({'version': 1,
+                'config': config, 'passed': True, 'checks': {'connected': True}, 'best_epoch': 1, 'selected_NLL': 1.}))
+            for evidence, expected in [(None, False), ({'checked_updates': 0, 'maximum_preclip_gradient_norm': 1.}, False),
+                ({'checked_updates': 1, 'maximum_preclip_gradient_norm': 1e12}, False),
+                ({'checked_updates': 1, 'maximum_preclip_gradient_norm': 1.}, True)]:
+                with self.subTest(evidence=evidence):
+                    if evidence is not None: manifest['gradient_health'] = evidence
+                    (directory / 'manifest.json').write_text(json.dumps(manifest))
+                    self.assertEqual(fit_record(root, config, {'a': {}})['passed'], expected)
+
     def test_inventory_requires_global_probes_selection_and_all_contrasts(self):
         configurations = {'a': {'name': 'a', 'program': 'train'},
             'p': {'name': 'p', 'program': 'probes'},

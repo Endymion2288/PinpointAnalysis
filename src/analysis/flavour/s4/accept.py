@@ -60,6 +60,11 @@ def fit_record(root, config, evaluated):
         records = load(directory / 'training_health.json').get('records', [])
         checks.update(training_health(records, manifest.get('optimizer_steps', 0), config.get('health_every_steps', 100),
             config.get('health_initial_steps', 0), config.get('maximum_preclip_gradient_norm', 10000.)))
+        if config.get('empty_response_bypass'):
+            every_step=manifest.get('gradient_health',{})
+            norm=every_step.get('maximum_preclip_gradient_norm',float('inf'))
+            checks['every_update_gradient_review']=(every_step.get('checked_updates')==manifest.get('optimizer_steps',0)
+                and math.isfinite(norm) and norm<=config.get('maximum_preclip_gradient_norm',10000.))
         samples = len(records)
     else:
         statistics = load(directory / 'feature_statistics.json')

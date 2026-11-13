@@ -25,19 +25,19 @@ def norms(model):
     return result
 
 
-def replay(root, name):
+def replay(root, name, device=torch.device('cpu'), bf16=False):
     original = json.loads((root / 'experiments' / name / 'manifest.json').read_text())['config']
     config = {**original, 'compile_local': False, 'maximum_preclip_gradient_norm': 10000.}
     data = LabelDataset(root, 'train', config)
     ids = next(iter(SpatialBatchSampler(data, config['batch_size'], config['seed'],
         steps=config.get('steps_per_epoch'))))
     items = [data[int(i)] for i in ids]
-    template = collate_planes(items)
-    empty = torch.tensor([int((item['nodes'][:, 15] > 0).sum()) == 0 for item in items])
+    template = {key: value.to(device) for key, value in collate_planes(items).items()}
+    empty = torch.tensor([int((item['nodes'][:, 15] > 0).sum()) == 0 for item in items], device=device)
     records = []
     for safe in [False, True]:
         random.seed(config['seed']);np.random.seed(config['seed']);torch.manual_seed(config['seed'])
-        model = PlaneModuleClassifierV2({**config, 'empty_response_bypass': safe}).eval()
+        model = PlaneModuleClassifierV2({**config, 'empty_response_bypass': safe}).to(device).eval()
         variance = {}
         handles = []
         def record_variance(name):
@@ -57,8 +57,9 @@ def replay(root, name):
                 continue
             model.zero_grad(set_to_none=True)
             health = TrainingHealth(model);health.start(template)
-            logits = model(template)
-            losses = torch.nn.functional.cross_entropy(logits, template['label'], reduction='none')
+            with torch.autocast(device.type, dtype=torch.bfloat16, enabled=bf16):
+                logits = model(template)
+                losses = torch.nn.functional.cross_entropy(logits, template['label'], reduction='none')
             # Preserve the full batch denominator when decomposing its loss.
             loss = losses[selected].sum() / len(losses)
             loss.backward()
@@ -97,10 +98,15 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--names', nargs='+', required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--device', choices=['cpu', 'cuda'], default='cpu')
+    parser.add_argument('--bf16', action='store_true')
     args = parser.parse_args();torch.set_num_threads(1)
-    report = {'precision': 'CPU FP32, original initialization and first sampler batch, eval mode, no compilation',
+    device = torch.device(args.device)
+    if args.bf16 and device.type == 'cuda' and not torch.cuda.is_bf16_supported(including_emulation=False):
+        raise ValueError('native BF16 GPU required')
+    report = {'precision': f'{args.device.upper()} {"BF16 encoder / FP32 head" if args.bf16 else "FP32"}, original initialization and first sampler batch, eval mode, no compilation',
         'scope': 'train events only; empty and observed losses use the complete batch denominator; each variant starts from the same RNG seed',
-        'models': [replay(args.root, name) for name in args.names], 'calibration_test_used': False}
+        'models': [replay(args.root, name, device, args.bf16) for name in args.names], 'calibration_test_used': False}
     write_json(args.output, report)
     for model in report['models']:
         for variant in model['variants']:

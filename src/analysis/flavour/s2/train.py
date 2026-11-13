@@ -186,6 +186,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
     best_probabilities=None
     optimizer_steps=0
     amp_skipped_steps=0
+    gradient_health={'checked_updates':0,'maximum_preclip_gradient_norm':0.,'minimum_clip_scale':1.}
     timing=dict(data_wait=0.,transfer=0.,forward_backward=0.,validation=0.)
     start_epoch=0
     prior_seconds=0.
@@ -206,6 +207,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         prior_seconds=state['elapsed_seconds']
         optimizer_steps=state.get('optimizer_steps',start_epoch*len(train_sampler))
         amp_skipped_steps=state.get('amp_skipped_steps',0)
+        gradient_health=state.get('gradient_health',gradient_health)
         random.setstate(state['random_state'])
         health_records=state.get('health_records',[])
         if health is not None and health_records:
@@ -263,6 +265,11 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                     write_json(output/'manifest.json',manifest)
                     raise RuntimeError('internal training health failed; inspect architecture and optimizer before resuming')
             preclip_norm=torch.nn.utils.clip_grad_norm_(model.parameters(),config.get('clip_grad_norm',5.),error_if_nonfinite=True)
+            norm_value=float(preclip_norm)
+            gradient_health['checked_updates']+=1
+            gradient_health['maximum_preclip_gradient_norm']=max(gradient_health['maximum_preclip_gradient_norm'],norm_value)
+            gradient_health['minimum_clip_scale']=min(gradient_health['minimum_clip_scale'],
+                min(1.,config.get('clip_grad_norm',5.)/max(norm_value,1e-30)))
             maximum=config.get('maximum_preclip_gradient_norm')
             if maximum is not None and float(preclip_norm)>maximum:
                 failure={'step':optimizer_steps+1,'preclip_gradient_norm':float(preclip_norm),
@@ -292,6 +299,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                     'events_per_second':events/(time.perf_counter()-epoch_start),
                     'seconds':time.perf_counter()-epoch_start,'timing_cumulative':timing.copy(),
                     'peak_gpu_mib':torch.cuda.max_memory_allocated()/2**20 if device.type=='cuda' else 0.}
+                progress['gradient_health']=gradient_health.copy()
                 write_json(output/'progress.json',progress)
                 print(json.dumps(progress),flush=True)
             ready=time.perf_counter()
@@ -339,7 +347,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
             'epoch':epoch+1,'seed':seed,'scheduler':scheduler.state_dict(),'scaler':scaler.state_dict(),
             'optimizer_steps':optimizer_steps,'amp_skipped_steps':amp_skipped_steps,
             'history':history,'timing':timing.copy(),'best_NLL':best,'best_epoch':best_epoch,
-            'health_records':health_records,
+            'health_records':health_records,'gradient_health':gradient_health.copy(),
             'best_model':best_model,'best_probabilities':best_probabilities,
             'elapsed_seconds':prior_seconds+time.perf_counter()-started,
             'random_state':random.getstate(),'numpy_state':np.random.get_state(),
@@ -357,7 +365,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         peak_gpu_allocated_mib=max(previous.get('peak_gpu_allocated_mib',0),torch.cuda.max_memory_allocated()/2**20) if device.type=='cuda' else 0,
         parent_peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,
         optimizer_steps=optimizer_steps,amp_skipped_steps=amp_skipped_steps,
-        timing_seconds=timing)
+        timing_seconds=timing,gradient_health=gradient_health)
     write_json(output/'manifest.json',manifest)
     if health is not None:
         health.close()
