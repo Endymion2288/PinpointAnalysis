@@ -1,0 +1,57 @@
+"""Same-backbone S4 full fine-tuning and matched-supervised controls."""
+import argparse
+import json
+from pathlib import Path
+
+import torch
+
+from analysis.flavour.s2.train import run
+from analysis.flavour.s3.dataset import collate_planes
+from analysis.flavour.s3.health import TrainingHealth
+from analysis.flavour.s3.models_repair import PlaneModuleClassifierV2
+from analysis.flavour.s3.pilot_repair import optimizer_for
+from analysis.flavour.s4.dataset import LabelDataset
+
+
+def build_model(config):
+    model=PlaneModuleClassifierV2(config)
+    if config.get('pretrained_checkpoint'):
+        state=torch.load(config['pretrained_checkpoint'],map_location='cpu',weights_only=False)
+        source=state['model']
+        # The teacher/decoder/projector are never downstream input. Random
+        # classifier weights and seed match Scratch, including all branch norms.
+        keys={key.removeprefix('encoder.'):value for key,value in source.items() if key.startswith('encoder.')}
+        excluded=('head.','linear_readout.','head_input_norm.','branch_norms.','summary.')
+        keys={key:value for key,value in keys.items() if not key.startswith(excluded)}
+        target=model.state_dict()
+        if any(key not in target or value.shape!=target[key].shape for key,value in keys.items()):
+            raise ValueError('pretraining/downstream encoder mismatch')
+        expected={key for key in target if not key.startswith(excluded)}
+        if set(keys)!=expected:raise ValueError('pretraining encoder incomplete')
+        target.update(keys);model.load_state_dict(target,strict=True)
+    return model
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root',type=Path,required=True)
+    parser.add_argument('--campaign',type=Path,required=True)
+    parser.add_argument('--task',type=int,required=True)
+    parser.add_argument('--device',default='cuda')
+    args=parser.parse_args();config=json.loads(args.campaign.read_text())['experiments'][args.task]
+    pilot=json.loads((args.root/'pilot'/'s4_backbone_health_s42'/'gate.json').read_text())
+    if not pilot['gate_passed']:raise RuntimeError('same-backbone real-event health gate required')
+    if config.get('pretrained_checkpoint'):
+        report=json.loads(Path(config['pretrained_checkpoint']).with_name('manifest.json').read_text())
+        if report['status']!='complete' or not report['all_internal_health_pass']:
+            raise RuntimeError('pretraining has not completed with internal health')
+    run(args,dataset_class=LabelDataset,model_factory=build_model,collate_fn=collate_planes,
+        health_factory=TrainingHealth,optimizer_factory=optimizer_for,
+        manifest_extra={'stage':'S4','label_budget':config.get('label_budget'),
+            'initialization':config.get('initialization','scratch'),
+            'same_backbone':'S3 revision2 multiscale native pixel/bar/tracker',
+            'random_downstream_heads':'head,linear_readout,head_input_norm,branch_norms,summary',
+            'calibration_test_used':False})
+
+
+if __name__=='__main__':main()

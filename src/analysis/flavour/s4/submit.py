@@ -43,8 +43,11 @@ def submit(args):
     for name in ['logs', 'kubeflow', 'runtime']:
         (root / name).mkdir(exist_ok=True)
     name = args.name
+    cpu_only = args.stage in {'data','assemble'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
+    elif args.stage == 'assemble':
+        arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
     else:
         arguments = ['analysis.flavour.s3.parallel', '--root', str(root), '--campaign', str(args.campaign.resolve()),
             '--name', name, '--concurrency', str(args.concurrency), '--training-module', 'analysis.flavour.s4.'+args.stage,
@@ -53,7 +56,7 @@ def submit(args):
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh', 'set -e',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1',
         f'export PYTHONPATH={shlex.quote(str(repo/"src"))}:${{PYTHONPATH:-}}', f'cd {shlex.quote(str(repo))}']
-    if args.stage != 'data':
+    if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': args.stage, 'name': name,
         'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,
@@ -69,7 +72,7 @@ def submit(args):
         wrapper.write_text('\n'.join(script+['exec python -m "$@"'])+'\n')
         wrapper.chmod(0o755)
         arguments_text = ' '.join(a if a == '$(task)' else shlex.quote(a) for a in arguments)
-        gpu = args.stage != 'data'
+        gpu = not cpu_only
         text = f'''universe = vanilla
 executable = {wrapper}
 arguments = {arguments_text}
@@ -87,8 +90,10 @@ transfer_output_files = ""
 '''
         if gpu:
             text += 'request_gpus = 1\nrequire_gpus = ((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA A100-PCIE-40GB")) && (GlobalMemoryMb >= 39000)\nqueue 1\n'
-        else:
+        elif args.stage == 'data':
             text += 'queue task in '+','.join(map(str,args.tasks))+'\n'
+        else:
+            text += 'queue 1\n'
         path = directory/'job.sub'
         path.write_text(text)
         evidence.update(schedd=chosen, snapshot=snapshot, checks=checks, submit=text, wrapper=wrapper.read_text(),
@@ -100,7 +105,7 @@ transfer_output_files = ""
             if result.returncode:
                 raise RuntimeError(result.stderr)
     else:
-        if args.stage == 'data':
+        if cpu_only:
             raise ValueError('bulk data conversion uses HTCondor')
         product, resource = GPU_FLAVORS[args.flavor]
         requests = {resource: 1}
@@ -134,7 +139,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','pilot','pretrain','train','probes'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','pilot','pretrain','train','probes'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
