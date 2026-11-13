@@ -44,6 +44,17 @@ ceiling = (negative * acceptance).astype(int)
 
 不同域的AP同时受到类别prior、物理接受度和难度影响。需要使用同域、同事件的冻结模型配对评价；域间AP高低不能替代tracker或局部编码的因果消融。零背景选择不代表真实背景率为零，当前计数也不支持部署级尾部精度或物理flux产额。
 
+### 最终数值表导出准备
+
+新增标准库工具`roadmap/tools/export_s3_summary.py`，只读取发布的evaluation、conditional、accounting、finalizer与acceptance报告，汇集全部模型的raw/common-support四类统计、全部冻结配对、三seed均值/SD、条件域三seed主要统计、分母、晋级决定和成本。完整曲线、逐模型尾部计数及后端证据通过EOS路径引用，不复制训练数据或checkpoints。
+
+导出要求`final_acceptance`的全部检查通过、finalizer状态为`strict_gate_passed`、评价无pending、后端无missing history，并核对25项冻结科学模型均存在；工具不代替workbook中的科学解释与图示人工复核。实际执行`--help`为exit0；以当前真实未完成root尝试导出为预期exit1，提示`Complete S3 output gate required; no summary written`，确认输出文件不存在。通过后的真实完整导出尚未执行。
+
+```bash
+python3 roadmap/tools/export_s3_summary.py --root "$S3_ROOT" \
+  --output roadmap/results/s3_summary.json
+```
+
 ## 下一步计划
 
 完成当前四个live confirmation训练，读取最终条件域的实际signal/background选择数、purity和固定inclusive threshold迁移；将本表与模型配对区间一起纳入最终科学报告。S3严格验收、终态成本和资源释放仍等待完整训练终态。
