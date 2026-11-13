@@ -137,4 +137,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-S3已完成以PN/ParT native及1 mm三seed为基线的plane-aware局部编码、module context和latent fusion检验。25项科学模型、350项读回及完整条件评价已通过严格验收，八项晋级决定均为false，保留S2 ParT native reference及1 mm控制。Tracker的NC argmax F1收益与四类AP/固定背景效率退化分别报告。主模型弱学习/常数输出干扰分辨率推断，当前未确立shared 4 mm压缩抹平native优势。下一项研究先独立冻结优化稳定性与压缩控制，再决定S4；本轮S4–S6未执行。详见[科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)与[最终数值](results/s3_summary.json)。
+S3 revision 2 已完成 20 个修复模型和最终评价；旧 25 模型的晋级判断撤回。当前依据为 [修复最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和 [S3 修复结果](results/s3_repair_summary.json)。Tracker 的 νμ/NC 增益得到支持，ντ 增益尚未证实，global latent 利用仍弱。S4 按 [预训练合同](11_s4_pretraining.md)实现与验证，保持相同 backbone 的 Scratch 对照及 calibration/test 冻结。

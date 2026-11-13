@@ -149,7 +149,8 @@ class PlaneModuleClassifierV2(nn.Module):
         # sample must never switch the numerical implementation used to fit.
         return self.local_pool(features)
 
-    def forward(self, batch):
+    def encode(self, batch):
+        """Observation features shared by classification and S4 objectives."""
         nodes, mask = batch['nodes'], batch['local_mask']
         pieces = []
         for start in range(0, len(nodes), self.local_chunk_blocks):
@@ -196,7 +197,8 @@ class PlaneModuleClassifierV2(nn.Module):
             x = layer(x, x, all_latents)
         pools = [masked_pool(features, valid & (types == d)) for d in range(3)]
         presence = torch.stack([(valid & (types == d)).any(-1) for d in range(3)], -1)
-        pools.append(masked_pool(self.global_norm(x), all_latents))
+        normalized_global = self.global_norm(x)
+        pools.append(masked_pool(normalized_global, all_latents))
         branch_presence = [presence[:, d] for d in range(3)] + [torch.ones(b, device=x.device, dtype=torch.bool)]
         if self.direct:
             # Every local block reaches classification, including blocks whose
@@ -214,6 +216,14 @@ class PlaneModuleClassifierV2(nn.Module):
         with torch.autocast(device_type=nodes.device.type, enabled=False):
             summary = self.summary(torch.cat([scale_totals(totals), presence.float()], -1))
             head_input = self.head_input_norm(torch.cat(pools + [summary], -1))
+        return {'head_input': head_input, 'branches': torch.stack(pools, 1), 'summary': summary,
+                'global_tokens': normalized_global, 'region_tokens': features,
+                'region_mask': valid, 'region_detector': types, 'local_tokens': local}
+
+    def forward(self, batch):
+        features = self.encode(batch)
+        with torch.autocast(device_type=batch['nodes'].device.type, enabled=False):
+            head_input = features['head_input']
             return self.head(head_input) + self.linear_readout(head_input)
 
 
