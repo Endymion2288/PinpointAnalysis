@@ -264,7 +264,8 @@ class PretrainDataset(PlaneDataset):
         native_index=int(self.indexes[index])
         event=self.native[native_index]
         full=event['observations']
-        seed=int(self.config.get('seed',42))+index*1009+(int(self.epoch) if self.pretrain_split=='train' else 0)*10000019
+        view_epoch=(int(self.epoch)+self.config.get('mask_epoch_offset',0)) if self.pretrain_split=='train' else 0
+        seed=int(self.config.get('seed',42))+index*1009+view_epoch*10000019
         visible,hidden=self.query_geometry.visible(full,seed,self.config.get('mask_ratio',.75))
         nodes,groups,modules,counts=plane_tokens(visible,self.geometry,self.config,seed)
         item={'nodes':nodes,'groups':groups,'modules':modules,'label':-1,'index':index,

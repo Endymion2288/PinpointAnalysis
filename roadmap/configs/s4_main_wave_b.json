@@ -632,7 +632,8 @@
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
-      ]
+      ],
+      "mask_epoch_offset": 3
     },
     {
       "seed": 42,
@@ -694,7 +695,8 @@
         "s4_mae_m75_e3_s42",
         "s4p5_barrel_local_s42"
       ],
-      "rel_source": "global_and_bar_local"
+      "rel_source": "global_and_bar_local",
+      "mask_epoch_offset": 3
     },
     {
       "seed": 42,

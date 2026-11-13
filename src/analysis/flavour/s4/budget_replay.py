@@ -23,7 +23,7 @@ class ShapePretrainDataset(PretrainDataset):
     """Identical visible observations and grouping; skip target/query lookups."""
     def __getitem__(self,index):
         event=self.native[int(self.indexes[index])]
-        seed=int(self.config.get('seed',42))+index*1009+int(self.epoch)*10000019
+        seed=int(self.config.get('seed',42))+index*1009+(int(self.epoch)+self.config.get('mask_epoch_offset',0))*10000019
         visible,_=self.query_geometry.visible(event['observations'],seed,self.config.get('mask_ratio',.75))
         nodes,groups,modules,counts=plane_tokens(visible,self.geometry,self.config,seed)
         return {'nodes':nodes,'groups':groups,'modules':modules,'label':-1,'index':index,
