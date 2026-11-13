@@ -1,16 +1,43 @@
 """Diagnostics must preserve modality availability and reproduce the fitted head."""
 import unittest
+import json
+from pathlib import Path
+import tempfile
 
 import numpy as np
 import torch
 
 from analysis.flavour.s3.diagnose_repair_paths import (
-    branch_slices, contrast, effective_rank, head_logits, presence_permutation,
+    branch_slices, contrast, effective_rank, head_logits, presence_permutation, reusable_paths,
 )
+from analysis.flavour.s3.inspect_repair import reusable_inspection
 from analysis.flavour.s3.models_repair import PlaneModuleClassifierV2
 
 
 class S3PathDiagnosticTests(unittest.TestCase):
+    def test_reuse_requires_the_same_complete_checkpoint_and_final_probe(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); directory = root / 'experiments/a'; directory.mkdir(parents=True)
+            manifest = {'status': 'complete', 'config': {'name': 'a'}, 'best_epoch': 2, 'best_NLL': 1.2}
+            health = {'inspection_version': 1, 'config': manifest['config'], 'best_epoch': 2,
+                      'selected_validation_NLL': 1.2, 'internal_health_and_learning_passed': True,
+                      'checks': {'connected': True}}
+            path = {'diagnostic_version': 1, 'config': manifest['config'], 'best_epoch': 2,
+                    'training_status_at_probe_start': 'complete', 'interim_diagnostic': False,
+                    'probe_events': 64, 'cached_head_matches_original': True, 'presence_preserved': True}
+            def save():
+                for filename, data in [('manifest.json', manifest), ('internal_health_checks.json', health),
+                                       ('path_diagnostics.json', path)]:
+                    (directory / filename).write_text(json.dumps(data))
+            save()
+            self.assertTrue(reusable_inspection(root, 'a')); self.assertTrue(reusable_paths(root, 'a'))
+            path['interim_diagnostic'] = True; save()
+            self.assertFalse(reusable_paths(root, 'a'))
+            path['interim_diagnostic'] = False; manifest['best_epoch'] = 3; save()
+            self.assertFalse(reusable_inspection(root, 'a')); self.assertFalse(reusable_paths(root, 'a'))
+            manifest['best_epoch'] = 2; health['checks']['connected'] = False; save()
+            self.assertFalse(reusable_inspection(root, 'a'))
+
     def test_presence_derangement_keeps_singleton_and_modality_availability(self):
         presence = np.array([[1, 0, 0], [1, 1, 0], [1, 0, 0], [0, 0, 1], [1, 1, 0]], dtype=bool)
         permutation = presence_permutation(presence)

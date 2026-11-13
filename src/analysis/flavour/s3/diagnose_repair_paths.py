@@ -19,6 +19,20 @@ from analysis.flavour.s3.dataset import PlaneDataset, collate_planes
 from analysis.flavour.s3.models_repair import build_model
 
 
+def reusable_paths(root, name):
+    directory = root / 'experiments' / name
+    path = directory / 'path_diagnostics.json'
+    if not path.exists():
+        return False
+    report = json.loads(path.read_text())
+    manifest = json.loads((directory / 'manifest.json').read_text())
+    return (manifest['status'] == 'complete' and report.get('diagnostic_version') == 1
+            and report.get('config') == manifest['config'] and report.get('best_epoch') == manifest['best_epoch']
+            and report.get('training_status_at_probe_start') == 'complete' and report.get('interim_diagnostic') is False
+            and report.get('probe_events') == 64 and report.get('cached_head_matches_original') is True
+            and report.get('presence_preserved') is True)
+
+
 def presence_permutation(presence, seed=2026):
     """A deterministic derangement inside each observed-presence stratum."""
     rng = np.random.default_rng(seed)
@@ -149,6 +163,7 @@ def diagnose(root, name, per_class=16, interim=False):
             'linear_readout_only': contrast(original, head_logits(model, context, nonlinear=False), labels)}
     report = {
         'utc': datetime.now(timezone.utc).isoformat(), 'experiment': name, 'best_epoch': state['epoch'],
+        'config': config, 'diagnostic_version': 1,
         'training_status_at_probe_start': manifest['status'], 'interim_diagnostic': interim,
         'scope': 'CPU FP32 fixed-checkpoint diagnostic; occupancy-quantile balanced nonempty validation probe; no fit or model selection; not population or held-out test metrics',
         'events': metadata.iloc[indexes][key + ['label']].to_dict('records'),
@@ -178,11 +193,15 @@ def main():
     parser.add_argument('--experiments', nargs='+', required=True)
     parser.add_argument('--per-class', type=int, default=16)
     parser.add_argument('--interim', action='store_true', help='write an explicitly interim probe under audit, outside final acceptance')
+    parser.add_argument('--reuse', action='store_true', help='retain completed-checkpoint diagnostic with identical frozen configuration')
     args = parser.parse_args()
     if args.per_class < 2:
         parser.error('--per-class must be at least 2')
     torch.set_num_threads(1); pa.set_cpu_count(1); pa.set_io_thread_count(1)
     for name in args.experiments:
+        if args.reuse and not args.interim and args.per_class == 16 and reusable_paths(args.root, name):
+            print(f'{name}: same completed checkpoint path diagnostic retained', flush=True)
+            continue
         diagnose(args.root, name, args.per_class, args.interim)
 
 

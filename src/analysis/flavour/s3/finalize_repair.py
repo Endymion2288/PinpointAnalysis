@@ -49,10 +49,10 @@ def main():
             module('monitor', '--campaign', campaign)
             if not json.loads((args.root / 'monitor_state.json').read_text())['all_readbacks_passed']:
                 raise RuntimeError('checkpoint readback incomplete')
-        module('inspect_repair', '--experiments', *names)
+        module('inspect_repair', '--reuse', '--experiments', *names)
         repaired = [c['name'] for campaign in campaigns for c in campaign['experiments']
                     if c['architecture'] == 'plane_module_v2']
-        module('diagnose_repair_paths', '--experiments', *repaired)
+        module('diagnose_repair_paths', '--reuse', '--experiments', *repaired)
         # Give supervisors time to reap their last child; terminal allocation
         # evidence remains mandatory and cannot be replaced with these outputs.
         module('accounting_repair')

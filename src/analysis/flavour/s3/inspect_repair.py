@@ -18,6 +18,21 @@ from analysis.flavour.s3.models_repair import build_model
 ENCODER = ['input', 'local', 'local_pool']
 
 
+def reusable_inspection(root, name):
+    directory = root / 'experiments' / name
+    path = directory / 'internal_health_checks.json'
+    if not path.exists():
+        return False
+    report = json.loads(path.read_text())
+    manifest = json.loads((directory / 'manifest.json').read_text())
+    return (manifest['status'] == 'complete' and report.get('inspection_version') == 1
+            and report.get('config') == manifest['config']
+            and report.get('best_epoch') == manifest['best_epoch']
+            and report.get('selected_validation_NLL') == manifest['best_NLL']
+            and report.get('internal_health_and_learning_passed') is True
+            and bool(report.get('checks')) and all(report['checks'].values()))
+
+
 def summarize_samples(records, total_steps, every):
     expected = list(range(1, total_steps + 1, every))
     informative = [r for r in records if r.get('informative_nodes') != 0]
@@ -94,7 +109,7 @@ def inspect(root, name):
     report['checks'].update(validation_NLL_better_than_constant_prior=selected['NLL'] < constant_nll,
                             paired_block_CI_supports_learning_over_constant_prior=learning_interval[1] < 0,
                             full_validation_scores_nonconstant=not diagnostics['all_events_same_probability_vector'])
-    report.update(utc=datetime.now(timezone.utc).isoformat(), experiment=name,
+    report.update(utc=datetime.now(timezone.utc).isoformat(), experiment=name, config=config, inspection_version=1,
                   best_epoch=state['epoch'], constant_prior_NLL=constant_nll,
                   selected_validation_NLL=selected['NLL'], prediction_diagnostics=diagnostics,
                   NLL_minus_constant_prior={'delta':float(excess.mean()),'CI95':learning_interval,
@@ -114,9 +129,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--experiments', nargs='+', required=True)
+    parser.add_argument('--reuse', action='store_true', help='reuse passing evidence for the same completed configuration and best checkpoint')
     args = parser.parse_args()
     torch.set_num_threads(1); pa.set_cpu_count(1); pa.set_io_thread_count(1)
     for name in args.experiments:
+        if args.reuse and reusable_inspection(args.root, name):
+            print(f'{name}: same completed checkpoint health evidence retained', flush=True)
+            continue
         result = inspect(args.root, name)
         if not result['internal_health_and_learning_passed']:
             raise SystemExit(f'{name}: inspect architecture and training before drawing a conclusion')
