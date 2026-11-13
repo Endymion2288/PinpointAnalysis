@@ -17,6 +17,17 @@ from analysis.flavour.s2.readback import readback
 from analysis.flavour.s4.evaluate import evaluate
 
 
+def checkpoint_configuration(expected, recorded):
+    """Resolve only the legacy task-dispatch default; retain strict fit settings."""
+    def explicit(config):
+        return {**config, 'program':config.get('program',
+            'train' if config.get('objective')=='classification' else 'pretrain')}
+    if explicit(expected)!=explicit(recorded):
+        raise ValueError(expected['name']+': frozen campaign/checkpoint configuration mismatch')
+    # readback still checks equality of manifest, last and best configurations.
+    return recorded
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True);parser.add_argument('--campaign',type=Path,required=True)
@@ -37,7 +48,8 @@ def main():
         if not path.exists() or json.loads(path.read_text()).get('status')!='complete':
             pending.append(name);continue
         m=json.loads(path.read_text())
-        report=readback(args.root,c,{'GPU':m['gpu_name'],'torch':'2.7.1'},validation)
+        frozen=checkpoint_configuration(c,m['config'])
+        report=readback(args.root,frozen,{'GPU':m['gpu_name'],'torch':'2.7.1'},validation)
         rows=json.loads((directory/'training_health.json').read_text())['records']
         if not rows or not all(r['healthy'] for r in rows):raise RuntimeError(name+': internal training health failed')
         if not all(r['gradient_squared_norms'].get('input',0)>0 for r in rows if r.get('informative_nodes',0)>0):

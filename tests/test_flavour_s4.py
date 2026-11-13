@@ -26,7 +26,7 @@ from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operation
 from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix
 from analysis.flavour.s4.campaign import host_memory
 from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
-from analysis.flavour.s4.validation_job import main as validate_completed_campaign
+from analysis.flavour.s4.validation_job import main as validate_completed_campaign, checkpoint_configuration
 from analysis.flavour.s4.worker import main as run_campaign_worker
 from analysis.flavour.s2.train import atomic_output
 
@@ -363,7 +363,9 @@ class S4Tests(unittest.TestCase):
                 'analysis.flavour.s4.worker.importlib.import_module') as module:
                 run_campaign_worker();module.assert_called_once_with('analysis.flavour.s4.train')
             directory=root/'experiments/legacy';directory.mkdir(parents=True)
-            (directory/'manifest.json').write_text(json.dumps({'status':'complete','gpu_name':'NVIDIA H100 NVL'}))
+            recorded={**case,'program':'train'}
+            (directory/'manifest.json').write_text(json.dumps({'status':'complete','gpu_name':'NVIDIA H100 NVL',
+                'config':recorded}))
             (directory/'training_health.json').write_text(json.dumps({'records':[{'healthy':True,
                 'informative_nodes':3,'gradient_squared_norms':{'input':1.},'activations':{}}]}))
             pd.DataFrame({'run':[10081],'chunk':[0],'row':[0],'label':[0],
@@ -375,10 +377,20 @@ class S4Tests(unittest.TestCase):
                 'analysis.flavour.s4.validation_job.readback',return_value={'best_epoch':1}) as checked,patch(
                 'analysis.flavour.s4.validation_job.evaluate'):
                 validate_completed_campaign();checked.assert_called_once()
+                self.assertEqual(checked.call_args.args[1],recorded)
             report=json.loads((root/'experiments/validation/manifest.json').read_text())
             self.assertEqual(report['verified_train'],['legacy'])
             summary=json.loads((root/'experiments/validation/training_health_summary.json').read_text())
             self.assertEqual(summary['samples'],1)
+
+    def test_checkpoint_config_resolves_only_legacy_dispatch_default(self):
+        original={'name':'legacy','objective':'classification','seed':42,'learning_rate':3e-4}
+        explicit={**original,'program':'train'}
+        self.assertEqual(checkpoint_configuration(original,explicit),explicit)
+        self.assertEqual(checkpoint_configuration(explicit,original),original)
+        for changed in [{'seed':17},{'learning_rate':1e-4},{'program':'pretrain'},{'new_setting':1}]:
+            with self.assertRaisesRegex(ValueError,'configuration mismatch'):
+                checkpoint_configuration(original,{**explicit,**changed})
 
     def test_concurrent_source_archive_writes_publish_complete_distinct_inodes(self):
         from concurrent.futures import ThreadPoolExecutor

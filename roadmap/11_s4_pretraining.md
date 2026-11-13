@@ -52,4 +52,4 @@ S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译
 
 验收除结果文件完整外，要求 informative encoder 梯度、非饱和 head、非恒定预测、SSL 的 feature 方差和实际拟合证据；若出现明显异常，先定位架构/尺度/采样/优化并修复重训。最终记录所有 allocations 终态和资源成本；阶段报告与代码共同提交。
 
-配对比较冻结于 `configs/s4_pairs.json`；新增语义结果、τ 子道统计和监督预算规划见 [stage106](../workbook/2026-11-13_stage106_s4_paired_semantics_and_budget.md)。当前不支持将完整 MAE 重建成功解释为分类收益。
+配对比较冻结于 `configs/s4_pairs.json`；新增语义结果、τ 子道统计和监督预算规划见 [stage106](../workbook/2026-11-13_stage106_s4_paired_semantics_and_budget.md)。固定512-event事件置换与几何先验的完整结果见[stage114](../workbook/2026-11-13_stage114_s4_semantic_controls_and_readback.md)：新Rel routes利用事件信息、交叉熵低于常量先验，尚未超过同probe拟合的几何先验；独立下游结果仍待。当前不支持将完整 MAE 重建成功解释为分类收益。
