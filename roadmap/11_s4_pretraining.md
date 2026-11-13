@@ -1,6 +1,6 @@
 # S4：可验证的预训练与标签效率
 
-状态：100k corpus、三个独立seeds的完整MAE3、Scratch三预算×三seeds、MAE3 seed42三预算及完整10k路径诊断完成；19个分类模型和2193次训练监测通过v7统一读回。MAE3三个独立seeds的1k分类配对已完成。独立MAE下游seeds、Rel/EMA与等计算监督控制执行中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
+状态更新（2026-11-14）：首批空响应诊断确认两个Scratch初始化的虚假占位节点梯度异常。此前S4三seed收益只保留为待复核测量，暂停作为预训练收益结论；原矩阵完整输出仍用于诊断。修复在空响应时屏蔽local与regional硬件路径、跳过无source的attention更新，保留事件、summary和可学习空响应概率。新冻结矩阵为`configs/s4_empty_repair.json`：Scratch/MAE3×1k/10k/100k×3 seeds，共18次重新训练，配方、标签子集与更新预算沿用原合同；两组同时使用相同新路由。全部32个初始化更新密集记录内部健康，每一步都检查裁剪前梯度norm≤10,000。先通过新的真实事件拟合与压力gate，再运行该矩阵。依据与实测见[阶段137](../workbook/2026-11-14_stage137_s4_empty_response_gradient.md)。预训练权重复用经过完整readback的三套MAE3，所有新训练从各自Scratch/MAE3起点重新开始。输出根仍为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。
 
 ## 1. 研究问题与固定条件
 

@@ -1,0 +1,56 @@
+{
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/initial_gradient_decomposition_cpu.json",
+  "scope": "train events only; empty and observed losses use the complete batch denominator; each variant starts from the same RNG seed",
+  "precision": "CPU FP32, original initialization and first sampler batch, eval mode, no compilation",
+  "measurements": [
+    {
+      "name": "s4_scratch_n10000_s17",
+      "empty_response_bypass": false,
+      "empty_events": 10,
+      "batch_events": 16,
+      "preclip_gradient_norm": 6426497908736.0,
+      "clip_scale": 1.5560574580451169e-13,
+      "input_gradient_squared_norm": 4.129985680220687e+25,
+      "empty_loss_input_gradient_squared_norm": 4.129985680220687e+25,
+      "observed_loss_preclip_gradient_norm": 29.181842803955078,
+      "first_AdamW_head_parameter_delta_squared_norm": 4.556113078708952e-23
+    },
+    {
+      "name": "s4_scratch_n10000_s17",
+      "empty_response_bypass": true,
+      "empty_events": 10,
+      "batch_events": 16,
+      "preclip_gradient_norm": 159.47589111328125,
+      "clip_scale": 0.006270540286805266,
+      "input_gradient_squared_norm": 54.53028196505524,
+      "empty_loss_input_gradient_squared_norm": 0.0,
+      "observed_loss_preclip_gradient_norm": 29.181842803955078,
+      "first_AdamW_head_parameter_delta_squared_norm": 3.924570785426661e-07
+    },
+    {
+      "name": "s4_scratch_n1000_s2026",
+      "empty_response_bypass": false,
+      "empty_events": 2,
+      "batch_events": 16,
+      "preclip_gradient_norm": 1805489405952.0,
+      "clip_scale": 5.538664456869073e-13,
+      "input_gradient_squared_norm": 3.2597906326423855e+24,
+      "empty_loss_input_gradient_squared_norm": 3.2597906326423855e+24,
+      "observed_loss_preclip_gradient_norm": 40.092079162597656,
+      "first_AdamW_head_parameter_delta_squared_norm": 7.146651349169707e-22
+    },
+    {
+      "name": "s4_scratch_n1000_s2026",
+      "empty_response_bypass": true,
+      "empty_events": 2,
+      "batch_events": 16,
+      "preclip_gradient_norm": 59.64949035644531,
+      "clip_scale": 0.01676460258125151,
+      "input_gradient_squared_norm": 163.9415998986393,
+      "empty_loss_input_gradient_squared_norm": 0.0,
+      "observed_loss_preclip_gradient_norm": 40.092079162597656,
+      "first_AdamW_head_parameter_delta_squared_norm": 3.9757581138396373e-07
+    }
+  ],
+  "calibration_test_used": false
+}

@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 def pilot_plots(root,campaign,output):
@@ -85,13 +86,78 @@ def functional_plots(report_path, output):
     pd.DataFrame(records).to_csv(output/'functional_paths.csv', index=False)
 
 
+def classification_plots(root, evaluation_path, output):
+    """Display overfitting and the observed gradient/activation ranges."""
+    evaluation=json.loads(evaluation_path.read_text())
+    models=[row for row in evaluation['experiments'] if row['program']=='train'
+        and not row['config'].get('selection_envelope')]
+    colors={kind:f'C{i}' for i,kind in enumerate(dict.fromkeys(row['config']['initialization'] for row in models))}
+    output.mkdir(parents=True,exist_ok=True)
+    with PdfPages(output/'classification_training_curves.pdf') as pdf:
+        for budget in sorted({row['config']['label_budget'] for row in models}):
+            fig,axes=plt.subplots(1,3,figsize=(14,4),constrained_layout=True)
+            seen=set()
+            for row in models:
+                config=row['config']
+                if config['label_budget']!=budget:continue
+                history=json.loads((root/'experiments'/row['name']/'history.json').read_text())
+                kind=config['initialization'];seed=config['seed'];color=colors[kind]
+                label=kind if kind not in seen else None;seen.add(kind)
+                x=[r['optimizer_steps_cumulative'] for r in history]
+                series=[[r['train_loss'] for r in history],[r['validation']['NLL'] for r in history],
+                    [r['validation']['classwise']['2']['PR_AUC'] for r in history]]
+                selected=int(np.argmin(series[1]))
+                for ax,values in zip(axes,series):
+                    ax.plot(x,values,color=color,linestyle='-' if seed==42 else '--',
+                        alpha=1. if seed==42 else .55,label=label)
+                    ax.plot(x[selected],values[selected],'.',color=color)
+            for ax,title in zip(axes,['Training cross-entropy','Validation negative log-likelihood','Validation CC nu_tau average precision']):
+                ax.set(xlabel='Applied optimizer updates',ylabel=title)
+            axes[0].set_yscale('log');axes[1].axhline(np.log(4),color='0.5',linewidth=.8,label='Balanced constant prior')
+            axes[0].legend(fontsize=7)
+            fig.suptitle(f'{budget:,} labeled events; dots select validation NLL; dashed lines show seeds 17/2026')
+            pdf.savefig(fig);fig.savefig(output/f'training_curves_n{budget}.png',dpi=150);plt.close(fig)
+    ranges=[]
+    for row in models:
+        directory=root/'experiments'/row['name']
+        records=json.loads((directory/'training_health.json').read_text())['records']
+        gradients=[r['gradient_squared_norms']['input'] for r in records if r['informative_nodes']>0]
+        silu=[a for r in records for a in r['activations']['head.2']]
+        selected_path=directory/'best_checkpoint_health.json'
+        selected=json.loads(selected_path.read_text()) if selected_path.exists() else {}
+        ranges.append({'name':row['name'],'health_samples':len(records),
+            'input_gradient_squared_norm_min':min(gradients),'input_gradient_squared_norm_max':max(gradients),
+            'SiLU_RMS_min':min(v['RMS'] for v in silu),'SiLU_RMS_max':max(v['RMS'] for v in silu),
+            'SiLU_exact_zero_fraction_max':max(v['zero_fraction'] for v in silu),
+            'maximum_preclip_gradient_norm':max(sum(r['gradient_squared_norms'].values())**.5 for r in records),
+            'preclip_gradient_review_limit':row['config'].get('maximum_preclip_gradient_norm',10000.),
+            'best_FP32_input_gradient_squared_norm':selected.get('health',{}).get('gradient_squared_norms',{}).get('input',np.nan)})
+    table=pd.DataFrame(ranges);table.to_csv(output/'classification_health_ranges.csv',index=False)
+    fig,axes=plt.subplots(1,3,figsize=(15,max(5,.27*len(table))),constrained_layout=True)
+    y=np.arange(len(table))
+    axes[0].hlines(y,table.input_gradient_squared_norm_min,table.input_gradient_squared_norm_max,color='C0')
+    axes[0].plot(table.best_FP32_input_gradient_squared_norm,y,'x',color='C1',label='Best-checkpoint CPU FP32 probe')
+    axes[0].set(xscale='log',xlabel='Input gradient squared norm: sampled range',yticks=y,yticklabels=table.name)
+    axes[0].legend(fontsize=7)
+    axes[1].hlines(y,table.SiLU_RMS_min,table.SiLU_RMS_max,color='C0')
+    axes[1].set(xlabel='Head SiLU RMS: sampled range',yticks=y,yticklabels=[])
+    axes[2].plot(table.SiLU_exact_zero_fraction_max,y,'.',color='C0')
+    axes[2].set(xlabel='Largest sampled SiLU exact-zero fraction',xlim=(-.02,1.02),yticks=y,yticklabels=[])
+    for ax in axes:ax.invert_yaxis();ax.tick_params(axis='y',labelsize=7)
+    fig.suptitle('Internal health: all scheduled BF16 samples and independent selected-checkpoint FP32 probes',fontsize=11)
+    fig.savefig(output/'classification_internal_health.pdf');fig.savefig(output/'classification_internal_health.png',dpi=160);plt.close(fig)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path);parser.add_argument('--campaign',type=Path)
     parser.add_argument('--functional-report', type=Path)
+    parser.add_argument('--evaluation', type=Path)
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
-    if args.functional_report:
+    if args.evaluation and args.root:
+        classification_plots(args.root,args.evaluation,args.output)
+    elif args.functional_report:
         functional_plots(args.functional_report,args.output)
     elif args.root and args.campaign:
         pilot_plots(args.root,args.campaign,args.output)

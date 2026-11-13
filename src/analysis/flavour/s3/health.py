@@ -69,12 +69,16 @@ class TrainingHealth:
                 group = name.split('.')[0]
                 gradients.setdefault(group, []).append(parameter.grad.detach().float().square().sum())
         gradients = {key: float(torch.stack(values).sum()) for key, values in gradients.items()}
+        total_squared = sum(gradients.values())
+        preclip_norm = total_squared ** .5
         probability = logits.detach().float().softmax(-1)
         n_unique = len(torch.unique(probability, dim=0))
         encoder = sum(gradients.get(key, 0.) for key in ['input', 'local', 'local_pool'])
         if self.informative_nodes != 0:
             self.dead_samples = self.dead_samples + 1 if encoder == 0 else 0
         report = {'step': step, 'activations': activations, 'gradient_squared_norms': gradients,
+                  'preclip_gradient_norm': preclip_norm,
+                  'expected_clip_scale': min(1., getattr(self.model, 'config', {}).get('clip_grad_norm', 1.) / max(preclip_norm, 1e-30)),
                   'query_diversity': self.token_stats, 'sampled_attention': attention,
                   'informative_nodes': self.informative_nodes,
                   'unique_batch_probability_vectors': n_unique, 'batch_events': len(probability),
@@ -85,6 +89,9 @@ class TrainingHealth:
             reasons.append('nonfinite internal activation')
         if not all(torch.isfinite(torch.tensor(v)).item() for v in gradients.values()):
             reasons.append('nonfinite internal gradient')
+        maximum = getattr(self.model, 'config', {}).get('maximum_preclip_gradient_norm')
+        if maximum is not None and preclip_norm > maximum:
+            reasons.append('preclip gradient norm exceeds configured review threshold')
         if self.dead_samples >= 3:
             reasons.append('three sampled backward passes have exactly zero gradient to all local encoders')
         report['healthy'] = not reasons

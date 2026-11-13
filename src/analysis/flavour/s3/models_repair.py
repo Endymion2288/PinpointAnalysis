@@ -27,9 +27,10 @@ class SwiGLU(nn.Module):
 
 class StableAttention(nn.Module):
     """Pre/output-normalized sublayers, small learnable residual scales, QK-LN."""
-    def __init__(self, dim, heads=4, scale=.1, pair=False):
+    def __init__(self, dim, heads=4, scale=.1, pair=False, empty_source_bypass=False):
         super().__init__()
         self.heads = heads
+        self.empty_source_bypass = empty_source_bypass
         self.qnorm, self.snorm = nn.LayerNorm(dim), nn.LayerNorm(dim)
         self.q, self.kv, self.out = nn.Linear(dim, dim), nn.Linear(dim, 2 * dim), nn.Linear(dim, dim)
         self.attention_norm, self.ffnorm, self.ffout_norm = [nn.LayerNorm(dim) for _ in range(3)]
@@ -46,10 +47,17 @@ class StableAttention(nn.Module):
         # No trainable Q/K norm scale: initial or drifting projection norms
         # cannot alone make the softmax one-hot.
         q, k = F.layer_norm(q, (width,)), F.layer_norm(k, (width,))
+        source_present = mask.any(-1)
+        attention_mask = mask
+        if self.empty_source_bypass:
+            # Give empty rows a numerical key for SDPA, then disconnect their
+            # entire attention update. No synthetic key reaches the readout.
+            attention_mask = mask.clone()
+            attention_mask[:, 0] |= ~source_present
         bias = q.new_zeros((b, 1, 1, source.shape[1]))
         if self.pair is not None and relations is not None:
             bias = self.pair(relations).permute(0, 3, 1, 2).to(q.dtype)
-        bias = bias.masked_fill(~mask[:, None, None, :], float('-inf'))
+        bias = bias.masked_fill(~attention_mask[:, None, None, :], float('-inf'))
         if getattr(self, 'record_health', False):
             with torch.no_grad(), torch.autocast(device_type=q.device.type, enabled=False):
                 # This explicitly labelled probe conditions on at most the
@@ -57,14 +65,20 @@ class StableAttention(nn.Module):
                 keys = min(128, k.shape[2])
                 logits = (q[:1, :, :8].float() @ k[:1, :, :keys].float().transpose(-1, -2)) / width**.5
                 logits = logits + bias[:1, :, :8, :keys].float()
-                probability = logits.softmax(-1)
+                observed = mask[:1, :keys].any()
+                probability = logits.softmax(-1) if observed else torch.zeros_like(logits)
                 entropy = -(probability * probability.clamp_min(1e-30).log()).sum(-1).mean()
                 self.health_probe = {'key_count': keys, 'query_count': min(8, nq),
+                                     'valid_key_count': int(mask[0, :keys].sum()),
+                                     'empty_source': not bool(observed),
                                      'conditional_entropy_nats': float(entropy),
                                      'scope': 'first group, up to eight queries and 128 keys'}
         attended = F.scaled_dot_product_attention(q, k, v, attn_mask=bias)
         attended = attended.transpose(1, 2).reshape(b, nq, dim)
-        x = x + self.attention_scale * self.attention_norm(self.out(attended))
+        update = self.attention_norm(self.out(attended))
+        if self.empty_source_bypass:
+            update = update * source_present[:, None, None]
+        x = x + self.attention_scale * update
         return x + self.ff_scale * self.ffout_norm(self.ff(self.ffnorm(x)))
 
 
@@ -85,6 +99,7 @@ class PlaneModuleClassifierV2(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        self.empty_response_bypass = config.get('empty_response_bypass', False)
         self.dim = dim = config.get('dim', 96)
         self.local_chunk_blocks = config.get('local_chunk_blocks', 256)
         self.fusion = 'latent'
@@ -92,11 +107,12 @@ class PlaneModuleClassifierV2(nn.Module):
         self.direct = config.get('readout_skip', self.multiscale)
         scale = config.get('residual_scale', .1)
         self.input = nn.Sequential(nn.Linear(26, dim), nn.LayerNorm(dim), nn.SiLU())
-        self.local = nn.ModuleList([StableAttention(dim, scale=scale) for _ in range(2)])
+        attention_options = {'scale': scale, 'empty_source_bypass': self.empty_response_bypass}
+        self.local = nn.ModuleList([StableAttention(dim, **attention_options) for _ in range(2)])
         self.local_pool = nn.Sequential(nn.Linear(2 * dim + 8, dim), nn.LayerNorm(dim))
         queries = config.get('region_queries', 2) if self.multiscale else config.get('module_queries', 4)
         self.module_queries = nn.Parameter(torch.randn(queries, dim) * .02)
-        self.module_read = StableAttention(dim, scale=scale)
+        self.module_read = StableAttention(dim, **attention_options)
         self.module_read_norm = nn.LayerNorm(dim)
         self.module_embedding, self.detector_embedding = nn.Embedding(32, dim), nn.Embedding(4, dim)
         self.position = nn.Sequential(nn.Linear(1, dim), nn.SiLU(), nn.Linear(dim, dim))
@@ -105,9 +121,9 @@ class PlaneModuleClassifierV2(nn.Module):
         # Global attention runs over fixed latents; variable regional tokens
         # remain accessible directly and never need quadratic self attention.
         self.latents = nn.Parameter(torch.randn(config.get('latents', 64 if self.multiscale else 24), dim) * .02)
-        self.latent_read = StableAttention(dim, scale=scale)
-        self.global_blocks = nn.ModuleList([StableAttention(dim, scale=scale) for _ in range(2)])
-        self.context = nn.ModuleList([StableAttention(dim, scale=scale, pair=True) for _ in range(2)]) if not self.multiscale else nn.ModuleList()
+        self.latent_read = StableAttention(dim, **attention_options)
+        self.global_blocks = nn.ModuleList([StableAttention(dim, **attention_options) for _ in range(2)])
+        self.context = nn.ModuleList([StableAttention(dim, pair=True, **attention_options) for _ in range(2)]) if not self.multiscale else nn.ModuleList()
         self.token_norm = nn.LayerNorm(dim)
         self.global_norm = nn.LayerNorm(dim)
         branches = 7 if self.direct else 4  # three region/module, one global, optional three local
@@ -157,12 +173,16 @@ class PlaneModuleClassifierV2(nn.Module):
     def encode(self, batch):
         """Observation features shared by classification and S4 objectives."""
         nodes, mask = batch['nodes'], batch['local_mask']
+        if self.empty_response_bypass:
+            mask = mask & (nodes[..., 15] > 0)
         pieces = []
         for start in range(0, len(nodes), self.local_chunk_blocks):
             values = nodes[start:start + self.local_chunk_blocks], mask[start:start + self.local_chunk_blocks]
             pieces.append(checkpoint(self.encode_local, *values, use_reentrant=False)
                           if self.training and torch.is_grad_enabled() else self.encode_local(*values))
         local = torch.cat(pieces)
+        if self.empty_response_bypass:
+            local = local * mask.any(-1)[:, None]
         prefix = 'region' if self.multiscale else 'module'
         source_mask = batch[prefix + '_mask']
         packed = local.new_zeros((*source_mask.shape, self.dim))
@@ -189,6 +209,8 @@ class PlaneModuleClassifierV2(nn.Module):
         z[event[:, None], offsets] = geo[:, 2:3]
         module[event[:, None], offsets] = ids[:, None]
         types[event[:, None], offsets] = detector[:, None]
+        if self.empty_response_bypass:
+            valid = valid & (types < 3)
         if len(self.context):
             relations = torch.stack([z[:, :, None] - z[:, None, :],
                                      (module[:, :, None] == module[:, None, :]).float(),

@@ -1,0 +1,19 @@
+{
+  "stage": "S4_empty_response_repair",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_empty_validation_final",
+      "program": "validation_job",
+      "campaigns": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_empty_repair.json"
+      ],
+      "comparisons": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_empty_pairs.json",
+      "evaluation_output": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/empty_repair",
+      "bootstrap": 400,
+      "strict": true,
+      "inspect_best_health": true,
+      "plot_training_health": true
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime,timezone
 import json
+import math
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -65,14 +66,21 @@ def main():
             if values:activation[key]={'RMS_range':[min(x['RMS'] for x in values),max(x['RMS'] for x in values)],
                 'maximum_fraction_below_minus5':max(x['fraction_below_minus5'] for x in values),
                 'maximum_zero_fraction':max(x['zero_fraction'] for x in values)}
-        health.append({'name':name,'samples':len(rows),'all_healthy':True,'activations':activation,
+        maximum_norm=max(math.sqrt(sum(r['gradient_squared_norms'].values())) for r in rows)
+        limit=c.get('maximum_preclip_gradient_norm',10000.)
+        health.append({'name':name,'samples':len(rows),'all_healthy':maximum_norm<=limit,'activations':activation,
+            'maximum_preclip_gradient_norm':maximum_norm,'gradient_review_limit':limit,
+            'gradient_review_pass':maximum_norm<=limit,
             'minimum_input_gradient_squared_norm':min(r['gradient_squared_norms'].get('input',0) for r in rows if r.get('informative_nodes',0)>0),
             'checkpoint_epoch':report['best_epoch']})
         verified.append(name)
     write_json(output/'training_health_summary.json',{'models':health,'samples':sum(r['samples'] for r in health),
-        'scope':'sampled activation and gradient evidence; completed checkpoint readback checked separately'})
+        'scope':'sampled activation and gradient evidence including extreme finite gradients; checkpoint readback checked separately'})
     evaluate(SimpleNamespace(root=args.root,campaign=campaigns,comparisons=Path(config['comparisons']),
         output=Path(config['evaluation_output']),bootstrap=config.get('bootstrap',400),strict=config.get('strict',False)))
+    if config.get('plot_training_health',False):
+        from analysis.flavour.s4.plots import classification_plots
+        classification_plots(args.root,Path(config['evaluation_output'])/'summary.json',Path(config['evaluation_output']))
     manifest.update(status='complete',seconds=time.perf_counter()-started,verified_train=verified,pending_train=pending)
     write_json(output/'manifest.json',manifest)
 

@@ -1,0 +1,118 @@
+{
+  "stage": "S4_empty_response_repair",
+  "scope": "same pretrained weights; repaired empty-source routing in both Scratch and MAE3, same nested labels and updates",
+  "include_global_frozen": false,
+  "paired_tau_branches": true,
+  "pairs": [
+    {
+      "a": "s4_empty_scratch_n1000_s17",
+      "b": "s4_empty_mae3_n1000_s17",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n1000_s42",
+      "b": "s4_empty_mae3_n1000_s42",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n1000_s2026",
+      "b": "s4_empty_mae3_n1000_s2026",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n10000_s17",
+      "b": "s4_empty_mae3_n10000_s17",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_empty_mae3_n10000_s42",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n10000_s2026",
+      "b": "s4_empty_mae3_n10000_s2026",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n100000_s17",
+      "b": "s4_empty_mae3_n100000_s17",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n100000_s42",
+      "b": "s4_empty_mae3_n100000_s42",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    },
+    {
+      "a": "s4_empty_scratch_n100000_s2026",
+      "b": "s4_empty_mae3_n100000_s2026",
+      "group": "primary",
+      "question": "MAE3 minus Scratch with identical repaired empty-response routing"
+    }
+  ],
+  "seed_mean_comparisons": [
+    {
+      "name": "s4_empty_mae3_minus_scratch_n1000_three_seeds",
+      "pairs": [
+        {
+          "a": "s4_empty_scratch_n1000_s17",
+          "b": "s4_empty_mae3_n1000_s17"
+        },
+        {
+          "a": "s4_empty_scratch_n1000_s42",
+          "b": "s4_empty_mae3_n1000_s42"
+        },
+        {
+          "a": "s4_empty_scratch_n1000_s2026",
+          "b": "s4_empty_mae3_n1000_s2026"
+        }
+      ],
+      "group": "primary"
+    },
+    {
+      "name": "s4_empty_mae3_minus_scratch_n10000_three_seeds",
+      "pairs": [
+        {
+          "a": "s4_empty_scratch_n10000_s17",
+          "b": "s4_empty_mae3_n10000_s17"
+        },
+        {
+          "a": "s4_empty_scratch_n10000_s42",
+          "b": "s4_empty_mae3_n10000_s42"
+        },
+        {
+          "a": "s4_empty_scratch_n10000_s2026",
+          "b": "s4_empty_mae3_n10000_s2026"
+        }
+      ],
+      "group": "primary"
+    },
+    {
+      "name": "s4_empty_mae3_minus_scratch_n100000_three_seeds",
+      "pairs": [
+        {
+          "a": "s4_empty_scratch_n100000_s17",
+          "b": "s4_empty_mae3_n100000_s17"
+        },
+        {
+          "a": "s4_empty_scratch_n100000_s42",
+          "b": "s4_empty_mae3_n100000_s42"
+        },
+        {
+          "a": "s4_empty_scratch_n100000_s2026",
+          "b": "s4_empty_mae3_n100000_s2026"
+        }
+      ],
+      "group": "primary"
+    }
+  ]
+}

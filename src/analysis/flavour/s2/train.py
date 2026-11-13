@@ -243,7 +243,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                 torch.cuda.synchronize()
             timing['transfer']+=time.perf_counter()-t
             optimizer.zero_grad(set_to_none=True)
-            diagnostic=health is not None and (optimizer_steps%config.get('health_every_steps',100)==0)
+            diagnostic=health is not None and (optimizer_steps<config.get('health_initial_steps',0)
+                or optimizer_steps%config.get('health_every_steps',100)==0)
             if diagnostic:
                 health.start(batch)
             t=time.perf_counter()
@@ -261,7 +262,15 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
                     manifest.update(status='internal_health_failed',failure=health_records[-1])
                     write_json(output/'manifest.json',manifest)
                     raise RuntimeError('internal training health failed; inspect architecture and optimizer before resuming')
-            torch.nn.utils.clip_grad_norm_(model.parameters(),config.get('clip_grad_norm',5.),error_if_nonfinite=True)
+            preclip_norm=torch.nn.utils.clip_grad_norm_(model.parameters(),config.get('clip_grad_norm',5.),error_if_nonfinite=True)
+            maximum=config.get('maximum_preclip_gradient_norm')
+            if maximum is not None and float(preclip_norm)>maximum:
+                failure={'step':optimizer_steps+1,'preclip_gradient_norm':float(preclip_norm),
+                    'maximum_preclip_gradient_norm':maximum,'loss':float(loss.detach())}
+                manifest.update(status='internal_health_failed',failure=failure)
+                write_json(output/'failed_gradient_health.json',failure)
+                write_json(output/'manifest.json',manifest)
+                raise RuntimeError('extreme finite gradient; review empty paths, normalization and optimization')
             scale_before=scaler.get_scale()
             scaler.step(optimizer)
             scaler.update()

@@ -55,8 +55,11 @@ def main():
     parser.add_argument('--task',type=int,required=True)
     parser.add_argument('--device',default='cuda')
     args=parser.parse_args();config=json.loads(args.campaign.read_text())['experiments'][args.task]
-    pilot=json.loads((args.root/'pilot'/'s4_backbone_health_s42'/'gate.json').read_text())
+    pilot_name=config.get('required_pilot','s4_backbone_health_s42')
+    pilot=json.loads((args.root/'pilot'/pilot_name/'gate.json').read_text())
     if not pilot['gate_passed']:raise RuntimeError('same-backbone real-event health gate required')
+    if config.get('empty_response_bypass') and not pilot['config'].get('empty_response_bypass'):
+        raise RuntimeError('empty-response repair requires a matching real-event optimization gate')
     validate_pretraining(config)
     run(args,dataset_class=LabelDataset,model_factory=build_model,collate_fn=collate_planes,
         health_factory=TrainingHealth,optimizer_factory=optimizer_for,

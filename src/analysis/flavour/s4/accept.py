@@ -20,18 +20,22 @@ def same_configuration(expected, actual):
     return {**expected, 'program': program(expected)} == {**actual, 'program': program(actual)}
 
 
-def training_health(records, total_steps, every):
+def training_health(records, total_steps, every, initial_steps=0, maximum_preclip_norm=10000.):
     informative = [r for r in records if r.get('informative_nodes', 0) > 0]
     activations = [v for r in records for rows in r.get('activations', {}).values() for v in rows]
     silu = [v for r in records for v in r.get('activations', {}).get('head.2', [])]
     return {
-        'scheduled_samples_present': total_steps > 0 and [r['step'] for r in records] == list(range(1, total_steps + 1, every)),
+        'scheduled_samples_present': total_steps > 0 and [r['step'] for r in records] == sorted(
+            set(range(1, min(initial_steps, total_steps) + 1)) | set(range(1, total_steps + 1, every))),
         'health_decisions_pass': bool(records) and all(r.get('healthy') is True for r in records),
         'finite_sampled_activations': bool(activations) and all(r['all_finite'] == 1 for r in activations),
         'informative_input_gradients': bool(informative) and all(
             math.isfinite(r['gradient_squared_norms'].get('input', 0.))
             and r['gradient_squared_norms'].get('input', 0.) > 0 for r in informative),
         'SiLU_never_entirely_zero': len(silu) >= len(records) > 0 and all(v['zero_fraction'] < 1. for v in silu),
+        'preclip_gradients_within_review_limit': bool(records) and all(
+            math.isfinite(sum(r.get('gradient_squared_norms', {}).values()))
+            and sum(r.get('gradient_squared_norms', {}).values()) <= maximum_preclip_norm ** 2 for r in records),
     }
 
 
@@ -54,7 +58,8 @@ def fit_record(root, config, evaluated):
             and best_health.get('best_epoch') == manifest.get('best_epoch')
             and best_health.get('selected_NLL') == manifest.get('best_NLL'))
         records = load(directory / 'training_health.json').get('records', [])
-        checks.update(training_health(records, manifest.get('optimizer_steps', 0), config.get('health_every_steps', 100)))
+        checks.update(training_health(records, manifest.get('optimizer_steps', 0), config.get('health_every_steps', 100),
+            config.get('health_initial_steps', 0), config.get('maximum_preclip_gradient_norm', 10000.)))
         samples = len(records)
     else:
         statistics = load(directory / 'feature_statistics.json')
@@ -145,6 +150,8 @@ def audit(root, campaigns, comparisons, evaluation_path, paths_path):
         'plots_present': all((evaluation_path.parent / name).is_file() for name in
             ['label_efficiency.pdf', 'label_efficiency_train_full.png', 'label_efficiency_probes_full.png',
              'label_efficiency_probes_global.png', 'four_class_diagnostics.pdf']),
+        'training_and_health_plots_present': all((evaluation_path.parent / name).is_file() for name in
+            ['classification_training_curves.pdf','classification_internal_health.pdf','classification_health_ranges.csv']),
     })
     return {'utc': datetime.now(timezone.utc).isoformat(), 'stage': 'S4', 'checks': checks,
         'strict_output_gate_passed': all(checks.values()), 'fits': records, 'pretraining': pretrained,
