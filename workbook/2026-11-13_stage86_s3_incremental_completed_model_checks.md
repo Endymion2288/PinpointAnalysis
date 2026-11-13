@@ -62,6 +62,8 @@ JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed na
 
 最终流程增加显式终态等待：所有fit/诊断完成后每30s刷新allocation，直到history完整、各分配真实终态，才生成依赖成本的评价，避免observer与supervisor退出之间的竞态留下过时资源字段。新增回归覆盖Running、缺失历史、allocation不完整及空分配列表；科学验收6项测试0.012s通过。等待中的CPU finalizer已更新，训练writer保持运行。
 
+资源审查还定位到旧`parallel`在自己的writer全部结束后等待远端已领取的配置，从而可能保留闲置GPU。现改为默认回收本worker，只有显式`--wait-for-peers`才等待远端；campaign wrapper原本另有完整矩阵等待。当前运行的旧A100进程无法加载该更新，已启动观察器：仅在其process record全部exit0/reaped、全部owned manifest complete后查询并移除仍Running的allocation，证据保存`audit/idle_peer_reservation_release.json`。不会终止自身训练。共享资源9项测试0.024s通过，含远端仍Running但本worker无writer时立即释放的回归。
+
 ## 阶段性结论
 
 已确认修复结构可以完成全量四轮训练并取得统计支持的有效学习；首个模型的全部计划内部健康及checkpoint读回通过。其余19模型尚未全部完成，因此尚无最终结构/粒度/tracker净增益结论；旧S3结论继续撤回。

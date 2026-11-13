@@ -83,6 +83,25 @@ class SharedAllocationTests(unittest.TestCase):
 
 
 class ParallelLifecycleTests(unittest.TestCase):
+    def test_finished_worker_releases_gpu_while_a_peer_keeps_training(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root / 'kubeflow').mkdir()
+            campaign = root / 'campaign.json'
+            campaign.write_text(json.dumps({'experiments': [{'name': 'peer'}]}))
+            (root / 'claims/peer').mkdir(parents=True)
+            (root / 'claims/peer/state.json').write_text(json.dumps({'status': 'running', 'job': 'other'}))
+            (root / 'experiments/peer').mkdir(parents=True)
+            (root / 'experiments/peer/manifest.json').write_text(json.dumps({'status': 'running'}))
+            argv = ['parallel', '--root', str(root), '--campaign', str(campaign), '--name', 'done',
+                    '--tasks', '0', '--training-module', 'analysis.flavour.s3.train_repair']
+            with patch('sys.argv', argv), patch('analysis.flavour.s3.parallel.subprocess.Popen') as launched, \
+                    patch('analysis.flavour.s3.parallel.time.sleep', side_effect=AssertionError('idle reservation retained')):
+                parallel_main()
+            launched.assert_not_called()
+            evidence = json.loads((root / 'kubeflow/parallel_done.json').read_text())
+            self.assertEqual(evidence['processes'], [])
+            self.assertIn('finished_at', evidence)
+
     def test_backfill_waits_for_a_slot_in_parent_supervisor(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); (root / 'kubeflow').mkdir()

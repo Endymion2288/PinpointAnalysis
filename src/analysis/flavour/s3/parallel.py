@@ -32,6 +32,8 @@ def main():
     parser.add_argument('--training-module', default='analysis.flavour.s3.train')
     parser.add_argument('--append-record', action='store_true')
     parser.add_argument('--claim-tasks', action='store_true')
+    parser.add_argument('--wait-for-peers', action='store_true',
+                        help='retain this worker until remotely claimed fits complete; campaign wrapper waits separately')
     parser.add_argument('--allocation-job', help='parent Job when reusing an already allocated Pod')
     parser.add_argument('--allocation-concurrency', type=int, help='total fits across supervisors sharing this GPU')
     args = parser.parse_args()
@@ -111,7 +113,7 @@ def main():
     write_json(record, evidence)
     if any(p['exit_code'] != 0 for p in evidence['processes']):
         raise SystemExit('one or more independent training processes failed; see per-task logs')
-    if args.claim_tasks:
+    if args.claim_tasks and args.wait_for_peers:
         while True:
             manifests=[args.root/'experiments'/name/'manifest.json' for name in names]
             statuses=[json.loads(p.read_text()).get('status') if p.exists() else None for p in manifests]
