@@ -1,0 +1,18 @@
+{
+  "stage": "S4",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_validation_progress_v1",
+      "program": "validation_job",
+      "campaigns": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_scratch.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_recovery_wave.json"
+      ],
+      "comparisons": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_pairs.json",
+      "evaluation_output": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/progress_v1",
+      "bootstrap": 400,
+      "strict": false
+    }
+  ]
+}

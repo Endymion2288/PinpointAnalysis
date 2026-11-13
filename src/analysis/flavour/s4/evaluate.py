@@ -103,6 +103,7 @@ def evaluate(args):
                 tau_domains[branch+'__'+domain]=mask*w
     for name,config,manifest,path in candidates:
         frame=align_frame(pd.read_parquet(path),reference)
+        if not frame.tau_branch.equals(reference.tau_branch):raise ValueError('different accepted tau branch metadata')
         missing=[c for c in columns if c not in frame]
         if missing:frame=frame.merge(occupancy[key+missing],on=key,how='left',validate='one_to_one')
         frames[name]=frame
