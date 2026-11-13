@@ -339,23 +339,25 @@ class S4Tests(unittest.TestCase):
             for c in range(4):frame[f'p{c}']=p[:,c]
             frame.to_parquet(root/'catalog.parquet',index=False)
             configurations=[]
-            for name,program in [('a','train'),('b','probes'),('ssl','pretrain')]:
+            for name,program in [('a','train'),('b','probes'),('ssl','pretrain'),('continuation','train')]:
                 config={'name':name,'program':program,'label_budget':1000,'modalities':['pixel','bar','tracker']}
+                if name=='continuation':config['supervised_initial_checkpoint']=str(root/'experiments/a/best.pt')
                 configurations.append(config)
                 directory=root/'experiments'/name;directory.mkdir(parents=True)
-                (directory/'manifest.json').write_text(json.dumps({'status':'complete'}))
+                (directory/'manifest.json').write_text(json.dumps({'status':'complete','best_NLL':2. if name=='continuation' else 1.}))
                 filename='full_linear_predictions.parquet' if program=='probes' else 'validation_predictions.parquet'
                 frame.to_parquet(directory/filename,index=False)
                 if program=='probes':frame.to_parquet(directory/'global_linear_predictions.parquet',index=False)
             campaign=root/'campaign.json';campaign.write_text(json.dumps({'experiments':configurations}))
             pairs=root/'pairs.json';pairs.write_text(json.dumps({'pairs':[{'a':'a','b':'b'},
                 {'a':'b__global','b':'b'}],'include_global_frozen':True,'paired_tau_branches':True,
+                'include_supervised_selection_envelope':True,
                 'seed_mean_comparisons':[{'name':'identical','pairs':[{'a':'a','b':'b'}]}]}))
             args=SimpleNamespace(root=root,output=root/'evaluation',campaign=[campaign],comparisons=pairs,bootstrap=4,strict=True)
             with patch('analysis.flavour.s4.evaluate.plot_curves'):
                 evaluate_classification(args)
             result=json.loads((args.output/'summary.json').read_text())
-            self.assertEqual(len(result['experiments']),3)
+            self.assertEqual(len(result['experiments']),5)
             self.assertTrue(result['requested_complete'])
             self.assertEqual(result['common_support']['retained_events'],n)
             self.assertEqual(result['paired_comparisons'][0]['metrics']['raw']['macro_AP']['delta'],0.)
@@ -364,6 +366,8 @@ class S4Tests(unittest.TestCase):
             for comparison in [result['paired_comparisons'][0],result['seed_mean_comparisons'][0]]:
                 self.assertEqual(comparison['tau_branches']['hadronic__common_support']['AP']['CI95'],[0.,0.])
                 self.assertEqual(comparison['tau_branches']['electron__raw']['AP']['CI95'],[None,None])
+            selected=next(x for x in result['experiments'] if x['name']=='continuation__selection')
+            self.assertEqual(selected['config']['selection_envelope']['selected'],'a')
 
     def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
         from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve

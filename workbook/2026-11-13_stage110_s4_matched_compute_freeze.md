@@ -23,3 +23,5 @@
 ## 验证与下一步
 
 23项S4检查此前通过，shape proxy与实际模型hooks一致；本次仅更改冻结初始化checkpoint选择、提交CPU额度与数值报告。正式提交三项控制和CPU400-replicate评价，继续执行S4。
+
+正式提交：bigbird21、cluster2198296，2并发、6CPU/16,000MB、compact native BF16 GPU pool；EOS submission record保留配置与源码commit。新增评价虚拟策略 `__selection` 按原Scratch/continuation最低validation NLL选择，并计入两段完整计算量，raw continuation单独保留。

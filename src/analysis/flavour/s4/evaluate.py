@@ -81,6 +81,19 @@ def evaluate(args):
         if not manifest.exists() or json.loads(manifest.read_text()).get('status')!='complete' or not predictions.exists():
             pending.append({'name':name,'program':program});continue
         candidates.append((name,config,json.loads(manifest.read_text()),predictions))
+        if program=='train' and config.get('supervised_initial_checkpoint') and specifications.get('include_supervised_selection_envelope',False):
+            parent=Path(config['supervised_initial_checkpoint']).parent
+            parent_manifest=json.loads((parent/'manifest.json').read_text())
+            continuation_manifest=json.loads(manifest.read_text())
+            use_parent=parent_manifest['best_NLL']<=continuation_manifest['best_NLL']
+            selected_directory=parent if use_parent else directory
+            selected_manifest=parent_manifest if use_parent else continuation_manifest
+            envelope_config={**config,'initialization':config.get('initialization','scratch')+'_selection',
+                'selection_envelope':{'parent':parent.name,'continuation':name,'selected':selected_directory.name,
+                    'selection':'lowest validation NLL over original Scratch and matched continuation checkpoints',
+                    'compute_scope':'charge full parent plus full continuation, regardless of selected checkpoint'}}
+            candidates.append((name+'__selection',envelope_config,selected_manifest,
+                selected_directory/'validation_predictions.parquet'))
         if program=='probes' and specifications.get('include_global_frozen',False):
             global_path=directory/'global_linear_predictions.parquet'
             if not global_path.exists():pending.append({'name':name+'__global','program':'probes'})

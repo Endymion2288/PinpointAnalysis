@@ -488,36 +488,72 @@
       "a": "s4_scratch_n1000_s42",
       "b": "s4_supervised_matched_n1000_s42",
       "question": "matched total declared matrix compute: continued supervision versus scratch",
-      "group": "matched_compute"
+      "group": "matched_compute_raw_continuation"
     },
     {
       "a": "s4_mae3_n1000_s42",
       "b": "s4_supervised_matched_n1000_s42",
       "question": "matched total declared matrix compute: continued supervision versus mae3",
-      "group": "matched_compute"
+      "group": "matched_compute_raw_continuation"
     },
     {
       "a": "s4_scratch_n10000_s42",
       "b": "s4_supervised_matched_n10000_s42",
       "question": "matched total declared matrix compute: continued supervision versus scratch",
-      "group": "matched_compute"
+      "group": "matched_compute_raw_continuation"
     },
     {
       "a": "s4_mae3_n10000_s42",
       "b": "s4_supervised_matched_n10000_s42",
       "question": "matched total declared matrix compute: continued supervision versus mae3",
-      "group": "matched_compute"
+      "group": "matched_compute_raw_continuation"
     },
     {
       "a": "s4_scratch_n100000_s42",
       "b": "s4_supervised_matched_n100000_s42",
       "question": "matched total declared matrix compute: continued supervision versus scratch",
-      "group": "matched_compute"
+      "group": "matched_compute_raw_continuation"
     },
     {
       "a": "s4_mae3_n100000_s42",
       "b": "s4_supervised_matched_n100000_s42",
       "question": "matched total declared matrix compute: continued supervision versus mae3",
+      "group": "matched_compute_raw_continuation"
+    },
+    {
+      "a": "s4_scratch_n1000_s42",
+      "b": "s4_supervised_matched_n1000_s42__selection",
+      "question": "matched total declared matrix compute: continued supervision versus scratch; best original-or-continuation validation NLL, full compute charged",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_mae3_n1000_s42",
+      "b": "s4_supervised_matched_n1000_s42__selection",
+      "question": "matched total declared matrix compute: continued supervision versus mae3; best original-or-continuation validation NLL, full compute charged",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_scratch_n10000_s42",
+      "b": "s4_supervised_matched_n10000_s42__selection",
+      "question": "matched total declared matrix compute: continued supervision versus scratch; best original-or-continuation validation NLL, full compute charged",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_mae3_n10000_s42",
+      "b": "s4_supervised_matched_n10000_s42__selection",
+      "question": "matched total declared matrix compute: continued supervision versus mae3; best original-or-continuation validation NLL, full compute charged",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_scratch_n100000_s42",
+      "b": "s4_supervised_matched_n100000_s42__selection",
+      "question": "matched total declared matrix compute: continued supervision versus scratch; best original-or-continuation validation NLL, full compute charged",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_mae3_n100000_s42",
+      "b": "s4_supervised_matched_n100000_s42__selection",
+      "question": "matched total declared matrix compute: continued supervision versus mae3; best original-or-continuation validation NLL, full compute charged",
       "group": "matched_compute"
     }
   ],
@@ -705,5 +741,6 @@
         }
       ]
     }
-  ]
+  ],
+  "include_supervised_selection_envelope": true
 }
