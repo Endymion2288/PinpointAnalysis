@@ -52,6 +52,12 @@ Token census新增padding占用统计；同一个最高occupancy train事件：
 
 JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed native确认模型也完成全部CPU读回、健康及分支诊断，累计2个完整模型的增量检查通过。
 
+13:44 UTC增量：10/20个模型、52/80个epoch已完整结束，全部20项已启动。8个完成模型已通过CPU读回、健康及分支诊断，其余依次检查。新增`plot_repair_paths`把分支置换的NLL/预测变化、事件间分支变化和token有效秩同时绘图；最终数值摘要保留逐路径梯度的min/median/max与精确零计数、采样group加权的token谱摘要。图不设置未经验证的rank失败阈值，也不把置换当重训消融。
+
+实际三模型图输出到`audit/fitted_path_diagnostics_render.pdf`，第二页已转PNG人工检查，英文标题/坐标/说明可读。Native seed17在64-event probe中的global分支事件间RMS=0.0427503，global置换ΔNLL=−0.0091165，latent-read训练采样梯度平方范数median=0.0031144；局部和regional置换ΔNLL分别+0.2514955/+0.2120467。Fixed seed17相应global变化RMS仅0.0001833，global置换ΔNLL=−0.0000032。事实是部分拟合模型对global分支依赖弱；非零梯度、低rank、旁路冗余需要联合解释，不能将全模型有效学习写成global表示已充分利用。最终报告须保留这一限制。
+
+新增图的三模型实际渲染、`compileall`与`git diff --check`通过；路径/科学验收相关9项既有测试全部通过（0.056s+0.009s）。只重启等待中的CPU finalizer以接入新图，GPU训练计算与冻结配置未改。
+
 ## 阶段性结论
 
 已确认修复结构可以完成全量四轮训练并取得统计支持的有效学习；首个模型的全部计划内部健康及checkpoint读回通过。其余19模型尚未全部完成，因此尚无最终结构/粒度/tracker净增益结论；旧S3结论继续撤回。

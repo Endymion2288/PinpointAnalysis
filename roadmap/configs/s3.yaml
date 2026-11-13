@@ -14,7 +14,7 @@ S4_S6_executed: false
 confirmation: roadmap/configs/s3_repair_confirmation.json
 confirmation_comparisons: roadmap/configs/s3_repair_confirmation_pairs.json
 final_summary: roadmap/results/s3_repair_summary.json
-latest_report: workbook/2026-11-13_stage82_s3_repair_pilot_and_frozen_training.md
+latest_report: workbook/2026-11-13_stage86_s3_incremental_completed_model_checks.md
 scientific_models_planned: 20
 new_models_promoted: null
 recommended_reference: pending_healthy_retraining

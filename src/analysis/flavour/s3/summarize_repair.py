@@ -3,8 +3,10 @@ import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+from statistics import median
 
 from analysis.flavour.inventory import write_json
+from analysis.flavour.s3.plot_repair_paths import spectrum_summary
 
 
 def short(name):
@@ -35,6 +37,17 @@ def summarize(root, destination):
                 'encoder_gradient_squared_norm_min', 'encoder_gradient_squared_norm_median',
                 'encoder_gradient_squared_norm_max', 'activation_ranges', 'NLL_minus_constant_prior',
                 'internal_health_and_learning_passed']}
+        records = read(directory / 'training_health.json')['records']
+        health[name]['gradient_path_summary'] = {
+            key: {'sampled_squared_norm_min': min(values),
+                  'sampled_squared_norm_median': median(values),
+                  'sampled_squared_norm_max': max(values),
+                  'exact_zero_samples': sum(value == 0 for value in values),
+                  'samples': len(values)}
+            for key in ['input', 'local', 'local_pool', 'module_read', 'latent_read',
+                        'global_blocks', 'head', 'linear_readout']
+            if (values := [row['gradient_squared_norms'][key] for row in records
+                           if row.get('informative_nodes') != 0 and key in row['gradient_squared_norms']])}
         exposures[name] = read(directory / 'final_checkpoint_checks.json')['training_exposures']
         path = directory / 'path_diagnostics.json'
         if path.exists():
@@ -42,6 +55,8 @@ def summarize(root, destination):
             paths[name] = {key: result[key] for key in ['probe_events', 'probe_NLL', 'occupancy_range_nodes',
                 'permuted_fraction', 'branch_permutation', 'head_controls', 'branch_between_event_variation_RMS',
                 'token_spectrum_scope', 'interpretation']}
+            paths[name]['token_spectrum_summary'] = {
+                key: spectrum_summary(rows) for key, rows in result['token_spectrum'].items()}
         experiments.append(experiment)
     summary = {
         'status': 'S3_revision2_complete', 'utc': datetime.now(timezone.utc).isoformat(),

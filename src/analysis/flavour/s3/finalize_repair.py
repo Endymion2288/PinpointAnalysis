@@ -62,6 +62,7 @@ def main():
         module('conditional', '--comparisons', args.comparisons, '--experiments', *names,
                '--bootstrap', 400, '--output', evaluation / 'conditional')
         module('plot_repair_health', '--experiments', *names, '--output', evaluation / 'internal_training_health.pdf')
+        module('plot_repair_paths', '--experiments', *repaired, '--output', evaluation / 'fitted_path_diagnostics.pdf')
         stage('plot_repair_comparisons', [sys.executable,'-m','analysis.flavour.s3.plot_repair_comparisons',
             '--evaluation',str(evaluation/'summary.json'),'--output',str(evaluation)])
         module('token_census', '--campaign', args.campaign, '--confirmation', args.confirmation,
