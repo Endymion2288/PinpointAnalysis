@@ -73,3 +73,5 @@ Pilot通过后冻结独立科学矩阵，至少覆盖稳定fixed、multiscale na
 最终入口`analysis.flavour.s3.finalize_repair`先执行14项CPU读回、所有采样内部健康和独立best-checkpoint FP32 backward，再完成四分类、条件域、工作点、token census与英文图。`accept_repair`要求实际validation NLL优于constant class-prior NLL、完整validation分数非常数、encoder连通、所有计划健康采样齐全，同时检查冻结矩阵、三seed对照、400次128块bootstrap、终态allocation与累计120预算。只通过checkpoint读回不足以验收；故障模型必须修复重训。共享/混合backend allocation成本不直接用于声称模型本体加速，质量晋级仍遵守原四分类阈值。
 
 调度补充：确认任务同时进入HTCondor，实际获配后才以原子`claims/<experiment>`领取；Kubeflow后续确认波也使用同一领取机制，已有writer不重复启动。允许H100（含47GB MIG）与A10040GB原生BF16执行，同Torch2.7.1和模型/更新预算；硬件作为实测元数据保留，跨设备allocation不称模型加速。未获配任务可由另一backend先领取。完整验收还报告NLL相对constant prior的400次物理块bootstrap差值区间，区间支持学习后才通过有效学习项；这是固定validation checkpoint的诊断，仍不是冻结test结论。
+
+首轮已有6个模型完整validation显示有效学习，详见[阶段85](../workbook/2026-11-13_stage85_s3_learning_and_path_diagnostics.md)，最终结构结论尚未形成。新增固定checkpoint路径置换诊断覆盖64个跨occupancy非空validation事件，相同模态presence内置换regional/global/local/summary分支，并记录token谱；用于解释路径依赖，不能等同重训消融或总体性能。12并发资源尝试已归档，保留成本及观察到的退出信息；当前MIG总并发上限8，通过共享名额在screen结束后补入已冻结确认任务。

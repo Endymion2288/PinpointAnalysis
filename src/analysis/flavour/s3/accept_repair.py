@@ -27,12 +27,16 @@ def experiment_record(root, config, evaluation):
         path = directory / filename
         return json.loads(path.read_text()) if path.exists() else {}
     manifest, readback, health = [load(p) for p in ['manifest.json', 'final_checkpoint_checks.json', 'internal_health_checks.json']]
+    path = load('path_diagnostics.json')
     return {'name': config['name'], 'complete': manifest.get('status') == 'complete',
             'frozen_configuration': manifest.get('config') == config,
             'readback': readback.get('status') == 'pass' and len(readback.get('checks', {})) == 14
                         and all(readback.get('checks', {}).values()),
             'internal_health_and_effective_learning': health.get('internal_health_and_learning_passed') is True
                         and bool(health.get('checks')) and all(health['checks'].values()),
+            'fixed_checkpoint_path_diagnostic': config.get('architecture') != 'plane_module_v2' or (
+                path.get('cached_head_matches_original') is True and path.get('presence_preserved') is True
+                and path.get('probe_events') == 64 and path.get('permuted_fraction', 0) > 0),
             'evaluated': config['name'] in evaluation,
             'allocation_complete': evaluation.get(config['name'], {}).get('allocation_complete', False),
             'calibration_test_unused': manifest.get('calibration_test_used') is False}

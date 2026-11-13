@@ -27,6 +27,11 @@ def shared_seconds(start, end, intervals):
 
 def allocation_transform(root, allocations):
     directory = root / 'kubeflow'
+    parallel = {}
+    for path in directory.glob('parallel_*.json'):
+        evidence = json.loads(path.read_text())
+        job = evidence.get('allocation_job', evidence.get('job', path.stem.removeprefix('parallel_')))
+        parallel.setdefault(job, []).append((path, evidence))
     replacements = {}
     for path in directory.glob('allocation_evidence_*.json'):
         for row in json.loads(path.read_text())['allocations']:
@@ -41,14 +46,16 @@ def allocation_transform(root, allocations):
         if 'submission' in row:
             job = json.loads(Path(row['submission']).read_text()).get('parallel_name') or job
             condor_parallel = bool(job)
-        record = directory / f'parallel_{job}.json'
-        if not record.exists() or row['seconds'] is None:
+        records = parallel.get(job, [])
+        if not records or row['seconds'] is None:
             output.append(row)
             continue
-        processes = json.loads(record.read_text())['processes']
+        processes = [p for _, evidence in records for p in evidence['processes']]
         if not processes or any('finished_at' not in p for p in processes):
             output.append(row)
             continue
+        if len({p['experiment'] for p in processes}) != len(processes):
+            raise ValueError('duplicate experiment intervals in a shared allocation')
         intervals = {p['experiment']: tuple(datetime.fromisoformat(p[k]).timestamp()
                      for k in ['started_at', 'finished_at']) for p in processes}
         if condor_parallel:
@@ -67,7 +74,7 @@ def allocation_transform(root, allocations):
                       'reservation_allocation_basis': row.get('allocation_basis'),
                       'allocation_basis': ('remote_wallclock_charged_by_normalized_active_process_interval_shares_including_setup'
                         if condor_parallel else 'equal_share_of_active_process_intervals_with_equal_startup_teardown_shares'),
-                      'process_interval_evidence': str(record)}
+                      'process_interval_evidence': [str(path) for path, _ in records]}
             for key in ['GPU_hours', 'CPU_core_hours']:
                 shared[key] = row[key] * fraction
             if 'GPU_resource_hours' in row:

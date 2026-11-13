@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from analysis.flavour.s3.accounting import allocation_transform, shared_seconds
-from analysis.flavour.s3.parallel import main as parallel_main
+from analysis.flavour.s3.parallel import main as parallel_main, slots_in_use
 
 
 class SharedAllocationTests(unittest.TestCase):
@@ -61,8 +61,54 @@ class SharedAllocationTests(unittest.TestCase):
             self.assertEqual(sum(r['GPU_hours'] for r in rows), 2.)
             self.assertEqual(sum(r['CPU_core_hours'] for r in rows), 24.)
 
+    def test_extra_supervisor_in_same_pod_is_charged_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root / 'kubeflow').mkdir()
+            for name, allocation, start in [('j', 'j', '00:00:00'), ('extra', 'j', '00:30:00')]:
+                (root / f'kubeflow/parallel_{name}.json').write_text(json.dumps({
+                    'job': name, 'allocation_job': allocation, 'processes': [{
+                        'experiment': name, 'started_at': f'2026-11-12T{start}+00:00',
+                        'finished_at': '2026-11-12T01:00:00+00:00'}]}))
+            row = {'job': 'j', 'status': 4, 'seconds': 3600., 'GPU_hours': 1.,
+                   'CPU_core_hours': 22., 'started_at': '2026-11-12T00:00:00+00:00',
+                   'finished_at': '2026-11-12T01:00:00+00:00'}
+            rows = allocation_transform(root, [row])
+            by_name = {r['experiment']: r for r in rows}
+            self.assertEqual(set(by_name), {'j', 'extra'})
+            self.assertEqual(by_name['j']['GPU_hours'], .75)
+            self.assertEqual(by_name['extra']['GPU_hours'], .25)
+            self.assertEqual(sum(r['GPU_hours'] for r in rows), 1.)
+            self.assertEqual(sum(r['CPU_core_hours'] for r in rows), 22.)
+            self.assertTrue(all(len(r['process_interval_evidence']) == 2 for r in rows))
+
 
 class ParallelLifecycleTests(unittest.TestCase):
+    def test_backfill_waits_for_a_slot_in_parent_supervisor(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root / 'kubeflow').mkdir()
+            campaign = root / 'campaign.json'
+            campaign.write_text(json.dumps({'experiments': [{'name': 'b'}]}))
+            parent = root / 'kubeflow/parallel_j.json'
+            previous = {'job': 'j', 'processes': [{'experiment': 'a', 'started_at': '2026-11-12T00:00:00+00:00'}]}
+            parent.write_text(json.dumps(previous))
+            self.assertEqual(slots_in_use(root / 'kubeflow', 'j'), 1)
+            self.assertEqual(slots_in_use(root / 'kubeflow', 'other'), 0)
+            class Child:
+                pid = 1
+                def poll(self):
+                    return 0
+            def release(_):
+                previous['processes'][0]['finished_at'] = '2026-11-12T01:00:00+00:00'
+                parent.write_text(json.dumps(previous))
+            argv = ['parallel', '--root', str(root), '--campaign', str(campaign), '--name', 'extra',
+                    '--allocation-job', 'j', '--tasks', '0', '--concurrency', '1']
+            with patch('sys.argv', argv), patch('analysis.flavour.s3.parallel.subprocess.Popen', return_value=Child()) as launch, \
+                    patch('analysis.flavour.s3.parallel.time.sleep', side_effect=release) as waited:
+                parallel_main()
+            self.assertEqual(waited.call_count, 1)
+            self.assertEqual(launch.call_count, 1)
+            self.assertEqual(slots_in_use(root / 'kubeflow', 'j'), 0)
+
     def test_repair_backends_claim_each_fit_only_once(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); (root/'kubeflow').mkdir()
