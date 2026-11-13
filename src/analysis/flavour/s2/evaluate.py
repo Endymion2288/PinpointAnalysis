@@ -6,17 +6,12 @@ from pathlib import Path
 import subprocess
 import sys
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve, precision_recall_curve, confusion_matrix, log_loss
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s2.train import metrics
-from analysis.flavour.s2.plots import plot_evaluation
 
 
 def tau_metrics(frame,weight=None):
@@ -380,6 +375,11 @@ def error_groups(frame,name):
 
 
 def plot_diagnostics(root,output,experiments,frames):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
     labels=['CC nu_e','CC nu_mu','CC nu_tau','NC']
     with PdfPages(output/'classification_diagnostics.pdf') as pdf:
         for number,experiment in enumerate(experiments):
@@ -462,6 +462,11 @@ def resource_metrics(manifest, allocation=None):
 
 
 def run(args):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from analysis.flavour.s2.plots import plot_evaluation
+
     args.output.mkdir(parents=True,exist_ok=True)
     experiments=[]
     frames={}
