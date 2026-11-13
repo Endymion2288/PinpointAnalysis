@@ -188,28 +188,35 @@ def plot_curves(output,experiments,frames):
     from matplotlib.backends.backend_pdf import PdfPages
     from sklearn.metrics import roc_curve,precision_recall_curve
     from analysis.flavour.s3.metrics import CLASSES
-    fig,axes=plt.subplots(2,2,figsize=(11,8),constrained_layout=True)
     groups={}
     for e in experiments:
         c=e['config'];representation=c.get('probe_representation','full')
         identity=(c.get('initialization','scratch'),e['program'],representation)
         groups.setdefault(identity,[]).append(e)
     curve_rows=[]
-    for (initialization,program,representation),group in groups.items():
-        budgets=sorted({e['config'].get('label_budget',100000) for e in group})
-        for ax,metric in zip(axes.flat,['macro_AP','NLL','class_2_AP','class_2_eff_at_0.01_FPR']):
-            values=[[e['four_class'][metric] for e in group if e['config'].get('label_budget',100000)==budget]
-                for budget in budgets]
-            mean=[float(np.mean(v)) for v in values]
-            spread=[float(np.std(v,ddof=1)) if len(v)>1 else 0. for v in values]
-            ax.errorbar(budgets,mean,yerr=spread,marker='.',capsize=2,label=initialization+' / '+program+' / '+representation)
-            curve_rows.extend({'initialization':initialization,'program':program,'label_budget':budget,
-                'representation':representation,'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
-                for budget,m,s,v in zip(budgets,mean,spread,values))
-            ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=metric)
-    axes[0,0].legend(fontsize=7)
-    fig.suptitle('S4 label efficiency: fixed validation; bars show training-seed SD')
-    fig.savefig(output/'label_efficiency.pdf');fig.savefig(output/'label_efficiency.png',dpi=160);plt.close(fig)
+    sections=list(dict.fromkeys((key[1],key[2]) for key in groups))
+    colors={name:f'C{i}' for i,name in enumerate(dict.fromkeys(key[0] for key in groups))}
+    with PdfPages(output/'label_efficiency.pdf') as pdf:
+        for program,representation in sections:
+            fig,axes=plt.subplots(2,2,figsize=(11,8),constrained_layout=True)
+            for (initialization,kind,route),group in groups.items():
+                if (kind,route)!=(program,representation):continue
+                budgets=sorted({e['config'].get('label_budget',100000) for e in group})
+                for ax,metric in zip(axes.flat,['macro_AP','NLL','class_2_AP','class_2_eff_at_0.01_FPR']):
+                    values=[[e['four_class'][metric] for e in group if e['config'].get('label_budget',100000)==budget]
+                        for budget in budgets]
+                    mean=[float(np.mean(v)) for v in values]
+                    spread=[float(np.std(v,ddof=1)) if len(v)>1 else 0. for v in values]
+                    ax.errorbar(budgets,mean,yerr=spread,marker='.',capsize=2,label=initialization,color=colors[initialization])
+                    curve_rows.extend({'initialization':initialization,'program':program,'label_budget':budget,
+                        'representation':representation,'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
+                        for budget,m,s,v in zip(budgets,mean,spread,values))
+                    ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=metric)
+            axes[0,0].legend(fontsize=7)
+            fig.suptitle(f'S4 {program} / {representation}: fixed validation; bars show training-seed SD')
+            pdf.savefig(fig);fig.savefig(output/f'label_efficiency_{program}_{representation}.png',dpi=160)
+            if program=='train' or len(sections)==1:fig.savefig(output/'label_efficiency.png',dpi=160)
+            plt.close(fig)
     pd.DataFrame(curve_rows).to_csv(output/'label_efficiency.csv',index=False)
     with PdfPages(output/'four_class_diagnostics.pdf') as pdf:
         for e in experiments:

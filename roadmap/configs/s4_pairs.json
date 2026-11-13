@@ -327,6 +327,162 @@
       "b": "s4_frozen_mae_barrel5_n100000_s42__global",
       "question": "same parent and continuation views, frozen partial bar Rel increment",
       "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_scratch_n1000_s17",
+      "b": "s4_frozen_mae3_n1000_s17",
+      "seed": 17,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n1000_s2026",
+      "b": "s4_frozen_mae3_n1000_s2026",
+      "seed": 2026,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n1000_s17__global",
+      "b": "s4_frozen_mae3_n1000_s17__global",
+      "seed": 17,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n1000_s2026__global",
+      "b": "s4_frozen_mae3_n1000_s2026__global",
+      "seed": 2026,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_mae5_n1000_s42",
+      "b": "s4_mae_barrel_channels5_n1000_s42",
+      "question": "same MAE3 parent and fresh continuation: per-channel Rel versus mae5",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_mae_barrel5_n1000_s42",
+      "b": "s4_mae_barrel_channels5_n1000_s42",
+      "question": "same MAE3 parent and fresh continuation: per-channel Rel versus mae_barrel5",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_mae5_n1000_s42",
+      "b": "s4_frozen_mae_barrel_channels5_n1000_s42",
+      "question": "same parent continuation, kept per-channel bar Rel frozen increment",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_mae5_n1000_s42__global",
+      "b": "s4_frozen_mae_barrel_channels5_n1000_s42__global",
+      "question": "same parent continuation, kept per-channel bar Rel frozen increment",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_scratch_n10000_s17",
+      "b": "s4_frozen_mae3_n10000_s17",
+      "seed": 17,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n10000_s2026",
+      "b": "s4_frozen_mae3_n10000_s2026",
+      "seed": 2026,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n10000_s17__global",
+      "b": "s4_frozen_mae3_n10000_s17__global",
+      "seed": 17,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n10000_s2026__global",
+      "b": "s4_frozen_mae3_n10000_s2026__global",
+      "seed": 2026,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_mae5_n10000_s42",
+      "b": "s4_mae_barrel_channels5_n10000_s42",
+      "question": "same MAE3 parent and fresh continuation: per-channel Rel versus mae5",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_mae_barrel5_n10000_s42",
+      "b": "s4_mae_barrel_channels5_n10000_s42",
+      "question": "same MAE3 parent and fresh continuation: per-channel Rel versus mae_barrel5",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_mae5_n10000_s42",
+      "b": "s4_frozen_mae_barrel_channels5_n10000_s42",
+      "question": "same parent continuation, kept per-channel bar Rel frozen increment",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_mae5_n10000_s42__global",
+      "b": "s4_frozen_mae_barrel_channels5_n10000_s42__global",
+      "question": "same parent continuation, kept per-channel bar Rel frozen increment",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_scratch_n100000_s17",
+      "b": "s4_frozen_mae3_n100000_s17",
+      "seed": 17,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n100000_s2026",
+      "b": "s4_frozen_mae3_n100000_s2026",
+      "seed": 2026,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n100000_s17__global",
+      "b": "s4_frozen_mae3_n100000_s17__global",
+      "seed": 17,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_frozen_scratch_n100000_s2026__global",
+      "b": "s4_frozen_mae3_n100000_s2026__global",
+      "seed": 2026,
+      "question": "same-seed random versus independently pretrained MAE frozen encoder",
+      "group": "frozen"
+    },
+    {
+      "a": "s4_mae5_n100000_s42",
+      "b": "s4_mae_barrel_channels5_n100000_s42",
+      "question": "same MAE3 parent and fresh continuation: per-channel Rel versus mae5",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_mae_barrel5_n100000_s42",
+      "b": "s4_mae_barrel_channels5_n100000_s42",
+      "question": "same MAE3 parent and fresh continuation: per-channel Rel versus mae_barrel5",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_mae5_n100000_s42",
+      "b": "s4_frozen_mae_barrel_channels5_n100000_s42",
+      "question": "same parent continuation, kept per-channel bar Rel frozen increment",
+      "group": "Rel_control"
+    },
+    {
+      "a": "s4_frozen_mae5_n100000_s42__global",
+      "b": "s4_frozen_mae_barrel_channels5_n100000_s42__global",
+      "question": "same parent continuation, kept per-channel bar Rel frozen increment",
+      "group": "Rel_control"
     }
   ],
   "seed_mean_comparisons": [
@@ -392,6 +548,126 @@
         }
       ],
       "scope": "independent SSL and downstream initialization, same nested labeled subset, seed SD separate from conditional physical-event CI"
+    },
+    {
+      "name": "mae3_minus_random_frozen_n1000_three_independent_seeds",
+      "pairs": [
+        {
+          "a": "s4_frozen_scratch_n1000_s17",
+          "b": "s4_frozen_mae3_n1000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_frozen_scratch_n1000_s42",
+          "b": "s4_frozen_mae3_n1000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_frozen_scratch_n1000_s2026",
+          "b": "s4_frozen_mae3_n1000_s2026",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "mae3_minus_random_frozen_n1000__global_three_independent_seeds",
+      "pairs": [
+        {
+          "a": "s4_frozen_scratch_n1000_s17__global",
+          "b": "s4_frozen_mae3_n1000_s17__global",
+          "seed": 17
+        },
+        {
+          "a": "s4_frozen_scratch_n1000_s42__global",
+          "b": "s4_frozen_mae3_n1000_s42__global",
+          "seed": 42
+        },
+        {
+          "a": "s4_frozen_scratch_n1000_s2026__global",
+          "b": "s4_frozen_mae3_n1000_s2026__global",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "mae3_minus_random_frozen_n10000_three_independent_seeds",
+      "pairs": [
+        {
+          "a": "s4_frozen_scratch_n10000_s17",
+          "b": "s4_frozen_mae3_n10000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_frozen_scratch_n10000_s42",
+          "b": "s4_frozen_mae3_n10000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_frozen_scratch_n10000_s2026",
+          "b": "s4_frozen_mae3_n10000_s2026",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "mae3_minus_random_frozen_n10000__global_three_independent_seeds",
+      "pairs": [
+        {
+          "a": "s4_frozen_scratch_n10000_s17__global",
+          "b": "s4_frozen_mae3_n10000_s17__global",
+          "seed": 17
+        },
+        {
+          "a": "s4_frozen_scratch_n10000_s42__global",
+          "b": "s4_frozen_mae3_n10000_s42__global",
+          "seed": 42
+        },
+        {
+          "a": "s4_frozen_scratch_n10000_s2026__global",
+          "b": "s4_frozen_mae3_n10000_s2026__global",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "mae3_minus_random_frozen_n100000_three_independent_seeds",
+      "pairs": [
+        {
+          "a": "s4_frozen_scratch_n100000_s17",
+          "b": "s4_frozen_mae3_n100000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_frozen_scratch_n100000_s42",
+          "b": "s4_frozen_mae3_n100000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_frozen_scratch_n100000_s2026",
+          "b": "s4_frozen_mae3_n100000_s2026",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "mae3_minus_random_frozen_n100000__global_three_independent_seeds",
+      "pairs": [
+        {
+          "a": "s4_frozen_scratch_n100000_s17__global",
+          "b": "s4_frozen_mae3_n100000_s17__global",
+          "seed": 17
+        },
+        {
+          "a": "s4_frozen_scratch_n100000_s42__global",
+          "b": "s4_frozen_mae3_n100000_s42__global",
+          "seed": 42
+        },
+        {
+          "a": "s4_frozen_scratch_n100000_s2026__global",
+          "b": "s4_frozen_mae3_n100000_s2026__global",
+          "seed": 2026
+        }
+      ]
     }
   ]
 }
