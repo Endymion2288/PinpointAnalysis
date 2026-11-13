@@ -28,6 +28,7 @@ from analysis.flavour.s4.campaign import host_memory
 from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
 from analysis.flavour.s4.validation_job import main as validate_completed_campaign
 from analysis.flavour.s4.worker import main as run_campaign_worker
+from analysis.flavour.s2.train import atomic_output
 
 
 class S4Tests(unittest.TestCase):
@@ -378,6 +379,23 @@ class S4Tests(unittest.TestCase):
             self.assertEqual(report['verified_train'],['legacy'])
             summary=json.loads((root/'experiments/validation/training_health_summary.json').read_text())
             self.assertEqual(summary['samples'],1)
+
+    def test_concurrent_source_archive_writes_publish_complete_distinct_inodes(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+        with tempfile.TemporaryDirectory() as temporary:
+            path=Path(temporary)/'shared.source.tar';barrier=Barrier(2)
+            def publish(value):
+                def writer(stream):
+                    stream.write(value[:500]);stream.flush();barrier.wait(timeout=10)
+                    stream.write(value[500:])
+                atomic_output(path,writer)
+            contents=[b'a'*20000,b'b'*20000]
+            with ThreadPoolExecutor(2) as pool:
+                futures=[pool.submit(publish,value) for value in contents]
+                for future in futures:future.result()
+            self.assertIn(path.read_bytes(),contents)
+            self.assertEqual(list(path.parent.iterdir()),[path])
 
     def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
         with tempfile.TemporaryDirectory() as temporary:

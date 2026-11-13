@@ -13,6 +13,7 @@ import resource
 import subprocess
 import sys
 import time
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -39,7 +40,7 @@ def atomic_output(path, writer):
     cannot replay lost bytes, so every retry creates a fresh temporary inode.
     """
     transient = {errno.EPROTO, errno.EIO, errno.ETIMEDOUT, errno.ECONNRESET, errno.EAGAIN}
-    temporary = path.with_suffix('.tmp')
+    temporary = path.with_name(f'.{path.name}.{uuid.uuid4().hex}.tmp')
     for attempt in range(4):
         try:
             if temporary.exists():

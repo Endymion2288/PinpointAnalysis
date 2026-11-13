@@ -36,7 +36,7 @@ class AtomicSyncTests(unittest.TestCase):
                 save_checkpoint(path, {'epoch': 2, 'model': torch.arange(7)})
             self.assertEqual(sync.call_count, 2)
             self.assertEqual(torch.load(path)['epoch'], 2)
-            self.assertFalse(path.with_suffix('.tmp').exists())
+            self.assertFalse(list(path.parent.glob('.last.pt.*.tmp')))
             parquet = Path(tmp) / 'epoch_predictions.parquet'; data = pd.DataFrame({'p': [.1, .9]})
             with patch('analysis.flavour.s2.train.os.fsync', side_effect=[OSError(errno.EIO, 'I/O'), None]):
                 save_parquet(data, parquet)
@@ -50,7 +50,7 @@ class AtomicSyncTests(unittest.TestCase):
                     save_checkpoint(path, {'epoch': 2})
             self.assertEqual(sync.call_count, 4)
             self.assertEqual(torch.load(path)['epoch'], 1)
-            self.assertTrue(path.with_suffix('.tmp').exists())
+            self.assertEqual(len(list(path.parent.glob('.last.pt.*.tmp'))),1)
 
     def test_permanent_error_is_not_retried(self):
         with tempfile.TemporaryDirectory() as tmp:
