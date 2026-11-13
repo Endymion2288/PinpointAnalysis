@@ -11,6 +11,22 @@ from analysis.flavour.s4.accounting import refresh
 
 
 class S4AccountingTests(unittest.TestCase):
+    def test_cache_profile_counts_cpu_allocation_without_gpu_time(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'logs').mkdir()
+            (root / 'logs/submission_profile.json').write_text(json.dumps({
+                'submitted': True, 'name': 'profile', 'stage': 'cache_profile', 'backend': 'condor',
+                'response': '1 job(s) submitted to cluster 123.', 'schedd': 's', 'tasks': [0]}))
+            ad = {'ClusterId': 123, 'ProcId': 0, 'JobStatus': 4, 'RemoteWallClockTime': 120.,
+                'RequestCpus': 4, 'RequestGPUs': 0, 'ExitCode': 0}
+            with patch('analysis.flavour.s4.accounting.subprocess.run', return_value=
+                    SimpleNamespace(returncode=0, stdout=json.dumps([ad]), stderr='')):
+                report = refresh(root)
+            self.assertEqual(report['organization_device_hours'], 0.)
+            self.assertAlmostEqual(report['CPU_allocation_hours'], 480 / 3600)
+            self.assertEqual(report['allocations'][0]['allocation_seconds'], 120.)
+
     def test_live_queue_covers_all_procs_without_scanning_history(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

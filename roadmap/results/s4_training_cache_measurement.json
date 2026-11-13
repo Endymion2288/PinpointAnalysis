@@ -1,0 +1,94 @@
+{
+  "utc": "2026-11-13T22:39:21.528168+00:00",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments",
+  "allocation": {
+    "cluster": 1577948,
+    "schedd": "bigbird20.cern.ch",
+    "concurrent_tasks": 2,
+    "requested_cpus": 6,
+    "requested_memory_MB": 16000
+  },
+  "classification_cache_MiB_per_reader": 1024,
+  "experiments": [
+    {
+      "name": "s4_mae5_n1000_s42",
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "source_commit": "449e0567df269f1a395c13c96c4cca9039083cd0",
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_seconds": 154.62910257297335,
+          "train_exposures": 7104,
+          "train_events_per_second": 45.94219252257152,
+          "timing_seconds": {
+            "data_wait": 34.60512012266554,
+            "transfer": 0.4380120401910972,
+            "forward_backward": 116.85945736471331,
+            "validation": 137.26987991901115
+          }
+        },
+        {
+          "epoch": 2,
+          "train_seconds": 50.42485430301167,
+          "train_exposures": 7062,
+          "train_events_per_second": 140.0499832396782,
+          "timing_seconds": {
+            "data_wait": 5.476452572998824,
+            "transfer": 0.6355908652185462,
+            "forward_backward": 43.75695644065854,
+            "validation": 36.03472633002093
+          }
+        },
+        {
+          "epoch": 3,
+          "train_seconds": 43.30044956799247,
+          "train_exposures": 7082,
+          "train_events_per_second": 163.5548838558708,
+          "timing_seconds": {
+            "data_wait": 7.2659080030280165,
+            "transfer": 0.32786552296602167,
+            "forward_backward": 35.27302941103699,
+            "validation": 36.461051833990496
+          }
+        }
+      ]
+    },
+    {
+      "name": "s4_mae5_n10000_s42",
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "source_commit": "449e0567df269f1a395c13c96c4cca9039083cd0",
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_seconds": 341.1986849780078,
+          "train_exposures": 19782,
+          "train_events_per_second": 57.977949127427216,
+          "timing_seconds": {
+            "data_wait": 93.68887024212745,
+            "transfer": 1.265327971195802,
+            "forward_backward": 235.43297493710998,
+            "validation": 119.39502510399325
+          }
+        }
+      ]
+    }
+  ],
+  "interpretation": "observed warm-epoch timings; compilation, asynchronous loader overlap, event order and cache effects are not isolated by this measurement",
+  "MIG_utilization_percent": null,
+  "MIG_utilization_reason": "nvidia-smi does not expose MIG utilization in this allocation",
+  "cost_correction": {
+    "CPU_only_profile_cluster": 1577642,
+    "allocation_seconds": 132.0,
+    "GPU_hours_removed": 0.03666666666666667,
+    "CPU_core_hours_retained": 0.14666666666666667
+  },
+  "accounting": {
+    "utc": "2026-11-13T22:36:27.625596+00:00",
+    "organization_device_hours": 12.50895646366272,
+    "cap_device_hours": 60,
+    "remaining_device_hours": 47.49104353633728,
+    "CPU_allocation_hours": 169.52835071750607,
+    "CPU_scope": "Condor requested CPUs plus Kubeflow training-container CPU requests; platform sidecars excluded",
+    "scope": "actual durations by allocation; MIG and full GPUs kept distinct, no equivalent-FLOPs conversion; all readiness/failure time included"
+  }
+}
