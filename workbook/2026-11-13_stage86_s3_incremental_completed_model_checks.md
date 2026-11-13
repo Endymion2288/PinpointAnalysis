@@ -70,6 +70,16 @@ JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed na
 
 针对global弱依赖补读NeurIPS2021 Gradient Starvation正式全文及CVPR2022/TPAMI2024 OPM/OGM，正式链接和后续可检验假设已加入[修复路线图](../roadmap/10_s3_repair.md)。这些论文支持审查分支间优化竞争，不构成本模型已证实gradient starvation的证据。当前冻结矩阵不加入新的分支dropout/gradient modulation。
 
+### 迁移后续故障及实际恢复
+
+14:32 UTC补充，前述14:17迁移未持续成功。Condor SSH控制会话中的接续writer在新SSH控制连接后退出；尝试独立session并忽略SIGHUP仍未保留这些writer。远端`ps`及`kill -0`均确认相关wrapper/child不存在，未观察到这些writer的实际退出码；以确认进程消失的时刻作为区间上界，绝不写成exit0。第一接续最后progress为epoch2第2,000步，未提交更新由epoch1 checkpoint重新计算。第二短暂接续的Part seed42最后progress为epoch4第1,250步。两次尝试分别以`overhead_ssh_handoff::`和`overhead_detached_ssh::`保留共享allocation区间，实际checkpoint不冒作完成模型。
+
+14:25:27 UTC主动停止seed42源writer后，原Kubeflow campaign收到了screen child的−15并以非零码结束，Pod很快清理；前述PID1暂停未有效维持到全部模型结束。两个backfill确认任务因此同时中断：tracker2026和region8_2026的epoch2 checkpoint保留，第三轮未提交更新归档。该连带中断是此次迁移调度失误，已恢复claims供现有A100队列接续，不改模型配置或总更新数。源Job实际Failed condition时间14:25:33 UTC；终态Pod未被30秒observer捕获，不伪造Pod phase或exit code。使用已保留Scheduled 11:31:56到Job Failed的10,417s作为MIG allocation上界，2.893611111 device-hours，证据在`kubeflow/allocation_evidence_terminal_migration_pinpoint-s3r-campaign-compiled-v2.json`。
+
+长训练恢复改为正式batch入口。重新检查兼容schedd后，Condor提交1574088（2并发），同时申请Kubeflow `pinpoint-s3r-part-resume-v3`（47GB MIG、2并发）；Kubeflow立即获得资源，于14:31:15以原子claims领取Part seed2026和seed42。实际manifest分别记录从epoch1/epoch3恢复，余30,048/10,016updates不变。确认唯一writer后，只移除仍Idle的1574088副本。原H100 supervisor已SIGCONT，继续管理自己的真实batch children；不再通过SSH会话运行训练。新Pod每5秒捕获终态，以减少清理间隙。
+
+14:31:11 UTC费用刷新：修复上界8.035463658 device-hours；累计S3上界39.273732336 /120，余额下界80.726267664，缺失history=0。终态、全部恢复模型读回及最终科学评价尚未完成。
+
 ## 阶段性结论
 
 已确认修复结构可以完成全量四轮训练并取得统计支持的有效学习；首个模型的全部计划内部健康及checkpoint读回通过。其余19模型尚未全部完成，因此尚无最终结构/粒度/tracker净增益结论；旧S3结论继续撤回。
