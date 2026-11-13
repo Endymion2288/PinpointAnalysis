@@ -85,6 +85,30 @@ class S4Tests(unittest.TestCase):
         b=plane_tokens(visible2,self.geometry,self.config)
         for x,y in zip(a,b):np.testing.assert_array_equal(x,y)
 
+    def test_skipping_unused_S2_groups_preserves_canonical_multimodal_inputs(self):
+        obs=self.observation(172)
+        obs['bar']={'channel_id':self.qg.bar_ids[:4],'bounds_mm':np.array([
+            [x-5,x+5,-20,20,-21] for x in [-15.,-5.,5.,15.]]),
+            'layer':np.zeros(4,dtype=int),'panel':np.zeros(4,dtype=int),
+            'horizontal':np.zeros(4,dtype=int),'bar':np.arange(4),
+            'edep_proxy_MeV':np.arange(1,5,dtype=float),'pe_proxy':np.arange(1,5)*10}
+        obs['tracker_hypothesis']={'station':np.array([0,0,1]),
+            'xy_mm':np.array([[1.,2.],[1.,2.],[3.,4.]]),
+            'sigma_xy_mm':np.array([[1.,1.],[2.,3.],[.5,.5]])}
+        rng=np.random.default_rng(19)
+        shuffled={}
+        for detector,fields in obs.items():
+            order=rng.permutation(len(next(iter(fields.values()))))
+            shuffled[detector]={key:value[order] for key,value in fields.items()}
+        empty={detector:{key:value[:0] for key,value in fields.items()} for detector,fields in obs.items()}
+        for event in [obs,shuffled,empty,self.qg.visible(obs,42,.75)[0]]:
+            for settings in [{},{'window_pixels':1},{'window_pixels':0,'pitch_mm':4.},
+                {'signal':False,'local_residual':False}]:
+                config={**self.config,**settings}
+                old=plane_tokens(event,self.geometry,config,build_input_blocks=True)
+                new=plane_tokens(event,self.geometry,config)
+                for before,after in zip(old,new):np.testing.assert_array_equal(before,after)
+
     def test_query_negatives_and_uniform_far_coverage_exist(self):
         obs=self.observation();visible,hidden=self.qg.visible(obs,42,.75)
         query=self.qg.queries(visible,42,.75,128)

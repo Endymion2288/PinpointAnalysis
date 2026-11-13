@@ -7,7 +7,7 @@ from analysis.flavour.s2.dataset import SpatialDataset
 from analysis.flavour.s2.representation import token_inputs
 
 
-def plane_tokens(observations, geometry, config, seed=0):
+def plane_tokens(observations, geometry, config, seed=0, *, build_input_blocks=False):
     """Preserve every represented channel; never use native residuals after rebin.
 
     Pixel module = ordinal true entry of layer_is_pixel; bar module = stored
@@ -22,7 +22,8 @@ def plane_tokens(observations, geometry, config, seed=0):
     n_layers = len(geometry['layer_is_pixel'])
     for detector in config.get('modalities', ['pixel', 'bar']):
         nodes, _, raw = token_inputs(observations, geometry,
-            pitch_mm=config.get('pitch_mm', 0.), modalities=[detector], seed=seed)
+            pitch_mm=config.get('pitch_mm', 0.), modalities=[detector], seed=seed,
+            build_blocks=build_input_blocks)
         counts.extend(raw)
         nodes = nodes[nodes[:, 15] > 0].copy()
         if not len(nodes):

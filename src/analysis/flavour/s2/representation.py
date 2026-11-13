@@ -54,7 +54,8 @@ def pixel_view(pixel, geometry, pitch_mm=0., projection=False, reducer='count', 
 
 
 def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer='count',
-                 modalities=('pixel','bar'), origin_shift=0., shuffle_local=False, seed=0):
+                 modalities=('pixel','bar'), origin_shift=0., shuffle_local=False, seed=0,
+                 build_blocks=True):
     """Return 18-feature nodes and deterministic bounded local neighborhoods.
 
     Columns: scaled xyz(3), observed x/y(2), log count(1), log edep/PE(2),
@@ -62,6 +63,9 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
     Local blocks group by pixel plane+4mm cell, bar panel, tracker station.
     A block over 32 nodes is split without dropping nodes. The global encoder
     sees every block, so there is no event-level token truncation.
+    Set build_blocks=False to return the same channel features without S2's
+    grouping/order when a caller constructs its own canonical neighborhoods.
+    The groups result is then None.
     """
     features,groups,raw_counts,positions=[],[],[],[]
     group_offset=0
@@ -118,6 +122,9 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
             xyz[:,1]=feat[:,1]*210
             group_keys=np.column_stack([xyz[:,2],view['view'],np.floor(xyz[:,:2]/4)])
         feat[:,16:18]=((xyz[:,:2]/4-np.floor(xyz[:,:2]/4))-.5)*feat[:,3:5]
+        if not build_blocks:
+            features.append(feat)
+            continue
         _,inv=np.unique(group_keys,axis=0,return_inverse=True)
         blocks=[]
         for g in range(inv.max()+1 if len(inv) else 0):
@@ -134,5 +141,5 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
         positions.append(xyz[order])
     if not any(len(f) for f in features):
         # Explicit empty-event token, response bit=0, no invented measurement.
-        return np.zeros((1,18),dtype='float32'),np.zeros(1,dtype='int64'),raw_counts
-    return np.concatenate(features),np.concatenate(groups),raw_counts
+        return np.zeros((1,18),dtype='float32'),np.zeros(1,dtype='int64') if build_blocks else None,raw_counts
+    return np.concatenate(features),np.concatenate(groups) if build_blocks else None,raw_counts
