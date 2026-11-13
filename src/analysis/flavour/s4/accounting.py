@@ -73,22 +73,25 @@ def refresh(root):
             match=re.search(r'cluster (\d+)',submission.get('response',''))
             if not match:records.append({**row,'status':'missing_cluster_id'});continue
             cluster=match.group(1);schedd=submission['schedd']
-            queue=subprocess.run(['condor_q','-name',schedd,cluster,'-json'],capture_output=True,text=True)
-            try:
-                history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,
-                    '-since','ClusterId < '+cluster,'-json'],capture_output=True,text=True,timeout=20)
-            except subprocess.TimeoutExpired:
-                history=None
-            ads={}
-            if history is not None and history.returncode==0:
-                for ad in json.loads(history.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
-            if queue.returncode==0:
-                for ad in json.loads(queue.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
             cache=snapshots/(submission['name']+'.condor.json')
-            if not ads and cache.exists():
-                for ad in json.loads(cache.read_text()):ads[(ad['ClusterId'],ad['ProcId'])]=ad
-                row['cached_snapshot']=True
-            if history is None:row['history_error']='20-second query timeout; retain available queue/cache and flag missing terminal evidence'
+            ads={(ad['ClusterId'],ad['ProcId']):ad for ad in json.loads(cache.read_text())} if cache.exists() else {}
+            expected=len(submission['tasks']) if submission['stage']=='data' else 1
+            if len(ads)==expected and all(ad.get('JobStatus') in {3,4} for ad in ads.values()):
+                row['cached_terminal_snapshot']=True
+            else:
+                queue=subprocess.run(['condor_q','-name',schedd,cluster,'-json'],capture_output=True,text=True)
+                try:
+                    # History is ordered by completion, not ClusterId. A
+                    # lower-cluster stop condition can hide a later finish.
+                    history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,
+                        '-match',str(expected),'-json'],capture_output=True,text=True,timeout=20)
+                except subprocess.TimeoutExpired:
+                    history=None
+                if history is not None and history.returncode==0:
+                    for ad in json.loads(history.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                if queue.returncode==0:
+                    for ad in json.loads(queue.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                if history is None:row['history_error']='20-second query timeout; retain available queue/cache and flag missing terminal evidence'
             write_json(cache,list(ads.values()))
             seconds=0.;details=[]
             for (_,proc),ad in ads.items():
@@ -99,7 +102,9 @@ def refresh(root):
                 seconds+=duration
                 details.append({'proc':proc,'status':ad.get('JobStatus'),'allocation_seconds':duration,
                     'exit_code':ad.get('ExitCode'),'request_cpus':ad.get('RequestCpus'),
-                    'GPU_name':ad.get('GPUs_DeviceName'),'remote_host':ad.get('LastRemoteHost',ad.get('RemoteHost'))})
+                    'GPU_name':ad.get('GPUs_DeviceName') or ad.get('MATCH_GPUs_DeviceName') or ad.get('MATCH_EXP_GPUsDeviceName'),
+                    'assigned_GPUs':ad.get('AssignedGPUs'),
+                    'remote_host':ad.get('LastRemoteHost',ad.get('RemoteHost'))})
             row.update(cluster=cluster,schedd=schedd,jobs=details,allocation_seconds=seconds,
                 status='terminal' if details and all(r['status'] in {3,4} for r in details) else 'active_or_missing_history')
         row['device_hours']=row.get('allocation_seconds',0.)/3600 if gpu else 0.
