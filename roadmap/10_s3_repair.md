@@ -28,6 +28,8 @@
 | Stabilizing Transformer Training by Preventing Attention Entropy Collapse | [ICML 2023](https://proceedings.mlr.press/v202/zhai23a.html) | 将attention entropy作为不稳定诊断；本文的spectral reparameterization不与本轮QK-LN同时新增，避免引入无对照的额外变量 |
 | Attention is not all you need: pure attention loses rank doubly exponentially with depth | [ICML 2021](https://proceedings.mlr.press/v139/dong21a.html) | 检查token同质化，保留FF/残差与local旁路；其纯attention理论不能直接证明本模型的queries已塌缩 |
 | mHC: Manifold-Constrained Hyper-Connections | [2026-01 v2 preprint](https://arxiv.org/html/2512.24880v2) | 残差连接的可控信号传播与实际内存开销；本轮浅层网络采用小LayerScale与明确LN，不扩宽为多残差流/Sinkhorn网络 |
+| Gradient Starvation: A Learning Proclivity in Neural Networks | [NeurIPS 2021 official paper](https://proceedings.neurips.cc/paper_files/paper/2021/hash/0987b8b338d6c90bbedd8631bc499221-Abstract.html) | 已补读正式全文；交叉熵可能只学到一部分预测特征，说明“总体NLL下降”不能证明每条分支均被充分学习。其线性化理论不直接诊断本模型，Spectral Decoupling未加入当前冻结训练 |
+| Balanced Multimodal Learning via On-the-Fly Gradient Modulation; On-the-Fly Modulation for Balanced Multimodal Learning | [CVPR 2022](https://openaccess.thecvf.com/content/CVPR2022/html/Peng_Balanced_Multimodal_Learning_via_On-the-Fly_Gradient_Modulation_CVPR_2022_paper.html), [TPAMI online 2024](https://doi.org/10.1109/TPAMI.2024.3468315), [extended full text](https://arxiv.org/html/2410.11582) | 已补读OPM/OGM优化不均衡分析、非线性classifier扩展及missing-modality实验；作为弱分支的后续对照依据，未在本轮中途增加dropout/gradient modulation |
 
 ## Revision 2架构
 
@@ -42,6 +44,28 @@
 
 区域划分只使用现有硬件module和canonical空间顺序；绝不截断原始节点。全局分类最终仍须聚合，不能称可逆编码；用同输入的fixed/multiscale/no-direct控制测量瓶颈，而非仅凭token数量断言性能。
 
+```mermaid
+flowchart LR
+    O[Native observations] --> L[Local blocks: at most 32 nodes]
+    L --> E[Normalized local attention]
+    E --> R[Regions: at most 32 local blocks]
+    R --> Q[Two queries per region]
+    Q --> P[Separate modality mean and max]
+    Q --> G[64 global latent queries]
+    E --> D[All local blocks: separate modality mean and max]
+    O --> S[Observed counts and signals, presence]
+    P --> N[Independent branch norms and concat norm]
+    G --> N
+    D --> N
+    S --> N
+    N --> H[FP32 Linear, LN, SiLU head]
+    N --> K[Independent linear logits]
+    H --> C[Four class logits]
+    K --> C
+```
+
+图对应multiscale+direct模型。Fixed控制使用module queries和24 latents、无direct local分支；no-direct仅去除D分支；region8将每region最大local blocks从32改为8。Multiscale将hardware ID/type/z加入region tokens，未运行fixed中的二次module-context attention或显式global pair-bias；不能把配置继承的旧开关误读成这些运算实际存在。Fresh ParT保留独立的4 mm local blocks和全block pair attention，其容量、窗口与修复模型不同，跨模型收益不是单一组件的因果效应。
+
 ### 因果解释与尚未回答的问题
 
 残差方差满足 `Var(x+αf)=Var(x)+α²Var(f)+2αCov(x,f)`，因此仅有Pre-LN不控制残差流的累积幅度。多模态concat还受协方差影响，Head投影方差为`WΣWᵀ`；把相关context重复加入三模态会重复放大某些方向。修复同时约束分支尺度、残差增量和Head隐藏尺度，不能把效果归于单独更换GELU。GELU数学上在x<−5不是恒等零；旧checkpoint中全零来自具体数值范围及实现精度。
@@ -49,6 +73,8 @@
 最大train事件下fixed读取124个module query tokens和24个latents；multiscale region32/region8分别读取958/3,690个regional tokens和64个latents，另有14,597个local blocks的mean/max直接读出。完整节点覆盖证明未进行事件截断；局部池化与全局汇聚仍非可逆，不能据此声称全部微观信息均已无损编码。Region8/32、direct/no-direct、native/1 mm控制分别测量更细区域、独立读出与原生粒度的净影响。
 
 已观察到同region的query向量cosine偏高，但分组平均、BF16舍入和共同region内容均可造成这一现象；单独cosine高不等于训练失败。用FP32 cosine、query variation、采样attention entropy、上游梯度、完整validation和压缩控制共同判断。若完整学习结果显示latent或module路径弱而旁路承担大部分分类，明确记录路径贡献，不把旁路的有效学习当作所有attention层均充分工作的证明。
+
+针对已观测的global弱依赖，后续假设分开检验：query同质化、局部/summary捷径的优化竞争，以及全局表示的真实冗余。先比较train-only上独立拟合的local/regional/global probes与完整模型分支梯度，再冻结“无global”“分支dropout或OPM”“query位置/多样性”中的单变量重训。OPM/OGM主要针对不同输入模态；同一encoder的多尺度分支共享参数，迁移为path modulation须另行定义控制，不能直接宣称原算法适用。自然缺失的硬件读出始终保留presence，不将训练dropout解释为真实硬件缺失。当前20模型用于先完成本轮稳定性、压缩和硬件增量评价，未运行这些后续实验。
 
 ## 训练与内部健康要求
 
