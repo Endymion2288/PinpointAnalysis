@@ -11,6 +11,17 @@ import time
 from analysis.flavour.inventory import write_json
 
 
+def host_memory(directory=Path('/sys/fs/cgroup')):
+    """Read the allocation's cgroup limit, including dataloader subprocesses."""
+    fields={}
+    for name,key in [('memory.current','current_bytes'),('memory.max','limit_bytes'),('memory.peak','peak_bytes')]:
+        path=directory/name
+        if path.exists():
+            value=path.read_text().strip()
+            if value.isdigit():fields[key]=int(value)
+    return fields
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True);parser.add_argument('--campaign',type=Path,required=True)
@@ -22,6 +33,7 @@ def main():
     record=directory/f'parallel_{args.name}.json'
     claims=args.root/'claims';claims.mkdir(exist_ok=True)
     failed=False
+    observed_peak=0
     def status(name):
         manifest=args.root/'experiments'/name/'manifest.json'
         return json.loads(manifest.read_text()).get('status') if manifest.exists() else None
@@ -42,6 +54,9 @@ def main():
                 blocked.append({'experiment':name,'reason':'required SSL readback failed'})
                 failed=True;pending.remove(task);continue
             if len(active)>=args.concurrency:break
+            memory=host_memory()
+            if active and memory.get('limit_bytes') and memory.get('current_bytes',0)>.75*memory['limit_bytes']:
+                break
             try:(claims/name).mkdir()
             except FileExistsError:
                 pending.remove(task);continue
@@ -60,7 +75,9 @@ def main():
                 'exit_code':code,'utc':row['finished_at']})
             active.remove((process,stream,row))
             if code:failed=True
+        memory=host_memory();observed_peak=max(observed_peak,memory.get('peak_bytes',memory.get('current_bytes',0)))
         write_json(record,{'job':args.name,'pod':os.environ.get('HOSTNAME'),'concurrency_limit':args.concurrency,
+            'host_memory':memory,'observed_host_peak_bytes':observed_peak,'new_task_memory_start_fraction':.75,
             'processes':records,'pending_tasks':pending,'blocked_tasks':blocked,'failed':failed,'utc':datetime.now(timezone.utc).isoformat()})
         if pending or active:time.sleep(3)
     if failed:raise SystemExit('S4 task failed; dependent starts stopped, see recorded logs')

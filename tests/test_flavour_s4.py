@@ -24,6 +24,7 @@ from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
 from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operations
 from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix
+from analysis.flavour.s4.campaign import host_memory
 
 
 class S4Tests(unittest.TestCase):
@@ -270,6 +271,16 @@ class S4Tests(unittest.TestCase):
         self.assertAlmostEqual(measured['leading_variance_fraction'],1.,places=5)
         self.assertEqual(measured['dimensions_for_90pct_variance'],1)
 
+    def test_tall_probe_covariance_spectrum_matches_direct_SVD(self):
+        torch.manual_seed(41)
+        x=torch.randn((2048,24))@torch.diag(torch.logspace(0,-3,24))
+        measured=feature_statistics(x)
+        singular=torch.linalg.svdvals(x-x.mean(0));probability=singular.square()/singular.square().sum()
+        expected=float(torch.exp(-(probability*probability.log()).sum()))
+        self.assertEqual(measured['spectrum_method'],'centered_FP64_covariance_eigh')
+        self.assertAlmostEqual(measured['centered_effective_rank'],expected,places=5)
+        np.testing.assert_allclose(measured['first_eight_variance_fractions'],probability[:8],rtol=2e-6,atol=1e-8)
+
     def test_training_matrix_count_includes_only_required_linear_backwards(self):
         for needs_input_gradient,expected in [(False,96),(True,144)]:
             model=torch.nn.Linear(3,4,bias=False);counter=MatrixOperations(model)
@@ -304,6 +315,15 @@ class S4Tests(unittest.TestCase):
         costs=[[10,20,30],[12,25,35]]
         self.assertEqual(nearest_prefix(costs,70),(2,67))
         self.assertEqual(nearest_prefix(costs,110),(3,132))
+
+    def test_allocation_memory_limit_includes_worker_cgroup_and_unlimited_case(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            for name,value in [('memory.current','5000'),('memory.max','10000'),('memory.peak','6500')]:
+                (root/name).write_text(value+'\n')
+            self.assertEqual(host_memory(root),{'current_bytes':5000,'limit_bytes':10000,'peak_bytes':6500})
+            (root/'memory.max').write_text('max\n')
+            self.assertNotIn('limit_bytes',host_memory(root))
 
     def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
         with tempfile.TemporaryDirectory() as temporary:

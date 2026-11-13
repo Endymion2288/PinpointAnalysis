@@ -35,11 +35,19 @@ def feature_statistics(x):
     x=x.detach().float()
     centered=x-x.mean(0,keepdim=True)
     std=centered.square().mean(0).sqrt()
-    singular=torch.linalg.svdvals(centered)
-    eigen=singular.square()
+    method='centered_SVD'
+    if x.device.type=='cpu' and len(x)>4*x.shape[1]:
+        # Tall frozen-probe matrices need the spectrum, not singular vectors.
+        # FP64 covariance avoids squaring FP32 roundoff in weak directions.
+        z=centered.double()
+        eigen=torch.linalg.eigvalsh(z.T@z).clamp_min(0).flip(0)
+        method='centered_FP64_covariance_eigh'
+    else:
+        singular=torch.linalg.svdvals(centered)
+        eigen=singular.square()
     probability=eigen/eigen.sum().clamp_min(1e-30)
     rank=float(torch.exp(-(probability*probability.clamp_min(1e-30).log()).sum())) if eigen.sum()>0 else 0.
-    return {'event_count':len(x),'feature_dim':x.shape[-1],
+    return {'event_count':len(x),'feature_dim':x.shape[-1],'spectrum_method':method,
         'RMS':float(x.square().mean().sqrt()),'between_event_RMS':float(std.square().mean().sqrt()),
         'dimension_std_median':float(std.median()),'fraction_dimensions_std_below_1e_minus5':float((std<1e-5).float().mean()),
         'centered_effective_rank':rank,
