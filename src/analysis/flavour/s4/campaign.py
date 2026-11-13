@@ -11,8 +11,24 @@ import time
 from analysis.flavour.inventory import write_json
 
 
-def host_memory(directory=Path('/sys/fs/cgroup')):
+def memory_scope(root=Path('/sys/fs/cgroup'), membership=Path('/proc/self/cgroup')):
+    """Find the effective allocation limit under host-mounted cgroup v2."""
+    if membership.exists():
+        path=next((line.split(':',2)[2] for line in membership.read_text().splitlines()
+            if line.startswith('0::')),None)
+        if path is not None:
+            directory=root/path.lstrip('/')
+            for scope in [directory,*directory.parents]:
+                if not scope.is_relative_to(root):break
+                limit=scope/'memory.max'
+                if limit.exists() and limit.read_text().strip().isdigit():return scope
+    # Container cgroup namespaces can expose the allocation directly at root.
+    return root
+
+
+def host_memory(directory=None):
     """Read the allocation's cgroup limit, including dataloader subprocesses."""
+    directory=directory if directory is not None else memory_scope()
     fields={}
     for name,key in [('memory.current','current_bytes'),('memory.max','limit_bytes'),('memory.peak','peak_bytes')]:
         path=directory/name

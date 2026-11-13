@@ -6,9 +6,26 @@ import tempfile
 import unittest
 
 from analysis.flavour.s4.accept import fit_record, inventory_checks, terminal_allocations, training_health
+from analysis.flavour.s4.campaign import host_memory, memory_scope
 
 
 class S4AcceptanceTests(unittest.TestCase):
+    def test_host_cgroup_selects_nearest_finite_allocation_ancestor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'cgroups';leaf = root / 'condor/job.scope'
+            leaf.mkdir(parents=True)
+            membership = Path(temporary) / 'membership';membership.write_text('0::/condor/job.scope\n')
+            (leaf / 'memory.max').write_text('max')
+            (leaf.parent / 'memory.max').write_text('16000')
+            (leaf.parent / 'memory.current').write_text('12000')
+            (leaf.parent / 'memory.peak').write_text('14000')
+            scope = memory_scope(root, membership)
+            self.assertEqual(scope, leaf.parent)
+            self.assertEqual(host_memory(scope), {'limit_bytes': 16000, 'current_bytes': 12000, 'peak_bytes': 14000})
+            membership.write_text('0::/host/path/absent/in/container\n')
+            (root / 'memory.max').write_text('60000')
+            self.assertEqual(memory_scope(root, membership), root)
+
     def health(self):
         return {'step': 1, 'healthy': True, 'informative_nodes': 7,
             'gradient_squared_norms': {'input': 1.},
