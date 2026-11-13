@@ -48,11 +48,55 @@ def pilot_plots(root,campaign,output):
     table.to_csv(output/'pretraining_measured.csv',index=False)
 
 
+def functional_plots(report_path, output):
+    """Plot fixed-weight interventions using their own FP32 baseline."""
+    report = json.loads(report_path.read_text())
+    experiments = report['experiments']
+    branches = ['global_latent', 'all_regional', 'all_local', 'response_summary', 'all_spatial']
+    names = ['Global latents', 'Regional branches', 'Local branches', 'Response summary', 'All spatial branches']
+    output.mkdir(parents=True, exist_ok=True)
+    records = []
+    for metric, label in [('NLL', 'Change in negative log-likelihood'), ('macro_AP', 'Change in macro average precision')]:
+        fig, axes = plt.subplots((len(experiments) + 1)//2, 2, figsize=(12, 3.5*((len(experiments)+1)//2)),
+            constrained_layout=True, squeeze=False)
+        for ax, item in zip(axes.flat, experiments):
+            settings = item['checkpoint_config']
+            for domain, offset, color in [('raw', -.12, 'C0'), ('common_support', .12, 'C1')]:
+                for i, branch in enumerate(branches):
+                    point = item['branch_permutation'][branch][domain][metric]
+                    lo, hi = point['CI95']
+                    ax.hlines(i + offset, lo, hi, color=color, linewidth=1.5)
+                    ax.plot(point['delta'], i + offset, '.', color=color,
+                        label=domain.replace('_', ' ').title() if i == 0 else None)
+                    records.append({'experiment': item['experiment'], 'branch': branch, 'domain': domain,
+                        'metric': metric, 'delta': point['delta'], 'CI95_low': lo, 'CI95_high': hi})
+            ax.axvline(0, color='0.5', linewidth=.8)
+            ax.set(yticks=range(len(names)), yticklabels=names, xlabel=label,
+                title=f"{settings.get('initialization', 'scratch')} / {settings['label_budget']:,} labels")
+            ax.invert_yaxis()
+        for ax in axes.flat[len(experiments):]:
+            ax.set_visible(False)
+        axes.flat[0].legend(fontsize=8)
+        fig.suptitle('Fixed-checkpoint path reliance: complete 10k validation\n'
+            'Changed minus original CPU FP32; mean of three presence-preserving mappings; paired chunk 95% intervals', fontsize=10)
+        fig.savefig(output/f'functional_paths_{metric}.pdf')
+        fig.savefig(output/f'functional_paths_{metric}.png', dpi=170)
+        plt.close(fig)
+    pd.DataFrame(records).to_csv(output/'functional_paths.csv', index=False)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root',type=Path,required=True);parser.add_argument('--campaign',type=Path,required=True)
+    parser.add_argument('--root',type=Path);parser.add_argument('--campaign',type=Path)
+    parser.add_argument('--functional-report', type=Path)
     parser.add_argument('--output',type=Path,required=True)
-    args=parser.parse_args();pilot_plots(args.root,args.campaign,args.output)
+    args=parser.parse_args()
+    if args.functional_report:
+        functional_plots(args.functional_report,args.output)
+    elif args.root and args.campaign:
+        pilot_plots(args.root,args.campaign,args.output)
+    else:
+        parser.error('provide --functional-report, or both --root and --campaign')
 
 
 if __name__=='__main__':main()
