@@ -1,0 +1,101 @@
+"""Actual allocation durations, including readiness, failed and empty workers."""
+import argparse
+from datetime import datetime,timezone
+import json
+from pathlib import Path
+import re
+import subprocess
+
+from analysis.flavour.inventory import write_json
+
+
+def utc(value):
+    return datetime.fromisoformat(value.replace('Z','+00:00'))
+
+
+def refresh(root):
+    now=datetime.now(timezone.utc)
+    records=[]
+    snapshots=root/'audit'/'backends';snapshots.mkdir(parents=True,exist_ok=True)
+    for record_path in sorted((root/'logs').glob('submission_*.json')):
+        submission=json.loads(record_path.read_text())
+        if not submission.get('submitted'):continue
+        row={'name':submission['name'],'stage':submission['stage'],'backend':submission['backend']}
+        gpu=submission['stage'] not in {'data','assemble'}
+        if submission['backend']=='kubeflow':
+            response=subprocess.run(['kubectl','--request-timeout=30s','get','pods','-n','xcheng','-l',
+                'job-name='+submission['name'],'-o','json'],capture_output=True,text=True)
+            cache=snapshots/(submission['name']+'.pods.json')
+            if response.returncode:
+                if not cache.exists():
+                    records.append({**row,'status':'snapshot_unavailable','error':response.stderr});continue
+                payload=json.loads(cache.read_text());row['cached_snapshot']=True
+            else:
+                payload=json.loads(response.stdout)
+                if payload['items']:write_json(cache,payload)
+                elif cache.exists():payload=json.loads(cache.read_text());row['cached_snapshot']=True
+            rows=[]
+            for pod in payload.get('items',[]):
+                status=pod.get('status',{})
+                start=status.get('startTime')
+                terminated=[]
+                gpu_start,gpu_end=None,None
+                for container in status.get('containerStatuses',[]):
+                    state=container.get('state',{})
+                    ended=state.get('terminated',{})
+                    running=state.get('running',{})
+                    if ended.get('finishedAt'):terminated.append(utc(ended['finishedAt']))
+                    if container['name']=='s4':
+                        gpu_start=ended.get('startedAt',running.get('startedAt',start))
+                        gpu_end=ended.get('finishedAt')
+                duration=(utc(gpu_end)-utc(gpu_start)).total_seconds() if gpu_start and gpu_end else (now-utc(gpu_start or start)).total_seconds() if (gpu_start or start) else 0.
+                rows.append({'pod':pod['metadata']['name'],'phase':status.get('phase'),
+                    'started_at':gpu_start or start,'finished_at':gpu_end,'allocation_seconds':max(0,duration),
+                    'flavor':submission['flavor'],'GPU_resources':submission['pod_admission']['spec']['containers'][0]['resources'],
+                    'gpu_container_terminal':bool(gpu_end)})
+            row.update(pods=rows,allocation_seconds=sum(r['allocation_seconds'] for r in rows),
+                status='terminal' if rows and all(r['gpu_container_terminal'] for r in rows) else 'active_or_pending')
+        else:
+            match=re.search(r'cluster (\d+)',submission.get('response',''))
+            if not match:records.append({**row,'status':'missing_cluster_id'});continue
+            cluster=match.group(1);schedd=submission['schedd']
+            queue=subprocess.run(['condor_q','-name',schedd,cluster,'-json'],capture_output=True,text=True)
+            history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,'-json'],
+                capture_output=True,text=True,timeout=55)
+            ads={}
+            if history.returncode==0:
+                for ad in json.loads(history.stdout):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+            if queue.returncode==0:
+                for ad in json.loads(queue.stdout):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+            cache=snapshots/(submission['name']+'.condor.json');write_json(cache,list(ads.values()))
+            seconds=0.;details=[]
+            for (_,proc),ad in ads.items():
+                duration=ad.get('RemoteWallClockTime',0.)
+                if ad.get('JobStatus')==2:
+                    elapsed=now.timestamp()-ad.get('JobCurrentStartDate',ad.get('JobStartDate',now.timestamp()))
+                    duration=max(duration,elapsed)
+                seconds+=duration
+                details.append({'proc':proc,'status':ad.get('JobStatus'),'allocation_seconds':duration,
+                    'exit_code':ad.get('ExitCode'),'request_cpus':ad.get('RequestCpus'),
+                    'GPU_name':ad.get('GPUs_DeviceName'),'remote_host':ad.get('LastRemoteHost',ad.get('RemoteHost'))})
+            row.update(cluster=cluster,schedd=schedd,jobs=details,allocation_seconds=seconds,
+                status='terminal' if details and all(r['status'] in {3,4} for r in details) else 'active_or_missing_history')
+        row['device_hours']=row.get('allocation_seconds',0.)/3600 if gpu else 0.
+        row['CPU_allocation_hours']=sum(r.get('allocation_seconds',0)*r.get('request_cpus',0)/3600 for r in row.get('jobs',[]))
+        records.append(row)
+    device_hours=sum(r.get('device_hours',0) for r in records)
+    result={'utc':now.isoformat(),'allocations':records,'organization_device_hours':device_hours,
+        'cap_device_hours':60,'remaining_device_hours':60-device_hours,
+        'CPU_allocation_hours':sum(r.get('CPU_allocation_hours',0) for r in records),
+        'scope':'actual durations by allocation; MIG and full GPUs kept distinct, no equivalent-FLOPs conversion; all readiness/failure time included'}
+    write_json(root/'campaign_accounting.json',result)
+    return result
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--root',type=Path,required=True)
+    result=refresh(parser.parse_args().root)
+    print(json.dumps({k:v for k,v in result.items() if k!='allocations'}))
+
+
+if __name__=='__main__':main()

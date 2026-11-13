@@ -73,12 +73,26 @@ def internal_health(model,output,batch,step):
 @torch.no_grad()
 def evaluate(model,loader,device,bf16,config):
     model.eval()
-    rows,features,losses,counts,teacher,covered=[],[],[],[],[],[]
+    rows,features,losses,counts,teacher,covered,permutation=[],[],[],[],[],[],[]
     for batch in loader:
         batch=to_device(batch,device)
         with torch.autocast(device_type=device.type,dtype=torch.bfloat16,enabled=bf16):
             output=model(batch);loss,parts=objective_loss(output,batch,config)
         losses.append({key:float(value) for key,value in parts.items()})
+        latents=output['features']['global_tokens']
+        # A cyclic event permutation preserves decoder geometry and the latent
+        # marginal but breaks event conditioning. Batch-one rows are excluded.
+        if len(latents)>1:
+            with torch.autocast(device_type=device.type,dtype=torch.bfloat16,enabled=bf16):
+                shuffled=model.decoder(batch['query'],latents.roll(1,0))
+            exact=output['reconstruction'][...,0].float()
+            changed=shuffled[...,0].float()
+            truth=batch['reconstruction'][...,0]
+            for level in range(3):
+                selected=batch['query_level']==level
+                difference=(torch.nn.functional.binary_cross_entropy_with_logits(changed[selected],truth[selected],reduction='none')
+                    -torch.nn.functional.binary_cross_entropy_with_logits(exact[selected],truth[selected],reduction='none'))
+                permutation.append({'level':level,'queries':int(selected.sum()),'delta_BCE':float(difference.mean())})
         features.append(model.pool_global(output['features']).cpu())
         if 'teacher_projection' in output:teacher.append(output['teacher_projection'].cpu())
         prediction=output['reconstruction'].float().cpu().numpy()
@@ -104,6 +118,7 @@ def evaluate(model,loader,device,bf16,config):
                 'probability_std':float(p.std()) if len(p) else None,
                 'predicted_positive_fraction_at_half':float((p>=.5).mean()) if len(p) else None,
                 'BCE':float(np.mean(np.logaddexp(0,logits)-y*logits)) if len(y) else None,
+                'constant_prevalence_BCE':float(-(y.mean()*np.log(max(y.mean(),1e-12))+(1-y.mean())*np.log(max(1-y.mean(),1e-12)))) if len(y) else None,
                 'count_MAE_positive':float(np.abs(selected[y>0,7]-selected[y>0,3]).mean()) if y.sum() else None}
     data=np.concatenate(counts).sum(0)
     report={'loss':{k:float(np.mean([r[k] for r in losses])) for k in losses[0]},'queries':measured,
@@ -112,6 +127,8 @@ def evaluate(model,loader,device,bf16,config):
         'empirical_hidden_fraction':[float(a[1]/max(1,a[0])) for a in data],
         'scope':'original train partition inner reconstruction-probe; fixed seeds; mixture query risk, no downstream validation/test'}
     if teacher:report['teacher_features']=feature_statistics(torch.cat(teacher))
+    report['event_permutation_delta_BCE']={str(level):float(np.average([r['delta_BCE'] for r in permutation if r['level']==level],
+        weights=[r['queries'] for r in permutation if r['level']==level])) for level in range(3)} if permutation else {}
     if covered:
         unique=np.concatenate(covered).sum(0)
         report['positive_unique_queries_by_native_coarse_bar']=unique.tolist()

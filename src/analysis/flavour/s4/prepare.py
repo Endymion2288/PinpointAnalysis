@@ -154,24 +154,26 @@ def finalize(args):
                 meta[column] = np.diff(obs[name].combine_chunks().field(field).offsets.to_numpy())
             meta['shard'] = i
             frames.append(meta)
-        sidecar = pq.read_table(args.root / 'rel' / f'{i:03d}.parquet').to_pylist()
+        sidecar = pq.read_table(args.root / 'rel' / f'{i:03d}.parquet')
         bars = obs['bar'].combine_chunks()
-        max_error, matched = 0., 0
-        for row in sidecar:
-            j = row['source_row']
-            value = bars[j].as_py()
-            ids = np.asarray(value['channel_id'], dtype='uint64')
-            actual = np.asarray(value['edep_proxy_MeV'], dtype='float64')
-            expected = np.asarray(row['energy_MeV'])
-            if not np.array_equal(ids, row['channel_id']):
-                raise ValueError('Rel/hardware bar channel mismatch')
-            difference = np.abs(actual-expected)/np.maximum(np.abs(actual), 1e-6)
-            max_error = max(max_error, float(difference.max(initial=0)))
-            if not np.isfinite(np.asarray(row['fractions'])).all() or not all(row['valid']):
-                raise ValueError('invalid bar contribution targets')
-            matched += len(ids)
+        source_rows=sidecar['source_row'].combine_chunks()
+        hardware_ids=bars.field('channel_id').take(source_rows)
+        target_ids=sidecar['channel_id'].combine_chunks()
+        if not np.array_equal(hardware_ids.offsets.to_numpy(),target_ids.offsets.to_numpy()) or not np.array_equal(
+            hardware_ids.flatten().to_numpy(),target_ids.flatten().to_numpy()):
+            raise ValueError('Rel/hardware bar channel mismatch')
+        actual=bars.field('edep_proxy_MeV').take(source_rows).flatten().to_numpy().astype('float64')
+        expected=sidecar['energy_MeV'].combine_chunks().flatten().to_numpy().astype('float64')
+        difference=np.abs(actual-expected)/np.maximum(np.abs(actual),1e-6)
+        max_error=float(difference.max(initial=0));matched=len(actual)
+        fractions=sidecar['fractions'].combine_chunks().flatten().flatten().to_numpy().reshape(-1,4)
+        valid=sidecar['valid'].combine_chunks().flatten().to_numpy(zero_copy_only=False)
+        if not valid.all() or not np.isfinite(fractions).all() or not np.allclose(fractions.sum(-1),1,atol=2e-6):
+            raise ValueError('invalid bar contribution targets')
         report = json.loads((args.root/'rel'/f'{i:03d}.json').read_text())
         audit.append({**report, 'matched_channels': matched, 'maximum_relative_energy_error': max_error})
+        write_json(args.root/'assembly_progress.json',{'shards_checked':i+1,'shards_total':40,
+            'matched_channels':sum(x['matched_channels'] for x in audit)})
     combined = pd.concat(frames, ignore_index=True)
     combined.to_parquet(args.root / 'catalog.parquet', index=False, compression=COMPRESSION)
     checks = {'100k_train': int(combined.split.eq('train').sum()) == 100000,

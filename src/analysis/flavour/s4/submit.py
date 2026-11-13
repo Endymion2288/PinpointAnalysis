@@ -26,12 +26,17 @@ def choose_schedd():
     for *_, name in sorted(candidates):
         policy = subprocess.run(['condor_config_val', '-name', name, '-schedd', 'SUBMIT_REQUIREMENT_NoEos'],
             capture_output=True, text=True)
-        if policy.returncode or policy.stdout.strip().lower() != 'true':
+        # NoEos schedds accept a small AFS submit directory and /dev/null for
+        # scheduler-managed streams. The worker redirects its real logs to EOS.
+        # Exercise their published submission policy; do not disable it.
+        routed=(policy.returncode==0 and 'regexp("^/eos", Iwd)' in policy.stdout)
+        if policy.returncode or (policy.stdout.strip().lower() != 'true' and not routed):
             checks.append({'schedd': name, 'EOS_policy': policy.stdout.strip(), 'compatible': False})
             continue
         ping = subprocess.run(['condor_ping', '-type', 'SCHEDD', '-name', name, '-table', 'WRITE'],
             capture_output=True, text=True)
-        checks.append({'schedd': name, 'EOS_policy': policy.stdout.strip(), 'WRITE': ping.stdout})
+        checks.append({'schedd': name, 'EOS_policy': policy.stdout.strip(), 'WRITE': ping.stdout,
+            'layout':'AFS_small_wrapper_and_no_scheduler_streams;worker_logs_direct_EOS' if routed else 'direct_EOS_supported'})
         if not ping.returncode and 'ALLOW' in ping.stdout:
             return name, snapshot, checks
     raise RuntimeError('no compatible WRITE-authorized schedd')
@@ -60,7 +65,8 @@ def submit(args):
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': args.stage, 'name': name,
         'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,
-        'code_commit': command(['git','rev-parse','HEAD']).strip(), 'submitted': False}
+        'code_commit': command(['git','rev-parse','HEAD']).strip(),
+        'code_diff':command(['git','diff','--','src/analysis/flavour/s4']), 'submitted': False}
     record = root/'logs'/f'submission_{name}.json'
     if record.exists() and json.loads(record.read_text()).get('submitted'):
         raise ValueError('submission name already used')
@@ -69,16 +75,20 @@ def submit(args):
         directory = Path.home()/'condor/Pinpoint/flavour_s4'/name
         directory.mkdir(parents=True, exist_ok=True)
         wrapper = directory/'run.sh'
-        wrapper.write_text('\n'.join(script+['exec python -m "$@"'])+'\n')
+        # All substantive stdout/stderr stays on EOS, while scheduler policy
+        # sees only AFS submit metadata and empty /dev/null streams.
+        redirect='exec > '+shlex.quote(str(root/'logs'/f'{name}.worker.'))+'"${PINPOINT_JOB_ID:-$$}".log 2>&1'
+        wrapper.write_text('\n'.join([script[0],redirect,*script[1:],'exec python -m "$@"'])+'\n')
         wrapper.chmod(0o755)
         arguments_text = ' '.join(a if a == '$(task)' else shlex.quote(a) for a in arguments)
         gpu = not cpu_only
         text = f'''universe = vanilla
 executable = {wrapper}
 arguments = {arguments_text}
-output = {root}/logs/{name}.$(ClusterId).$(Process).out
-error = {root}/logs/{name}.$(ClusterId).$(Process).err
-log = {root}/logs/{name}.$(ClusterId).log
+initialdir = {directory}
+environment = "PINPOINT_JOB_ID=$(ClusterId).$(Process)"
+output = /dev/null
+error = /dev/null
 request_cpus = {max(4,args.concurrency*3) if gpu else 4}
 request_memory = {max(12,args.concurrency*5) if gpu else 12}GB
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
