@@ -54,12 +54,19 @@ def refresh(root):
                 if status.get('phase') in {'Succeeded','Failed'} and terminated:
                     gpu_end=max(terminated).isoformat()
                 stopped=root/'logs'/f'{submission["name"]}_allocation_end.json'
-                if stopped.exists():gpu_end=json.loads(stopped.read_text())['allocation_end_utc']
+                allocation_kind='observed_pod_duration'
+                if stopped.exists():
+                    ended=json.loads(stopped.read_text());gpu_end=ended['allocation_end_utc']
+                    allocation_kind=ended.get('estimate_kind','conservative_upper_bound')
                 duration=(utc(gpu_end)-utc(gpu_start)).total_seconds() if gpu_start and gpu_end else (now-utc(gpu_start or start)).total_seconds() if (gpu_start or start) else 0.
+                requested=next(c for c in submission['pod_admission']['spec']['containers'] if c['name']=='s4')['resources']
+                cpu=str(requested.get('requests',{}).get('cpu',0))
+                cores=float(cpu[:-1])/1000 if cpu.endswith('m') else float(cpu)
                 rows.append({'pod':pod['metadata']['name'],'phase':status.get('phase'),
                     'started_at':gpu_start or start,'finished_at':gpu_end,'allocation_seconds':max(0,duration),
                     'flavor':submission['flavor'],'GPU_resources':submission['pod_admission']['spec']['containers'][0]['resources'],
-                    'gpu_container_terminal':bool(gpu_end)})
+                    'gpu_container_terminal':bool(gpu_end),'allocation_estimate_kind':allocation_kind,
+                    'training_container_requested_CPU_cores':cores})
             row.update(pods=rows,allocation_seconds=sum(r['allocation_seconds'] for r in rows),
                 status='terminal' if rows and all(r['gpu_container_terminal'] for r in rows) else 'active_or_pending')
         else:
@@ -96,12 +103,14 @@ def refresh(root):
             row.update(cluster=cluster,schedd=schedd,jobs=details,allocation_seconds=seconds,
                 status='terminal' if details and all(r['status'] in {3,4} for r in details) else 'active_or_missing_history')
         row['device_hours']=row.get('allocation_seconds',0.)/3600 if gpu else 0.
-        row['CPU_allocation_hours']=sum(r.get('allocation_seconds',0)*r.get('request_cpus',0)/3600 for r in row.get('jobs',[]))
+        row['CPU_allocation_hours']=(sum(r.get('allocation_seconds',0)*r.get('request_cpus',0)/3600 for r in row.get('jobs',[]))
+            if submission['backend']=='condor' else sum(r['allocation_seconds']*r['training_container_requested_CPU_cores']/3600 for r in row.get('pods',[])))
         records.append(row)
     device_hours=sum(r.get('device_hours',0) for r in records)
     result={'utc':now.isoformat(),'allocations':records,'organization_device_hours':device_hours,
         'cap_device_hours':60,'remaining_device_hours':60-device_hours,
         'CPU_allocation_hours':sum(r.get('CPU_allocation_hours',0) for r in records),
+        'CPU_scope':'Condor requested CPUs plus Kubeflow training-container CPU requests; platform sidecars excluded',
         'scope':'actual durations by allocation; MIG and full GPUs kept distinct, no equivalent-FLOPs conversion; all readiness/failure time included'}
     write_json(root/'campaign_accounting.json',result)
     return result
