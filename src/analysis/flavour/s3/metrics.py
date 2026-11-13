@@ -126,6 +126,7 @@ def interval_report(observed, samples, per_seed=None):
                 'CI95': ci, 'valid_replicates': int(finite.sum())}
         if per_seed is not None:
             item['per_seed_deltas'] = [float(v) if np.isfinite(v) else None for v in per_seed[:, i]]
-            item['training_seed_sample_SD'] = float(np.std(per_seed[:, i], ddof=1)) if len(per_seed) > 1 else None
+            spread = float(np.std(per_seed[:, i], ddof=1)) if len(per_seed) > 1 else np.nan
+            item['training_seed_sample_SD'] = spread if np.isfinite(spread) else None
         result[name] = item
     return result

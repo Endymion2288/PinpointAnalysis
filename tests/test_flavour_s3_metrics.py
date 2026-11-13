@@ -1,4 +1,5 @@
 """Statistical checks against independent sklearn and literal block replicas."""
+import json
 import unittest
 
 import numpy as np
@@ -73,6 +74,13 @@ class FourClassStatisticsTest(unittest.TestCase):
         for value in report.values():
             self.assertEqual(value['CI95'], [0., 0.])
             self.assertEqual(value['training_seed_sample_SD'], 0.)
+        undefined = cache.compute(weight)[0]
+        report = interval_report(undefined, np.tile(undefined, (10, 1)), np.tile(undefined, (3, 1)))
+        self.assertEqual(report['class_3_AP']['valid_replicates'], 0)
+        self.assertIsNone(report['class_3_AP']['training_seed_sample_SD'])
+        self.assertEqual(report['class_3_AP']['per_seed_deltas'], [None, None, None])
+        # Missing classes in a weighted domain must produce valid JSON nulls.
+        json.dumps(report, allow_nan=False)
 
     def test_seed_mean_uses_shared_physical_bootstrap(self):
         rng = np.random.default_rng(832)
