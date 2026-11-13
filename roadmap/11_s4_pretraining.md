@@ -1,6 +1,6 @@
 # S4：可验证的预训练与标签效率
 
-状态：100k corpus、三个独立 seeds 的完整 MAE3、MAE continuation、Scratch1k/10k三seeds和监督seed42三预算完成；下游矩阵、Rel/EMA与等计算监督控制执行中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
+状态：100k corpus、三个独立seeds的完整MAE3、Scratch三预算×三seeds、MAE3 seed42三预算及完整10k路径诊断完成；14个分类模型和1733次训练监测通过统一读回。独立MAE下游seeds、Rel/EMA与等计算监督控制执行中。训练输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。S3 revision 2 的 [最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md) 是直接监督依据，旧 S3 故障模型不参与方法比较。
 
 ## 1. 研究问题与固定条件
 
@@ -55,4 +55,6 @@ S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译
 
 验收除结果文件完整外，要求 informative encoder 梯度、非饱和 head、非恒定预测、SSL 的 feature 方差和实际拟合证据；若出现明显异常，先定位架构/尺度/采样/优化并修复重训。最终记录所有 allocations 终态和资源成本；阶段报告与代码共同提交。
 
-配对比较冻结于 `configs/s4_pairs.json`；新增语义结果、τ 子道统计和监督预算规划见 [stage106](../workbook/2026-11-13_stage106_s4_paired_semantics_and_budget.md)。固定512-event事件置换与几何先验的完整结果见[stage114](../workbook/2026-11-13_stage114_s4_semantic_controls_and_readback.md)：新Rel routes利用事件信息、交叉熵低于常量先验，尚未超过同probe拟合的几何先验；独立下游结果仍待。当前不支持将完整 MAE 重建成功解释为分类收益。
+配对比较冻结于 `configs/s4_pairs.json`；新增语义结果、τ 子道统计和监督预算规划见 [stage106](../workbook/2026-11-13_stage106_s4_paired_semantics_and_budget.md)。完整channel Rel的512-event同查询诊断已超过几何均值先验，见[stage119](../workbook/2026-11-13_stage119_s4_full_rel_event_information.md)及`results/s4_rel_semantics.json`；该结果与分类收益分别评价。
+
+完整路径及v6结果见[stage129](../workbook/2026-11-13_stage129_s4_global_path_and_100k_validation.md)。MAE3 seed42在1k/10k下global置换的NLL增量为0.051899/0.035174，95%区间均为正；local/regional仍有可测作用。100k的macro AP配对增量0.003371，区间跨零；common-support tau AP增量也未确认，不能把低标签收益或global利用直接推广为kinematics-independent tau改进。全部比较仍为固定validation，calibration/test冻结，矩阵未完成。
