@@ -25,6 +25,7 @@ from analysis.flavour.s4.query_baseline import QueryOnly
 from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operations
 from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix
 from analysis.flavour.s4.campaign import host_memory
+from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
 
 
 class S4Tests(unittest.TestCase):
@@ -164,6 +165,32 @@ class S4Tests(unittest.TestCase):
         loss.backward()
         self.assertGreater(float(model.encoder.input[0].weight.grad.square().sum()),0.)
         self.assertGreater(float(model.encoder.latent_read.q.weight.grad.square().sum()),0.)
+
+    def test_semantic_diagnostic_preserves_queries_and_reports_geometry_oracle(self):
+        config={**self.config,'objective':'mae_rel'}
+        model=PretrainingModel(config).eval()
+        batch=collate_pretrain([self.item(i*19) for i in range(4)])
+        batch['rel_query']=batch['query'][:,:8]
+        batch['rel_valid']=torch.ones((4,8),dtype=torch.bool)
+        batch['rel_target']=torch.rand((4,8,4)).softmax(-1)
+        metadata=pd.DataFrame({'run':np.arange(4)+10081,'chunk':np.arange(4),'label':np.arange(4)})
+        class FakeData:
+            def __init__(self,*args,**kwargs):
+                self.metadata=metadata;self.native=SimpleNamespace(close=lambda:None)
+            def __len__(self):return 4
+            def __getitem__(self,i):return i
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);directory=root/'experiments/test';directory.mkdir(parents=True)
+            (directory/'manifest.json').write_text(json.dumps({'config':config}))
+            torch.save({'model':model.state_dict(),'epoch':1},directory/'best.pt')
+            with patch('analysis.flavour.s4.rel_diagnostic.PretrainDataset',FakeData),patch(
+                'analysis.flavour.s4.rel_diagnostic.DataLoader',return_value=[batch]):
+                measured=inspect_bar_semantics(root,'test',events=4,replicates=4)
+            self.assertEqual(measured['valid_channels'],32)
+            self.assertLessEqual(measured['cross_entropy']['oracle_channel_geometry'],
+                measured['cross_entropy']['oracle_constant']+1e-6)
+            for result in measured['paired_contrasts'].values():
+                self.assertTrue(np.isfinite([result['delta'],*result['CI95']]).all())
 
     def test_kept_bar_route_backpropagates_with_global_features_detached(self):
         items=[]

@@ -21,7 +21,7 @@ def refresh(root):
         submission=json.loads(record_path.read_text())
         if not submission.get('submitted'):continue
         row={'name':submission['name'],'stage':submission['stage'],'backend':submission['backend']}
-        gpu=submission['stage'] not in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job'}
+        gpu=submission['stage'] not in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic'}
         if submission['backend']=='kubeflow':
             response=subprocess.run(['kubectl','--request-timeout=30s','get','pods','-n','xcheng','-l',
                 'job-name='+submission['name'],'-o','json'],capture_output=True,text=True)

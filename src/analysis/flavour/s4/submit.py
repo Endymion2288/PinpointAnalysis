@@ -97,12 +97,12 @@ def submit(args):
             payload=json.dumps(specification,indent=2)+'\n'
         frozen.write_text(payload)
         args.campaign=frozen
-    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job'}
+    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
     elif args.stage == 'assemble':
         arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
-    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan','validation_job'}:
+    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic'}:
         if len(args.tasks)!=1:raise ValueError('one CPU diagnostic task per allocation')
         arguments=['analysis.flavour.s4.'+args.stage,'--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
     else:
@@ -153,7 +153,7 @@ environment = "PINPOINT_JOB_ID=$(ClusterId).$(Process)"
 output = /dev/null
 error = /dev/null
 request_cpus = {gpu_cpus if gpu else cpu_cpus}
-request_memory = {max(12000,args.concurrency*8000) if gpu else 12000}
+request_memory = {max(12000,args.concurrency*8000) if gpu else (3000 if args.stage=='validation_job' else 12000)}
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
 requirements = (OpSysAndVer == "AlmaLinux9")
 +JobFlavour = "{'workday' if gpu or args.stage in {'budget_replay','matched_plan'} else 'microcentury'}"
@@ -226,7 +226,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','pilot','pretrain','train','probes','worker','campaign'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','rel_diagnostic','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)

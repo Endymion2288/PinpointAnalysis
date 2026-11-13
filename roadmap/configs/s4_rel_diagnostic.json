@@ -1,0 +1,17 @@
+{
+  "stage": "S4",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_rel_geometry_event_diagnostic_s42",
+      "program": "rel_diagnostic",
+      "checkpoints": [
+        "s4p2_mae_barrel_m75_s42",
+        "s4p5_barrel_local_s42",
+        "s4p6_barrel_channels_s42"
+      ],
+      "probe_events": 512,
+      "bootstrap": 400
+    }
+  ]
+}
