@@ -144,6 +144,7 @@ def submit(args):
         arguments_text = ' '.join(a if a == '$(task)' else shlex.quote(a) for a in arguments)
         gpu = not cpu_only
         gpu_cpus=max(4,args.concurrency*(2 if prototype_pool else 3))
+        cpu_cpus=1 if args.stage=='validation_job' else 4
         text = f'''universe = vanilla
 executable = {wrapper}
 arguments = {arguments_text}
@@ -151,7 +152,7 @@ initialdir = {directory}
 environment = "PINPOINT_JOB_ID=$(ClusterId).$(Process)"
 output = /dev/null
 error = /dev/null
-request_cpus = {gpu_cpus if gpu else 4}
+request_cpus = {gpu_cpus if gpu else cpu_cpus}
 request_memory = {max(12000,args.concurrency*8000) if gpu else 12000}
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
 requirements = (OpSysAndVer == "AlmaLinux9")

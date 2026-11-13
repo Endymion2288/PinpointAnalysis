@@ -483,6 +483,42 @@
       "b": "s4_frozen_mae_barrel_channels5_n100000_s42__global",
       "question": "same parent continuation, kept per-channel bar Rel frozen increment",
       "group": "Rel_control"
+    },
+    {
+      "a": "s4_scratch_n1000_s42",
+      "b": "s4_supervised_matched_n1000_s42",
+      "question": "matched total declared matrix compute: continued supervision versus scratch",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_mae3_n1000_s42",
+      "b": "s4_supervised_matched_n1000_s42",
+      "question": "matched total declared matrix compute: continued supervision versus mae3",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_scratch_n10000_s42",
+      "b": "s4_supervised_matched_n10000_s42",
+      "question": "matched total declared matrix compute: continued supervision versus scratch",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_mae3_n10000_s42",
+      "b": "s4_supervised_matched_n10000_s42",
+      "question": "matched total declared matrix compute: continued supervision versus mae3",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_scratch_n100000_s42",
+      "b": "s4_supervised_matched_n100000_s42",
+      "question": "matched total declared matrix compute: continued supervision versus scratch",
+      "group": "matched_compute"
+    },
+    {
+      "a": "s4_mae3_n100000_s42",
+      "b": "s4_supervised_matched_n100000_s42",
+      "question": "matched total declared matrix compute: continued supervision versus mae3",
+      "group": "matched_compute"
     }
   ],
   "seed_mean_comparisons": [
