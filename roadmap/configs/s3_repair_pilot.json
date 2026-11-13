@@ -10,7 +10,7 @@
       "seed": 42,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -49,13 +49,16 @@
       "region_blocks": 32,
       "region_queries": 2,
       "readout_skip": false,
-      "health_every_steps": 100
+      "health_every_steps": 100,
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 42,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -94,13 +97,16 @@
       "region_blocks": 32,
       "region_queries": 2,
       "readout_skip": true,
-      "health_every_steps": 100
+      "health_every_steps": 100,
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 42,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -139,9 +145,13 @@
       "region_blocks": 32,
       "region_queries": 2,
       "readout_skip": false,
-      "health_every_steps": 100
+      "health_every_steps": 100,
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     }
   ],
   "training_probe_only": true,
-  "calibration_test_used": false
+  "calibration_test_used": false,
+  "execution_revision": "compiled_local2048_v2_hooks_outside_compiled_features; one worker; frozen before full validation"
 }

@@ -1,27 +1,27 @@
 status: architecture_repair_in_progress
-stage: S3
-results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12
+stage: S3_revision2
+results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13
 source_data: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100
-screen: roadmap/configs/s3_screen.json
-comparisons: roadmap/configs/s3_pairs.json
-acceptance: roadmap/09_s3_operations.md
+screen: roadmap/configs/s3_repair_screen.json
+comparisons: roadmap/configs/s3_repair_pairs.json
+acceptance: roadmap/10_s3_repair.md
 primary_metrics: [four_class_macro_AP, four_class_NLL]
 required_metrics: [macro_F1, balanced_accuracy, macro_AUROC, Brier, class_AP, class_AUROC, class_precision, class_recall, class_F1, confusion_matrix, tau_working_points]
 confirmation_seeds: [17, 42, 2026]
 maximum_organization_GPU_hours: 120
 calibration_test_used: false
 S4_S6_executed: false
-confirmation: roadmap/configs/s3_confirmation.json
-confirmation_comparisons: roadmap/configs/s3_confirmation_pairs.json
-final_summary: roadmap/results/s3_summary.json
-final_acceptance_report: workbook/2026-11-13_stage80_s3_final_acceptance.md
-scientific_report: workbook/2026-11-13_stage77_s3_scientific_analysis.md
-scientific_models: 25
-readback_checks_passed: 350
-strict_output_checks_passed: 19
-new_models_promoted: 0
-recommended_reference: S2_ParT_native_with_1mm_control
-organization_device_hours_upper_bound: 31.23826867780241
+confirmation: roadmap/configs/s3_repair_confirmation.json
+confirmation_comparisons: roadmap/configs/s3_repair_confirmation_pairs.json
+final_summary: roadmap/results/s3_repair_summary.json
+latest_report: workbook/2026-11-13_stage82_s3_repair_pilot_and_frozen_training.md
+scientific_models_planned: 20
+new_models_promoted: null
+recommended_reference: pending_healthy_retraining
+prior_S3_device_hours_upper_bound: 31.23826867780241
 revision2_contract: roadmap/10_s3_repair.md
 revision2_results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13
 legacy_method_conclusion_withdrawn: true
+legacy_diagnostic_results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12
+legacy_diagnostic_summary: roadmap/results/s3_summary.json
+internal_health_and_effective_learning_required: true

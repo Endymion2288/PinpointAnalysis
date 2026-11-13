@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import torch
+import pandas as pd
 
 from analysis.flavour.s2.train import run
 from analysis.flavour.s3.dataset import PlaneDataset, collate_planes
@@ -36,6 +37,22 @@ def main():
     gate = json.loads(gate_path.read_text())
     if not gate['gate_passed']:
         raise RuntimeError('real-train health/memorization pilot must pass before full fitting')
+    for key in ['architecture','dim','compression','module_queries','latents','readout_skip',
+                'compile_local','local_chunk_blocks','local_execution_version',
+                'pitch_mm','modalities','region_blocks','window_pixels']:
+        if gate['config'].get(key)!=config.get(key):
+            raise RuntimeError(f'pilot execution/architecture mismatch for {key}')
+    stress_dir = args.root / 'stress' / config['required_pilot']
+    stress = json.loads((stress_dir / 'summary.json').read_text())
+    stress_config = stress['model_configs'][0]
+    for key in ['architecture','dim','compression','readout_skip','compile_local','local_chunk_blocks',
+                'local_execution_version','pitch_mm','modalities','region_blocks','window_pixels']:
+        if stress_config.get(key)!=config.get(key):
+            raise RuntimeError(f'full-event stress execution/representation mismatch for {key}')
+    measured = pd.read_parquet(stress_dir / 'measurements.parquet')
+    active_backward = measured[measured['mode'].eq('backward') & measured.represented_nodes.gt(1)]
+    if not measured.finite.all() or len(active_backward) < 1 or not active_backward.input_gradient_squared_norm.gt(0).all():
+        raise RuntimeError('complete-event stress gradients/activations must pass before fitting')
     if args.device.startswith('cuda'):
         actual = torch.cuda.get_device_name()
         expected = campaign['hardware']['GPU']
@@ -46,7 +63,11 @@ def main():
         health_factory=TrainingHealth, optimizer_factory=optimizer_for,
         manifest_extra={'stage': 'S3_revision2', 'architecture_revision': 2,
                         'pilot_gate': str(gate_path), 'pilot_gate_passed': True,
+                        'full_event_stress_gate': str(stress_dir/'summary.json'),
                         'internal_health_required': True,
+                        'local_encoder_execution': 'torch.compile_dynamic' if config.get('compile_local') else 'eager',
+                        'local_chunk_blocks': config.get('local_chunk_blocks',256),
+                        'health_forward_execution': 'identical_training_encoder_hooks_outside_compiled_features',
                         **architecture_metadata(config),
                         'module_coordinate_relations': 'pixel_bar_z_tracker_station_metadata_not_physical_flight_distance',
                         'schema_whitelist': 'current_observation_18_features_Fourier_hardware_ID_counts_no_truth'})

@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--tasks', type=int, nargs='+', required=True)
     parser.add_argument('--concurrency', type=int, default=4)
     parser.add_argument('--training-module', default='analysis.flavour.s3.train')
+    parser.add_argument('--append-record', action='store_true')
     args = parser.parse_args()
     if args.concurrency < 1 or len(set(args.tasks)) != len(args.tasks):
         raise ValueError('positive concurrency and distinct task IDs required')
@@ -30,6 +31,13 @@ def main():
     evidence = {'job': args.name, 'pod': os.environ.get('HOSTNAME'),
                 'concurrency_limit': args.concurrency, 'processes': []}
     record = directory / f'parallel_{args.name}.json'
+    if args.append_record and record.exists():
+        previous = json.loads(record.read_text())
+        if any('finished_at' not in process for process in previous['processes']):
+            raise ValueError('cannot append while another supervisor has active processes')
+        if set(names) & {p['experiment'] for p in previous['processes']}:
+            raise ValueError('append wave must have different experiment names')
+        evidence['processes'] = previous['processes']
     queue = list(args.tasks)
     active = []
     while queue or active:

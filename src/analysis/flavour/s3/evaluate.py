@@ -18,6 +18,15 @@ from analysis.flavour.s3.metrics import MetricCache, NAMES, bootstrap_weights, i
 KEY = ['run', 'chunk', 'row']
 
 
+def factorial_specifications(specification):
+    if 'factorial_interactions' in specification:
+        return specification['factorial_interactions']
+    return [{'experiments': ['s3_f16_context_latent_s42_e4', 's3_f16_context_latent_1mm_s42_e4',
+                            's3_a4_context_latent_s42_e4', 's3_a4_context_latent_1mm_s42_e4'],
+             'coefficients': [1, -1, -1, 1],
+             'definition': '(fine_native-fine_1mm)-(4mm_native-4mm_1mm)'}]
+
+
 def align_frame(frame, reference):
     frame = frame.sort_values(KEY).reset_index(drop=True)
     if not frame[KEY + ['label']].equals(reference[KEY + ['label']]):
@@ -209,13 +218,13 @@ def run(args):
         pairs = [(p['a'], p['b']) for p in group['pairs']]
         coefficients = np.tile([-1., 1.], len(pairs)) / len(pairs)
         seed_means.append({**group, **contrast(names, coefficients, point, samples, block_summary, pairs)})
-    names = ['s3_f16_context_latent_s42_e4', 's3_f16_context_latent_1mm_s42_e4',
-             's3_a4_context_latent_s42_e4', 's3_a4_context_latent_1mm_s42_e4']
-    if all(n in point for n in names):
-        interactions.append({'experiments': names, 'definition': '(fine_native-fine_1mm)-(4mm_native-4mm_1mm)',
-                             **contrast(names, [1, -1, -1, 1], point, samples, block_summary)})
-    else:
-        pending.append({'type': 'factorial_interaction', 'experiments': names})
+    for factorial in factorial_specifications(pair_spec):
+        names = factorial['experiments']
+        if all(n in point for n in names):
+            interactions.append({**factorial,
+                **contrast(names, factorial['coefficients'], point, samples, block_summary)})
+        else:
+            pending.append({'type': 'factorial_interaction', **factorial})
     spread_groups = {}
     for e in experiments:
         if 'seed' not in e['config']:

@@ -51,7 +51,7 @@ class StableAttention(nn.Module):
             bias = self.pair(relations).permute(0, 3, 1, 2).to(q.dtype)
         bias = bias.masked_fill(~mask[:, None, None, :], float('-inf'))
         if getattr(self, 'record_health', False):
-            with torch.no_grad():
+            with torch.no_grad(), torch.autocast(device_type=q.device.type, enabled=False):
                 # This explicitly labelled probe conditions on at most the
                 # first 128 keys; it does not claim full-event entropy.
                 keys = min(128, k.shape[2])
@@ -86,6 +86,7 @@ class PlaneModuleClassifierV2(nn.Module):
         super().__init__()
         self.config = config
         self.dim = dim = config.get('dim', 96)
+        self.local_chunk_blocks = config.get('local_chunk_blocks', 256)
         self.fusion = 'latent'
         self.multiscale = config.get('compression', 'multiscale') == 'multiscale'
         self.direct = config.get('readout_skip', self.multiscale)
@@ -122,6 +123,7 @@ class PlaneModuleClassifierV2(nn.Module):
         self.apply(self.initialize)
         nn.init.zeros_(self.head[-1].bias)
         nn.init.zeros_(self.linear_readout.bias)
+        self.compiled_features = torch.compile(self.encode_features, dynamic=True) if config.get('compile_local') else None
 
     @staticmethod
     def initialize(module):
@@ -130,7 +132,7 @@ class PlaneModuleClassifierV2(nn.Module):
             if isinstance(module, nn.Linear) and module.bias is not None:
                 nn.init.zeros_(module.bias)
 
-    def encode_local(self, nodes, mask):
+    def encode_features(self, nodes, mask):
         xy = nodes[..., 16:18] * (2 * torch.pi)
         fourier = torch.cat([xy.sin(), xy.cos(), (2 * xy).sin(), (2 * xy).cos()], -1)
         fourier = fourier * nodes[..., 3:5].repeat(1, 1, 4)
@@ -138,13 +140,20 @@ class PlaneModuleClassifierV2(nn.Module):
         for layer in self.local:
             x = layer(x, x, mask) * mask[..., None]
         summary = scale_totals(response_totals(nodes, mask)).to(x.dtype)
-        return self.local_pool(torch.cat([masked_pool(x, mask), summary], -1))
+        return torch.cat([masked_pool(x, mask), summary], -1)
+
+    def encode_local(self, nodes, mask):
+        features = (self.compiled_features(nodes, mask) if self.compiled_features is not None and nodes.is_cuda
+                    else self.encode_features(nodes, mask))
+        # The observation hook is outside the compiled encoder. A health
+        # sample must never switch the numerical implementation used to fit.
+        return self.local_pool(features)
 
     def forward(self, batch):
         nodes, mask = batch['nodes'], batch['local_mask']
         pieces = []
-        for start in range(0, len(nodes), 256):
-            values = nodes[start:start + 256], mask[start:start + 256]
+        for start in range(0, len(nodes), self.local_chunk_blocks):
+            values = nodes[start:start + self.local_chunk_blocks], mask[start:start + self.local_chunk_blocks]
             pieces.append(checkpoint(self.encode_local, *values, use_reentrant=False)
                           if self.training and torch.is_grad_enabled() else self.encode_local(*values))
         local = torch.cat(pieces)
@@ -215,5 +224,8 @@ def build_model(config):
     if architecture == 'plane_module':
         return PlaneModuleClassifier(config)
     if architecture == 'part':
-        return PointClassifier('part', dim=config.get('dim', 64))
+        model = PointClassifier('part', dim=config.get('dim', 64))
+        model.local_chunk_blocks = config.get('local_chunk_blocks', 256)
+        model.compiled_local = torch.compile(model.encode_local, dynamic=True) if config.get('compile_local') else None
+        return model
     raise ValueError(architecture)

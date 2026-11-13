@@ -62,7 +62,7 @@ def confirmation_contract(screen, confirmation):
 def conditional_inventory(conditional, evaluation, specification):
     """Audit every requested model/domain contrast, retaining undefined metrics."""
     expected_models = {e['name'] for e in evaluation['experiments']
-                       if e['name'].startswith(('s3_', 'part_', 'pn_'))}
+                       if e['name'].startswith(('s3_', 's3r_', 'part_', 'pn_'))}
     actual_models = conditional.get('experiments', [])
     model_complete = (set(actual_models) == expected_models and
                       len(actual_models) == len(expected_models))

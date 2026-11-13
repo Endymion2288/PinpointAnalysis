@@ -189,11 +189,14 @@ class PointClassifier(nn.Module):
     def forward(self,batch):
         nodes,local_mask=batch['nodes'],batch['local_mask']
         parts=[]
-        for start in range(0,len(nodes),256):
+        chunk=getattr(self,'local_chunk_blocks',256)
+        compiled=getattr(self,'compiled_local',None)
+        encode=compiled if compiled is not None and nodes.is_cuda else self.encode_local
+        for start in range(0,len(nodes),chunk):
             if self.training and torch.is_grad_enabled():
-                encoded=checkpoint(self.encode_local,nodes[start:start+256],local_mask[start:start+256],use_reentrant=False)
+                encoded=checkpoint(encode,nodes[start:start+chunk],local_mask[start:start+chunk],use_reentrant=False)
             else:
-                encoded=self.encode_local(nodes[start:start+256],local_mask[start:start+256])
+                encoded=encode(nodes[start:start+chunk],local_mask[start:start+chunk])
             parts.append(encoded)
         local=torch.cat(parts)
         # Scatter complete block summaries into the event dimension.

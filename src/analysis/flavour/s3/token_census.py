@@ -17,10 +17,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
+    parser.add_argument('--confirmation', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     torch.set_num_threads(1); pa.set_cpu_count(1); pa.set_io_thread_count(1)
     configs = json.loads(args.campaign.read_text())['experiments']
+    if args.confirmation:
+        configs += json.loads(args.confirmation.read_text())['experiments']
     dataset = PlaneDataset(args.root, 'train', configs[0])
     key = ['run', 'chunk', 'row']
     catalog = pd.read_parquet(args.root / 'catalog.parquet',
@@ -35,10 +38,13 @@ def main():
         for task, config in enumerate(configs):
             nodes, groups, modules, _ = plane_tokens(observations, dataset.geometry, config, seed=index + 42)
             batch = collate_planes([{'nodes': nodes, 'groups': groups, 'modules': modules,
-                                     'index': index, 'label': 0}])
+                                     'index': index, 'label': 0, 'region_blocks': config.get('region_blocks', 32)}])
             # The dummy label only satisfies the collator; no forward or training.
             count = len(batch['module_id'])
-            module_tokens = count * config.get('module_queries', 4)
+            point_model = config['architecture'] in ['part', 'particlenet']
+            multiscale = config.get('compression') == 'multiscale' and not point_model
+            module_tokens = count * config.get('module_queries', 4) if not point_model and not multiscale else None
+            regional_tokens = len(batch['region_id']) * config.get('region_queries', 2) if multiscale else None
             manifest = json.loads((args.root / 'experiments' / config['name'] / 'manifest.json').read_text())
             rows.append({'task': task, 'experiment': config['name'],
                 **{k: int(selected.iloc[index][k]) for k in key},
@@ -49,7 +55,11 @@ def main():
                 'local_blocks_including_empty_placeholder': len(batch['nodes']),
                 'physical_module_type_groups_including_empty_placeholder': count,
                 'module_query_tokens': module_tokens,
-                'global_tokens': config.get('latents', 24) if config['fusion'] == 'latent' else module_tokens,
+                'regional_groups': len(batch['region_id']) if multiscale else None,
+                'regional_tokens': regional_tokens,
+                'all_local_direct_readout_blocks': len(batch['nodes']) if config.get('readout_skip') else None,
+                'global_tokens': len(batch['nodes']) if point_model else
+                    config.get('latents', 24) if config['fusion'] == 'latent' else module_tokens,
                 'fusion': config['fusion'], 'parameters': manifest['parameters']})
     dataset.native.close()
     args.output.mkdir(parents=True, exist_ok=True)

@@ -52,3 +52,11 @@
 新根为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13`。GPU通过Kubeflow或HTCondor，按实获配选择，允许一个MIG内多个独立训练，测量峰值显存和利用率后调整并发。沿用[CERN flavor表](https://ml.docs.cern.ch/#available-flavors)的H100 47GB `nvidia.com/mig-3g.47gb:1`及product selector；CPU/RAM由平台注入。AFS只放小提交脚本，EOS放输出。旧S3已用上界31.238268678 device-hours，120预算内余额下界88.761731322；修复、先导和失败尝试均计入，预算不自动扩大。
 
 Pilot通过后冻结独立科学矩阵，至少覆盖稳定fixed、multiscale native/1 mm、tracker增量、无direct旁路及同配方重训ParT，并对主比较追加seeds17/2026。四分类macro AP/NLL、逐类AP/F1/precision/recall、混淆矩阵、相同FPR/purity、条件域和token/资源/内部健康共同评价。物理事件CI与training seed spread分开，使用原128块/400次配对bootstrap；calibration/test不动。旧结果只作故障对照，新结论以健康重训结果为准。
+
+## 全量执行版本与最终验收
+
+8个screen、12个确认任务及其合并入口分别为`configs/s3_repair_screen.json`、`configs/s3_repair_confirmation.json`、`configs/s3_repair_all.json`。每个screen结构/表示均有独立32-event拟合gate，`s3_repair_all_pilots.json`；全量训练同时要求匹配执行版本的完整占用压力测试。未因validation改变确认候选。
+
+实测局部编码以2048个blocks为计算chunk并使用`torch.compile(dynamic=True)`可显著减少高占用尾部的launch开销，不改变每block至多32节点、窗口、region或latent定义。当前执行版本2在编译区外观测local pool，健康采样与普通训练使用同一编码器计算路径；每worker scratch安装匹配Torch2.7.1的Triton3.3.1及EL9编译支持。workers1，所有配置使用同一执行方式，全部从头拟合。第一次尚未完成epoch的eager输出移入`audit/eager_execution_before_compile`，只作执行诊断并照常计费。编译先导版本1曾在健康采样切换eager路径，fixed末次拟合失败；已保留证据并修复，不用失败gate启动正式训练。
+
+最终入口`analysis.flavour.s3.finalize_repair`先执行14项CPU读回、所有采样内部健康和独立best-checkpoint FP32 backward，再完成四分类、条件域、工作点、token census与英文图。`accept_repair`要求实际validation NLL优于constant class-prior NLL、完整validation分数非常数、encoder连通、所有计划健康采样齐全，同时检查冻结矩阵、三seed对照、400次128块bootstrap、终态allocation与累计120预算。只通过checkpoint读回不足以验收；故障模型必须修复重训。共享/混合backend allocation成本不直接用于声称模型本体加速，质量晋级仍遵守原四分类阈值。

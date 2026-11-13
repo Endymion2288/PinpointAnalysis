@@ -74,6 +74,7 @@ def main():
                 if not finite:raise ValueError('nonfinite full-event profile')
         dataset.native.close()
     summary={'utc':datetime.now(timezone.utc).isoformat(),'started_utc':started_utc,
+             'model_configs':[configs[t] for t in args.tasks],
              'program_wall_seconds':time.perf_counter()-program_started,
              'GPU':torch.cuda.get_device_name() if device.type=='cuda' else None,
              'torch':torch.__version__,'precision':'BF16' if bf16 else 'FP32','rows':len(rows),

@@ -46,6 +46,21 @@ class SharedAllocationTests(unittest.TestCase):
                 self.assertIsNone(shared['pod_phase'])
                 self.assertEqual(shared['job_terminal_conditions'][0]['type'], 'Complete')
 
+    def test_condor_parallel_group_conserves_remote_wallclock_charge(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root / 'kubeflow').mkdir()
+            submission = root / 'submission_test.json'
+            submission.write_text(json.dumps({'parallel_name': 'group'}))
+            (root / 'kubeflow/parallel_group.json').write_text(json.dumps({'processes': [
+                {'experiment': 'a', 'started_at': '2026-11-12T00:00:00+00:00', 'finished_at': '2026-11-12T01:00:00+00:00'},
+                {'experiment': 'b', 'started_at': '2026-11-12T00:30:00+00:00', 'finished_at': '2026-11-12T01:00:00+00:00'}]}))
+            rows = allocation_transform(root, [{'submission': str(submission), 'status': 4,
+                'seconds': 7200., 'GPU_hours': 2., 'CPU_core_hours': 24.}])
+            self.assertEqual([r['experiment'] for r in rows], ['a', 'b'])
+            self.assertEqual(sum(r['seconds'] for r in rows), 7200.)
+            self.assertEqual(sum(r['GPU_hours'] for r in rows), 2.)
+            self.assertEqual(sum(r['CPU_core_hours'] for r in rows), 24.)
+
 
 class ParallelLifecycleTests(unittest.TestCase):
     def test_first_child_exit_does_not_end_other_training(self):

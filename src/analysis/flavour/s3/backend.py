@@ -47,12 +47,19 @@ def prepare(args):
                      '--campaign', str(args.campaign.resolve()), '--name', args.name,
                      '--training-module', 'analysis.flavour.s3.' + args.program,
                      '--concurrency', str(args.concurrency), '--tasks', *map(str, args.tasks)]
+        if args.program=='campaign_repair':
+            args_list=['analysis.flavour.s3.campaign_repair','--root',str(root),
+                       '--campaign',str(args.campaign.resolve()),'--name',args.name,
+                       '--concurrency',str(args.concurrency),'--tasks',*map(str,args.tasks)]
     script = '\n'.join([
         'set -o pipefail', 'which() { command -v "$@"; }',
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh',
         'set -e', f'cd {shlex.quote(str(repo))}',
         f'export PYTHONPATH={shlex.quote(str(repo / "src"))}:${{PYTHONPATH:-}}',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1',
+        *([f'source {shlex.quote(str(repo / "src/analysis/flavour/s3/runtime_repair.sh"))} {shlex.quote(str(root))}']
+          if args.campaign and (args.tasks or args.task is not None) and any(
+              campaign['experiments'][t].get('compile_local') for t in (args.tasks or [args.task])) else []),
         'exec python -m ' + shlex.join(args_list)])
     resources = {resource: 1}
     job = {'apiVersion': 'batch/v1', 'kind': 'Job',
@@ -95,7 +102,7 @@ def main():
     parser.add_argument('--name', required=True)
     parser.add_argument('--flavor', choices=GPU_FLAVORS, default='h100-94gb')
     parser.add_argument('--campaign', type=Path)
-    parser.add_argument('--program', choices=['train', 'train_repair', 'pilot_repair', 'profile'], default='train')
+    parser.add_argument('--program', choices=['train', 'train_repair', 'pilot_repair', 'profile', 'campaign_repair'], default='train')
     parser.add_argument('--task', type=int)
     parser.add_argument('--tasks', type=int, nargs='+')
     parser.add_argument('--concurrency', type=int, default=4)

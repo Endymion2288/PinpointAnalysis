@@ -31,11 +31,13 @@ class TrainingHealth:
                     (value == 0).float().mean(), (value < -5).float().mean(),
                     value.isfinite().all().float()]))
                 if value.ndim == 3 and value.shape[1] > 1 and name == 'module_read':
-                    unit = torch.nn.functional.normalize(value, dim=-1)
-                    cosine = unit @ unit.transpose(-1, -2)
+                    with torch.autocast(device_type=value.device.type, enabled=False):
+                        unit = torch.nn.functional.normalize(value, dim=-1)
+                        cosine = unit @ unit.transpose(-1, -2)
                     count = value.shape[1]
                     eye = torch.eye(count, device=value.device, dtype=torch.bool)
                     self.token_stats[name] = {
+                        'cosine_matmul_precision': 'FP32',
                         'mean_off_diagonal_query_cosine': float(cosine[:, ~eye].mean()),
                         'within_group_query_variation_RMS': float(value.std(1, unbiased=False).square().mean().sqrt())}
         return record

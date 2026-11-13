@@ -94,6 +94,20 @@ class S3RepairTests(unittest.TestCase):
             self.assertGreater(float(model.input[0].weight.grad.square().sum()), 0.)
             optimizer.step()
 
+    def test_local_compute_chunk_does_not_change_events_or_gradient(self):
+        batch = collate_planes([self.item(71), self.item(31, 1)])
+        model = self.model().eval()
+        outputs, gradients = [], []
+        for chunk in [7, 1024]:
+            model.local_chunk_blocks = chunk
+            model.zero_grad(set_to_none=True)
+            logits = model(batch)
+            torch.nn.functional.cross_entropy(logits, batch['label']).backward()
+            outputs.append(logits.detach())
+            gradients.append(model.input[0].weight.grad.detach().clone())
+        torch.testing.assert_close(outputs[0], outputs[1], rtol=3e-5, atol=3e-6)
+        torch.testing.assert_close(gradients[0], gradients[1], rtol=3e-4, atol=3e-6)
+
     def test_internal_health_rejects_finite_but_disconnected_legacy_encoder(self):
         model = PlaneModuleClassifier({'dim': 16, 'latents': 8, 'module_queries': 2})
         with torch.no_grad():

@@ -15,7 +15,7 @@
       "seed": 17,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -55,13 +55,16 @@
       "readout_skip": false,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_fixed_native_s42_e4"
+      "required_pilot": "s3r_fixed_native_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 2026,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -101,13 +104,16 @@
       "readout_skip": false,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_fixed_native_s42_e4"
+      "required_pilot": "s3r_fixed_native_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 17,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -147,13 +153,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_native_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 2026,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -193,13 +202,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_native_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 17,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -239,13 +251,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_1mm_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 2026,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -285,13 +300,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_1mm_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 17,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -332,13 +350,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_tracker_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 2026,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -379,13 +400,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_tracker_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 17,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -425,13 +449,16 @@
       "readout_skip": false,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_part_reference_s42_e4"
+      "required_pilot": "s3r_part_reference_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 2026,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -471,13 +498,16 @@
       "readout_skip": false,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_part_reference_s42_e4"
+      "required_pilot": "s3r_part_reference_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 17,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -517,13 +547,16 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_region8_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     },
     {
       "seed": 2026,
       "epochs": 4,
       "batch_size": 8,
-      "workers": 2,
+      "workers": 1,
       "cache_shards": 2,
       "bucket_size": 256,
       "steps_per_epoch": 10016,
@@ -563,8 +596,12 @@
       "readout_skip": true,
       "health_every_steps": 100,
       "schedule": "warmup_cosine_steps",
-      "required_pilot": "s3r_multiscale_native_s42_e4"
+      "required_pilot": "s3r_multiscale_region8_s42_e4",
+      "local_chunk_blocks": 2048,
+      "compile_local": true,
+      "local_execution_version": 2
     }
   ],
-  "selection": "prespecified stability control, primary native/coarse, tracker, reference and regional compression control; no validation-based candidate selection"
+  "selection": "prespecified stability control, primary native/coarse, tracker, reference and regional compression control; no validation-based candidate selection",
+  "execution_revision": "compiled_local2048_v2_hooks_outside_compiled_features; one worker; frozen before full validation"
 }

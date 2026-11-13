@@ -37,6 +37,10 @@ def allocation_transform(root, allocations):
     output = []
     for row in allocations:
         job = row.get('job', '')
+        condor_parallel = False
+        if 'submission' in row:
+            job = json.loads(Path(row['submission']).read_text()).get('parallel_name') or job
+            condor_parallel = bool(job)
         record = directory / f'parallel_{job}.json'
         if not record.exists() or row['seconds'] is None:
             output.append(row)
@@ -47,16 +51,22 @@ def allocation_transform(root, allocations):
             continue
         intervals = {p['experiment']: tuple(datetime.fromisoformat(p[k]).timestamp()
                      for k in ['started_at', 'finished_at']) for p in processes}
-        start = datetime.fromisoformat(row['started_at']).timestamp()
-        end = datetime.fromisoformat(row['finished_at']).timestamp() if row.get('finished_at') else start + row['seconds']
+        if condor_parallel:
+            start = min(a for a,b in intervals.values())
+            end = max(b for a,b in intervals.values())
+        else:
+            start = datetime.fromisoformat(row['started_at']).timestamp()
+            end = datetime.fromisoformat(row['finished_at']).timestamp() if row.get('finished_at') else start + row['seconds']
         shares = shared_seconds(start, end, intervals)
         for name, seconds in shares.items():
-            fraction = seconds / row['seconds'] if row['seconds'] else 1 / len(shares)
-            shared = {**row, 'experiment': name, 'seconds': seconds,
+            denominator = end-start if condor_parallel else row['seconds']
+            fraction = seconds / denominator if denominator else 1 / len(shares)
+            shared = {**row, 'experiment': name, 'seconds': row['seconds']*fraction,
                       'shared_job_total_seconds': row['seconds'],
                       'allocation_fraction': fraction,
                       'reservation_allocation_basis': row.get('allocation_basis'),
-                      'allocation_basis': 'equal_share_of_active_process_intervals_with_equal_startup_teardown_shares',
+                      'allocation_basis': ('remote_wallclock_charged_by_normalized_active_process_interval_shares_including_setup'
+                        if condor_parallel else 'equal_share_of_active_process_intervals_with_equal_startup_teardown_shares'),
                       'process_interval_evidence': str(record)}
             for key in ['GPU_hours', 'CPU_core_hours']:
                 shared[key] = row[key] * fraction
