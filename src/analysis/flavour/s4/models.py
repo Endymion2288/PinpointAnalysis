@@ -158,10 +158,11 @@ def objective_loss(output,batch,config):
         student=output['student_prediction'].float()
         teacher=output['teacher_projection'].detach().float()
         align=(2-2*(F.normalize(student,dim=-1)*F.normalize(teacher,dim=-1)).sum(-1)).mean()
-        variance,covariance=variance_covariance(output['student_projection'])
+        variance,covariance=variance_covariance(output['student_projection'],config.get('variance_gamma',.2))
         # Joint reconstruction anchors the teacher/student to measured content;
         # separate variance regularization opposes the constant-vector solution.
         parts.update(distillation=align,variance=variance,covariance=covariance)
-        loss=config.get('distill_reconstruction_weight',.5)*reconstruction+align+config.get('variance_weight',5.)*variance+.1*covariance
+        loss=(config.get('distill_reconstruction_weight',.5)*reconstruction+align
+            +config.get('variance_weight',5.)*variance+config.get('covariance_weight',.1)*covariance)
     parts['loss']=loss
     return loss,parts

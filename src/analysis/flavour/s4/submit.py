@@ -74,6 +74,9 @@ def submit(args):
         arguments = ['analysis.flavour.s3.parallel', '--root', str(root), '--campaign', str(args.campaign.resolve()),
             '--name', name, '--concurrency', str(args.concurrency), '--training-module', 'analysis.flavour.s4.'+args.stage,
             '--tasks', *map(str, args.tasks), '--claim-tasks']
+        if args.stage=='campaign':
+            arguments=['analysis.flavour.s4.campaign','--root',str(root),'--campaign',str(args.campaign.resolve()),
+                '--name',name,'--concurrency',str(args.concurrency),'--tasks',*map(str,args.tasks)]
     script = ['#!/bin/bash', 'set -o pipefail', 'which() { command -v "$@"; }',
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh', 'set -e',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1',
@@ -167,7 +170,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','pilot','pretrain','train','probes'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
