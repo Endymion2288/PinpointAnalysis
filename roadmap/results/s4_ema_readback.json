@@ -1,0 +1,80 @@
+{
+  "utc": "2026-11-13T22:13:56.508758+00:00",
+  "experiment": "s4_ema_m75_e3_s42",
+  "checks": {
+    "complete_epochs_and_steps": true,
+    "frozen_configuration": true,
+    "checkpoint_optimizer_finite": true,
+    "resume_fields": true,
+    "inner_probe_selection": true,
+    "query_predictions_finite": true,
+    "positive_negative_candidate_support": true,
+    "all_internal_health_pass": true,
+    "global_event_features_nonconstant": true,
+    "encoder_informative_gradients": true
+  },
+  "integrity_and_internal_health_pass": true,
+  "learning_checks": {
+    "coarse_and_bar_AP_above_query_prior": true,
+    "coarse_or_bar_AP_improves_initialization": true,
+    "inner_reconstruction_loss_improves": true,
+    "fine_pixel_patch_learns_with_at_least_25_positives": true,
+    "student_projection_features_not_near_rank_one": true,
+    "teacher_features_not_near_rank_one": true
+  },
+  "measured_learning_pass": true,
+  "query_AP": {
+    "0": {
+      "AP": 0.22010417337552546,
+      "prevalence": 0.0176328125,
+      "positives": 2257,
+      "AP_over_prevalence": 12.482646961483056,
+      "initial_AP": 0.01467047658135077
+    },
+    "1": {
+      "AP": 0.4791974595538501,
+      "prevalence": 0.07925,
+      "positives": 10144,
+      "AP_over_prevalence": 6.046655641058046,
+      "initial_AP": 0.07613497314310727
+    },
+    "2": {
+      "AP": 0.7295394535353509,
+      "prevalence": 0.3331484375,
+      "positives": 42643,
+      "AP_over_prevalence": 2.1898330336168867,
+      "initial_AP": 0.3332090946773999
+    }
+  },
+  "global_feature_statistics": {
+    "event_count": 2000,
+    "feature_dim": 192,
+    "spectrum_method": "centered_FP64_covariance_eigh",
+    "RMS": 1.021735429763794,
+    "between_event_RMS": 0.9634792804718018,
+    "dimension_std_median": 0.9209631085395813,
+    "fraction_dimensions_std_below_1e_minus5": 0.0,
+    "centered_effective_rank": 8.089592207838063,
+    "leading_variance_fraction": 0.2378406337317625,
+    "first_eight_variance_fractions": [
+      0.2378406337317625,
+      0.16650347194825874,
+      0.1619554905165864,
+      0.11702687594015608,
+      0.10989715247851371,
+      0.09740688938828687,
+      0.05613903501375041,
+      0.022744763051544995
+    ],
+    "dimensions_for_90pct_variance": 7,
+    "all_finite": true
+  },
+  "event_permutation_delta_BCE": {
+    "0": 0.034804546296596524,
+    "1": 0.1873540370464325,
+    "2": 0.4034188942909241
+  },
+  "bar_rel": null,
+  "scope": "train-only reconstruction probe; downstream benefit remains unmeasured by these checks",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_ema_m75_e3_s42/ssl_readback.json"
+}

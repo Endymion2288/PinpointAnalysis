@@ -1,0 +1,230 @@
+{
+  "all_collated_tensors_and_metadata_bitwise_equal": true,
+  "events": 1000,
+  "read_transform_collate_seconds_by_pass": {
+    "original": [
+      32.56347248866223,
+      32.691012429771945
+    ],
+    "cached": [
+      33.00652239797637,
+      2.133312136051245
+    ]
+  },
+  "initial_shared_staging": {
+    "utc": "2026-11-13T22:19:46.706674+00:00",
+    "shards": [
+      {
+        "shard": "000",
+        "bytes": 55871152
+      },
+      {
+        "shard": "001",
+        "bytes": 54564588
+      },
+      {
+        "shard": "002",
+        "bytes": 55209560
+      },
+      {
+        "shard": "003",
+        "bytes": 56221179
+      },
+      {
+        "shard": "004",
+        "bytes": 57136391
+      },
+      {
+        "shard": "005",
+        "bytes": 53976587
+      },
+      {
+        "shard": "006",
+        "bytes": 54823465
+      },
+      {
+        "shard": "007",
+        "bytes": 55402759
+      },
+      {
+        "shard": "008",
+        "bytes": 54012459
+      },
+      {
+        "shard": "009",
+        "bytes": 53900125
+      },
+      {
+        "shard": "010",
+        "bytes": 51841860
+      },
+      {
+        "shard": "011",
+        "bytes": 54492708
+      },
+      {
+        "shard": "012",
+        "bytes": 54574329
+      },
+      {
+        "shard": "013",
+        "bytes": 52376168
+      },
+      {
+        "shard": "014",
+        "bytes": 53497228
+      },
+      {
+        "shard": "015",
+        "bytes": 53402600
+      },
+      {
+        "shard": "016",
+        "bytes": 53407883
+      },
+      {
+        "shard": "017",
+        "bytes": 56115812
+      },
+      {
+        "shard": "018",
+        "bytes": 52900924
+      },
+      {
+        "shard": "019",
+        "bytes": 54352132
+      },
+      {
+        "shard": "020",
+        "bytes": 54664048
+      },
+      {
+        "shard": "021",
+        "bytes": 53201881
+      },
+      {
+        "shard": "022",
+        "bytes": 55678182
+      },
+      {
+        "shard": "023",
+        "bytes": 53747698
+      },
+      {
+        "shard": "024",
+        "bytes": 54703844
+      },
+      {
+        "shard": "025",
+        "bytes": 58102131
+      },
+      {
+        "shard": "026",
+        "bytes": 57087195
+      },
+      {
+        "shard": "027",
+        "bytes": 55639365
+      },
+      {
+        "shard": "028",
+        "bytes": 53309593
+      },
+      {
+        "shard": "029",
+        "bytes": 56907287
+      },
+      {
+        "shard": "030",
+        "bytes": 55196757
+      },
+      {
+        "shard": "031",
+        "bytes": 54416262
+      },
+      {
+        "shard": "032",
+        "bytes": 49039942
+      },
+      {
+        "shard": "033",
+        "bytes": 49219874
+      },
+      {
+        "shard": "034",
+        "bytes": 48791049
+      },
+      {
+        "shard": "035",
+        "bytes": 47585295
+      },
+      {
+        "shard": "036",
+        "bytes": 49700360
+      },
+      {
+        "shard": "037",
+        "bytes": 51226048
+      },
+      {
+        "shard": "038",
+        "bytes": 48962430
+      },
+      {
+        "shard": "039",
+        "bytes": 49660301
+      }
+    ],
+    "compressed_bytes": 2144919451,
+    "copy_seconds": 10.056669153971598,
+    "copy_threads": 3,
+    "local_shard_root": "/pool/condor/dir_1065980/pinpoint-classification-cache-r3gf9qg1/native",
+    "files": [
+      "observations.parquet",
+      "targets.parquet"
+    ],
+    "scope": "allocation-owned byte copies, shared by child readers; bounded decoded-shard LRU retained; no tensor, sampler, target or normalization changes"
+  },
+  "cache": {
+    "enabled": true,
+    "limit_array_bytes": 1073741824,
+    "resident_array_bytes": 93819352,
+    "events": 1000,
+    "hits": 1000,
+    "misses": 1000,
+    "evictions": 0,
+    "native_released_after_complete_cache": true,
+    "scope": "process-owned immutable classification arrays; Python container overhead excluded; no SSL views cached"
+  },
+  "native_reader_statistics": {
+    "original": {
+      "hits": 1920,
+      "misses": 80,
+      "evictions": 78,
+      "staged_bytes": 4289838902,
+      "resident_bytes": 98622731,
+      "peak_resident_bytes": 115189326,
+      "stage_seconds": 9.320315134711564,
+      "decode_seconds": 33.40969206637237,
+      "pid": 120,
+      "root": "/pool/condor/dir_1065980/pinpoint-classification-cache-r3gf9qg1/original/pinpoint-120-e4fcxkfg",
+      "resident_shards": 2
+    },
+    "cached": {
+      "hits": 960,
+      "misses": 40,
+      "evictions": 38,
+      "staged_bytes": 2144919451,
+      "resident_bytes": 0,
+      "peak_resident_bytes": 115189326,
+      "stage_seconds": 4.352935584378429,
+      "decode_seconds": 17.18010672868695,
+      "pid": null,
+      "root": null,
+      "resident_shards": 0
+    }
+  },
+  "scope": "two complete sequential passes through fixed 1k nested-label subset; alternating reader order, same shared native files; no model/GPU timing",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_classification_cache_profile_v1/equivalence.json",
+  "program_seconds": 114.03526405396406
+}
