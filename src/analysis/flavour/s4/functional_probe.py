@@ -80,16 +80,22 @@ def inspect(root, name, config, output):
     handle = model.head_input_norm.register_forward_pre_hook(
         lambda module, inputs: contexts.append(inputs[0].detach().clone()))
     started = time.perf_counter()
+    encoded = 0
     try:
         with torch.inference_mode():
-            for batch in loader:
+            for batch_number, batch in enumerate(loader, 1):
                 indices.append(batch['index'].numpy())
                 logits.append(model(batch))
+                encoded += len(batch['index'])
                 presence = torch.zeros((len(batch['index']), 3), dtype=torch.bool)
                 for modality in range(3):
                     active = batch['block_detector'] == modality
                     presence[batch['event_index'][active], modality] = True
                 presences.append(presence)
+                if batch_number % 64 == 0:
+                    write_json(output / 'progress.json', {'experiment': name, 'phase': 'encoding',
+                        'encoded_events': encoded, 'total_events': len(data),
+                        'seconds': time.perf_counter() - started})
     finally:
         handle.remove()
         data.native.close()
@@ -122,6 +128,9 @@ def inspect(root, name, config, output):
         'response_summary': ['response_summary'],
         'all_spatial': [k for k in slices if k != 'response_summary']}
     changes = {}
+    write_json(output / 'progress.json', {'experiment': name, 'phase': 'paired_branch_metrics',
+        'encoded_events': len(data), 'total_events': len(data), 'completed_groups': [],
+        'seconds': time.perf_counter() - started})
     with torch.inference_mode():
         for group, members in groups.items():
             caches = []
@@ -129,6 +138,9 @@ def inspect(root, name, config, output):
                 changed = head_logits(model, permute_context(context, mapping, [slices[k] for k in members]))
                 caches.append(MetricCache(baseline.y, changed.softmax(-1).numpy()))
             changes[group] = contrast_report(baseline, caches, np.ones(len(data)), common, multiplicities)
+            write_json(output / 'progress.json', {'experiment': name, 'phase': 'paired_branch_metrics',
+                'encoded_events': len(data), 'total_events': len(data), 'completed_groups': list(changes),
+                'seconds': time.perf_counter() - started})
     prediction = reference.copy()
     for i, mapping in enumerate(mappings):
         prediction[f'donor_position_{i}'] = mapping

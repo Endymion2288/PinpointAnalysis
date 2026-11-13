@@ -159,7 +159,7 @@ request_cpus = {gpu_cpus if gpu else cpu_cpus}
 request_memory = {max(12000,args.concurrency*8000) if gpu else (3000 if args.stage=='validation_job' else 12000)}
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
 requirements = (OpSysAndVer == "AlmaLinux9")
-+JobFlavour = "{'workday' if gpu or args.stage in {'budget_replay','matched_plan'} else 'microcentury'}"
++JobFlavour = "{'workday' if gpu or args.stage in {'budget_replay','matched_plan','functional_probe'} else 'microcentury'}"
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 transfer_output_files = ""

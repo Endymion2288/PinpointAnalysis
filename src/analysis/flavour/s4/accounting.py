@@ -80,18 +80,22 @@ def refresh(root):
                 row['cached_terminal_snapshot']=True
             else:
                 queue=subprocess.run(['condor_q','-name',schedd,cluster,'-json'],capture_output=True,text=True)
-                try:
-                    # History is ordered by completion, not ClusterId. A
-                    # lower-cluster stop condition can hide a later finish.
-                    history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,
-                        '-match',str(expected),'-json'],capture_output=True,text=True,timeout=20)
-                except subprocess.TimeoutExpired:
-                    history=None
-                if history is not None and history.returncode==0:
-                    for ad in json.loads(history.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                queued={}
                 if queue.returncode==0:
-                    for ad in json.loads(queue.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
-                if history is None:row['history_error']='20-second query timeout; retain available queue/cache and flag missing terminal evidence'
+                    queued={(ad['ClusterId'],ad['ProcId']):ad for ad in json.loads(queue.stdout.strip() or '[]')}
+                known=set(queued)|{key for key,ad in ads.items() if ad.get('JobStatus') in {3,4}}
+                if len(known)<expected:
+                    try:
+                        # History is ordered by completion, not ClusterId. A
+                        # lower-cluster stop condition can hide a later finish.
+                        history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,
+                            '-match',str(expected),'-json'],capture_output=True,text=True,timeout=20)
+                    except subprocess.TimeoutExpired:
+                        history=None
+                    if history is not None and history.returncode==0:
+                        for ad in json.loads(history.stdout.strip() or '[]'):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                    if history is None:row['history_error']='20-second query timeout; retain available queue/cache and flag missing terminal evidence'
+                ads.update(queued)
             write_json(cache,list(ads.values()))
             seconds=0.;details=[]
             for (_,proc),ad in ads.items():
