@@ -210,6 +210,8 @@ def plot_curves(output,experiments,frames):
     curve_rows=[]
     sections=list(dict.fromkeys((key[1],key[2]) for key in groups))
     colors={name:f'C{i}' for i,name in enumerate(dict.fromkeys(key[0] for key in groups))}
+    labels={'macro_AP':'Macro average precision','NLL':'Negative log-likelihood',
+        'class_2_AP':'CC nu_tau average precision','class_2_eff_at_0.01_FPR':'CC nu_tau efficiency at 1% FPR'}
     with PdfPages(output/'label_efficiency.pdf') as pdf:
         for program,representation in sections:
             fig,axes=plt.subplots(2,2,figsize=(11,8),constrained_layout=True)
@@ -220,14 +222,17 @@ def plot_curves(output,experiments,frames):
                     values=[[e['four_class'][metric] for e in group if e['config'].get('label_budget',100000)==budget]
                         for budget in budgets]
                     mean=[float(np.mean(v)) for v in values]
-                    spread=[float(np.std(v,ddof=1)) if len(v)>1 else 0. for v in values]
-                    ax.errorbar(budgets,mean,yerr=spread,marker='.',capsize=2,label=initialization,color=colors[initialization])
+                    spread=[float(np.std(v,ddof=1)) if len(v)>1 else np.nan for v in values]
+                    ax.plot(budgets,mean,marker='.',label=initialization,color=colors[initialization])
+                    finite=np.isfinite(spread)
+                    if finite.any():ax.errorbar(np.asarray(budgets)[finite],np.asarray(mean)[finite],
+                        yerr=np.asarray(spread)[finite],fmt='none',capsize=2,color=colors[initialization])
                     curve_rows.extend({'initialization':initialization,'program':program,'label_budget':budget,
                         'representation':representation,'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
                         for budget,m,s,v in zip(budgets,mean,spread,values))
-                    ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=metric)
+                    ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=labels[metric])
             axes[0,0].legend(fontsize=7)
-            fig.suptitle(f'S4 {program} / {representation}: fixed validation; bars show training-seed SD')
+            fig.suptitle(f'S4 {program} / {representation}: fixed validation; seed SD shown for n >= 2')
             pdf.savefig(fig);fig.savefig(output/f'label_efficiency_{program}_{representation}.png',dpi=160)
             if program=='train' or len(sections)==1:fig.savefig(output/'label_efficiency.png',dpi=160)
             plt.close(fig)

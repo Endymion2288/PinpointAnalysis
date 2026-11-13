@@ -86,7 +86,8 @@
         ]
       },
       "continuation_optimizer": "fresh optimizer and warmup/cosine; complete validation-selected Scratch model including head; all original training compute charged",
-      "selection": "best continuation validation NLL; original Scratch best reported separately"
+      "selection": "best continuation validation NLL; original Scratch best reported separately",
+      "program": "train"
     },
     {
       "seed": 42,
@@ -171,7 +172,8 @@
         ]
       },
       "continuation_optimizer": "fresh optimizer and warmup/cosine; complete validation-selected Scratch model including head; all original training compute charged",
-      "selection": "best continuation validation NLL; original Scratch best reported separately"
+      "selection": "best continuation validation NLL; original Scratch best reported separately",
+      "program": "train"
     },
     {
       "seed": 42,
@@ -252,7 +254,8 @@
         ]
       },
       "continuation_optimizer": "fresh optimizer and warmup/cosine; complete validation-selected Scratch model including head; all original training compute charged",
-      "selection": "best continuation validation NLL; original Scratch best reported separately"
+      "selection": "best continuation validation NLL; original Scratch best reported separately",
+      "program": "train"
     }
   ],
   "hardware": {

@@ -114,7 +114,7 @@ def main():
             'per_epoch_matrix_operations':[sum(x[:selected]) for x in costs]}
         if abs(row['relative_matching_error'])>.005:raise RuntimeError('cannot match proxy budget within 0.5%')
         name=f's4_supervised_matched_n{case["label_budget"]}_s{case["seed"]}'
-        case.update(name=name,initialization='supervised_matched_mae3',supervised_initial_checkpoint=str(parent/'best.pt'),
+        case.update(name=name,program='train',initialization='supervised_matched_mae3',supervised_initial_checkpoint=str(parent/'best.pt'),
             epochs=epochs,steps_per_epoch=selected,sampler_epoch_offset=offset,
             dependencies=[base['name']],matched_budget=row,
             continuation_optimizer='fresh optimizer and warmup/cosine; complete validation-selected Scratch model including head; all original training compute charged',

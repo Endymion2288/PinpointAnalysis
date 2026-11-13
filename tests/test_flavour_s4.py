@@ -26,6 +26,8 @@ from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operation
 from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix
 from analysis.flavour.s4.campaign import host_memory
 from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
+from analysis.flavour.s4.validation_job import main as validate_completed_campaign
+from analysis.flavour.s4.worker import main as run_campaign_worker
 
 
 class S4Tests(unittest.TestCase):
@@ -351,6 +353,31 @@ class S4Tests(unittest.TestCase):
             self.assertEqual(host_memory(root),{'current_bytes':5000,'limit_bytes':10000,'peak_bytes':6500})
             (root/'memory.max').write_text('max\n')
             self.assertNotIn('limit_bytes',host_memory(root))
+
+    def test_legacy_classification_configs_execute_and_receive_checkpoint_readback(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);case={'name':'legacy','objective':'classification'}
+            campaign=root/'training.json';campaign.write_text(json.dumps({'experiments':[case]}))
+            with patch('sys.argv',['worker','--root',str(root),'--campaign',str(campaign),'--task','0']),patch(
+                'analysis.flavour.s4.worker.importlib.import_module') as module:
+                run_campaign_worker();module.assert_called_once_with('analysis.flavour.s4.train')
+            directory=root/'experiments/legacy';directory.mkdir(parents=True)
+            (directory/'manifest.json').write_text(json.dumps({'status':'complete','gpu_name':'NVIDIA H100 NVL'}))
+            (directory/'training_health.json').write_text(json.dumps({'records':[{'healthy':True,
+                'informative_nodes':3,'gradient_squared_norms':{'input':1.},'activations':{}}]}))
+            pd.DataFrame({'run':[10081],'chunk':[0],'row':[0],'label':[0],
+                'split':['validation']}).to_parquet(root/'catalog.parquet',index=False)
+            job=root/'job.json';job.write_text(json.dumps({'experiments':[{'name':'validation',
+                'campaigns':[str(campaign)],'comparisons':str(root/'comparisons.json'),
+                'evaluation_output':str(root/'evaluation')}]}))
+            with patch('sys.argv',['validation','--root',str(root),'--campaign',str(job),'--task','0']),patch(
+                'analysis.flavour.s4.validation_job.readback',return_value={'best_epoch':1}) as checked,patch(
+                'analysis.flavour.s4.validation_job.evaluate'):
+                validate_completed_campaign();checked.assert_called_once()
+            report=json.loads((root/'experiments/validation/manifest.json').read_text())
+            self.assertEqual(report['verified_train'],['legacy'])
+            summary=json.loads((root/'experiments/validation/training_health_summary.json').read_text())
+            self.assertEqual(summary['samples'],1)
 
     def test_validation_evaluation_filters_ssl_and_pairs_identical_events(self):
         with tempfile.TemporaryDirectory() as temporary:

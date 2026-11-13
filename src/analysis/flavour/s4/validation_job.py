@@ -32,7 +32,7 @@ def main():
     catalog=pd.read_parquet(args.root/'catalog.parquet',columns=['run','chunk','row','label','split'])
     validation=catalog[catalog.split.eq('validation')];verified=[];pending=[];health=[]
     for name,c in configurations.items():
-        if c.get('program')!='train':continue
+        if c.get('program','train' if c.get('objective')=='classification' else 'pretrain')!='train':continue
         directory=args.root/'experiments'/name;path=directory/'manifest.json'
         if not path.exists() or json.loads(path.read_text()).get('status')!='complete':
             pending.append(name);continue

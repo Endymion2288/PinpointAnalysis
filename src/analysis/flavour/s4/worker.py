@@ -13,7 +13,7 @@ def main():
     parser.add_argument('--device',default='cuda')
     args=parser.parse_args()
     config=json.loads(args.campaign.read_text())['experiments'][args.task]
-    program=config['program']
+    program=config.get('program','train' if config.get('objective')=='classification' else 'pretrain')
     if program not in {'pretrain','train','probes','pilot'}:
         raise ValueError('unsupported S4 task program')
     if program=='pretrain' and config.get('required_pilot'):
