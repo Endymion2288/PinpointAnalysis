@@ -161,7 +161,7 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
     counts=np.bincount(train.metadata.label,minlength=4)
     weights=torch.tensor(counts.sum()/(4*counts),dtype=torch.float32,device=device)
     manifest={'utc':datetime.now(timezone.utc).isoformat(),'config':config,'status':'running',
-        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        'code_commit':os.environ.get('PINPOINT_CODE_COMMIT') or subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         'campaign':str(args.campaign),'root':str(args.root),'response_level':'user_accepted_detector_proxy',
         'split_status':'accepted_signature_grouped_user_attested','train_events':len(train),'validation_events':len(val),
         'train_class_counts':counts.tolist(),'validation_class_counts':np.bincount(val.metadata.label,minlength=4).tolist(),

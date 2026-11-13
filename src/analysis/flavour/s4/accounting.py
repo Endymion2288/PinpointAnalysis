@@ -48,6 +48,8 @@ def refresh(root):
                     if container['name']=='s4':
                         gpu_start=ended.get('startedAt',running.get('startedAt',start))
                         gpu_end=ended.get('finishedAt')
+                stopped=root/'logs'/f'{submission["name"]}_allocation_end.json'
+                if stopped.exists():gpu_end=json.loads(stopped.read_text())['allocation_end_utc']
                 duration=(utc(gpu_end)-utc(gpu_start)).total_seconds() if gpu_start and gpu_end else (now-utc(gpu_start or start)).total_seconds() if (gpu_start or start) else 0.
                 rows.append({'pod':pod['metadata']['name'],'phase':status.get('phase'),
                     'started_at':gpu_start or start,'finished_at':gpu_end,'allocation_seconds':max(0,duration),
@@ -60,14 +62,22 @@ def refresh(root):
             if not match:records.append({**row,'status':'missing_cluster_id'});continue
             cluster=match.group(1);schedd=submission['schedd']
             queue=subprocess.run(['condor_q','-name',schedd,cluster,'-json'],capture_output=True,text=True)
-            history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,'-json'],
-                capture_output=True,text=True,timeout=55)
+            try:
+                history=subprocess.run(['condor_history','-name',schedd,'-constraint','ClusterId == '+cluster,
+                    '-since','ClusterId < '+cluster,'-json'],capture_output=True,text=True,timeout=20)
+            except subprocess.TimeoutExpired:
+                history=None
             ads={}
-            if history.returncode==0:
+            if history is not None and history.returncode==0:
                 for ad in json.loads(history.stdout):ads[(ad['ClusterId'],ad['ProcId'])]=ad
             if queue.returncode==0:
                 for ad in json.loads(queue.stdout):ads[(ad['ClusterId'],ad['ProcId'])]=ad
-            cache=snapshots/(submission['name']+'.condor.json');write_json(cache,list(ads.values()))
+            cache=snapshots/(submission['name']+'.condor.json')
+            if not ads and cache.exists():
+                for ad in json.loads(cache.read_text()):ads[(ad['ClusterId'],ad['ProcId'])]=ad
+                row['cached_snapshot']=True
+            if history is None:row['history_error']='20-second query timeout; retain available queue/cache and flag missing terminal evidence'
+            write_json(cache,list(ads.values()))
             seconds=0.;details=[]
             for (_,proc),ad in ads.items():
                 duration=ad.get('RemoteWallClockTime',0.)

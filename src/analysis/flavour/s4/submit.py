@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import io
+import tarfile
 
 from analysis.flavour.s2.kubeflow import GPU_FLAVORS, kubectl
 from analysis.flavour.inventory import write_json
@@ -48,6 +50,21 @@ def submit(args):
     for name in ['logs', 'kubeflow', 'runtime']:
         (root / name).mkdir(exist_ok=True)
     name = args.name
+    commit=command(['git','rev-parse','HEAD']).strip()
+    if subprocess.run(['git','diff','--quiet','HEAD','--','src/analysis/flavour'],check=False).returncode:
+        raise ValueError('commit source changes before freezing a batch snapshot')
+    code=root/'code'/commit
+    if not (code/'.ready').exists():
+        archive=subprocess.check_output(['git','archive','--format=tar','HEAD','--',
+            'src/analysis/__init__.py','src/analysis/flavour'])
+        code.mkdir(parents=True,exist_ok=True)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as stream:
+            stream.extractall(code,filter='data')
+        (code/'.ready').write_text(commit+'\n')
+    if args.campaign:
+        frozen=root/'code'/f'{name}.campaign.json'
+        frozen.write_text(args.campaign.read_text())
+        args.campaign=frozen
     cpu_only = args.stage in {'data','assemble'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
@@ -60,12 +77,13 @@ def submit(args):
     script = ['#!/bin/bash', 'set -o pipefail', 'which() { command -v "$@"; }',
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh', 'set -e',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1',
-        f'export PYTHONPATH={shlex.quote(str(repo/"src"))}:${{PYTHONPATH:-}}', f'cd {shlex.quote(str(repo))}']
+        f'export PYTHONPATH={shlex.quote(str(code/"src"))}:${{PYTHONPATH:-}}',
+        f'export PINPOINT_CODE_COMMIT={shlex.quote(commit)}',f'cd {shlex.quote(str(repo))}']
     if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': args.stage, 'name': name,
         'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,
-        'code_commit': command(['git','rev-parse','HEAD']).strip(),
+        'code_commit': commit,'source_snapshot':str(code),'frozen_campaign':str(args.campaign) if args.campaign else None,
         'code_diff':command(['git','diff','--','src/analysis/flavour/s4']), 'submitted': False}
     record = root/'logs'/f'submission_{name}.json'
     if record.exists() and json.loads(record.read_text()).get('submitted'):

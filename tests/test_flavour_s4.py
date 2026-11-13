@@ -11,6 +11,7 @@ from analysis.flavour.s3.models_repair import PlaneModuleClassifierV2
 from analysis.flavour.s4.dataset import QueryGeometry, collate_pretrain
 from analysis.flavour.s4.models import PretrainingModel, objective_loss, variance_covariance
 from analysis.flavour.s4.prepare import bar_contributions
+from analysis.flavour.s4.pretrain import evaluate
 
 
 class S4Tests(unittest.TestCase):
@@ -149,6 +150,15 @@ class S4Tests(unittest.TestCase):
         torch.testing.assert_close(actual,expected,rtol=0,atol=0)
         for key,value in model.state_dict().items():
             torch.testing.assert_close(clone.state_dict()[key],value,rtol=0,atol=0)
+
+    def test_complete_reconstruction_evaluation_has_one_row_per_query(self):
+        model=PretrainingModel(self.config).eval()
+        batch=collate_pretrain([self.item(),self.item(19)])
+        report,frame=evaluate(model,[batch],torch.device('cpu'),False,self.config)
+        self.assertEqual(len(frame),2*3*16)
+        self.assertEqual(set(frame.level),{0,1,2})
+        self.assertEqual(set(report['event_permutation_delta_BCE']),{'0','1','2'})
+        self.assertTrue(np.isfinite(frame.to_numpy()).all())
 
 
 if __name__=='__main__':unittest.main()

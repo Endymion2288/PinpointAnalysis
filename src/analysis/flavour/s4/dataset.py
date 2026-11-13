@@ -275,10 +275,19 @@ class PretrainDataset(PlaneDataset):
             if shard not in self.rel_cache:
                 # Keep two compact sidecars, independent of the observation LRU.
                 if len(self.rel_cache)>=2:self.rel_cache.pop(next(iter(self.rel_cache)))
-                rows=pq.read_table(self.root/'rel'/f'{shard:03d}.parquet').to_pylist()
-                self.rel_cache[shard]={r['source_row']:r for r in rows}
-            row=self.rel_cache[shard][native_index-self.native.boundaries[shard]]
-            mapping={int(i):j for j,i in enumerate(row['channel_id'])}
+                table=pq.read_table(self.root/'rel'/f'{shard:03d}.parquet')
+                channel=table['channel_id'].combine_chunks()
+                self.rel_cache[shard]={'source_row':table['source_row'].to_numpy(),
+                    'offsets':channel.offsets.to_numpy(),'channel_id':channel.flatten().to_numpy(),
+                    'fractions':table['fractions'].combine_chunks().flatten().flatten().to_numpy().reshape(-1,4),
+                    'valid':table['valid'].combine_chunks().flatten().to_numpy(zero_copy_only=False)}
+            cache=self.rel_cache[shard]
+            source_row=native_index-self.native.boundaries[shard]
+            row_index=int(np.searchsorted(cache['source_row'],source_row))
+            if row_index>=len(cache['source_row']) or cache['source_row'][row_index]!=source_row:
+                raise ValueError('train event lacks its bar contribution sidecar row')
+            left,right=cache['offsets'][row_index:row_index+2]
+            row={key:cache[key][left:right] for key in ['channel_id','fractions','valid']}
             # Rel queries are visible bars, as in FASERCal's kept-patch targets.
             ids=np.asarray(visible['bar']['channel_id'])
             take=np.arange(len(ids))
@@ -295,8 +304,10 @@ class PretrainDataset(PlaneDataset):
             rel_q[:n,3]=1-h;rel_q[:n,4]=h
             rel_q[:n,8:10]=np.column_stack([bounds[:,1]-bounds[:,0],bounds[:,3]-bounds[:,2]])/420
             rel_q[:n,13]=1;rel_q[:n,20]=1
-            for j,i in enumerate(rel_ids):
-                k=mapping[int(i)];rel_target[j]=row['fractions'][k];valid[j]=row['valid'][k]
+            selected=np.searchsorted(row['channel_id'],rel_ids)
+            if len(selected) and not np.array_equal(row['channel_id'][selected],rel_ids):
+                raise ValueError('visible bar has no matching contribution target')
+            rel_target[:n]=row['fractions'][selected];valid[:n]=row['valid'][selected]
             item.update(rel_query=rel_q,rel_target=rel_target,rel_valid=valid)
         return item
 

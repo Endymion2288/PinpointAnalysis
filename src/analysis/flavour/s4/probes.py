@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime,timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 import time
@@ -100,7 +101,7 @@ def main():
         'seconds':time.perf_counter()-started,'GPU':torch.cuda.get_device_name() if args.device=='cuda' else None,
         'fit_events':len(yfit),'probe_events':len(yhold),'frozen_encoder':True,
         'scope':'train-only readable-information diagnostic; supervised S3 encoder saw upstream labels' if train_only else 'independent frozen linear-probe label efficiency on complete 10k validation',
-        'calibration_test_used':False,'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()})
+        'calibration_test_used':False,'code_commit':os.environ.get('PINPOINT_CODE_COMMIT') or subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()})
     train.native.close()
     if not train_only:val.native.close()
     print(json.dumps({key:{'NLL':value['NLL'],'macro_AP':np.mean([v['PR_AUC'] for v in value['classwise'].values()])} for key,value in measured.items()}),flush=True)

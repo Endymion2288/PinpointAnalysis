@@ -107,7 +107,10 @@ def main():
         command[2]='analysis.flavour.s3.profile'
         subprocess.run(command,check=True)
     else:
-        reconstruction_gate(args,config)
+        gate_path=args.root/'ssl_gate'/config['name']/'gate.json'
+        prior=json.loads(gate_path.read_text()) if gate_path.exists() else None
+        if prior is None or not prior.get('passed') or prior['config']!=config:
+            reconstruction_gate(args,config)
         pretrain_run(args)
 
 

@@ -4,6 +4,7 @@ import copy
 from datetime import datetime,timezone
 import json
 import math
+import os
 from pathlib import Path
 import random
 import subprocess
@@ -99,7 +100,7 @@ def evaluate(model,loader,device,bf16,config):
         target=batch['reconstruction'].cpu().numpy()
         level=batch['query_level'].cpu().numpy();near=batch['query_near'].cpu().numpy()
         for j in range(len(prediction)):
-            rows.append(np.column_stack([level[j],near[j],target[j],prediction[j,:4]]))
+            rows.append(np.column_stack([level[j],near[j],target[j],prediction[j,:,:4]]))
         counts.append(batch['mask_counts'].cpu().numpy())
         if 'query_positive_unique' in batch:covered.append(batch['query_positive_unique'].cpu().numpy())
     values=np.concatenate(rows)
@@ -174,7 +175,7 @@ def run(args):
     history,health=[],[];start_epoch=0;steps=0;prior_seconds=0.;best=float('inf')
     manifest={'utc':datetime.now(timezone.utc).isoformat(),'config':config,'status':'running',
         'train_events':len(train),'inner_reconstruction_probe_events':len(val_ids),'steps_per_epoch':len(sampler),
-        'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        'code_commit':os.environ.get('PINPOINT_CODE_COMMIT') or subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         'GPU':torch.cuda.get_device_name() if device.type=='cuda' else None,'torch':torch.__version__,
         'precision':'BF16 encoder / FP32 objective' if bf16 else 'FP32',
         'calibration_test_used':False,'downstream_validation_used':False,'proxy':'accepted_existing_values'}
