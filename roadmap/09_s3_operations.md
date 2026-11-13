@@ -1,8 +1,8 @@
 # S3：Plane-aware 局部编码、Module context 与四分类融合
 
-**S3已重新打开。以下旧批次结果保留为故障诊断，方法结论撤回；当前修复/重训/重新评价以[revision 2合同](10_s3_repair.md)为准。**
+**S3 revision 2已完成20模型修复重训及完整validation评价，见[最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和[修复合同](10_s3_repair.md)。本文件的旧批次结果保留为故障诊断，原方法结论撤回。**
 
-本文件保存原 S3 实验合同及执行记录，原方法晋级结论已撤回。当前继承S2接受的80k train/10k validation、原生通道、geometry和detector-proxy，执行[修复合同](10_s3_repair.md)中冻结的8个screen与12个确认训练；新结果根为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13`。原结果根`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12`只作故障诊断。S2结果只读复用，calibration/test冻结，S4–S6未执行。
+本文件保存原 S3 实验合同及执行记录，原方法晋级结论已撤回。Revision 2沿用S2接受的80k train/10k validation、原生通道、geometry和detector-proxy，已完成8个screen与12个确认训练；新结果根为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13`。Multiscale+tracker通过本轮质量门槛，pixel+bar-only继续以fresh ParT为基线；global弱利用及ντ未见明确增益见最终报告。原结果根`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_2026-11-12`只作故障诊断。Calibration/test冻结，S4–S6未执行。
 
 ## 问题与实验合同
 

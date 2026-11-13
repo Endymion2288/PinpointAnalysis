@@ -1,8 +1,8 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S3重新打开。旧模型存在明确的Head饱和及encoder零梯度，之前的方法结论撤回；正在修复架构、重新训练和测试。旧数字仅为故障诊断与历史执行记录。见[修复合同](10_s3_repair.md)和[阶段81](../workbook/2026-11-13_stage81_s3_architecture_reopen.md)。**
+**当前状态：S3 revision 2修复重训及完整validation评价已完成，20模型、8,020次健康采样及18项严格检查通过。旧Head全零/encoder零梯度故障已修复，旧25模型的方法结论继续撤回。Multiscale+tracker通过本轮质量门槛，global latent弱利用和ντ未见明确增益仍保留为待解决问题。见[最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)、[完整数值](results/s3_repair_summary.json)与[修复合同](10_s3_repair.md)。**
 
-日期：2026-11-13。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。**S3 revision 2正在全量重训：8个冻结screen对照、12个预先选定的seed确认训练。**Normalized fixed、multiscale及fresh ParT均在32个train事件先导中达到100%拟合，完整最大占用压力测试通过；这不是泛化性能结论。见[阶段82](../workbook/2026-11-13_stage82_s3_repair_pilot_and_frozen_training.md)、[修复合同](10_s3_repair.md)和[当前配置](configs/s3.yaml)。旧S3的25个模型及旧晋级判断只保留为故障诊断，方法结论撤回，见[旧记录](results/s3_summary.json)。旧S3组织成本上界31.238268678 device-hours并入本轮120预算；S2成本单列。Calibration/test继续冻结，S4–S6未执行。
+日期：2026-11-13。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2完成8个冻结screen和12个预先选定的确认训练，均4epochs、40,064updates；14个单seed、9个三seed配对及7条件域完整。Multiscale+tracker三seedmacro AP=0.46338±0.00189，fresh ParT=0.45434±0.00398；相对不加tracker的Δmacro AP=+0.02496，物理块CI95=[0.01984,0.02999]。Tracker候选使用额外输入，不能将跨模型收益归于backbone；pixel+bar-only继续以fresh ParT为基线。原生相对1mm、region8相对region32未显示明确三seed收益，global路径仍弱，ντ工作点未见明确改善。详见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和[当前配置](configs/s3.yaml)。旧25模型及旧晋级判断只作[故障诊断](results/s3_summary.json)。修复成本上界10.845833333 device-hours，累计S3上界42.084102011/120（含旧31.238268678），S2单列；全部allocation已结束。Calibration/test继续冻结，S4–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -19,6 +19,7 @@
 | [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集、完整矩阵、运行命令与最终验收 |
 | [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
 | [09_s3_operations.md](09_s3_operations.md) | S3完整四分类合同、细粒度局部编码/module/融合对照、Pareto与三seed确认 |
+| [10_s3_repair.md](10_s3_repair.md) | S3故障诊断、论文依据、尺度与多尺度架构修复、最终重训结论及global弱分支后续对照 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
@@ -121,4 +122,4 @@ S3方法晋级使用[完整四分类冻结合同](09_s3_operations.md)：三seed
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
-全量事件数、pilot native loader、B0 验证指标与资源已在 S0/S1 报告中测量。尚未测量：原生深度模型与旧方法的受控性能差异、generator 包络、全量训练资源和预期物理产额。后续采用用户接受的现有 split 与 detector-proxy；正式 test 仍按 S6 在模型、阈值和校准冻结后执行。
+全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。尚未测量：global弱分支的独立信息和重训净收益、全7.24M事件训练、generator/detector包络、冻结test及预期物理产额。沿用用户接受的split与detector-proxy；正式test按S6在模型、阈值和校准冻结后执行。

@@ -83,6 +83,9 @@ def summarize(root, destination):
         'conditional_three_seed_comparisons': [{
             'domain': row['domain'], 'events': row['events'], 'comparisons': row['seed_mean_comparisons']}
             for row in conditional['paired_domains']],
+        'working_points_full_validation': [row for row in conditional['operating_points'] if row['domain'] == 'all'],
+        'working_point_scope': {
+            key: conditional[key] for key in ['denominators', 'threshold_scope', 'purity_scope']},
         'internal_health': health, 'path_diagnostics': paths,
         'promotion_decisions': acceptance['promotion_decisions'],
         'cost': {key: accounting[key] for key in ['repair_device_hours_upper_bound',
@@ -102,6 +105,14 @@ def summarize(root, destination):
         name = experiment['name']; values = experiment['four_class']
         ap = ' / '.join(f"{values[f'class_{c}_AP']:.5f}" for c in range(4))
         lines.append(f"| {short(name)} | {health[name]['best_epoch']} | {values['macro_AP']:.5f} | {values['NLL']:.5f} | {values['macro_F1']:.5f} | {values['balanced_accuracy']:.5f} | {ap} | {health[name]['sample_count']} |")
+    groups = [group for group in evaluation['training_seed_spread'] if group['three_seed_confirmation_complete']]
+    lines += ['', '## 三seed逐类AP', '',
+              '数值为三个独立训练的指标均值±training seed sample SD；不是ensemble预测或物理事件区间。', '',
+              '| Model group | AP e | AP mu | AP tau | AP NC |', '|---|---:|---:|---:|---:|']
+    for group in groups:
+        name = short(group['experiments'][0]).rsplit(' s', 1)[0]
+        columns = [f"{group['mean'][f'class_{c}_AP']:.5f} ± {group['sample_SD'][f'class_{c}_AP']:.5f}" for c in range(4)]
+        lines.append(f'| {name} | ' + ' | '.join(columns) + ' |')
     for title, rows in [('三seed配对', evaluation['seed_mean_comparisons']), ('单seed控制', evaluation['paired_comparisons'])]:
         lines += ['', f'## {title}', '',
                   '差值统一为B−A；区间为400次、128物理块的95%配对percentile interval，条件于已拟合seeds，未合并training seed SD。', '',
@@ -111,6 +122,29 @@ def summarize(root, destination):
             for scope in ['raw', 'common_support']:
                 metrics = row['metrics'][scope]
                 lines.append(f"| {label} | {scope} | {interval(metrics['macro_AP'])} | {interval(metrics['NLL'])} |")
+    lines += ['', '## 三seed逐类AP配对', '',
+              '差值统一为B−A，区间口径与上述三seed配对相同；每类单列，不以macro均值替代。', '',
+              '| Contrast | Domain | Delta AP e [95% CI] | Delta AP mu [95% CI] | Delta AP tau [95% CI] | Delta AP NC [95% CI] |',
+              '|---|---|---:|---:|---:|---:|']
+    for row in evaluation['seed_mean_comparisons']:
+        for scope in ['raw', 'common_support']:
+            columns = [interval(row['metrics'][scope][f'class_{c}_AP']) for c in range(4)]
+            lines.append(f"| {row['name']} | {scope} | " + ' | '.join(columns) + ' |')
+    working = {(row['experiment'], row['class']): row for row in summary['working_points_full_validation']}
+    lines += ['', '## 全域逐类1%背景工作点', '',
+              '各类分母为2,500 signal / 7,500 background。列表顺序明确列seed，三个seed使用同一事件；不将计数相加为独立统计量。',
+              '效率均值±training seed sample SD，阈值为validation经验阈值。0.1%工作点、purity工作点及阈值/尾部计数保留在JSON的working_points_full_validation。', '',
+              '| Model group | Seeds | Class | Efficiency at 1% FPR | Signal selected per seed | Background selected per seed |',
+              '|---|---|---|---:|---|---|']
+    for group in groups:
+        name = short(group['experiments'][0]).rsplit(' s', 1)[0]
+        for c, label in enumerate(['CC nu_e', 'CC nu_mu', 'CC nu_tau', 'NC']):
+            rows = [working[(experiment, c)]['FPR_0.01'] for experiment in group['experiments']]
+            efficiency = (f"{group['mean'][f'class_{c}_eff_at_0.01_FPR']:.5f} ± "
+                          f"{group['sample_SD'][f'class_{c}_eff_at_0.01_FPR']:.5f}")
+            signal = [row['signal_selected'] for row in rows]
+            background = [row['background_selected'] for row in rows]
+            lines.append(f"| {name} | {group['seeds']} | {label} | {efficiency} | {signal} | {background} |")
     lines += ['', '## 条件域：tracker增量', '',
               '| Domain | Events | Delta macro AP [95% CI] | Delta NLL [95% CI] |', '|---|---:|---:|---:|']
     for domain in conditional['paired_domains']:

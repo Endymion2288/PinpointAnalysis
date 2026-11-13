@@ -44,6 +44,7 @@ def main():
             if 'internal_health_failed' in statuses:
                 raise RuntimeError('failed internal health requires an architecture/training review')
             if all(value == 'complete' for value in statuses):
+                state.update(complete=len(names), total=len(names))
                 break
             if not args.wait or time.monotonic() > end:
                 raise RuntimeError('frozen fits not yet complete')

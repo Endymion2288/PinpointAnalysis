@@ -68,7 +68,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_parquet(args.output / 'counts.parquet', index=False)
     write_json(args.output / 'summary.json', {'utc': datetime.now(timezone.utc).isoformat(),
-        'scope': 'same min/median/max train occupancy events, all frozen screen configurations; '
+        'scope': 'same min/median/max train occupancy events, all frozen requested configurations; '
                  'CPU transforms only, no forward, fit or calibration/test use; not population quantiles of transformed tokens',
         'occupancy_order': 'sum of accepted pixel/bar/tracker channels; stable ascending order',
         'rows': rows})

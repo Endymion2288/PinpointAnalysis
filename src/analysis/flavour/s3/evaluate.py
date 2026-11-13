@@ -113,7 +113,7 @@ def plot_all(output, experiments, frames, root):
 
 
 def plot_resources(output, experiments):
-    """Keep GPU subtypes separate and identify points without overlapping names."""
+    """Group by final runtime device; charges can include earlier attempts."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -137,7 +137,7 @@ def plot_resources(output, experiments):
                         axis.scatter(cost, item['four_class'][metric], s=25)
                         axis.annotate(str(index), (cost, item['four_class'][metric]),
                                       xytext=(4, 4), textcoords='offset points', fontsize=8)
-                        axis.set(xlabel='Allocated device-hours (bounds / shared charges included)', ylabel=metric)
+                        axis.set(xlabel='Allocated device-hours (all attempts / shared charges)', ylabel=metric)
                     table_rows.append([index, item['name'], f'{cost:.4f}',
                                        f'{item["four_class"]["macro_AP"]:.4f}',
                                        f'{item["four_class"]["NLL"]:.4f}'])
@@ -146,8 +146,8 @@ def plot_resources(output, experiments):
                     colLabels=['ID', 'Frozen experiment', 'Device-hours', 'Macro AP', 'NLL'],
                     colWidths=[.04, .63, .11, .11, .11], loc='center', cellLoc='left')
                 table.auto_set_font_size(False); table.set_fontsize(8); table.scale(1, 1.6)
-                fig.suptitle(f'{gpu}: frozen validation quality and allocation charges\n'
-                             'GPU subtypes shown separately; operational costs do not measure model-only speedup', fontsize=11)
+                fig.suptitle(f'Final runtime device: {gpu}; frozen validation quality and allocation charges\n'
+                             'Charges may include earlier devices; operational costs do not measure model-only speedup', fontsize=11)
                 pdf.savefig(fig); plt.close(fig)
 
 
@@ -194,6 +194,7 @@ def run(args):
             'four_class': cache.report(), 'common_support_four_class': cache.report(fixed_weight), 'tau': tau,
             'prediction_diagnostics': prediction_diagnostics(cache.p),
             'parameters': manifest['parameters'], 'GPU': manifest['gpu_name'],
+            'prior_GPU_on_last_resume': manifest.get('prior_gpu_name'),
             'peak_gpu_mib': manifest.get('peak_gpu_allocated_mib'), **resource})
         for domain, mask in domains(frame, manifest['config'], manifest.get('hardware_model', True)).items():
             conditional = MetricCache(frame.loc[mask, 'label'].to_numpy(), frame.loc[mask, [f'p{c}' for c in range(4)]].to_numpy())
@@ -255,7 +256,8 @@ def run(args):
             'NLL': 'float64 clipped normalized four-class log loss', 'Brier': 'sum of four squared probability errors per event',
             'common_support': 'fixed accepted S2 coarse E/vertex weights; target Z unmatched',
             'CI95': 'pointwise paired block percentile interval; does not include training stochasticity',
-            'training_seed_SD': 'sample SD across separately trained seeds; not event replication'},
+            'GPU_and_cost': 'GPU is the final runtime device; allocation charges include all recorded attempts and can span earlier devices',
+            'training_seed_SD': 'sample SD across separately trained seeds and their recorded runtime devices; hardware effects not separately identified; not event replication'},
         'program_wall_seconds': time.perf_counter() - started}
     # MetricCache reports undefined values as null in domains with missing classes.
     write_json(args.output / 'summary.json', summary)

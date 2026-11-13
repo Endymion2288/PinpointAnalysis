@@ -1,4 +1,4 @@
-status: architecture_repair_in_progress
+status: revision2_complete_validation_evaluated
 stage: S3_revision2
 results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13
 source_data: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11/h100
@@ -14,10 +14,15 @@ S4_S6_executed: false
 confirmation: roadmap/configs/s3_repair_confirmation.json
 confirmation_comparisons: roadmap/configs/s3_repair_confirmation_pairs.json
 final_summary: roadmap/results/s3_repair_summary.json
-latest_report: workbook/2026-11-13_stage86_s3_incremental_completed_model_checks.md
+latest_report: workbook/2026-11-13_stage87_s3_repair_final_results.md
 scientific_models_planned: 20
-new_models_promoted: null
-recommended_reference: pending_healthy_retraining
+scientific_models_completed: 20
+new_models_promoted: 1
+promoted_candidate: multiscale_with_accepted_tracker_proxy
+promotion_scope: fixed_budget_validation_with_additional_tracker_input
+recommended_reference: fresh_ParT_for_pixel_bar_only
+global_branch_independent_benefit_established: false
+cumulative_S3_device_hours_upper_bound: 42.08410201113574
 prior_S3_device_hours_upper_bound: 31.23826867780241
 revision2_contract: roadmap/10_s3_repair.md
 revision2_results_root: /eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13

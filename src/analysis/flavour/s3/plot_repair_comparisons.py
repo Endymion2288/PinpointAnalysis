@@ -24,6 +24,7 @@ def main():
     from matplotlib.backends.backend_pdf import PdfPages
     groups = [g for g in data['training_seed_spread'] if g['three_seed_confirmation_complete']]
     by_name = {e['name']: e for e in data['experiments']}
+    metric_labels = {'macro_AP': 'Macro AP', 'NLL': 'NLL', 'balanced_accuracy': 'Balanced accuracy'}
     with PdfPages(args.output / 'repaired_model_overview.pdf') as pdf:
         fig, axes = plt.subplots(1, 3, figsize=(14, 5), constrained_layout=True)
         for axis, metric in zip(axes, ['macro_AP', 'NLL', 'balanced_accuracy']):
@@ -32,11 +33,11 @@ def main():
                 axis.scatter(values, np.full(len(values), i), s=20, color=f'C{i}')
                 axis.errorbar(np.mean(values), i, xerr=np.std(values, ddof=1), fmt='k|', capsize=4)
             axis.set(yticks=range(len(groups)), yticklabels=[label(g['experiments'][0].replace('_s17_', '_s42_')) for g in groups],
-                     xlabel=metric, title=f'{metric}: mean and training-seed sample SD')
+                     xlabel=metric_labels[metric], title=metric_labels[metric])
             axis.grid(axis='x', alpha=.25)
         fig.suptitle('Repaired S3: complete validation sample, three separately trained seeds\n'
                      'Dots are seed fits; bars are one sample SD, not physical-event confidence intervals', fontsize=11)
-        pdf.savefig(fig); plt.close(fig)
+        pdf.savefig(fig, bbox_inches='tight'); plt.close(fig)
     comparisons = data['seed_mean_comparisons']
     from analysis.flavour.s3.metrics import CLASSES
     metric_groups = [
@@ -62,7 +63,7 @@ def main():
                     axis.grid(axis='x', alpha=.25)
                 fig.suptitle(f'Repaired S3, {scope}: prespecified three-seed mean contrasts\n'
                              '95% paired physical-block intervals, 400 replicates; conditional on fitted seeds', fontsize=11)
-                pdf.savefig(fig); plt.close(fig)
+                pdf.savefig(fig, bbox_inches='tight'); plt.close(fig)
 
 
 if __name__ == '__main__':

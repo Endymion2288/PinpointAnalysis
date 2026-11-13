@@ -1,6 +1,8 @@
 # S3架构修复、重新训练与重新评价
 
-2026-11-13：S3重新打开。原25模型只保留为架构/训练故障诊断，原“新架构不晋级、继续简单基线”的方法结论撤回；它们不能判断局部编码、context、latent fusion或native信息是否有效。旧数据文件保留实测数值及原配置，不与revision 2混合。本轮止于S3，calibration/test继续冻结。
+2026-11-13：S3 revision 2已完成20模型修复重训及完整validation评价，18项严格检查通过，见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和[完整数值](results/s3_repair_summary.json)。原25模型只保留为架构/训练故障诊断，原方法结论撤回；它们不能判断局部编码、context、latent fusion或native信息是否有效。本轮止于S3，calibration/test继续冻结。
+
+修复后Head整层失活消失，8,020次计划健康采样齐全，全部模型具有有效学习。Multiscale+tracker相对不加tracker的三seedΔmacro AP=+0.02496，CI95=[0.01984,0.02999]，该候选通过本轮质量晋级；相同pixel+bar输入下fresh ParT仍更强。Native/1mm、region8/32的净收益区间均含零。Global latent仍弱利用，ντ AP/工作点未见明确改善，不将整体学习作为所有融合分支充分工作的证明。累计S3设备时上界42.084102011/120，全部allocation已结束。
 
 ## 已确认问题与排除项
 
@@ -74,7 +76,7 @@ flowchart LR
 
 已观察到同region的query向量cosine偏高，但分组平均、BF16舍入和共同region内容均可造成这一现象；单独cosine高不等于训练失败。用FP32 cosine、query variation、采样attention entropy、上游梯度、完整validation和压缩控制共同判断。若完整学习结果显示latent或module路径弱而旁路承担大部分分类，明确记录路径贡献，不把旁路的有效学习当作所有attention层均充分工作的证明。
 
-针对已观测的global弱依赖，后续假设分开检验：query同质化、局部/summary捷径的优化竞争，以及全局表示的真实冗余。先比较train-only上独立拟合的local/regional/global probes与完整模型分支梯度，再冻结“无global”“分支dropout或OPM”“query位置/多样性”中的单变量重训。OPM/OGM主要针对不同输入模态；同一encoder的多尺度分支共享参数，迁移为path modulation须另行定义控制，不能直接宣称原算法适用。自然缺失的硬件读出始终保留presence，不将训练dropout解释为真实硬件缺失。当前20模型用于先完成本轮稳定性、压缩和硬件增量评价，未运行这些后续实验。
+针对已观测的global弱依赖，后续假设分开检验：query同质化、局部/summary捷径的优化竞争，以及全局表示的真实冗余。先比较train-only上独立拟合的local/regional/global probes与完整模型分支梯度，再冻结“无global”“分支dropout或OPM”“query位置/多样性”中的单变量重训。OPM/OGM主要针对不同输入模态；同一encoder的多尺度分支共享参数，迁移为path modulation须另行定义控制，不能直接宣称原算法适用。自然缺失的硬件读出始终保留presence，不将训练dropout解释为真实硬件缺失。本轮20模型已完成稳定性、压缩和硬件增量评价，未运行这些后续实验。
 
 ## 训练与内部健康要求
 
@@ -86,7 +88,7 @@ flowchart LR
 
 ## 调度与评价
 
-新根为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13`。GPU通过Kubeflow或HTCondor，按实获配选择，允许一个MIG内多个独立训练，测量峰值显存和利用率后调整并发。沿用[CERN flavor表](https://ml.docs.cern.ch/#available-flavors)的H100 47GB `nvidia.com/mig-3g.47gb:1`及product selector；CPU/RAM由平台注入。AFS只放小提交脚本，EOS放输出。旧S3已用上界31.238268678 device-hours，120预算内余额下界88.761731322；修复、先导和失败尝试均计入，预算不自动扩大。
+新根为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13`。GPU通过Kubeflow或HTCondor，按实获配选择，允许一个MIG内多个独立训练，测量峰值显存和利用率后调整并发。沿用[CERN flavor表](https://ml.docs.cern.ch/#available-flavors)的H100 47GB `nvidia.com/mig-3g.47gb:1`及product selector；CPU/RAM由平台注入。修复campaign上界10.845833333、旧S3上界31.238268678，累计S3上界42.084102011 device-hours，120预算内余额下界77.915897989；修复、先导和失败尝试均计入，预算不自动扩大。
 
 Pilot通过后冻结独立科学矩阵，至少覆盖稳定fixed、multiscale native/1 mm、tracker增量、无direct旁路及同配方重训ParT，并对主比较追加seeds17/2026。四分类macro AP/NLL、逐类AP/F1/precision/recall、混淆矩阵、相同FPR/purity、条件域和token/资源/内部健康共同评价。物理事件CI与training seed spread分开，使用原128块/400次配对bootstrap；calibration/test不动。旧结果只作故障对照，新结论以健康重训结果为准。
 
@@ -100,4 +102,6 @@ Pilot通过后冻结独立科学矩阵，至少覆盖稳定fixed、multiscale na
 
 调度补充：确认任务同时进入HTCondor，实际获配后才以原子`claims/<experiment>`领取；Kubeflow后续确认波也使用同一领取机制，已有writer不重复启动。允许H100（含47GB MIG）与A10040GB原生BF16执行，同Torch2.7.1和模型/更新预算；硬件作为实测元数据保留，跨设备allocation不称模型加速。未获配任务可由另一backend先领取。完整验收还报告NLL相对constant prior的400次物理块bootstrap差值区间，区间支持学习后才通过有效学习项；这是固定validation checkpoint的诊断，仍不是冻结test结论。
 
-首轮已有6个模型完整validation显示有效学习，详见[阶段85](../workbook/2026-11-13_stage85_s3_learning_and_path_diagnostics.md)，最终结构结论尚未形成。新增固定checkpoint路径置换诊断覆盖64个跨occupancy非空validation事件，相同模态presence内置换regional/global/local/summary分支，并记录token谱；用于解释路径依赖，不能等同重训消融或总体性能。12并发资源尝试已归档，保留成本及观察到的退出信息；当前MIG总并发上限8，通过共享名额在screen结束后补入已冻结确认任务。
+中途首轮6个模型的有效学习证据见[阶段85](../workbook/2026-11-13_stage85_s3_learning_and_path_diagnostics.md)，最终20模型结果见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)。17个修复模型均完成64个跨occupancy非空validation事件的固定checkpoint诊断，相同模态presence内置换regional/global/local/summary分支，并记录token谱；用于解释路径依赖，不能等同重训消融或总体性能。12并发资源尝试已归档，保留成本及观察到的退出信息；后续MIG总并发上限8，通过共享名额补入冻结确认任务，全部训练和allocation现已结束。
+
+恢复经验见[阶段86](../workbook/2026-11-13_stage86_s3_incremental_completed_model_checks.md)：`condor_ssh_to_job`只用于短检查，长期训练必须由正式batch入口管理。此次独立session和忽略SIGHUP仍未保住SSH控制进程族中的writer；源campaign在一个child被停止后非零退出，又连带中断同Pod的确认任务。后续接续改为正式Kubeflow Job及现有A100队列，使用已提交epoch的模型/optimizer/scheduler/RNG恢复，重算未提交updates，并保留全部尝试费用。不能把短暂启动当作成功迁移，也不能用未观测的Pod phase或exit code填充终态证据。

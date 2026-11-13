@@ -1,8 +1,8 @@
 # 分阶段工单、资源与交付
 
-**S3已重新打开。以下旧批次结果保留为故障诊断，方法结论撤回；当前修复/重训/重新评价以[revision 2合同](10_s3_repair.md)为准。**
+**S3 revision 2已完成20模型修复重训及完整validation评价，18项严格检查通过；[最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)与[修复合同](10_s3_repair.md)为当前依据。旧批次方法结论撤回。**
 
-S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3已完成25项科学模型及350项CPU读回，完整四分类22单seed/9三seed/1交互、七条件域及19项strict门槛通过；新模型未晋级，保留ParT reference与1 mm控制。组织成本上界31.238268678 device-hours，见[科学报告](../workbook/2026-11-13_stage77_s3_scientific_analysis.md)与[最终验收](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。S4–S6未执行。
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global路径独立收益仍待解决。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test冻结，S4–S6未执行。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 

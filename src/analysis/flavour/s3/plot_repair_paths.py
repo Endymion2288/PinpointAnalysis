@@ -62,7 +62,7 @@ def plot(root, names, output):
                                     xytext=(4, 4), textcoords='offset points', fontsize=8)
             axes[1, 1].set(yticks=range(len(spectra)), yticklabels=list(spectra), xscale='log',
                            xlabel='Uncentered squared-spectrum entropy rank; black tick = query count',
-                           title='Recorded groups only; low rank has no pass/fail threshold')
+                           title='Recorded groups: effective rank and query count')
             axes[1, 1].invert_yaxis()
             controls = report['head_controls']
             nonlinear = controls['nonlinear_head_only']['probe_delta_NLL']
@@ -72,7 +72,7 @@ def plot(root, names, output):
                 f"Probe NLL {report['probe_NLL']:.5f}; head-only delta NLL: nonlinear {nonlinear:+.5f}, linear {linear:+.5f}\n"
                 'Same-presence event permutation; occupancy-quantile probe, not population performance. '
                 'Removal has no retraining.', fontsize=10)
-            pdf.savefig(fig)
+            pdf.savefig(fig, bbox_inches='tight')
             plt.close(fig)
 
 
