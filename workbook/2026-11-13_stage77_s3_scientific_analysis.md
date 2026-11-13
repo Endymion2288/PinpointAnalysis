@@ -79,6 +79,23 @@
 
 部分确认统计保存在结果根`confirmation_partial_summary.json`，包含三模型的34项统计、混淆矩阵、mean/sample SD和基线差值，明确标记`S3_complete=false`、区间与成本pending。此处只读取已完成的validation输出，没有新增训练、使用calibration/test或重跑完整bootstrap。
 
+另读取两项新增seed的epoch4 best checkpoint，在同一组每类2事件、共8事件上执行CPU FP32/eval前向和一次分类损失反向，无optimizer更新。两项全部参数finite，均有8组不同score，上游分类梯度均非零：
+
+| Seed | Head GELU exact-zero fraction | Input gradient squared norm | Module-read gradient squared norm |
+|---|---:|---:|---:|
+| 17 | 0.867187500 | 0.046639848 | 0.017034650 |
+| 2026 | 0.798828125 | 17.625519454 | 0.028882242 |
+
+原始证据为`diagnostic_confirmation_late_s{17,2026}_best.json`。这些小样本状态与seed42主fine/latent的head全零、上游梯度完全切断不同；较多GELU零输出本身不能量化对整体验证性能的因果贡献，也不能用梯度范数大小排序模型质量。轻量best checkpoint未保存optimizer-step字段，80,064次更新由正式history和CPU读回证明。
+
+上述两项诊断实际exit0，执行命令为以下模板分别代入seed17/2026：
+
+```bash
+python -m analysis.flavour.s3.diagnose --root "$S3_ROOT" \
+  --experiment s3_a4_late_s17_e4 --checkpoint best \
+  --output "$S3_ROOT/diagnostic_confirmation_late_s17_best.json"
+```
+
 ### 配对统计与条件化范围
 
 首轮22/22个冻结配对与1个2×2交互已计算，pending为0。每个比较同时输出raw/common-support的34项统计，包括macro AP/AUROC/F1、balanced accuracy、NLL/Brier及四类AP/AUROC/precision/recall/F1、1%与0.1%背景接受率效率。英文诊断图包含逐类ROC/PR、混淆矩阵和学习曲线。
