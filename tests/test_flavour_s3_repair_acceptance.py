@@ -8,10 +8,24 @@ import unittest
 from analysis.flavour.s3.accept_repair import confirmation_contract, experiment_record
 from analysis.flavour.s3.evaluate import factorial_specifications
 from analysis.flavour.s3.inspect_repair import summarize_samples
+from analysis.flavour.s3.finalize_repair import terminal_accounting_complete
 from analysis.flavour.s2.readback import compatible_gpu_name
 
 
 class RepairAcceptanceTests(unittest.TestCase):
+    def test_final_evaluation_waits_for_terminal_reservations(self):
+        report = {'missing_history_records': 0, 'allocations': [{'status': 4}, {'status': 3}]}
+        self.assertTrue(terminal_accounting_complete(report))
+        report['allocations'][0]['status'] = 2
+        self.assertFalse(terminal_accounting_complete(report))
+        report['allocations'][0]['status'] = 4
+        report['allocations'][0]['allocation_complete'] = False
+        self.assertFalse(terminal_accounting_complete(report))
+        report['allocations'] = []
+        self.assertFalse(terminal_accounting_complete(report))
+        report.update(missing_history_records=1, allocations=[{'status': 4}])
+        self.assertFalse(terminal_accounting_complete(report))
+
     def test_recorded_BF16_hardware_allowlist_keeps_actual_device(self):
         allowed=['NVIDIA H100 NVL','NVIDIA A100-PCIE-40GB']
         self.assertTrue(compatible_gpu_name('NVIDIA A100-PCIE-40GB',allowed))

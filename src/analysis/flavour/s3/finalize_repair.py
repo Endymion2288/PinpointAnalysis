@@ -10,6 +10,12 @@ import time
 from analysis.flavour.inventory import write_json
 
 
+def terminal_accounting_complete(report):
+    return (report['missing_history_records'] == 0 and bool(report['allocations'])
+            and all(row['status'] in [3, 4] and row.get('allocation_complete', True)
+                    for row in report['allocations']))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
@@ -53,9 +59,19 @@ def main():
         repaired = [c['name'] for campaign in campaigns for c in campaign['experiments']
                     if c['architecture'] == 'plane_module_v2']
         module('diagnose_repair_paths', '--reuse', '--experiments', *repaired)
-        # Give supervisors time to reap their last child; terminal allocation
-        # evidence remains mandatory and cannot be replaced with these outputs.
-        module('accounting_repair')
+        # Readback observers and supervisors can finish after the last fit.
+        # Resolve that race before publishing resource-dependent evaluation.
+        while True:
+            module('accounting_repair')
+            accounting = json.loads((args.root / 'campaign_accounting.json').read_text())
+            if terminal_accounting_complete(accounting):
+                break
+            if time.monotonic() > end:
+                raise RuntimeError('terminal allocation evidence remains incomplete')
+            state.update(stage='waiting_for_terminal_allocations', status='running',
+                         utc=datetime.now(timezone.utc).isoformat())
+            write_json(state_path, state)
+            time.sleep(30)
         evaluation = args.root / 'evaluation_final'
         module('evaluate', '--campaign', args.campaign, '--confirmation', args.confirmation,
                '--comparisons', args.comparisons, '--output', evaluation, '--bootstrap', 400, '--strict')

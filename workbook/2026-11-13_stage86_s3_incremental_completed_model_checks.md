@@ -58,6 +58,10 @@ JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed na
 
 新增图的三模型实际渲染、`compileall`与`git diff --check`通过；路径/科学验收相关9项既有测试全部通过（0.056s+0.009s）。只重启等待中的CPU finalizer以接入新图，GPU训练计算与冻结配置未改。
 
+13:50 UTC对两个Condor allocation各连续采样21次、间隔1s：H100利用率均值80.00%（8–100%），设备显存16,889 MiB；A100均值42.14%（5–71%），设备显存18,596 MiB。当前均同卡3个训练；这是短时间NVML样本，不外推整批busy time。先前SSH带AssignedGPUs标识的探测未枚举设备；本次不指定该标识的实际`nvidia-smi`成功，证据在`audit/gpu_utilization_samples_2026-11-13T1350Z.json`。MIG利用率仍未测量，不从其他卡代推。
+
+最终流程增加显式终态等待：所有fit/诊断完成后每30s刷新allocation，直到history完整、各分配真实终态，才生成依赖成本的评价，避免observer与supervisor退出之间的竞态留下过时资源字段。新增回归覆盖Running、缺失历史、allocation不完整及空分配列表；科学验收6项测试0.012s通过。等待中的CPU finalizer已更新，训练writer保持运行。
+
 ## 阶段性结论
 
 已确认修复结构可以完成全量四轮训练并取得统计支持的有效学习；首个模型的全部计划内部健康及checkpoint读回通过。其余19模型尚未全部完成，因此尚无最终结构/粒度/tracker净增益结论；旧S3结论继续撤回。
