@@ -119,6 +119,27 @@ python -m analysis.flavour.s3.diagnose --root "$S3_ROOT" \
 
 上游梯度非零与主fine/latent seed42的完全切断不同；seed17的input梯度平方范数很小，仍不能单凭一个小样本梯度值判定优化充分。原始记录为`diagnostic_confirmation_tracker_s{17,2026}_best.json`，均实际exit0，复现时将上节diagnose模板的experiment/output替换为对应tracker模型。没有更新训练参数。
 
+### 已完成候选的四类argmax取舍
+
+以下为每个seed独立argmax后的precision/recall/F1再取三seed均值，分母为相同完整validation；不是ensemble，也不是固定purity或固定背景接受率比较。候选取自`confirmation_partial_summary.json`，ParT取自screen评价已完成的S2三seed组，直接读取数值，无新增训练或bootstrap。
+
+| Model | Class | Precision | Recall | F1 |
+|---|---|---:|---:|---:|
+| ParT native | e | 0.564839 | 0.495067 | 0.527273 |
+| ParT native | mu | 0.466709 | 0.333067 | 0.380801 |
+| ParT native | tau | 0.315802 | 0.553600 | 0.398916 |
+| ParT native | NC | 0.438547 | 0.272400 | 0.334352 |
+| 4 mm late | e | 0.456214 | 0.380800 | 0.412630 |
+| 4 mm late | mu | 0.315241 | 0.551200 | 0.400317 |
+| 4 mm late | tau | 0.292451 | 0.208800 | 0.242830 |
+| 4 mm late | NC | 0.329249 | 0.227467 | 0.268541 |
+| fine/context/latent + tracker | e | 0.428905 | 0.410133 | 0.416344 |
+| fine/context/latent + tracker | mu | 0.367512 | 0.398133 | 0.380915 |
+| fine/context/latent + tracker | tau | 0.301918 | 0.256000 | 0.276573 |
+| fine/context/latent + tracker | NC | 0.356653 | 0.391067 | 0.372115 |
+
+Tracker候选的NC recall/F1描述均值高于ParT，但precision及NC AP更低；mu recall也更高而precision更低，F1均值接近。Late的mu recall/F1更高，tau recall明显更低。不能把四类AP均较低扩大成所有逐类指标都更低，也不能把argmax recall提高写成固定purity下的效率收益。完整曲线、同工作点计数与配对事件区间仍等待最终统一评价。
+
 ### 配对统计与条件化范围
 
 首轮22/22个冻结配对与1个2×2交互已计算，pending为0。每个比较同时输出raw/common-support的34项统计，包括macro AP/AUROC/F1、balanced accuracy、NLL/Brier及四类AP/AUROC/precision/recall/F1、1%与0.1%背景接受率效率。英文诊断图包含逐类ROC/PR、混淆矩阵和学习曲线。
