@@ -50,6 +50,16 @@ def submit(args):
     for name in ['logs', 'kubeflow', 'runtime']:
         (root / name).mkdir(exist_ok=True)
     name = args.name
+    prototype_pool=args.gpu_pool=='fp32-prototype'
+    if prototype_pool:
+        if args.backend!='condor' or args.stage not in {'pilot','campaign'}:
+            raise ValueError('V100 pool is limited to explicit Condor optimization prototypes')
+        selected=json.loads(args.campaign.read_text())['experiments']
+        for task in args.tasks:
+            config=selected[task]
+            if (not config.get('fp32_prototype') or config.get('program')!='pilot'
+                or config.get('epochs',1)>1 or config.get('steps_per_epoch',0)>1024):
+                raise ValueError('V100 tasks must be labeled one-epoch FP32 pilots of at most 1024 steps')
     commit=command(['git','rev-parse','HEAD']).strip()
     if subprocess.run(['git','diff','--quiet','HEAD','--','src/analysis/flavour'],check=False).returncode:
         raise ValueError('commit source changes before freezing a batch snapshot')
@@ -99,7 +109,7 @@ def submit(args):
     if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
     evidence = {'utc': datetime.now(timezone.utc).isoformat(), 'stage': args.stage, 'name': name,
-        'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,
+        'backend': args.backend, 'tasks': args.tasks, 'concurrency': args.concurrency,'gpu_pool':args.gpu_pool,
         'code_commit': commit,'source_snapshot':str(code),'source_archive':str(source_archive),
         'worker_source':'local scratch extracted from committed archive',
         'frozen_campaign':str(args.campaign) if args.campaign else None,
@@ -119,6 +129,7 @@ def submit(args):
         wrapper.chmod(0o755)
         arguments_text = ' '.join(a if a == '$(task)' else shlex.quote(a) for a in arguments)
         gpu = not cpu_only
+        gpu_cpus=max(4,args.concurrency*(2 if prototype_pool else 3))
         text = f'''universe = vanilla
 executable = {wrapper}
 arguments = {arguments_text}
@@ -126,7 +137,7 @@ initialdir = {directory}
 environment = "PINPOINT_JOB_ID=$(ClusterId).$(Process)"
 output = /dev/null
 error = /dev/null
-request_cpus = {max(4,args.concurrency*3) if gpu else 4}
+request_cpus = {gpu_cpus if gpu else 4}
 request_memory = {max(12,args.concurrency*5) if gpu else 12}GB
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
 requirements = (OpSysAndVer == "AlmaLinux9")
@@ -136,7 +147,11 @@ when_to_transfer_output = ON_EXIT
 transfer_output_files = ""
 '''
         if gpu:
-            text += 'request_gpus = 1\nrequire_gpus = ((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA A100-PCIE-40GB")) && (GlobalMemoryMb >= 39000)\nqueue 1\n'
+            if prototype_pool:
+                requirement='((DeviceName == "Tesla V100-PCIE-32GB") || (DeviceName == "Tesla V100S-PCIE-32GB")) && (GlobalMemoryMb >= 30000)'
+            else:
+                requirement='((DeviceName == "NVIDIA H100 NVL") || (DeviceName == "NVIDIA A100-PCIE-40GB")) && (GlobalMemoryMb >= 39000)'
+            text += 'request_gpus = 1\nrequire_gpus = '+requirement+'\nqueue 1\n'
         elif args.stage == 'data':
             text += 'queue task in '+','.join(map(str,args.tasks))+'\n'
         else:
@@ -198,6 +213,7 @@ def main():
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
     parser.add_argument('--concurrency',type=int,default=6)
     parser.add_argument('--flavor',choices=GPU_FLAVORS,default='h100-47gb')
+    parser.add_argument('--gpu-pool',choices=['native-bf16','fp32-prototype'],default='native-bf16')
     parser.add_argument('--deadline',type=int,default=21600)
     parser.add_argument('--apply',action='store_true')
     submit(parser.parse_args())

@@ -33,7 +33,8 @@ def reconstruction_gate(args,config):
     # actual optimization capacity; its scores are never downstream validation.
     device=torch.device(args.device)
     model=PretrainingModel(config).to(device);optimizer=optimizer_for(model,config)
-    bf16=device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False)
+    bf16=(device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False)
+        and not config.get('fp32_prototype',False))
     output=args.root/'ssl_gate'/config['name'];output.mkdir(parents=True,exist_ok=True)
     records,health=[],[];started=time.perf_counter()
     for step in range(config.get('ssl_gate_steps',256)+1):

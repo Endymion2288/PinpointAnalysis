@@ -175,8 +175,13 @@ def run(args):
         raise RuntimeError('assembled S4 corpus must pass its new-label join checks')
     torch.set_num_threads(1);pa.set_cpu_count(1);pa.set_io_thread_count(1)
     seed=config.get('seed',42);random.seed(seed);np.random.seed(seed);torch.manual_seed(seed)
-    device=torch.device(args.device);bf16=device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False)
-    if device.type=='cuda' and not bf16:raise RuntimeError('formal S4 requires native BF16 GPU')
+    device=torch.device(args.device)
+    fp32_prototype=config.get('fp32_prototype',False)
+    if fp32_prototype and (config.get('epochs',1)>1 or config.get('steps_per_epoch',0)>1024):
+        raise ValueError('FP32 prototypes are limited to one epoch and 1024 steps')
+    bf16=device.type=='cuda' and torch.cuda.is_bf16_supported(including_emulation=False) and not fp32_prototype
+    if device.type=='cuda' and not bf16 and not fp32_prototype:
+        raise RuntimeError('primary S4 requires native BF16; use explicitly labeled FP32 prototypes for optimization checks')
     started=time.perf_counter()
     train=PretrainDataset(root,'train',config);validation=PretrainDataset(root,'validation',config)
     sampler=SpatialBatchSampler(train,config.get('batch_size',16),seed,steps=config.get('steps_per_epoch'))
