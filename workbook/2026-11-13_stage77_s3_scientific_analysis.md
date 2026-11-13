@@ -1,6 +1,6 @@
 # S3科学分析：screen完成，确认批次进行中
 
-本文为最终报告的进行中版本。17项screen及八项确认中的四项已完成，4 mm late与tracker两个候选均有三seed结果；完整三seed配对区间、最终条件域比较和组织成本尚未完成，S3未最终验收。以下表格仅使用已经发布的完整结果。
+本文为最终报告的进行中版本。17项screen及八项确认中的六项已完成，4 mm late与tracker两个候选及主native结构均有三seed结果；完整三seed配对区间、最终条件域比较和组织成本尚未完成，S3未最终验收。以下表格仅使用已经发布的完整结果。
 
 ## 阶段目标
 
@@ -98,7 +98,7 @@ python -m analysis.flavour.s3.diagnose --root "$S3_ROOT" \
 
 ### 第二个完整三seed候选：fine/context/latent加tracker
 
-新增seed17/2026均完成四轮、80,064 applied updates、零AMP skips，各14项CPU读回通过，best NLL均在epoch4。确认批次现有四项完成、56项CPU读回通过；其余四项为主模型native/1 mm的两个新增seed，均已在同一Pod中运行。
+新增seed17/2026均完成四轮、80,064 applied updates、零AMP skips，各14项CPU读回通过，best NLL均在epoch4。本组完成时确认批次有四项完成、56项CPU读回通过；当时其余四项为主模型native/1 mm的两个新增seed。随后native两项已完成，当前只剩1 mm两项运行。
 
 | Seed | Macro AP | Macro F1 | Balanced accuracy | NLL |
 |---|---:|---:|---:|---:|
@@ -118,6 +118,34 @@ python -m analysis.flavour.s3.diagnose --root "$S3_ROOT" \
 | 2026 | 0.841145813 | 0.230910013 | 0.005662644 |
 
 上游梯度非零与主fine/latent seed42的完全切断不同；seed17的input梯度平方范数很小，仍不能单凭一个小样本梯度值判定优化充分。原始记录为`diagnostic_confirmation_tracker_s{17,2026}_best.json`，均实际exit0，复现时将上节diagnose模板的experiment/output替换为对应tracker模型。没有更新训练参数。
+
+### 主native结构的完整三seed确认
+
+新增seed17/2026的子进程分别在2026-11-13 02:32:46/02:32:52 UTC以exit0完成。两项各80,064 applied updates、零AMP skips、14项回读通过。确认批次现为6/8完成、84项回读通过，剩余1 mm两个seed继续在同一Pod训练。
+
+| Seed | Selected epoch | Macro AP | Macro F1 | Balanced accuracy | NLL | Distinct full-validation score vectors |
+|---|---:|---:|---:|---:|---:|---:|
+| 17 | 1 | 0.256270 | 0.152685 | 0.248200 | 1.385242 | 438 |
+| 42 | 4 | 0.250000 | 0.100000 | 0.250000 | 1.386298 | 1 |
+| 2026 | 4 | 0.250000 | 0.100000 | 0.250000 | 1.386298 | 1 |
+| Mean | — | 0.252090 | 0.117562 | 0.249400 | 1.385946 | — |
+| Sample SD | — | 0.003620 | 0.030418 | 0.001039 | 0.000610 | — |
+
+统一`MetricCache`从已发布Parquet计算，NLL使用与最终评价相同的float64归一化定义。三seed平均AP[e, mu, tau, NC]=[0.253731, 0.251264, 0.250732, 0.252634]；相对native ParT/ParticleNet的macro AP描述均值差为−0.204406148/−0.179695577，NLL差为+0.158112014/+0.142277265。`confirmation_partial_summary.json`已更新为三组完整三seed结构，并继续明确区间和成本pending、`S3_complete=false`。
+
+Seed17各轮macro AP为0.256270/0.250000/0.252495/0.253596；NLL选中第一轮。不能用最后一轮替代正式选中轮次，也不能把三次训练全部写成完全常数输出。Seed42/2026选中checkpoint的完整validation各只有一组分数，seed17则为弱学习并含大量ties。
+
+对新增seed在同8事件执行CPU FP32/eval诊断，无optimizer更新；seed17的best与last不同，因此两者都检查，seed2026的best已为last。全部参数finite，三次程序exit0：
+
+| Model state | Epoch | Distinct scores / 8 events | Head GELU exact-zero fraction | Input gradient squared norm | Module-read gradient squared norm |
+|---|---:|---:|---:|---:|---:|
+| seed17 best | 1 | 6 | 0.989583313 | 1.106993e-10 | 8.247433e-5 |
+| seed17 last | 4 | 2 | 0.998697937 | 1.052449e-10 | 2.480705e-6 |
+| seed2026 best/last | 4 | 1 | 1.000000000 | 8.942770e-38 | 9.340110e-32 |
+
+Seed2026的GELU输出全零，但本次FP32反向仍存在极小非零梯度，不能称所有上游梯度严格为0；seed42的零梯度证据单独保留。Seed17的局部诊断也不支持完全切断。三者共同显示当前配方的分类学习很弱，但没有分离head、归一化、窗口及压缩边界的独立因果效应。
+
+证据为`diagnostic_confirmation_primary_s{17,2026}_{best,last}.json`中实际执行的三份文件及`diagnostic_confirmation_primary_summary.json`。三个CPU程序wall time依次37.152107/26.304034/28.825055 s，包含读checkpoint、数据与计算；不是纯计算时间或GPU成本。命令复用本报告的`analysis.flavour.s3.diagnose`模板。
 
 ### 已完成候选的四类argmax取舍
 
@@ -200,4 +228,4 @@ python -m analysis.flavour.s3.finalize --root "$S3_ROOT" \
 
 ## 下一步计划
 
-完成其余四项confirmation与CPU读回，联合报告三seed均值、sample SD、四类配对区间、条件域/尾部统计、native错误事件图和终态成本。逐项审阅strict gate覆盖及英文图示，更新本报告和roadmap完成状态，提交版本化最终汇总与推荐backbone。S4–S6不执行。
+完成其余两项1 mm confirmation与CPU读回，联合报告三seed均值、sample SD、四类配对区间、条件域/尾部统计、native错误事件图和终态成本。逐项审阅strict gate覆盖及英文图示，更新本报告和roadmap完成状态，提交版本化最终汇总与推荐backbone。S4–S6不执行。

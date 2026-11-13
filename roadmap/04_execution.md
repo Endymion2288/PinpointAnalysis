@@ -1,6 +1,6 @@
 # 分阶段工单、资源与交付
 
-S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3的17项screen及238项CPU读回已完成，8项新增seed确认中4项完成、其余4项并发运行，见[执行合同](09_s3_operations.md)与[阶段59](../workbook/2026-11-12_stage59_s3_diagnostics_and_queue_handoff.md)。S4–S6未执行。
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)给出科学结论和gate decision，[运行入口](07_s2_operations.md)保留可复现命令。S3的17项screen及238项CPU读回已完成，8项新增seed确认中6项完成、其余2项1 mm任务并发运行，见[执行合同](09_s3_operations.md)与[阶段59](../workbook/2026-11-12_stage59_s3_diagnostics_and_queue_handoff.md)。S4–S6未执行。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
