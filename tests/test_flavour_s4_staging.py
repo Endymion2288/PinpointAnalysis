@@ -1,6 +1,7 @@
 """Shared compressed staging preserves native channels and canonical batches."""
 import json
 import os
+import pickle
 from pathlib import Path
 import tempfile
 import unittest
@@ -14,6 +15,7 @@ import torch
 
 from analysis.flavour.s3.dataset import PlaneDataset, collate_planes
 from analysis.flavour.s4.stage_inputs import stage_shards
+from analysis.flavour.s4.dataset import LabelDataset
 
 
 class S4InputStagingTests(unittest.TestCase):
@@ -67,6 +69,31 @@ class S4InputStagingTests(unittest.TestCase):
             original.native.close(); staged.native.close()
             self.assertTrue((root / 'shared/0/observations.parquet').exists())
             self.assertTrue((paths[0] / 'observations.parquet').exists())
+
+            with patch.dict(os.environ, {'PINPOINT_CLASSIFICATION_CACHE_MIB': '1', 'PINPOINT_NATIVE_SHARD_ROOT': str(root / 'shared')}):
+                cached = LabelDataset(root, 'train', config, cache_dir=root / 'scratch_c')
+            before = collate_planes([cached[i] for i in range(len(cached))])
+            self.assertEqual(cached.native.cache_stats()['resident_shards'], 0)
+            self.assertTrue(cached.event_cache_stats()['native_released_after_complete_cache'])
+            after = collate_planes([cached[i] for i in range(len(cached))])
+            for key in before:
+                self.assertTrue(torch.equal(before[key], after[key]), key)
+            self.assertEqual(cached.event_cache_stats()['hits'], len(cached))
+            # Spawn receives no parent arrays or process owner; the serialized
+            # native reader independently reopens the same immutable channels.
+            restored = pickle.loads(pickle.dumps(cached))
+            self.assertEqual(restored.event_cache_stats()['events'], 0)
+            item = restored[0]
+            self.assertEqual(restored.event_cache_stats()['misses'], 1)
+            restored.event_cache_limit = sum(v.nbytes for v in item.values() if isinstance(v, np.ndarray))
+            restored[1]; restored[0]
+            self.assertEqual(restored.event_cache_stats()['events'], 1)
+            self.assertEqual(restored.event_cache_stats()['evictions'], 2)
+            self.assertLessEqual(restored.event_cache_stats()['resident_array_bytes'], restored.event_cache_limit)
+            restored._event_cache_pid = -1
+            restored[0]
+            self.assertEqual(restored.event_cache_stats()['misses'], 1)
+            cached.native.close(); restored.native.close()
 
     def test_shared_staging_requires_local_scratch(self):
         with self.assertRaisesRegex(ValueError, 'local allocation scratch'):

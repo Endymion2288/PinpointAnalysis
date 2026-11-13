@@ -1,5 +1,7 @@
 """Visible-only masks and geometry/visible query sampling, independent of targets."""
 import json
+from collections import OrderedDict
+import os
 from pathlib import Path
 
 import numpy as np
@@ -245,6 +247,60 @@ class LabelDataset(PlaneDataset):
                     ids=rng.permutation(ids)
                 chosen.extend(ids[:config['label_budget']//4])
             restrict_dataset(self,np.sort(chosen))
+        # Classification inputs have fixed transforms and seeds. SSL uses the
+        # separate PretrainDataset, whose masks must never enter this cache.
+        self.event_cache_limit = int(os.environ.get('PINPOINT_CLASSIFICATION_CACHE_MIB', '0')) * 2**20
+        self._reset_event_cache()
+
+    def _reset_event_cache(self):
+        self._event_cache = OrderedDict()
+        self._event_cache_bytes = 0
+        self._event_cache_pid = os.getpid()
+        self._event_cache_hits = self._event_cache_misses = self._event_cache_evictions = 0
+        self._native_released_after_complete_cache = False
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.update(_event_cache=OrderedDict(), _event_cache_bytes=0, _event_cache_pid=None,
+            _event_cache_hits=0, _event_cache_misses=0, _event_cache_evictions=0,
+            _native_released_after_complete_cache=False)
+        return state
+
+    def __getitem__(self, index):
+        if self.event_cache_limit <= 0 or len(self) > 10000:
+            return super().__getitem__(index)
+        if self._event_cache_pid != os.getpid():
+            self._reset_event_cache()
+        index = int(index)
+        if index in self._event_cache:
+            self._event_cache_hits += 1
+            self._event_cache.move_to_end(index)
+            return self._event_cache[index][0].copy()
+        self._event_cache_misses += 1
+        item = super().__getitem__(index)
+        size = sum(value.nbytes for value in item.values() if isinstance(value, np.ndarray))
+        if size <= self.event_cache_limit:
+            while self._event_cache_bytes + size > self.event_cache_limit:
+                _, (_, removed) = self._event_cache.popitem(last=False)
+                self._event_cache_bytes -= removed
+                self._event_cache_evictions += 1
+            for value in item.values():
+                if isinstance(value, np.ndarray):
+                    value.flags.writeable = False
+            self._event_cache[index] = (item, size)
+            self._event_cache_bytes += size
+            if len(self._event_cache) == len(self) and not self._native_released_after_complete_cache:
+                self.native.close()
+                self._native_released_after_complete_cache = True
+        return item.copy()
+
+    def event_cache_stats(self):
+        return {'enabled': self.event_cache_limit > 0 and len(self) <= 10000,
+            'limit_array_bytes': self.event_cache_limit, 'resident_array_bytes': self._event_cache_bytes,
+            'events': len(self._event_cache), 'hits': self._event_cache_hits,
+            'misses': self._event_cache_misses, 'evictions': self._event_cache_evictions,
+            'native_released_after_complete_cache': self._native_released_after_complete_cache,
+            'scope': 'process-owned immutable classification arrays; Python container overhead excluded; no SSL views cached'}
 
 
 class PretrainDataset(PlaneDataset):
