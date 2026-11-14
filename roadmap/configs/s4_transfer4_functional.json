@@ -1,0 +1,50 @@
+{
+  "stage": "S4_valid_low_label_path_reliance",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_transfer4_functional_n1000_s42",
+      "program": "functional_probe",
+      "device": "cuda",
+      "checkpoints": [
+        "s4_transfer4_optimized_scratch_n1000_s42",
+        "s4_transfer4_optimized_mae3_n1000_s42"
+      ],
+      "probe_events": 10000,
+      "batch_size": 16,
+      "bootstrap": 400,
+      "permutation_seeds": [
+        2026,
+        17,
+        42
+      ],
+      "readback_before_probe": true,
+      "dependencies": [
+        "s4_transfer4_optimized_scratch_n1000_s42",
+        "s4_transfer4_optimized_mae3_n1000_s42"
+      ]
+    },
+    {
+      "name": "s4_transfer4_functional_n10000_s42",
+      "program": "functional_probe",
+      "device": "cuda",
+      "checkpoints": [
+        "s4_optimized_scratch_n10000_s42",
+        "s4_optimized_mae3_n10000_s42"
+      ],
+      "probe_events": 10000,
+      "batch_size": 16,
+      "bootstrap": 400,
+      "permutation_seeds": [
+        2026,
+        17,
+        42
+      ],
+      "readback_before_probe": true,
+      "dependencies": [
+        "s4_optimized_scratch_n10000_s42",
+        "s4_optimized_mae3_n10000_s42"
+      ]
+    }
+  ]
+}
