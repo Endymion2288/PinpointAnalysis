@@ -1,0 +1,38 @@
+{
+  "utc": "2026-11-14T04:51:53.688813+00:00",
+  "old_gate_passed": false,
+  "old_reference_gradient_norms": {
+    "scratch_full": 2.2155003963190718e-08,
+    "scratch_global": 2.078516201270723e-08,
+    "mae3_full": 1.6844864424874796e-08,
+    "mae3_global": 4.62228500692774e-08
+  },
+  "old_newton_gradient_norms": {
+    "scratch_full": 3.8753803650205126e-08,
+    "scratch_global": 9.815389818952915e-07,
+    "mae3_full": 6.532535478312039e-08,
+    "mae3_global": 9.115336033201451e-07
+  },
+  "old_objective_differences": {
+    "scratch_full": 3.880895604879697e-12,
+    "scratch_global": 7.191744977319559e-10,
+    "mae3_full": 1.5243473150405862e-11,
+    "mae3_global": 4.79662753960497e-10
+  },
+  "v2_submission": {
+    "name": "pinpoint-s4-newton-solver-gate-v2",
+    "schedd": "bigbird21.cern.ch",
+    "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205010.\n",
+    "code_commit": "568c3003663ade0af18d12fb34c24712d5dc7d46"
+  },
+  "retired_waiting_jobs": [
+    "pinpoint-s4-newton-cpu-0",
+    "pinpoint-s4-newton-cpu-1",
+    "pinpoint-s4-newton-cpu-2",
+    "pinpoint-s4-newton-cpu-3",
+    "pinpoint-s4-newton-cpu-4",
+    "pinpoint-s4-newton-feature-banks-compact"
+  ],
+  "old_validation_retired": true,
+  "full_evidence": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/reference_gradient_recovery.json"
+}
