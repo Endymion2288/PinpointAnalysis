@@ -27,6 +27,8 @@ Ridge px减constant MSE为−0.000300356，400次128-block CI95[−0.000375901,�
 
 证据根：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/regression_diagnostic/`。通过前一阶段10项单元测试与本次完整真实数据复算；本阶段没有修改模型训练计算。新增最终三seed比较图和train/readout图，以及小型JSON导出入口`analysis.flavour.s5.summarize`；finalize要求上述完整方向审查存在。
 
+最终图人工检查发现横向误差图的细小小数刻度重叠，已改为百分比和最多4个主要刻度，并从同一summary单独重画；数值和模型不变。
+
 ## 阶段性结论
 
 py并非整条通道失活：train上MLP优于constant，固定encoder也保留了少量可泛化的signed py信息。正则化读出减轻了MLP py偏置，获得小幅验证改善；没有测到强方向重建能力。低预测幅度、弱相关及整体角度误差仍须保留。Conditional-mean回归本身也可能对不确定方向产生收缩，但当前没有训练完整方向概率模型，不将这一假设当成已确认病因。

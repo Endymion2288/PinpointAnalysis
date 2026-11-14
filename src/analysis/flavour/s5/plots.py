@@ -1,11 +1,13 @@
 """Standalone English figures, native-response examples and selection denominators."""
 from pathlib import Path
+import json
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.collections import LineCollection
+from matplotlib.ticker import MaxNLocator, PercentFormatter
 import numpy as np
 import pandas as pd
 from sklearn.metrics import precision_recall_curve
@@ -17,6 +19,35 @@ def save(fig, output, name):
     fig.savefig(output/(name+'.pdf'), bbox_inches='tight')
     fig.savefig(output/(name+'.png'), dpi=160, bbox_inches='tight')
     plt.close(fig)
+
+
+def plot_transverse_readout(output, report, root):
+    diagnostic_path = root/'regression_diagnostic/summary.json'
+    if not diagnostic_path.exists():
+        return
+    diagnostic = json.loads(diagnostic_path.read_text())
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
+    cases = [('checkpoint_train', 'MLP: train'), ('checkpoint_validation', 'MLP: validation'),
+             ('ridge_train', 'Frozen ridge: train'), ('ridge_validation', 'Frozen ridge: validation')]
+    checkpoint = next((e for e in report['experiments'] if e['name'] == diagnostic['source']), None)
+    for i, axis in enumerate(axes):
+        for index, (key, label) in enumerate(cases):
+            row = diagnostic[key]
+            baseline_mse = row['constant_MSE'][i]
+            delta = row['MSE'][i]/baseline_mse-1
+            axis.plot(delta, index, 'o', color='C0')
+            if key.endswith('validation') and (key.startswith('ridge') or checkpoint is not None):
+                interval = (diagnostic['ridge_component_MSE_minus_constant'][i]['block_CI95']
+                    if key.startswith('ridge') else checkpoint['auxiliary_quality']['kinematics']['component_MSE_minus_constant'][i]['block_CI95'])
+                axis.plot(np.asarray(interval)/baseline_mse, [index, index], color='C0')
+        axis.axvline(0., color='black', linestyle='--', linewidth=.8)
+        axis.set(yticks=range(len(cases)), yticklabels=[label for key, label in cases] if i == 0 else [],
+                 xlabel='MSE change relative to train-mean constant', title=['px', 'py'][i]+'; encoded target')
+        axis.xaxis.set_major_locator(MaxNLocator(4))
+        axis.xaxis.set_major_formatter(PercentFormatter(xmax=1., decimals=1))
+        axis.invert_yaxis()
+    fig.suptitle('Fixed encoder: train error and regularized readout; validation intervals use event blocks')
+    save(fig, output, 'transverse_train_and_readout')
 
 
 def native_examples(root, output, entry):
@@ -230,29 +261,6 @@ def plot_results(output, entries, report, root):
     fig.suptitle('Four-pass regression: paired event-block CI95; selected train-mean reference')
     save(fig, output, 'kinematic_component_vs_constant')
     pd.DataFrame(component_rows).to_csv(output/'kinematic_components.csv', index=False)
-    diagnostic_path = root/'regression_diagnostic/summary.json'
-    if diagnostic_path.exists():
-        import json
-        diagnostic = json.loads(diagnostic_path.read_text())
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
-        cases = [('checkpoint_train', 'MLP: train'), ('checkpoint_validation', 'MLP: validation'),
-                 ('ridge_train', 'Frozen ridge: train'), ('ridge_validation', 'Frozen ridge: validation')]
-        checkpoint = next((e for e in report['experiments'] if e['name'] == diagnostic['source']), None)
-        for i, axis in enumerate(axes):
-            for index, (key, label) in enumerate(cases):
-                row = diagnostic[key]
-                baseline_mse = row['constant_MSE'][i]
-                delta = row['MSE'][i]/baseline_mse-1
-                axis.plot(delta, index, 'o', color='C0')
-                if key.endswith('validation') and (key.startswith('ridge') or checkpoint is not None):
-                    interval = (diagnostic['ridge_component_MSE_minus_constant'][i]['block_CI95']
-                        if key.startswith('ridge') else checkpoint['auxiliary_quality']['kinematics']['component_MSE_minus_constant'][i]['block_CI95'])
-                    axis.plot(np.asarray(interval)/baseline_mse, [index, index], color='C0')
-            axis.axvline(0., color='black', linestyle='--', linewidth=.8)
-            axis.set(yticks=range(len(cases)), yticklabels=[label for key, label in cases] if i == 0 else [],
-                     xlabel='(MSE - constant MSE) / constant MSE', title=['px', 'py'][i]+'; encoded target')
-            axis.invert_yaxis()
-        fig.suptitle('Fixed encoder: train error and regularized readout; validation intervals use event blocks')
-        save(fig, output, 'transverse_train_and_readout')
+    plot_transverse_readout(output, report, root)
     display = next((e for e in entries if e[2]['config'].get('variant') == 'vertex_kinematics' and e[2]['config'].get('seed') == 42), baseline)
     native_examples(root, output, display)
