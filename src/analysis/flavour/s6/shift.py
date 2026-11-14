@@ -66,6 +66,20 @@ def finalize(args):
     frame = pd.concat([pd.read_parquet(p) for p in paths], ignore_index=True)
     if frame.duplicated(KEY+['condition']).any():
         raise ValueError('duplicate shifted inference keys')
+    manifest = pd.read_parquet(args.root/args.scope/'manifest.parquet')
+    if args.scope == 'generator':
+        expected_conditions = ['nominal']
+    else:
+        from analysis.flavour.s6.transport import transport_variants
+        expected_conditions = [v['name'] for v in transport_variants(json.loads((args.root/'conditions.json').read_text()))]
+    for condition in expected_conditions:
+        expected = manifest
+        if condition.startswith('tau_helicity_'):
+            expected = manifest[manifest.label.eq(2)]
+        actual = frame[frame.condition.eq(condition)]
+        if len(actual) != len(expected) or not np.array_equal(actual.sort_values(KEY)[KEY].to_numpy(),
+            expected.sort_values(KEY)[KEY].to_numpy()):
+            raise ValueError(f'{args.scope} condition {condition} event coverage differs')
     frame.to_parquet(args.root/'predictions'/f'{args.scope}_raw.parquet', index=False, compression=COMPRESSION)
     write_json(args.root/'predictions'/f'{args.scope}_completion.json', {'status': 'complete',
         'events': len(frame), 'condition_counts': frame.groupby('condition').size().to_dict()})

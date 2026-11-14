@@ -31,6 +31,10 @@ def evaluate(args):
     condition = conditions[args.task]
     current = raw[raw[condition_key].eq(condition)].copy().reset_index(drop=True)
     reference = raw[raw[condition_key].eq('nominal')].copy().reset_index(drop=True)
+    if args.scope == 'transport' and condition.startswith('tau_helicity_'):
+        # The helicity intervention changes primary tau events only. Reuse
+        # unchanged nominal non-tau events as the fixed background denominator.
+        current = pd.concat([current, reference[reference.label.ne(2)]], ignore_index=True)
     if args.scope != 'generator':
         reference = current[KEY].merge(reference, on=KEY, how='left', validate='one_to_one', sort=False)
         if reference.label.isna().any():
