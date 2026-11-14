@@ -58,6 +58,11 @@ def main():
             difference = record['wall_seconds']/target-1.
             check(entry['name']+'_compute_alignment', abs(difference)<=.05, relative_difference=difference)
         check(entry['name']+'_finite_activations', all(v['finite'] for h in record['health'] for v in h['activations'].values()))
+        groups = record['health'][0]['gradient_squared_norms']
+        active = [g for g in groups if not (g=='tracker' and entry.get('kind')=='without_tracker')]
+        check(entry['name']+'_branch_gradients_and_updates', all(
+            any(np.isfinite(h['gradient_squared_norms'][g]) and h['gradient_squared_norms'][g]>0 for h in record['health'])
+            and any(h['parameter_update_RMS'][g]>0 for h in record['health']) for g in active))
         check(entry['name']+'_nonconstant_predictions', record['probability_diagnostics']['distinct_vectors']>=100)
         exposure_rows.append({'name': entry['name'], 'family': entry['family'], 'task': entry['task'],
             'seed': entry['seed'], 'kind': entry.get('kind', 'main'),

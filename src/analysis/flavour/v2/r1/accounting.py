@@ -33,6 +33,23 @@ def main():
             record = json.loads(path.read_text())
             if record.get('allocation_id') and record.get('GPU'):
                 observed_devices[record['allocation_id']] = record['GPU']
+    for submission in submissions:
+        command = submission.get('command', [])
+        if command and command[0].endswith('.r1.profile') and '--family' in command and '--attempt' in command:
+            family = command[command.index('--family')+1]
+            attempt = command[command.index('--attempt')+1]
+            path = args.root/'experiments'/f'profile_{family.lower()}_{attempt}'/'manifest.json'
+            if path.exists():
+                submission['observed_profile_GPU'] = json.loads(path.read_text()).get('GPU')
+        if command and command[0].endswith('.r1.debug') and '--family' in command and '--attempt' in command:
+            family = command[command.index('--family')+1]
+            attempt = command[command.index('--attempt')+1]
+            path = args.root/'audit'/f'diagnose_{family}_{attempt}.json'
+            if path.exists():
+                cases = json.loads(path.read_text()).get('cases', [])
+                devices = {v.get('GPU') for v in cases}
+                if len(devices)==1:
+                    submission['observed_profile_GPU'] = devices.pop()
     condor = [s for s in submissions if s.get('submitted') and s.get('backend', 'condor') == 'condor']
     groups = defaultdict(list)
     for row in condor:
@@ -64,7 +81,7 @@ def main():
                 'status': status, 'ad': ad, 'allocation_seconds': seconds,
                 'device_hours': seconds/3600 if row['gpu'] else 0.,
                 'allocated_CPU_core_hours': seconds*ad.get('RequestCpus', row['cpus'])/3600,
-                'GPU': observed_devices.get(str(row['cluster'])+'.0', ad.get('GPUs_DeviceName')),
+                'GPU': observed_devices.get(str(row['cluster'])+'.0') or row.get('observed_profile_GPU') or ad.get('GPUs_DeviceName'),
                 'GPU_model_provenance': 'CUDA runtime linked by allocation id, otherwise job ad'})
     kube = [s for s in submissions if s.get('submitted') and s.get('backend')=='kubeflow']
     all_pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-o', 'json'])['items'] if kube else []
