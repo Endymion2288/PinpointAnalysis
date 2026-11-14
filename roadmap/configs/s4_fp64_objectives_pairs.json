@@ -1,0 +1,583 @@
+{
+  "include_global_frozen": true,
+  "paired_tau_branches": true,
+  "pairs": [
+    {
+      "name": "fine_tuned_mae3_minus_scratch_n1000",
+      "a": "s4_transfer4_optimized_scratch_n1000_s42",
+      "b": "s4_transfer4_optimized_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_ema3_minus_mae3_n1000",
+      "a": "s4_transfer4_optimized_mae3_n1000_s42",
+      "b": "s4_transfer4_ema3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_mae5_minus_mae3_n1000",
+      "a": "s4_transfer4_optimized_mae3_n1000_s42",
+      "b": "s4_transfer4_mae5_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_rel_channel5_minus_mae5_n1000",
+      "a": "s4_transfer4_mae5_n1000_s42",
+      "b": "s4_transfer4_rel_channel5_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "frozen_full_mae3_minus_scratch_n1000",
+      "a": "s4_newton_frozen_scratch_n1000_s42",
+      "b": "s4_newton_frozen_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_ema3_minus_mae3_n1000",
+      "a": "s4_newton_frozen_mae3_n1000_s42",
+      "b": "s4_newton_frozen_ema3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_mae5_minus_mae3_n1000",
+      "a": "s4_newton_frozen_mae3_n1000_s42",
+      "b": "s4_newton_frozen_mae5_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_rel_channel5_minus_mae5_n1000",
+      "a": "s4_newton_frozen_mae5_n1000_s42",
+      "b": "s4_newton_frozen_rel_channel5_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_global_mae3_minus_scratch_n1000",
+      "a": "s4_newton_frozen_scratch_n1000_s42__global",
+      "b": "s4_newton_frozen_mae3_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_ema3_minus_mae3_n1000",
+      "a": "s4_newton_frozen_mae3_n1000_s42__global",
+      "b": "s4_newton_frozen_ema3_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_mae5_minus_mae3_n1000",
+      "a": "s4_newton_frozen_mae3_n1000_s42__global",
+      "b": "s4_newton_frozen_mae5_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_rel_channel5_minus_mae5_n1000",
+      "a": "s4_newton_frozen_mae5_n1000_s42__global",
+      "b": "s4_newton_frozen_rel_channel5_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "scratch_frozen_global_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_scratch_n1000_s42",
+      "b": "s4_newton_frozen_scratch_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "scratch_fine_tuned_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_scratch_n1000_s42",
+      "b": "s4_transfer4_optimized_scratch_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae3_frozen_global_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_mae3_n1000_s42",
+      "b": "s4_newton_frozen_mae3_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae3_fine_tuned_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_mae3_n1000_s42",
+      "b": "s4_transfer4_optimized_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "ema3_frozen_global_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_ema3_n1000_s42",
+      "b": "s4_newton_frozen_ema3_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "ema3_fine_tuned_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_ema3_n1000_s42",
+      "b": "s4_transfer4_ema3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae5_frozen_global_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_mae5_n1000_s42",
+      "b": "s4_newton_frozen_mae5_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae5_fine_tuned_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_mae5_n1000_s42",
+      "b": "s4_transfer4_mae5_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "rel_channel5_frozen_global_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_rel_channel5_n1000_s42",
+      "b": "s4_newton_frozen_rel_channel5_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "rel_channel5_fine_tuned_minus_frozen_full_n1000",
+      "a": "s4_newton_frozen_rel_channel5_n1000_s42",
+      "b": "s4_transfer4_rel_channel5_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "fine_tuned_mae3_minus_scratch_n10000",
+      "a": "s4_optimized_scratch_n10000_s42",
+      "b": "s4_optimized_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_ema3_minus_mae3_n10000",
+      "a": "s4_optimized_mae3_n10000_s42",
+      "b": "s4_repaired_ema3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_mae5_minus_mae3_n10000",
+      "a": "s4_optimized_mae3_n10000_s42",
+      "b": "s4_repaired_mae5_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_rel_channel5_minus_mae5_n10000",
+      "a": "s4_repaired_mae5_n10000_s42",
+      "b": "s4_repaired_rel_channel5_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "frozen_full_mae3_minus_scratch_n10000",
+      "a": "s4_newton_frozen_scratch_n10000_s42",
+      "b": "s4_newton_frozen_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_ema3_minus_mae3_n10000",
+      "a": "s4_newton_frozen_mae3_n10000_s42",
+      "b": "s4_newton_frozen_ema3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_mae5_minus_mae3_n10000",
+      "a": "s4_newton_frozen_mae3_n10000_s42",
+      "b": "s4_newton_frozen_mae5_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_rel_channel5_minus_mae5_n10000",
+      "a": "s4_newton_frozen_mae5_n10000_s42",
+      "b": "s4_newton_frozen_rel_channel5_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_global_mae3_minus_scratch_n10000",
+      "a": "s4_newton_frozen_scratch_n10000_s42__global",
+      "b": "s4_newton_frozen_mae3_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_ema3_minus_mae3_n10000",
+      "a": "s4_newton_frozen_mae3_n10000_s42__global",
+      "b": "s4_newton_frozen_ema3_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_mae5_minus_mae3_n10000",
+      "a": "s4_newton_frozen_mae3_n10000_s42__global",
+      "b": "s4_newton_frozen_mae5_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_rel_channel5_minus_mae5_n10000",
+      "a": "s4_newton_frozen_mae5_n10000_s42__global",
+      "b": "s4_newton_frozen_rel_channel5_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "scratch_frozen_global_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_scratch_n10000_s42",
+      "b": "s4_newton_frozen_scratch_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "scratch_fine_tuned_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_scratch_n10000_s42",
+      "b": "s4_optimized_scratch_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae3_frozen_global_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_mae3_n10000_s42",
+      "b": "s4_newton_frozen_mae3_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae3_fine_tuned_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_mae3_n10000_s42",
+      "b": "s4_optimized_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "ema3_frozen_global_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_ema3_n10000_s42",
+      "b": "s4_newton_frozen_ema3_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "ema3_fine_tuned_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_ema3_n10000_s42",
+      "b": "s4_repaired_ema3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae5_frozen_global_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_mae5_n10000_s42",
+      "b": "s4_newton_frozen_mae5_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae5_fine_tuned_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_mae5_n10000_s42",
+      "b": "s4_repaired_mae5_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "rel_channel5_frozen_global_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_rel_channel5_n10000_s42",
+      "b": "s4_newton_frozen_rel_channel5_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "rel_channel5_fine_tuned_minus_frozen_full_n10000",
+      "a": "s4_newton_frozen_rel_channel5_n10000_s42",
+      "b": "s4_repaired_rel_channel5_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "fine_tuned_mae3_minus_scratch_n100000",
+      "a": "s4_empty_scratch_n100000_s42",
+      "b": "s4_empty_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_ema3_minus_mae3_n100000",
+      "a": "s4_empty_mae3_n100000_s42",
+      "b": "s4_repaired_ema3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_mae5_minus_mae3_n100000",
+      "a": "s4_empty_mae3_n100000_s42",
+      "b": "s4_repaired_mae5_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "fine_tuned_rel_channel5_minus_mae5_n100000",
+      "a": "s4_repaired_mae5_n100000_s42",
+      "b": "s4_repaired_rel_channel5_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "fine_tuned"
+    },
+    {
+      "name": "frozen_full_mae3_minus_scratch_n100000",
+      "a": "s4_fp64_frozen_scratch_n100000_s42",
+      "b": "s4_fp64_frozen_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_ema3_minus_mae3_n100000",
+      "a": "s4_fp64_frozen_mae3_n100000_s42",
+      "b": "s4_fp64_frozen_ema3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_mae5_minus_mae3_n100000",
+      "a": "s4_fp64_frozen_mae3_n100000_s42",
+      "b": "s4_fp64_frozen_mae5_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_full_rel_channel5_minus_mae5_n100000",
+      "a": "s4_fp64_frozen_mae5_n100000_s42",
+      "b": "s4_fp64_frozen_rel_channel5_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_full"
+    },
+    {
+      "name": "frozen_global_mae3_minus_scratch_n100000",
+      "a": "s4_fp64_frozen_scratch_n100000_s42__global",
+      "b": "s4_fp64_frozen_mae3_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_ema3_minus_mae3_n100000",
+      "a": "s4_fp64_frozen_mae3_n100000_s42__global",
+      "b": "s4_fp64_frozen_ema3_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_mae5_minus_mae3_n100000",
+      "a": "s4_fp64_frozen_mae3_n100000_s42__global",
+      "b": "s4_fp64_frozen_mae5_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "frozen_global_rel_channel5_minus_mae5_n100000",
+      "a": "s4_fp64_frozen_mae5_n100000_s42__global",
+      "b": "s4_fp64_frozen_rel_channel5_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "frozen_global"
+    },
+    {
+      "name": "scratch_frozen_global_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_scratch_n100000_s42",
+      "b": "s4_fp64_frozen_scratch_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "scratch_fine_tuned_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_scratch_n100000_s42",
+      "b": "s4_empty_scratch_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae3_frozen_global_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_mae3_n100000_s42",
+      "b": "s4_fp64_frozen_mae3_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae3_fine_tuned_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_mae3_n100000_s42",
+      "b": "s4_empty_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "ema3_frozen_global_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_ema3_n100000_s42",
+      "b": "s4_fp64_frozen_ema3_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "ema3_fine_tuned_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_ema3_n100000_s42",
+      "b": "s4_repaired_ema3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae5_frozen_global_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_mae5_n100000_s42",
+      "b": "s4_fp64_frozen_mae5_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "mae5_fine_tuned_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_mae5_n100000_s42",
+      "b": "s4_repaired_mae5_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "rel_channel5_frozen_global_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_rel_channel5_n100000_s42",
+      "b": "s4_fp64_frozen_rel_channel5_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    },
+    {
+      "name": "rel_channel5_fine_tuned_minus_frozen_full_n100000",
+      "a": "s4_fp64_frozen_rel_channel5_n100000_s42",
+      "b": "s4_repaired_rel_channel5_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "protocol": "readout_or_fine_tuning"
+    }
+  ],
+  "comparison_groups": {
+    "s4_transfer4_optimized_scratch_n1000_s42": "Fine tuned Scratch",
+    "s4_transfer4_optimized_mae3_n1000_s42": "Fine tuned MAE3",
+    "s4_transfer4_ema3_n1000_s42": "Fine tuned EMA3",
+    "s4_transfer4_mae5_n1000_s42": "Fine tuned MAE5",
+    "s4_transfer4_rel_channel5_n1000_s42": "Fine tuned Channel Rel5",
+    "s4_optimized_scratch_n10000_s42": "Fine tuned Scratch",
+    "s4_optimized_mae3_n10000_s42": "Fine tuned MAE3",
+    "s4_repaired_ema3_n10000_s42": "Fine tuned EMA3",
+    "s4_repaired_mae5_n10000_s42": "Fine tuned MAE5",
+    "s4_repaired_rel_channel5_n10000_s42": "Fine tuned Channel Rel5",
+    "s4_empty_scratch_n100000_s42": "Fine tuned Scratch",
+    "s4_empty_mae3_n100000_s42": "Fine tuned MAE3",
+    "s4_repaired_ema3_n100000_s42": "Fine tuned EMA3",
+    "s4_repaired_mae5_n100000_s42": "Fine tuned MAE5",
+    "s4_repaired_rel_channel5_n100000_s42": "Fine tuned Channel Rel5",
+    "s4_newton_frozen_scratch_n1000_s42": "Frozen full Scratch",
+    "s4_newton_frozen_scratch_n10000_s42": "Frozen full Scratch",
+    "s4_fp64_frozen_scratch_n100000_s42": "Frozen full Scratch",
+    "s4_newton_frozen_mae3_n1000_s42": "Frozen full MAE3",
+    "s4_newton_frozen_mae3_n10000_s42": "Frozen full MAE3",
+    "s4_fp64_frozen_mae3_n100000_s42": "Frozen full MAE3",
+    "s4_newton_frozen_ema3_n1000_s42": "Frozen full EMA3",
+    "s4_newton_frozen_ema3_n10000_s42": "Frozen full EMA3",
+    "s4_fp64_frozen_ema3_n100000_s42": "Frozen full EMA3",
+    "s4_newton_frozen_mae5_n1000_s42": "Frozen full MAE5",
+    "s4_newton_frozen_mae5_n10000_s42": "Frozen full MAE5",
+    "s4_fp64_frozen_mae5_n100000_s42": "Frozen full MAE5",
+    "s4_newton_frozen_rel_channel5_n1000_s42": "Frozen full Channel Rel5",
+    "s4_newton_frozen_rel_channel5_n10000_s42": "Frozen full Channel Rel5",
+    "s4_fp64_frozen_rel_channel5_n100000_s42": "Frozen full Channel Rel5",
+    "s4_newton_frozen_scratch_n1000_s42__global": "Frozen global Scratch",
+    "s4_newton_frozen_scratch_n10000_s42__global": "Frozen global Scratch",
+    "s4_fp64_frozen_scratch_n100000_s42__global": "Frozen global Scratch",
+    "s4_newton_frozen_mae3_n1000_s42__global": "Frozen global MAE3",
+    "s4_newton_frozen_mae3_n10000_s42__global": "Frozen global MAE3",
+    "s4_fp64_frozen_mae3_n100000_s42__global": "Frozen global MAE3",
+    "s4_newton_frozen_ema3_n1000_s42__global": "Frozen global EMA3",
+    "s4_newton_frozen_ema3_n10000_s42__global": "Frozen global EMA3",
+    "s4_fp64_frozen_ema3_n100000_s42__global": "Frozen global EMA3",
+    "s4_newton_frozen_mae5_n1000_s42__global": "Frozen global MAE5",
+    "s4_newton_frozen_mae5_n10000_s42__global": "Frozen global MAE5",
+    "s4_fp64_frozen_mae5_n100000_s42__global": "Frozen global MAE5",
+    "s4_newton_frozen_rel_channel5_n1000_s42__global": "Frozen global Channel Rel5",
+    "s4_newton_frozen_rel_channel5_n10000_s42__global": "Frozen global Channel Rel5",
+    "s4_fp64_frozen_rel_channel5_n100000_s42__global": "Frozen global Channel Rel5"
+  },
+  "evaluation_scope": "complete 10k S4 validation reused after research design; calibration/test frozen",
+  "design_scope": "Seed42 comparison of five initializations. Corrected train-inner common recipes at 1k/10k, stage145 validation-NLL recipe at 100k. Frozen full/global use the same temporary 100k feature bank and exact nested label rows; scaler fitted only on labeled fit rows, fixed C=1, FP64 Newton-CG and measured gradient <=1e-6. Partial channel Rel uses additional simulated semantic supervision. Full fine-tuning versus frozen readout compares complete protocols. Pointwise physical-block intervals condition on these weights and the reused validation. The five 100k frozen fits use gated FP64 device gradient/Hessian products on the identical convex objective with independent CPU stationarity certificates. The 1k/10k CPU fits are unchanged."
+}

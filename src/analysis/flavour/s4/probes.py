@@ -97,6 +97,12 @@ def polish_linear_reference(pipeline, features, labels):
 
 def fit_probe(features, labels, mode, config):
     """Fit without held-out labels and retain numerical convergence evidence."""
+    if mode == 'linear' and config.get('probe_solver_execution') == 'cuda_fp64':
+        from analysis.flavour.s4.accelerated_linear import fit
+        return fit(features, labels, device='cuda',
+            tolerance=config.get('probe_linear_tolerance', 1e-6),
+            maximum_iterations=config.get('probe_linear_max_iter', 200),
+            progress=config.get('_solver_progress_path'))
     estimator=(LogisticRegression(C=1.,max_iter=config.get('probe_linear_max_iter',500),
         tol=config.get('probe_linear_tolerance',1e-5),solver=config.get('probe_linear_solver','lbfgs')) if mode=='linear' else
         MLPClassifier(hidden_layer_sizes=(128,),alpha=.01,batch_size=128,learning_rate_init=.001,
@@ -184,13 +190,17 @@ def main():
     if config.get('required_solver_probe'):
         probe=json.loads((args.root/'experiments'/config['required_solver_probe']/'solver_probe.json').read_text())
         if not probe['passed']:raise RuntimeError('passing same-objective readout solver probe required')
+    if config.get('probe_solver_execution') == 'cuda_fp64':
+        gate = json.loads((args.root / 'experiments' / config['required_acceleration_gate'] / 'solver_probe.json').read_text())
+        if not gate.get('passed') or len(gate.get('cases', [])) != 8 or not all(r.get('passed') for r in gate['cases']):
+            raise RuntimeError('eight actual same-objective CPU/GPU comparisons required before accelerated readouts')
     train_only=config.get('probe_scope')=='train_only_branches'
     train=val=None
     if config.get('probe_feature_source'):
         from analysis.flavour.s4.feature_bank import load
         (xfit,fitmeta),(xhold,holdmeta)=load(args.root,config)
         features=xfit;yfit=fitmeta.label.to_numpy();yhold=holdmeta.label.to_numpy()
-        args.device='cpu'
+        args.device='cuda' if config.get('probe_solver_execution') == 'cuda_fp64' else 'cpu'
     else:
         model=build_model(config)
         if config.get('supervised_checkpoint'):
@@ -219,9 +229,9 @@ def main():
         modes=['linear','MLP'] if train_only else ['linear']
         for mode in modes:
             write_json(output/'progress.json',{'phase':'fitting_'+branch+'_'+mode,'fit_events':len(yfit),
-                'input_features':xfit[branch].shape[1],'GPU_used_by_solver':False,
+                'input_features':xfit[branch].shape[1],'GPU_used_by_solver':config.get('probe_solver_execution') == 'cuda_fp64',
                 'utc':datetime.now(timezone.utc).isoformat()})
-            pipeline,audit=fit_probe(xfit[branch],yfit,mode,config)
+            pipeline,audit=fit_probe(xfit[branch],yfit,mode,{**config,'_solver_progress_path':output/'solver_progress.json'})
             optimization[branch+'_'+mode]=audit
             probability=pipeline.predict_proba(xhold[branch])
             measured[branch+'_'+mode]=metrics(yhold,probability)

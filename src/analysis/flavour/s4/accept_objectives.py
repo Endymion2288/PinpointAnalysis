@@ -47,6 +47,15 @@ def audit(root, campaign, comparisons, evaluation_path, validation_name):
     by_name = {r['name']: r for r in summaries}
     probes = [probe_record(root, c, by_name.get(c['name'], {})) for c in configurations.values()
         if program(c) == 'probes']
+    acceleration_gates = []
+    for name in sorted({c['required_acceleration_gate'] for c in configurations.values() if c.get('required_acceleration_gate')}):
+        gate = load(root / 'experiments' / name / 'solver_probe.json')
+        cases = gate.get('cases', [])
+        acceleration_gates.append({'name': name, 'passed': gate.get('passed') is True and len(cases) == 8
+            and all(r.get('passed') is True and r.get('absolute_objective_difference', float('inf')) <= 1e-5
+                and r.get('maximum_fit_probability_difference', float('inf')) <= .005
+                and r.get('CPU_reference', {}).get('gradient_infinity_norm', float('inf')) <= 1e-6 + 1e-10
+                and r.get('candidate', {}).get('gradient_infinity_norm', float('inf')) <= 1e-6 + 1e-10 for r in cases)})
     fits = [fit_record(root, c, evaluated) for c in configurations.values()]
     pretrained = []
     for name in sorted({name for c in configurations.values() for name in c.get('required_ssl_readbacks', [])}):
@@ -93,6 +102,7 @@ def audit(root, campaign, comparisons, evaluation_path, validation_name):
         'all_stationary_readouts_replayed': bool(probes) and len(summaries) == len(expected_probes)
             and set(by_name) == expected_probes and all(r['passed'] for r in probes),
         'same_objective_solver_regressions': bool(solver_gates) and all(r['passed'] for r in solver_gates),
+        'device_acceleration_regressions': all(r['passed'] for r in acceleration_gates),
         'complete_10k_balanced_validation': bool(evaluated) and all(e['four_class']['events'] == 10000
             and e['four_class']['class_weight_sums'] == [2500.] * 4 for e in evaluated.values()),
         'predictions_nonconstant': bool(evaluated) and all(
@@ -118,6 +128,7 @@ def audit(root, campaign, comparisons, evaluation_path, validation_name):
     return {'utc': datetime.now(timezone.utc).isoformat(), 'checks': checks,
         'strict_output_gate_passed': all(checks.values()), 'fits': fits, 'probes': probes,
         'pretraining': pretrained, 'parameter_updates': updates, 'solver_regressions': solver_gates,
+        'acceleration_regressions': acceleration_gates,
         'health_samples': sum(r['health_samples'] for r in fits),
         'organization_device_hours': accounting.get('organization_device_hours'),
         'CPU_allocation_hours': accounting.get('CPU_allocation_hours'),

@@ -142,7 +142,10 @@ def submit(args):
     if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
     cached_solver_only = args.stage == 'campaign' and args.campaign and all(
-        json.loads(args.campaign.read_text())['experiments'][task].get('program') == 'accelerated_linear'
+        (json.loads(args.campaign.read_text())['experiments'][task].get('program') == 'accelerated_linear'
+            or (json.loads(args.campaign.read_text())['experiments'][task].get('program') == 'probes'
+                and json.loads(args.campaign.read_text())['experiments'][task].get('probe_feature_source')
+                and json.loads(args.campaign.read_text())['experiments'][task].get('probe_solver_execution') == 'cuda_fp64'))
         for task in args.tasks)
     stage_native_inputs=not cpu_only and not prototype_pool and not cached_solver_only
     if stage_native_inputs:
