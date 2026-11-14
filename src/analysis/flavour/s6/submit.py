@@ -62,7 +62,11 @@ def submit(args):
               'export PYTHONPATH="$PINPOINT_S6_SCRATCH/code/src:${PYTHONPATH:-}"',
               'export PINPOINT_CODE_COMMIT='+commit,
               'cd "$PINPOINT_S6_SCRATCH"']
-    if args.gpu:
+    if args.gpu and '--compile-local' in command:
+        source_assets = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s3_repair_2026-11-13/audit')
+        for asset in ['compiler_headers.tar.gz', 'compiler_linker_files.tar.gz']:
+            if not (root/'audit'/asset).exists():
+                (root/'audit'/asset).write_bytes((source_assets/asset).read_bytes())
         script += ['source "$PINPOINT_S6_SCRATCH/code/src/analysis/flavour/s3/runtime_repair.sh" '+shlex.quote(str(root))]
     record = root/'runtime'/f'{args.name}.submission.json'
     if record.exists():
