@@ -88,7 +88,8 @@ def render(args):
         names.append(data['condition']); deltas.append(value['delta'])
         lower.append(value['CI95'][0]); upper.append(value['CI95'][1])
     if names:
-        ax.errorbar(deltas, np.arange(len(names)), xerr=[np.asarray(deltas)-lower, np.asarray(upper)-deltas], fmt='o')
+        ax.hlines(np.arange(len(names)), lower, upper)
+        ax.plot(deltas, np.arange(len(names)), 'o')
         ax.set(yticks=np.arange(len(names)), yticklabels=names)
     ax.axvline(0, color='gray', ls='--')
     ax.set(xlabel='Tau-efficiency change (absolute)', title='Paired readout proxies, fixed nominal calibration/cuts')

@@ -13,7 +13,7 @@ from sklearn.metrics import roc_curve, precision_recall_curve
 from analysis.flavour.inventory import COMPRESSION, write_json
 from analysis.flavour.s3.metrics import MetricCache, NAMES
 from analysis.flavour.s6 import bootstrap
-from analysis.flavour.s6.calibration import extract, model_names, selection, transform
+from analysis.flavour.s6.calibration import extract, model_names, probability_columns, selection, transform
 from analysis.flavour.s6.prepare import KEY, require_freeze
 
 
@@ -202,7 +202,8 @@ def one(args):
     cal = freeze['calibrators'][name]
     prior = next(s['prior'] for s in cal['priors'] if s['name'] == scenario)
     points = [p for p in cal['thresholds'] if p['scenario'] == scenario]
-    raw = pd.read_parquet(args.root/'predictions/test_raw.parquet')
+    _, columns = probability_columns(name, campaign)
+    raw = pd.read_parquet(args.root/'predictions/test_raw.parquet', columns=KEY+['label']+columns)
     p_raw = extract(raw, name, campaign)
     p = transform(p_raw, cal['temperature'], prior)
     y = raw.label.to_numpy()

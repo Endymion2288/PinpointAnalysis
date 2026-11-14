@@ -36,9 +36,33 @@ def calibrate(args):
         'seconds_including_wait': time.monotonic()-started, 'test_opened': False})
 
 
+def test_finalize(args):
+    from analysis.flavour.s6 import prepare, infer, diagnostics
+    plan = json.loads((args.root/'plan.json').read_text())
+    ids = [i for i, t in enumerate(plan['tasks']) if t['split'] == 'test']
+    started = time.monotonic()
+    while True:
+        missing = {kind: [i for i in ids if not (args.root/path/f'{i:04d}/summary.json').exists()]
+                   for kind, path in [('inference', 'predictions/nominal'), ('diagnostics', 'evaluation/diagnostics')]}
+        if not any(missing.values()):
+            break
+        print(json.dumps({'await_test': {k: len(v) for k, v in missing.items()}}), flush=True)
+        if time.monotonic()-started > 21600:
+            raise RuntimeError('test finalization timed out awaiting task completion')
+        time.sleep(30)
+    args.split = 'test'
+    prepare.finalize(args)
+    infer.finalize(args)
+    diagnostics.finalize(args)
+    from analysis.flavour.s6.evaluate import design
+    design(args)
+    write_json(args.root/'evaluation/test_ready.json', {'status': 'complete', 'events': sum(plan['tasks'][i]['events'] for i in ids),
+        'seconds_including_wait': time.monotonic()-started})
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['calibrate'])
+    parser.add_argument('command', choices=['calibrate', 'test_finalize'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     args = parser.parse_args()

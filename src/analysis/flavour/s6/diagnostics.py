@@ -54,9 +54,12 @@ def task(args):
     metadata = pd.read_parquet(path/'provenance.parquet')
     native = NativeShard(path)
     rows = []
-    for i in range(len(native)):
+    count = min(len(native), args.limit) if args.limit else len(native)
+    for i in range(count):
         rows.append({**metadata.iloc[i][KEY].to_dict(), **summarize(native[i]['observations'], geometry)})
     destination = args.root/'evaluation/diagnostics'/f'{args.task:04d}'
+    if args.limit:
+        destination = args.root/'audit'/f'diagnostic_pilot_{args.task:04d}'
     destination.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_parquet(destination/'quality.parquet', index=False, compression=COMPRESSION)
     write_json(destination/'summary.json', {'status': 'complete', 'events': len(rows),
@@ -74,11 +77,46 @@ def finalize(args):
     frame.to_parquet(args.root/'evaluation/quality.parquet', index=False, compression=COMPRESSION)
 
 
+def worker(args):
+    plan = json.loads((args.root/'plan.json').read_text())
+    specs = [(i, s) for i, s in enumerate(plan['tasks']) if s['split'] == 'test']
+    claims = args.root/'runtime/diagnostic_claims'
+    claims.mkdir(exist_ok=True)
+    start = time.monotonic()
+    while time.monotonic()-start < 21600:
+        incomplete, chosen = False, None
+        for i, spec in specs:
+            if (args.root/'evaluation/diagnostics'/f'{i:04d}/summary.json').exists():
+                continue
+            incomplete = True
+            if not (args.root/'shards'/f"test_{spec['shard']:04d}/summary.json").exists():
+                continue
+            claim = claims/f'{i:04d}'
+            try:
+                claim.mkdir()
+            except FileExistsError:
+                continue
+            chosen = i
+            break
+        if not incomplete:
+            break
+        if chosen is None:
+            time.sleep(20)
+            continue
+        try:
+            args.task = chosen
+            task(args)
+            print(json.dumps({'diagnostic_task': chosen, 'status': 'complete'}), flush=True)
+        finally:
+            claim.rmdir()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['task', 'finalize'])
+    parser.add_argument('command', choices=['task', 'finalize', 'worker'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--task', type=int, default=227)
+    parser.add_argument('--limit', type=int)
     args = parser.parse_args()
     globals()[args.command](args)
 
