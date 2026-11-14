@@ -1,0 +1,47 @@
+{
+  "status": "complete",
+  "GPU": "Tesla T4",
+  "capability": [
+    7,
+    5
+  ],
+  "precision": "FP32",
+  "task": "T4",
+  "unique_Train_events": 32,
+  "measurements": [
+    {
+      "variant": "resnet",
+      "parameters": 793674,
+      "batch_size": 8,
+      "measured_steps": 64,
+      "warmup_steps": 16,
+      "median_step_seconds": 0.08410162478685379,
+      "mean_step_seconds": 0.08403719890338834,
+      "step_seconds_10pct_90pct": [
+        0.08328840117901563,
+        0.08481144085526467
+      ],
+      "events_per_measured_second": 95.19593827963064,
+      "GPU_peak_MiB": 1077.431640625
+    },
+    {
+      "variant": "base",
+      "parameters": 179370,
+      "batch_size": 8,
+      "measured_steps": 64,
+      "warmup_steps": 16,
+      "median_step_seconds": 0.06991596566513181,
+      "mean_step_seconds": 0.06985969646484591,
+      "step_seconds_10pct_90pct": [
+        0.06860855519771576,
+        0.07112658862024546
+      ],
+      "events_per_measured_second": 114.51524133125427,
+      "GPU_peak_MiB": 1260.63134765625
+    }
+  ],
+  "operation_seconds": 18.63410035893321,
+  "scope": "same-device fixed 32 informative Train events; preloaded batches; forward/backward/AdamW with lr=0; excludes EOS, loading and validation; no generalization or full-campaign throughput claim",
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/audit/projection_cost_profile.json"
+}

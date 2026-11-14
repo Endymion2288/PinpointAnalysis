@@ -38,6 +38,11 @@ def main():
         row = json.loads(path.read_text())
         interactive.append({'path': str(path), 'GPU': row['GPU'], 'seconds': row['wall_seconds'],
                             'scope': 'Train-only checkpoint replay; operation wall time'})
+    projection_profile = args.root/'audit/projection_cost_profile.json'
+    if projection_profile.exists():
+        row = json.loads(projection_profile.read_text())
+        interactive.append({'path': str(projection_profile), 'GPU': row['GPU'],
+                            'seconds': row['operation_seconds'], 'scope': row['scope']})
     write_json(args.root/'reference_costs.json', {'status': 'complete', 'reused_MAE3': historical,
         'interactive_recorded_operations': interactive,
         'interactive_operation_seconds_lower_bound': sum(r['seconds'] for r in interactive),

@@ -75,6 +75,10 @@ def evaluation_config(root):
             pair(name, f'final_b4_{task.lower()}_s{seed}', 'observation-summary baseline', geometry=seed==42)
     for family in ['B1', 'B4']:
         name = f'final_{family.lower()}_t3_s42_without_tracker'
+        full = load(root, f'final_{family.lower()}_t3_s42')
+        without = load(root, name)
+        if full['config'].get('bf16', True)!=without['config'].get('bf16', True):
+            name += '_bf16' if full['config'].get('bf16', True) else '_fp32'
         model(name, family, 'T3', 42, 'without_tracker')
         pair(name, f'final_{family.lower()}_t3_s42', 'retrained tracker incremental value', geometry=True)
     for task in ['t3', 't4']:

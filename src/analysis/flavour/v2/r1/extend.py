@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--family', required=True)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--drop-modality', choices=['pixel', 'bar', 'tracker'])
+    parser.add_argument('--precision', choices=['FP32', 'BF16'])
     parser.add_argument('--compile-local', action='store_true')
     args = parser.parse_args()
     contract = json.loads((args.root/'campaign.json').read_text())
@@ -41,6 +42,9 @@ def main():
     for task in tasks:
         config = recipe(r0, family, task, seed=args.seed, compile_local=args.compile_local)
         suffix = f'_without_{args.drop_modality}' if args.drop_modality else ''
+        if args.precision:
+            suffix += '_'+args.precision.lower()
+            config.update(bf16=args.precision=='BF16', precision=args.precision)
         name = f'final_{family.lower()}_{task.lower()}_s{args.seed}{suffix}'
         config.update(name=name, data_root=str(args.root/'data'),
             learning_rate=selection[f'{base_family}_{task}']['learning_rate'], passes=4,

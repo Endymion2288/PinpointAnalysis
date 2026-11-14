@@ -52,6 +52,13 @@ def advance(root):
             expected.append(f'compute_{family.lower()}_t3_s{seed}')
     expected += ['final_b4-mae_t4_s42', 'final_b4_t3_s42_without_tracker',
                  'final_b1_t3_s42_without_tracker', 'control_b1_cnn_t3_s42', 'control_b1_cnn_t4_s42']
+    b1 = root/'experiments/final_b1_t4_s42/manifest.json'
+    b1_without = root/'experiments/final_b1_t3_s42_without_tracker/manifest.json'
+    if b1.exists() and b1_without.exists():
+        full = json.loads(b1.read_text())['config'].get('bf16', True)
+        control = json.loads(b1_without.read_text())['config'].get('bf16', True)
+        if full!=control:
+            expected.append('final_b1_t3_s42_without_tracker_'+('bf16' if full else 'fp32'))
     if not all(complete(root, name) for name in expected):
         return False
     config_path = root/'evaluation_config.json'

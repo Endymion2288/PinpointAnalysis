@@ -75,6 +75,10 @@ def main():
             any(np.isfinite(h['gradient_squared_norms'][g]) and h['gradient_squared_norms'][g]>0 for h in record['health'])
             and any(h['parameter_update_RMS'][g]>0 for h in record['health']) for g in active))
         check(entry['name']+'_nonconstant_predictions', record['probability_diagnostics']['distinct_vectors']>=100)
+        if entry.get('kind')=='without_tracker':
+            reference = json.loads((root/'experiments'/f"final_{entry['family'].lower()}_t3_s42"/'manifest.json').read_text())
+            check(entry['name']+'_matched_training_precision', record['config'].get('bf16', True)==
+                  reference['config'].get('bf16', True))
         exposure_rows.append({'name': entry['name'], 'family': entry['family'], 'task': entry['task'],
             'seed': entry['seed'], 'kind': entry.get('kind', 'main'),
             'unique_rows': record['unique_train_events'], 'input_rows': len(coverage),
