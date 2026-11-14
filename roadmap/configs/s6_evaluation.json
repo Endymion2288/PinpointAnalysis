@@ -6,7 +6,8 @@
   "score_migration_edges": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.000001],
   "quality": "observation-only S5 cluster/segment/vertex and tracker-association algorithms; no truth matching",
   "containment_proxy": "pixel transverse edge fraction, last pixel plane activity, bar transverse edge energy and last panel energy; descriptive leakage indicators, not true deposited-energy containment",
-  "cutflow": ["all", "pixel_centered", "pixel_centered_and_active", "pixel_centered_active_and_frozen_selection"],
+  "cutflow": ["all", "target_envelope", "target_envelope_and_active", "target_envelope_active_selected", "pixel_centered", "pixel_centered_and_active", "pixel_centered_active_and_frozen_selection"],
+  "target_envelope": "accepted geometry scintillator transverse envelope and first-to-last W slab extent; W z-slab reported separately; not an exact survey of W corner shapes; truth diagnostic, never an inference input",
   "bootstrap": "400 accepted-family-connected chunk resamples, seed 2026; class weights normalized to each fixed scenario prior inside each resample; calibration/threshold/checkpoint uncertainty conditional",
   "curves": "complete tie-aware test ROC/PR retained as descriptive curves; all reported selections use frozen validation thresholds",
   "interval": "pointwise percentile 95%; exact Clopper-Pearson additionally for raw integer counts; no exposure or significance inference"

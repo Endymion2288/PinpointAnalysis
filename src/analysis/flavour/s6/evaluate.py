@@ -92,6 +92,8 @@ class FixedCache:
                     'signal_efficiency_exact_CI95': exact_interval(tp, nsignal),
                     'raw_background_FPR_exact_CI95': exact_interval(fp, nbackground),
                     'background_passed_below_25': fp < 25,
+                    'selected_Neff': float(weight[passed[:, c]].sum()**2/(weight[passed[:, c]]@weight[passed[:, c]]))
+                        if passed[:, c].any() and (weight[passed[:, c]]@weight[passed[:, c]]) > 0 else 0.,
                     'background_class_counts': [int(((self.y == k) & passed[:, c]).sum()) if k != c else None for k in range(4)]})
             raw = np.bincount(self.y*5+final, minlength=20).reshape(4, 5)
             weighted = np.bincount(self.y*5+final, weights=weight, minlength=20).reshape(4, 5)
@@ -112,11 +114,23 @@ def joined(root, raw):
     quality_path = root/'evaluation/quality.parquet'
     if quality_path.exists():
         frame = frame.merge(pd.read_parquet(quality_path), on=KEY, how='left', validate='one_to_one', sort=False)
+    plan = json.loads((root/'plan.json').read_text())
+    geometry = json.loads(Path(plan['geometry']).read_text())
+    # Declared target envelope is distinct from the much smaller pixel field.
+    x, y, z = [frame['init'+a].to_numpy() for a in 'XYZ']
+    cx, cy = np.mean(geometry['scint_bar_Xcenter']), np.mean(geometry['scint_bar_Ycenter'])
+    frame['target_envelope'] = ((np.abs(x-cx) <= geometry['scint_detector_width']/2) &
+        (np.abs(y-cy) <= geometry['scint_detector_height']/2) &
+        (z >= min(geometry['tungsten_Zpos'])-geometry['tungsten_thickness']/2) &
+        (z <= max(geometry['tungsten_Zpos'])+geometry['tungsten_thickness']/2))
+    frame['W_z_slab'] = np.abs(z[:, None]-np.asarray(geometry['tungsten_Zpos'])).min(1) <= geometry['tungsten_thickness']/2
     return frame
 
 
 def strata(frame, config):
     groups = {'all': np.ones(len(frame), dtype=bool), 'pixel_centered': frame.pixel_centered.to_numpy(),
+        'target_envelope': frame.target_envelope.to_numpy(), 'target_envelope_and_W_z_slab':
+            frame.target_envelope.to_numpy() & frame.W_z_slab.to_numpy(),
         'large_scintillator': frame.large_scintillator.to_numpy(), 'active': ~frame.all_empty.to_numpy(),
         'empty_response': frame.all_empty.to_numpy(), 'neutrino': frame.initPDG.to_numpy() > 0,
         'antineutrino': frame.initPDG.to_numpy() < 0}
@@ -223,7 +237,10 @@ def one(args):
     for point, resolved in zip(points, fixed.final):
         active = ~frame.all_empty.to_numpy()
         target = frame.pixel_centered.to_numpy()
-        for n, mask in [('all', np.ones(len(frame), bool)), ('pixel_centered', target),
+        envelope = frame.target_envelope.to_numpy()
+        for n, mask in [('all', np.ones(len(frame), bool)), ('target_envelope', envelope),
+            ('target_envelope_and_active', envelope & active),
+            ('target_envelope_active_selected', envelope & active & (resolved != 4)), ('pixel_centered', target),
             ('pixel_centered_and_active', target & active),
             ('pixel_centered_active_and_frozen_selection', target & active & (resolved != 4))]:
             cutflow.append({'target_FPR': point['target_FPR'], 'cut': n,

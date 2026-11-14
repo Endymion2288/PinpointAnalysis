@@ -213,7 +213,8 @@ def run(args):
     import pyarrow.parquet as pq
     from analysis.flavour.s6.gfaser import write_gfaser
     from analysis.flavour.s6.prepare import require_freeze
-    require_freeze(args.root, 'test')
+    if args.scope == 'transport':
+        require_freeze(args.root, 'test')
     config = json.loads((args.root/'conditions.json').read_text())
     plan = json.loads((args.root/'plan.json').read_text())
     geometry = json.loads(Path(plan['geometry']).read_text())
