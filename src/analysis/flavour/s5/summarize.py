@@ -21,7 +21,7 @@ def run(root, output):
         config = manifest['config']
         hgb = entry['name'].startswith('s5_hgb_')
         measurements.append({'name': entry['name'], 'variant': entry['variant'], 'seed': entry['seed'],
-            'cohort': config.get('analysis_cohort', f"passes{config['epochs']}_labels{config['label_budget']}"),
+            'cohort': 'HGB_reference' if hgb else config.get('analysis_cohort', f"passes{config['epochs']}_labels{config['label_budget']}"),
             'training_kind': 'HGB reference fitted separately' if hgb else 'neural complete-pass training',
             'epochs': None if hgb else config['epochs'], 'label_budget': config['label_budget'],
             'metrics': {key: entry['metrics'][key] for key in columns},
