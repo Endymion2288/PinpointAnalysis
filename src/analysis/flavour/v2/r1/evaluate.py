@@ -53,10 +53,23 @@ def domain_report(frame, mask):
                 selected = mask & (conditional[:, c] >= threshold) if threshold is not None else np.zeros(len(y), dtype=bool)
                 n_tau = int((selected & (y == 2)).sum())
                 n_total = int(selected.sum())
+                selected_counts = np.bincount(y[selected], minlength=4)
+                support = np.bincount(y[mask], minlength=4)
+                acceptance = np.divide(selected_counts, support, out=np.zeros(4), where=support>0)
+                scenarios = {}
+                supported = bool((support>0).all())
+                for prior_tau in [.25, .01, .001]:
+                    prior = np.array([(1-prior_tau)/3, (1-prior_tau)/3, prior_tau, (1-prior_tau)/3])
+                    weighted_selected = prior*acceptance
+                    scenarios[str(prior_tau)] = {'prior_e_mu_tau_NC': prior.tolist(),
+                        'all_classes_observed': supported,
+                        'tau_fraction': float(weighted_selected[2]/weighted_selected.sum()) if supported and weighted_selected.sum()>0 else None,
+                        'input_coverage': float(weighted_selected.sum()) if supported else None,
+                        'interpretation': 'benchmark prior scenario, conditional response held fixed; not a physical flux estimate'}
                 row[str(target)] = {'threshold': threshold, 'selected_total': n_total, 'selected_tau': n_tau,
                     'tau_fraction_observed_domain_mixture': n_tau/n_total if n_total else None,
                     'tau_acceptance': n_tau/int(tau.sum()) if tau.any() else None,
-                    'raw_selected_original_labels': np.bincount(y[selected], minlength=4).tolist()}
+                    'raw_selected_original_labels': selected_counts.tolist(), 'prior_scenarios': scenarios}
             contamination.append(row)
     result['tau_contamination'] = contamination
     return result
@@ -147,6 +160,8 @@ def main():
         'paired': True, 'scope': 'development Tune intervals; training seed spread reported separately'})
     comparisons = []
     cache = {}
+    groups = {}
+    entries = {e['name']: e for e in config['models']}
     for pair in config.get('pairs', []):
         domain = pair.get('domain', 'all')
         mask = np.ones(len(catalog), dtype=bool) if domain == 'all' else catalog[domain].to_numpy(dtype=bool)
@@ -157,6 +172,24 @@ def main():
                 cache[key] = (compute(), np.asarray([compute(w[mask]) for w in weights]))
         left, right = cache[(pair['a'], domain)], cache[(pair['b'], domain)]
         comparisons.append({**pair, 'domain': domain, 'metrics': interval(left[0]-right[0], left[1]-right[1])})
+        a, b = entries[pair['a']], entries[pair['b']]
+        if a['seed']==b['seed']:
+            key = tuple((e['family'], e['task'], e.get('kind', 'main')) for e in [a, b])+(domain, pair.get('reason', ''))
+            groups.setdefault(key, []).append((a['seed'], left[0]-right[0], left[1]-right[1]))
+    mean_seed_pairs = []
+    for key, values in groups.items():
+        seeds = [v[0] for v in values]
+        if set(seeds)!={17,42,2026} or len(seeds)!=3:
+            continue
+        points = np.asarray([v[1] for v in values])
+        metrics = interval(points.mean(0), np.asarray([v[2] for v in values]).mean(0))
+        for c, name in enumerate(SCALARS):
+            finite = np.isfinite(points[:, c])
+            metrics[name]['per_seed_differences'] = [float(v) if np.isfinite(v) else None for v in points[:, c]]
+            metrics[name]['training_seed_sample_SD'] = float(points[finite, c].std(ddof=1)) if finite.sum()>1 else None
+        mean_seed_pairs.append({'a_family_task_kind': key[0], 'b_family_task_kind': key[1],
+            'domain': key[2], 'reason': key[3], 'seeds': seeds, 'metrics': metrics,
+            'scope': 'paired physical-event interval conditional on these three trained seeds; seed SD separate'})
     spread = []
     table = pd.DataFrame(rows)
     for key, group in table[table.domain.eq('all') & table.kind.eq('main')].groupby(['family', 'task']):
@@ -166,6 +199,7 @@ def main():
                 'BA3_sample_SD': float(group.BA3.std(ddof=1)), 'NLL3_mean': float(group.NLL3.mean())})
     table.to_csv(output/'model_domain_metrics.csv', index=False)
     write_json(output/'results.json', {'status': 'complete', 'models': reports, 'pairs': comparisons,
+        'mean_seed_pairs': mean_seed_pairs,
         'seed_spread': spread, 'bootstrap': design, 'replicates': args.replicates,
         'benchmark_prior': {'T3': [1/3]*3, 'T4': [.25]*4},
         'scope': 'development Tune; raw uncalibrated probabilities; descriptive score-selected operating points',

@@ -86,6 +86,7 @@ def main():
     kube = [s for s in submissions if s.get('submitted') and s.get('backend')=='kubeflow']
     all_pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-o', 'json'])['items'] if kube else []
     all_jobs = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'jobs', '-o', 'json'])['items'] if kube else []
+    live_pod_names = {p['metadata']['name'] for p in all_pods}
     jobs = {j['metadata']['name']: j for j in all_jobs}
     for row in kube:
         pods = [p for p in all_pods if p['metadata'].get('labels', {}).get('job-name')==row['name']]
@@ -117,7 +118,14 @@ def main():
             ended = [s['state']['terminated']['finishedAt'] for s in pod['status'].get('containerStatuses', [])
                      if 'terminated' in s.get('state', {})]
             phase = pod['status']['phase']
+            inferred_terminal = None
+            if phase not in ['Succeeded', 'Failed'] and job and pod['metadata']['name'] not in live_pod_names:
+                inferred_terminal = next((c.get('lastTransitionTime') for c in job.get('status', {}).get('conditions', [])
+                    if c['type'] in ['Complete', 'Failed'] and c['status']=='True'), None)
             end = max(map(timestamp, ended)) if ended and phase in ['Succeeded', 'Failed'] else now
+            if inferred_terminal:
+                end = timestamp(inferred_terminal)
+                phase = 'terminal_cached_Pod_with_Job_evidence'
             seconds = max(0., end-timestamp(scheduled)) if scheduled else 0.
             cpus = pod['spec']['containers'][0]['resources']['requests'].get('cpu', '0')
             cpu = float(cpus[:-1])/1000 if cpus.endswith('m') else float(cpus)
@@ -126,7 +134,8 @@ def main():
                 'GPU': observed_devices.get(row['name']),
                 'allocation_seconds': seconds, 'device_hours': seconds/3600,
                 'allocated_CPU_core_hours': seconds*cpu/3600,
-                'accounting': 'from PodScheduled through last app/sidecar termination; includes image/init/failures'})
+                'accounting': ('cached PodScheduled through terminal Job transition: conservative allocation upper bound'
+                    if inferred_terminal else 'from PodScheduled through last app/sidecar termination; includes image/init/failures')})
             if ended and phase in ['Succeeded', 'Failed']:
                 response = subprocess.run(['kubectl', '--request-timeout=20s', '-n', 'xcheng',
                     'logs', pod['metadata']['name'], '-c', 'v2'], capture_output=True, text=True)

@@ -169,6 +169,12 @@ class MetricTests(unittest.TestCase):
             for c in range(k):
                 ap.append(average_precision_score(y == c, p[:, c], sample_weight=weight))
                 auc.append(roc_auc_score(y == c, p[:, c], sample_weight=weight))
+                for fpr in [.01, .001]:
+                    cut = actual['per_class'][c][f'threshold_FPR_{fpr}']
+                    if cut is not None:
+                        selected = p[:, c]>=cut
+                        expected = weight[selected & (y==c)].sum()/weight[selected].sum()
+                        self.assertAlmostEqual(actual['per_class'][c][f'purity_FPR_{fpr}'], expected)
             self.assertAlmostEqual(actual['macro_AP'], np.mean(ap))
             self.assertAlmostEqual(actual['macro_AUROC'], np.mean(auc))
 

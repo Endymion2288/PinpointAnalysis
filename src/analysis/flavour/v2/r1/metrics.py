@@ -40,6 +40,8 @@ class Metrics:
                     row[f'eff_FPR_{fpr}'] = float(tp[j]/positive) if j is not None else 0.
                     row[f'actual_FPR_{fpr}'] = float(fp[j]/negative) if j is not None else 0.
                     row[f'threshold_FPR_{fpr}'] = float(self.p[order[ends[j]], c]) if j is not None else None
+                    row[f'purity_FPR_{fpr}'] = float(tp[j]/(tp[j]+fp[j])) if j is not None and tp[j]+fp[j]>0 else None
+                    row[f'coverage_FPR_{fpr}'] = float((tp[j]+fp[j])/w.sum()) if j is not None else 0.
                 for purity in [.8, .9]:
                     eligible = np.flatnonzero((precision >= purity) & (tp+fp > 0))
                     j = eligible[np.argmax(tp[eligible])] if len(eligible) else None
