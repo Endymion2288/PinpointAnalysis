@@ -262,6 +262,10 @@ def run(args):
         convert_response(output, destination, metadata, geometry)
         output_bytes = output.stat().st_size
         output.unlink()
+        import gzip
+        with log_path.open('rb') as original, gzip.open(str(log_path)+'.gz', 'wb') as compressed:
+            shutil.copyfileobj(original, compressed)
+        log_path.unlink()
         write_json(destination/'summary.json', {'status': 'complete', 'task': args.task, 'events': len(metadata),
             'variant': variant, 'seconds': time.monotonic()-tick, 'transient_ROOT_bytes': output_bytes,
             'ROOT_retained': False, 'fixed_input_vertices': True})

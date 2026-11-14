@@ -8,6 +8,7 @@
   "containment_proxy": "pixel transverse edge fraction, last pixel plane activity, bar transverse edge energy and last panel energy; descriptive leakage indicators, not true deposited-energy containment",
   "cutflow": ["all", "target_envelope", "target_envelope_and_active", "target_envelope_active_selected", "pixel_centered", "pixel_centered_and_active", "pixel_centered_active_and_frozen_selection"],
   "target_envelope": "accepted geometry scintillator transverse envelope and first-to-last W slab extent; W z-slab reported separately; not an exact survey of W corner shapes; truth diagnostic, never an inference input",
+  "exact_target_overlap": "reuse fixed S5 joint energy/x/y/z/exact-tgtPDG bins and minimum five events per class/cell; compare predeclared primary/control scores on retained support; no extrapolation or sample re-certification",
   "bootstrap": "400 accepted-family-connected chunk resamples, seed 2026; class weights normalized to each fixed scenario prior inside each resample; calibration/threshold/checkpoint uncertainty conditional",
   "curves": "complete tie-aware test ROC/PR retained as descriptive curves; all reported selections use frozen validation thresholds",
   "interval": "pointwise percentile 95%; exact Clopper-Pearson additionally for raw integer counts; no exposure or significance inference"
