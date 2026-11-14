@@ -2,6 +2,8 @@
 
 **R0已完成，R1正在执行。**完整Train100k/Tune40k已通过身份、标签、PE与计数验收；四个神经网络的八项真实学习及集成检查、B0三seed、全部16项screen已完成。B1–B4四pass训练、同计算控制及必要的seed重复在Condor/Kubeflow执行。冻结合同见[配置](configs/r1_campaign.json)，screen实测见[stage243](../../workbook/2026-11-14_stage243_r1_all_screens_and_full_training.md)。完整排名、paired比较和stress仍待完成。
 
+首组B4 seed42完整T3/T4与无tracker重训的400次paired结果见[stage246](../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md)：tracker全域ΔBA3=+3.90 pp，CI95[3.43,4.41]；T3−T4 conditional为−0.33 pp，[−0.69,0.004]。共同BA接近但逐类有取舍，B4尚未显示对HGB的全面优势。普通CNN成本参照与完整四类图表已补齐实现/依赖，实际训练见[stage245](../../workbook/2026-11-14_stage245_r1_cost_control_and_delivery_dependencies.md)。上述中期结果不改变主排名规则。
+
 本文件与 [experiment_plan.json](experiment_plan.json) 记录研究合同及执行状态。W01–W03由`analysis.flavour.v2`实现并完成HTCondor验证，见[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[r0_results.json](r0_results.json)；W04–W06已开始实现与验证，W08待实际完整结果。R1入口位于`analysis.flavour.v2.r1`，本JSON不能直接交给旧训练CLI。已有accepted samples、response参数和路径工具继续复用。阶段编号使用R0–R7，与已完成的旧S0–S6区分。
 
 ## 1. 分阶段依赖与交付

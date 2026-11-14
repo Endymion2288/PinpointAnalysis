@@ -12,6 +12,8 @@
 
 完整产物：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/b4_seed42/evaluation/`。小型读回为[r1_interim_b4.json](../roadmap/v2/r1_interim_b4.json)。英文图表由`roadmap/tools/plot_r1_interim_b4.py`生成，位于上述中期目录的`figures/r1_interim_b4.pdf/png`。
 
+路线图总入口、执行计划与`experiment_plan.json`已同步该中期结果，R1状态继续为`in_progress`。
+
 ## 详细数据
 
 ### 样本、输入与统计

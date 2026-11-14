@@ -302,8 +302,9 @@
       ],
       "planned_device_hours": 18,
       "status": "in_progress",
-      "progress_report": "../../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md",
-      "measured_progress": "140k identities/labels/PE conserved; eight actual learning gates; B0 three-seed and all16 neural screens complete; four-pass, compute controls, seeds and stress pending full delivery"
+      "progress_report": "../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md",
+      "measured_progress": "140k identities/labels/PE conserved; eight actual learning gates; B0 three-seed and all16 neural screens complete; seed42 B4 T3/T4/no-tracker and 400 paired physical-block intervals complete; full ranking, three-seed, compute, CNN reference and stress pending delivery",
+      "interim_results": "r1_interim_b4.json"
     },
     {
       "id": "R2",

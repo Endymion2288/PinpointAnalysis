@@ -2,7 +2,7 @@
 
 日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。独立审查与新版设计已完成；R0 完成，R1 短预算筛查完成，完整训练和配对比较正在执行。R2–R7 的效果尚未测量。
 
-**当前执行状态：R0 完成，R1 正在执行。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm，排除1,560,122个历史使用family。R0 的73项最终读回、81项相关测试及真实32事件拟合通过。R1 完整140k Train/Tune数据验收、八项真实学习门槛及16项screen已完成，B0三seed已完成；首个B4 seed42四pass已完成，其他训练、同计算控制及最终统计仍在执行，详见[stage244](../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md)。短screen结果见[JSON](v2/r1_screen_results.json)，不能代替完整架构排名。Cal-A/Cut-B/Confirm继续封存。
+**当前执行状态：R0 完成，R1 正在执行。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm，排除1,560,122个历史使用family。R0 的73项最终读回、81项相关测试及真实32事件拟合通过。R1 完整140k Train/Tune数据验收、八项真实学习门槛、B0三seed及16项screen已完成；首组B4 seed42 T3/T4、无tracker重训和400次配对统计完成，详见[stage246](../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md)及[实测JSON](v2/r1_interim_b4.json)。Tracker使BA3增加3.90个百分点[3.43,4.41]；三类重训相对四类条件三类为−0.33个百分点[−0.69,0.004]，逐类有取舍。完整架构排名、三seed、同计算和stress仍在执行；[短screen](v2/r1_screen_results.json)不代替完整排名。Cal-A/Cut-B/Confirm继续封存。
 
 资源安排采用**尽快启动、兼容即可**的原则：HTCondor 与 Kubeflow 并用，接受不同 GPU、平台提供的共享设备和 MIG。当前 LCG108/Torch2.7.1 包含 SM75 起的内核，T4 使用 FP32，A100/H100 可使用 BF16；V100 的 SM70 启动失败属于本构建兼容性问题。具体操作、同计算比较口径和失败恢复见[资源执行说明](v2/07_resources_and_operations.md)。
 
@@ -14,7 +14,7 @@
 
 - 六模型均以第 4/4 轮为 best，末轮 NLL 继续下降 **0.00203–0.00779**，训练饱和未建立。
 - 100k 监督标签、100k SSL 语料和约 0.898M 参数构成当前主模型规模；没有完成 300k/1M 监督训练的饱和研究。
-- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是条件诊断，三类实际重训效果**未测量**。
+- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是S6条件诊断；R1实际三类重训的首组结果见stage246，完整三seed与同计算结论仍待完成。
 - 记录中的 data-wait/总耗时为 **31.16%–46.64%**。先提升数据供给，可把更多计算用于长训练和有效模型比较。
 
 数值、统计口径和代码证据见[独立评估](v2/01_evidence_review.md)及[复核 JSON](v2/current_results_review.json)。
