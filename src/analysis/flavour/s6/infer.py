@@ -18,6 +18,7 @@ import time
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet as pq
 import torch
 from torch.utils.data import DataLoader, Dataset
 
@@ -365,9 +366,38 @@ def pool(args):
         raise RuntimeError('an inference lane failed; inspect its EOS log')
 
 
+def finalize(args):
+    plan = json.loads((args.root/'plan.json').read_text())
+    ids = [i for i, t in enumerate(plan['tasks']) if t['split'] == args.split]
+    destination = args.root/'predictions'/f'{args.split}_raw.parquet'
+    temporary = destination.with_suffix('.partial.parquet')
+    keys = []
+    writer = None
+    summaries = []
+    for i in ids:
+        part = args.root/'predictions/nominal'/f'{i:04d}'
+        summary = json.loads((part/'summary.json').read_text())
+        table = pq.read_table(part/'probabilities.parquet')
+        if writer is None:
+            writer = pq.ParquetWriter(temporary, table.schema, compression='zstd')
+        writer.write_table(table)
+        keys.append(table.select(KEY).to_pandas())
+        summaries.append(summary)
+    writer.close()
+    actual = pd.concat(keys, ignore_index=True).sort_values(KEY)
+    expected = pd.read_parquet(args.root/'manifest.parquet', filters=[('split', '=', args.split)], columns=KEY).sort_values(KEY)
+    if not np.array_equal(actual.to_numpy(), expected.to_numpy()):
+        raise ValueError('inference keys differ from accepted full partition')
+    temporary.replace(destination)
+    write_json(args.root/'predictions'/f'{args.split}_completion.json', {'status': 'complete', 'events': len(actual),
+        'tasks': len(ids), 'model_forward_seconds': sum(sum(s['model_seconds'].values()) for s in summaries),
+        'task_wall_seconds_sum': sum(s['seconds'] for s in summaries), 'bytes': destination.stat().st_size})
+    print(json.dumps({'split': args.split, 'events': len(actual), 'status': 'complete'}), flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['replay', 'task', 'profile', 'worker', 'pool'])
+    parser.add_argument('command', choices=['replay', 'task', 'profile', 'worker', 'pool', 'finalize'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--source', type=Path)

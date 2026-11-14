@@ -1,0 +1,11 @@
+{
+  "precision": "bf16",
+  "compile_local": true,
+  "batch_size": 64,
+  "workers_per_lane": 4,
+  "basis": "h100_batch_profile1024: batch64 11.1168 s/1024 events; maximum probability difference from batch16 < 8.35e-7",
+  "replay": "h100_compiled_replay64: all 13 checkpoints within fixed 0.003 tolerance",
+  "models_per_lane": 13,
+  "event_or_node_truncation": false,
+  "calibration_and_test_same_numerical_mode": true
+}

@@ -1,0 +1,29 @@
+{
+  "scope": "Frozen detector-proxy stress amplitudes; no measured hardware-systematic interpretation",
+  "paired_digitizer_sample": {"partition": "test", "events_per_class": 8000, "selection": "lowest deterministic accepted-family hash within each class", "seed": 20261114},
+  "models": ["s4_empty_mae3_n100000_s17", "s4_empty_mae3_n100000_s42", "s4_empty_mae3_n100000_s2026"],
+  "variants": [
+    {"name": "nominal", "parameters": {}},
+    {"name": "gain_low", "parameters": {"bar_gain": 0.9}},
+    {"name": "gain_high", "parameters": {"bar_gain": 1.1}},
+    {"name": "threshold_2pe", "parameters": {"bar_threshold_pe": 2}},
+    {"name": "threshold_5pe", "parameters": {"bar_threshold_pe": 5}},
+    {"name": "sparse_noise", "parameters": {"pixel_noise_mean": 5, "bar_noise_pe_mean_per_hardware_channel": 0.002}},
+    {"name": "inefficiency", "parameters": {"pixel_survival": 0.98, "bar_survival": 0.98, "tracker_efficiency": 0.97}},
+    {"name": "dead_channels", "parameters": {"pixel_dead_fraction": 0.01, "bar_dead_fraction": 0.01}},
+    {"name": "coordinate_bias", "parameters": {"alignment_xy_mm": [0.1, -0.1]}},
+    {"name": "tracker_resolution_low", "parameters": {"tracker_sigma_scale": 0.8}},
+    {"name": "tracker_resolution_high", "parameters": {"tracker_sigma_scale": 1.2}},
+    {"name": "tracker_efficiency_95", "parameters": {"tracker_efficiency": 0.95}},
+    {"name": "combined", "parameters": {"bar_gain": 0.9, "bar_threshold_pe": 2, "pixel_noise_mean": 5, "bar_noise_pe_mean_per_hardware_channel": 0.002, "pixel_survival": 0.98, "bar_survival": 0.98, "tracker_efficiency": 0.97, "alignment_xy_mm": [0.1, -0.1], "tracker_sigma_scale": 1.2}},
+    {"name": "heldout_pattern", "parameters": {"pixel_dead_column_fraction_range": [0.3, 0.31], "drop_tracker_station": 1}, "role": "fixed spatial failure pattern absent from fitting; not used to choose model or thresholds"}
+  ],
+  "noise_definition": "Pixel fake channels sampled over all native hardware addresses; bar Poisson PE over all 96 panels and 40 bars/panel, including initially unobserved channels. Fake PE has zero independent edep proxy.",
+  "gain_definition": "Common multiplicative scale on bar edep and PE proxies before threshold; no inferred ADC calibration",
+  "alignment_definition": "Measurement-coordinate and supplied-geometry bias, without changing material transport or acceptance",
+  "tracker_definition": "Resolution re-digitizes saved ideal float32 crossings with identical nominal RNG; inefficiency thins nominal accepted measurements using common additional randomness",
+  "transport": {"events_per_class": 256, "seed": 20261114, "nominal_field_T": 0.57, "field_scales": [0.95, 1.05], "tungsten_density_scales": [0.95, 1.05], "tau_helicity_proxies": [-1, 0, 1], "nominal_physics_list": "FTFP_BERT+PY8DK", "scope": "Actual G4 resimulation at fixed input particles and vertices; density changes preserve geometry. Helicity amplitudes are diagnostic proxies."},
+  "generator": {"GENIE_version": "3.04.00", "base_tune": "G18_02a_00_000*", "hadronization_configs": ["Pythia6_Standard", "Pythia6_NUX"], "source_root": "/eos/experiment/fasernu-data0/MC/Genie_files/genie_output_Pythia6tunes", "flux_directories": ["EPOSLHC_pi", "EPOSLHC_k", "Powheg_pythia_charm_central"], "target_Z": 74, "maximum_per_class_and_tune": 512, "matching": "incoming signed flavour, energy, tungsten isotope and common benchmark vertex support; report overlap/Neff; independent generator events", "NuWro": "no compatible readable input found; not measured"},
+  "unsupported_inputs": {"time_window_and_time_resolution": "No measured timing in current observation schema", "physical_exposure_yields_and_significance": "No validated flux/exposure normalization"},
+  "conditional_metrics": "Nominal calibrated probability mapping and validation thresholds remain fixed in every condition"
+}
