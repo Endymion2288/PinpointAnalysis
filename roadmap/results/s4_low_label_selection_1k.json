@@ -1,0 +1,485 @@
+{
+  "utc": "2026-11-14T02:20:48.706695+00:00",
+  "selections": [
+    {
+      "label_budget": 1000,
+      "selected": {
+        "recipe": "lpft",
+        "epochs": 8,
+        "mean_OOF_NLL": 1.4116321458730499,
+        "OOF_NLL_by_initialization": {
+          "scratch": 1.433130793364789,
+          "mae3": 1.3901334983813107
+        },
+        "mean_updates": 408.0
+      },
+      "candidates": [
+        {
+          "recipe": "early",
+          "epochs": 1,
+          "mean_OOF_NLL": 1.52182541217424,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5535117334387378,
+            "mae3": 1.4901390909097423
+          },
+          "mean_updates": 51.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 2,
+          "mean_OOF_NLL": 1.508879422607254,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.545011235190395,
+            "mae3": 1.472747610024113
+          },
+          "mean_updates": 102.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 3,
+          "mean_OOF_NLL": 1.4610161571728875,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4930045340685096,
+            "mae3": 1.4290277802772653
+          },
+          "mean_updates": 153.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 4,
+          "mean_OOF_NLL": 1.4896855543851006,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.551244469835501,
+            "mae3": 1.4281266389347005
+          },
+          "mean_updates": 204.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 5,
+          "mean_OOF_NLL": 1.4862584014927096,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5258618738611311,
+            "mae3": 1.4466549291242878
+          },
+          "mean_updates": 255.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 6,
+          "mean_OOF_NLL": 1.5172752183300502,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.57717071816598,
+            "mae3": 1.4573797184941202
+          },
+          "mean_updates": 306.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 7,
+          "mean_OOF_NLL": 1.533044540407262,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.6023976521667331,
+            "mae3": 1.4636914286477904
+          },
+          "mean_updates": 357.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 8,
+          "mean_OOF_NLL": 1.5502262761532615,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.6606804422368437,
+            "mae3": 1.439772110069679
+          },
+          "mean_updates": 408.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 9,
+          "mean_OOF_NLL": 1.5918137174355351,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.7203527160895913,
+            "mae3": 1.463274718781479
+          },
+          "mean_updates": 459.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 10,
+          "mean_OOF_NLL": 1.6179059154883881,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.7719829012744177,
+            "mae3": 1.4638289297023586
+          },
+          "mean_updates": 510.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 11,
+          "mean_OOF_NLL": 1.6366613326456196,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.8014242597668568,
+            "mae3": 1.4718984055243827
+          },
+          "mean_updates": 561.0
+        },
+        {
+          "recipe": "early",
+          "epochs": 12,
+          "mean_OOF_NLL": 1.6478299612157437,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.8209363734462691,
+            "mae3": 1.474723548985218
+          },
+          "mean_updates": 612.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 1,
+          "mean_OOF_NLL": 1.4845348249840538,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5154368307930703,
+            "mae3": 1.4536328191750372
+          },
+          "mean_updates": 51.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 2,
+          "mean_OOF_NLL": 1.4510909670605487,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4779936707501227,
+            "mae3": 1.424188263370975
+          },
+          "mean_updates": 102.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 3,
+          "mean_OOF_NLL": 1.4490083241661604,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4708740970697014,
+            "mae3": 1.4271425512626195
+          },
+          "mean_updates": 153.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 4,
+          "mean_OOF_NLL": 1.4446447875704143,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4893759415767764,
+            "mae3": 1.399913633564052
+          },
+          "mean_updates": 204.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 5,
+          "mean_OOF_NLL": 1.4446985820158131,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4942421874042107,
+            "mae3": 1.3951549766274156
+          },
+          "mean_updates": 255.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 6,
+          "mean_OOF_NLL": 1.4732400784721345,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5260447650274973,
+            "mae3": 1.4204353919167716
+          },
+          "mean_updates": 306.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 7,
+          "mean_OOF_NLL": 1.481642449274887,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5531213189305153,
+            "mae3": 1.4101635796192584
+          },
+          "mean_updates": 357.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 8,
+          "mean_OOF_NLL": 1.4765388418937322,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5600859507668678,
+            "mae3": 1.3929917330205963
+          },
+          "mean_updates": 408.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 9,
+          "mean_OOF_NLL": 1.482674389960577,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5682440032338818,
+            "mae3": 1.397104776687272
+          },
+          "mean_updates": 459.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 10,
+          "mean_OOF_NLL": 1.4897918763414655,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5853654702297353,
+            "mae3": 1.394218282453196
+          },
+          "mean_updates": 510.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 11,
+          "mean_OOF_NLL": 1.4936153200769549,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5920000132503307,
+            "mae3": 1.395230626903579
+          },
+          "mean_updates": 561.0
+        },
+        {
+          "recipe": "slow",
+          "epochs": 12,
+          "mean_OOF_NLL": 1.495051635851118,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5946794320995432,
+            "mae3": 1.3954238396026928
+          },
+          "mean_updates": 612.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 1,
+          "mean_OOF_NLL": 1.4791390751000744,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5081300129131407,
+            "mae3": 1.450148137287008
+          },
+          "mean_updates": 51.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 2,
+          "mean_OOF_NLL": 1.4479839656707902,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4781203372536427,
+            "mae3": 1.4178475940879376
+          },
+          "mean_updates": 102.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 3,
+          "mean_OOF_NLL": 1.442204254755832,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4610305587017258,
+            "mae3": 1.4233779508099382
+          },
+          "mean_updates": 153.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 4,
+          "mean_OOF_NLL": 1.4386044239193043,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4800957372713155,
+            "mae3": 1.3971131105672934
+          },
+          "mean_updates": 204.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 5,
+          "mean_OOF_NLL": 1.4360221091378769,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4809590936858859,
+            "mae3": 1.391085124589868
+          },
+          "mean_updates": 255.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 6,
+          "mean_OOF_NLL": 1.4601228055121525,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5022452765889687,
+            "mae3": 1.4180003344353362
+          },
+          "mean_updates": 306.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 7,
+          "mean_OOF_NLL": 1.4565164890849527,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5124850221934008,
+            "mae3": 1.4005479559765046
+          },
+          "mean_updates": 357.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 8,
+          "mean_OOF_NLL": 1.4498476702826077,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.510170414759185,
+            "mae3": 1.3895249258060303
+          },
+          "mean_updates": 408.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 9,
+          "mean_OOF_NLL": 1.4589449694161907,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5260474263060329,
+            "mae3": 1.3918425125263485
+          },
+          "mean_updates": 459.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 10,
+          "mean_OOF_NLL": 1.469658338611028,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5529100769512456,
+            "mae3": 1.3864066002708102
+          },
+          "mean_updates": 510.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 11,
+          "mean_OOF_NLL": 1.474270767314231,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5622736352624254,
+            "mae3": 1.3862678993660364
+          },
+          "mean_updates": 561.0
+        },
+        {
+          "recipe": "regularized",
+          "epochs": 12,
+          "mean_OOF_NLL": 1.477606144313295,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.5690550846862006,
+            "mae3": 1.3861572039403895
+          },
+          "mean_updates": 612.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 3,
+          "mean_OOF_NLL": 1.4266329859250901,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4352086604361056,
+            "mae3": 1.4180573114140747
+          },
+          "mean_updates": 153.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 4,
+          "mean_OOF_NLL": 1.4215439413114426,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4451938776696485,
+            "mae3": 1.3978940049532367
+          },
+          "mean_updates": 204.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 5,
+          "mean_OOF_NLL": 1.4185375816386787,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4440366463801617,
+            "mae3": 1.3930385168971955
+          },
+          "mean_updates": 255.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 6,
+          "mean_OOF_NLL": 1.4375012994988583,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4586558471791584,
+            "mae3": 1.4163467518185582
+          },
+          "mean_updates": 306.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 7,
+          "mean_OOF_NLL": 1.4207848422835254,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4483341337831495,
+            "mae3": 1.3932355507839016
+          },
+          "mean_updates": 357.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 8,
+          "mean_OOF_NLL": 1.4116321458730499,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.433130793364789,
+            "mae3": 1.3901334983813107
+          },
+          "mean_updates": 408.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 9,
+          "mean_OOF_NLL": 1.413422217389216,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4368670359579,
+            "mae3": 1.3899773988205317
+          },
+          "mean_updates": 459.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 10,
+          "mean_OOF_NLL": 1.4125626167218375,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4405037749642842,
+            "mae3": 1.3846214584793908
+          },
+          "mean_updates": 510.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 11,
+          "mean_OOF_NLL": 1.4139150627892394,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4429068861609522,
+            "mae3": 1.3849232394175268
+          },
+          "mean_updates": 561.0
+        },
+        {
+          "recipe": "lpft",
+          "epochs": 12,
+          "mean_OOF_NLL": 1.413940066739403,
+          "OOF_NLL_by_initialization": {
+            "scratch": 1.4429211239121598,
+            "mae3": 1.3849590095666464
+          },
+          "mean_updates": 612.0
+        }
+      ]
+    }
+  ],
+  "selection_rule": "For each label budget minimize equally weighted Scratch/MAE3 OOF NLL over recipe and eligible epoch; shared recipe/passes; ties prefer fewer updates then declared recipe order.",
+  "original_validation_used": false,
+  "calibration_test_used": false,
+  "training_seed_scope": "recipe selection seed42 only; refit with 17/42/2026",
+  "scope": "conditional OOF tuning after prior validation observations; not independent final generalization evidence"
+}

@@ -6,7 +6,7 @@
 
 新矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零，不能称全面改善。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
 
-本S4累计24.325865/60 device-hours，全部61个allocation已终止。当前不扩至1M，优先在原标签预算内比较更早checkpoint、较少重复曝光、学习率/正则和LP-FT；这些优化尚未执行。新路由下的EMA/Rel、compute-matched及frozen probes尚未重测，S5–S6未执行。
+阶段145结束时S4累计24.325865/60 device-hours，彼时61个allocation均已终止。后续[低标签优化](11_s4_pretraining.md#6-由实测结果驱动的后续优化)已启动：1k的24项train-inner训练完成，固定OOF规则选中LP-FT八次完整遍历，六项三seed重拟合已冻结；10k矩阵继续运行，修复后frozen probes已提交。当前不扩至1M，新路由下的EMA/Rel及compute-matched尚未重测，S5–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 

@@ -60,9 +60,9 @@ def plan(root, source):
         'refit_seeds': [17, 42, 2026], 'partitions': partitions, 'experiments': experiments}
 
 
-def resolve(root, campaign):
+def resolve(root, campaign, budgets=(1000, 10000)):
     specification = json.loads(campaign.read_text())
-    configurations = specification['experiments']
+    configurations = [c for c in specification['experiments'] if c['label_budget'] in budgets]
     rows = []
     for c in configurations:
         directory = root / 'experiments' / c['name']
@@ -83,7 +83,7 @@ def resolve(root, campaign):
                 'NLL': row['validation']['NLL'], 'events': manifest['validation_events'],
                 'updates': row['optimizer_steps_cumulative']})
     selections, refits = [], []
-    for budget in [1000, 10000]:
+    for budget in budgets:
         candidates = []
         for recipe in RECIPES:
             for epoch in range(1, 13):
@@ -102,7 +102,8 @@ def resolve(root, campaign):
         for initialization in ['scratch', 'mae3']:
             base = next(c for c in configurations if c['label_budget'] == budget and
                         c['initialization'] == initialization and c['transfer_recipe'] == selected['recipe'])
-            base = {k: v for k, v in base.items() if k not in {'selection_fold', 'eligible_selection_first_epoch'}}
+            base = {k: v for k, v in base.items() if k not in {
+                'selection_fold', 'eligible_selection_first_epoch', 'complete_pass_steps'}}
             data = LabelDataset(root, 'train', base)
             steps = len(CompletePassSampler(data, base['batch_size'], base['seed']))
             data.native.close()
@@ -130,11 +131,14 @@ def main():
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--selection-report', type=Path)
+    parser.add_argument('--budgets', type=int, nargs='+', choices=[1000, 10000], default=[1000, 10000])
     args = parser.parse_args()
     if args.action == 'plan':
         write_json(args.output, plan(args.root, args.source))
     else:
-        report, campaign = resolve(args.root, args.source)
+        if args.selection_report is None:
+            parser.error('resolve requires --selection-report')
+        report, campaign = resolve(args.root, args.source, args.budgets)
         write_json(args.selection_report, report)
         write_json(args.output, campaign)
 

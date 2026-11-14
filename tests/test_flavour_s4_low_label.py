@@ -1,5 +1,8 @@
 """Train-inner isolation, complete coverage and intentional encoder freezing."""
 import copy
+import json
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -12,6 +15,7 @@ from analysis.flavour.s4.low_label import (
     CompletePassSampler, TrainInnerDataset, TransferAdamW, TransferHealth, inner_folds,
 )
 from analysis.flavour.s4.train import build_model
+from analysis.flavour.s4.plan_low_label import RECIPES, resolve
 
 
 def metadata():
@@ -138,6 +142,56 @@ class LowLabelTests(unittest.TestCase):
         values = torch.randn(5, model.linear_readout.in_features)
         torch.testing.assert_close(model.head(values), torch.zeros(5, 4), rtol=0, atol=0)
         self.assertTrue(all(name.startswith('linear_readout.') for name, p in model.named_parameters() if p.requires_grad))
+
+    def test_supervised_continuation_cannot_silently_restart_LP(self):
+        with self.assertRaisesRegex(ValueError, 'supervised continuation'):
+            build_model({'linear_probe_passes': 2, 'supervised_initial_checkpoint': '/unused/best.pt'})
+
+    def test_recipe_resolution_is_budget_local_and_excludes_LP_only_epochs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); configurations = []
+            for recipe in RECIPES:
+                for kind in ['scratch', 'mae3']:
+                    for fold in range(3):
+                        name = f'{recipe}_{kind}_{fold}'
+                        c = {'name': name, 'label_budget': 1000, 'initialization': kind,
+                            'transfer_recipe': recipe, 'selection_fold': fold, 'seed': 42,
+                            'batch_size': 16, 'epochs': 12, 'complete_pass_steps': 2,
+                            'eligible_selection_first_epoch': 3 if recipe == 'lpft' else 1}
+                        configurations.append(c)
+                        directory = root / 'experiments' / name; directory.mkdir(parents=True)
+                        manifest = {'status': 'complete', 'config': c, 'selection': 'train_inner_NLL',
+                            'original_validation_used': False, 'train_events': 666 if fold == 0 else 667,
+                            'validation_events': 334 if fold == 0 else 333}
+                        history = []
+                        for epoch in range(1, 13):
+                            loss = 1.5
+                            if recipe == 'slow' and epoch == 4:
+                                loss = 1.3
+                            if recipe == 'lpft' and epoch < 3:
+                                loss = .01  # Ineligible, even if much lower.
+                            history.append({'epoch': epoch, 'validation': {'NLL': loss},
+                                'train_exposures': manifest['train_events'], 'optimizer_steps_cumulative': epoch * 2})
+                        (directory / 'manifest.json').write_text(json.dumps(manifest))
+                        (directory / 'history.json').write_text(json.dumps(history))
+            # A different budget is genuinely unfinished; it must not hold up
+            # the independent 1k decision, or enter the 1k objective.
+            configurations.append({'name': 'not_started', 'label_budget': 10000})
+            campaign = root / 'campaign.json'
+            campaign.write_text(json.dumps({'experiments': configurations, 'refit_seeds': [17, 42, 2026],
+                'selection_rule': 'shared weighted OOF NLL'}))
+            def refit_data(root, split, config):
+                return SamplerData(config=config, paths=[Path('unused')], indexes=np.arange(1000),
+                    native=SimpleNamespace(boundaries=[0, 1000], close=lambda: None))
+            with patch('analysis.flavour.s4.plan_low_label.LabelDataset', side_effect=refit_data):
+                report, refit = resolve(root, campaign, budgets=[1000])
+            self.assertEqual(report['selections'][0]['selected']['recipe'], 'slow')
+            self.assertEqual(report['selections'][0]['selected']['epochs'], 4)
+            self.assertFalse(report['original_validation_used'])
+            self.assertEqual(len(refit['experiments']), 6)
+            self.assertTrue(all(c['select_final_epoch'] and c['epochs'] == 4 for c in refit['experiments']))
+            self.assertEqual({c['seed'] for c in refit['experiments']}, {17, 42, 2026})
+            self.assertTrue(all(c['complete_pass_steps'] == 63 for c in refit['experiments']))
 
     def test_health_accepts_explicit_LP_and_still_rejects_disconnection(self):
         model = TinyClassifier()

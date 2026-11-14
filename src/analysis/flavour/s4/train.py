@@ -25,6 +25,8 @@ def validate_pretraining(config):
 
 
 def build_model(config):
+    if config.get('linear_probe_passes',0) and config.get('supervised_initial_checkpoint'):
+        raise ValueError('LP-FT requires fresh classification heads; supervised continuation must not restart LP')
     model=PlaneModuleClassifierV2(config)
     model.head[3].p=config.get('classifier_dropout',.1)
     if config.get('linear_probe_passes',0):
