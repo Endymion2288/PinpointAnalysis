@@ -24,11 +24,13 @@ def summarize(evaluation, health):
     for row in evaluation['experiments']:
         config = row['config']
         point = {'name': row['name'], 'program': row['program'], 'initialization': config.get('initialization', 'scratch'),
+            'comparison_group': row.get('comparison_group', config.get('initialization', 'scratch')),
+            'checkpoint_selection': row.get('checkpoint_selection'),
             'representation': config.get('probe_representation', 'full'), 'label_budget': config['label_budget'],
             'seed': config['seed'], 'raw': {k: row['four_class'][k] for k in METRICS},
             'common_support': {k: row['common_support_four_class'][k] for k in METRICS}}
         points.append(point)
-        identity = tuple(point[k] for k in ['program', 'initialization', 'representation', 'label_budget'])
+        identity = tuple(point[k] for k in ['program', 'initialization', 'representation', 'label_budget', 'comparison_group'])
         groups.setdefault(identity, []).append(point)
     label_statistics = []
     for identity, rows in groups.items():
@@ -37,11 +39,11 @@ def summarize(evaluation, health):
             measured[domain] = {k: {'mean': statistics.mean(r[domain][k] for r in rows),
                 'training_seed_sample_SD': statistics.stdev(r[domain][k] for r in rows) if len(rows) > 1 else None}
                 for k in METRICS}
-        label_statistics.append({**dict(zip(['program', 'initialization', 'representation', 'label_budget'], identity)),
+        label_statistics.append({**dict(zip(['program', 'initialization', 'representation', 'label_budget', 'comparison_group'], identity)),
             'seeds': [r['seed'] for r in rows], 'measurements': measured})
     sampled = health['models']
     silu = [row['activations']['head.2'] for row in sampled]
-    return {'utc': evaluation['utc'], 'scope': evaluation['scope'],
+    return {'utc': evaluation['utc'], 'scope': evaluation['scope'], 'design_scope': evaluation.get('design_scope'),
         'requested_complete': evaluation['requested_complete'], 'evaluated_predictions': len(points),
         'pending_items': len(evaluation['pending']), 'paired_comparisons': len(evaluation['paired_comparisons']),
         'seed_mean_comparisons_completed': len(evaluation['seed_mean_comparisons']),
@@ -63,7 +65,7 @@ def summarize(evaluation, health):
         'common_support': evaluation['common_support'], 'resampling_blocks': evaluation['resampling_blocks'],
         'bootstrap_replicates': evaluation['bootstrap_replicates'], 'interval_scope': evaluation['interval_scope'],
         'tau_branch_comparison_scope': evaluation['tau_branch_comparison_scope'], 'calibration_test_used': False,
-        'selection_scope': 'fixed validation NLL checkpoints; seed mean metrics are not an ensemble; seed SD is separate from conditional physical-event intervals'}
+        'selection_scope': 'checkpoint selection rules are recorded per model; seed means are not an ensemble; seed SD is separate from conditional physical-event intervals'}
 
 
 def main():

@@ -18,7 +18,8 @@ from analysis.flavour.s4.dataset import QueryGeometry, collate_pretrain
 from analysis.flavour.s4.models import PretrainingModel, objective_loss, variance_covariance
 from analysis.flavour.s4.prepare import bar_contributions
 from analysis.flavour.s4.pretrain import evaluate,feature_statistics
-from analysis.flavour.s4.evaluate import evaluate as evaluate_classification,classwise_operating_points,tau_statistics
+from analysis.flavour.s4.evaluate import evaluate as evaluate_classification,classwise_operating_points,tau_statistics,plot_curves
+from analysis.flavour.s4.summarize import summarize
 from analysis.flavour.s3.metrics import MetricCache
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
@@ -482,7 +483,8 @@ class S4Tests(unittest.TestCase):
                 if name=='continuation':config['supervised_initial_checkpoint']=str(root/'experiments/a/best.pt')
                 configurations.append(config)
                 directory=root/'experiments'/name;directory.mkdir(parents=True)
-                (directory/'manifest.json').write_text(json.dumps({'status':'complete','best_NLL':2. if name=='continuation' else 1.}))
+                (directory/'manifest.json').write_text(json.dumps({'status':'complete','best_NLL':2. if name=='continuation' else 1.,
+                    'selection':'fixed_final_epoch' if name=='continuation' else 'validation_NLL','best_epoch':8}))
                 filename='full_linear_predictions.parquet' if program=='probes' else 'validation_predictions.parquet'
                 frame.to_parquet(directory/filename,index=False)
                 if program=='probes':frame.to_parquet(directory/'global_linear_predictions.parquet',index=False)
@@ -490,6 +492,8 @@ class S4Tests(unittest.TestCase):
             pairs=root/'pairs.json';pairs.write_text(json.dumps({'pairs':[{'a':'a','b':'b'},
                 {'a':'b__global','b':'b'}],'include_global_frozen':True,'paired_tau_branches':True,
                 'include_supervised_selection_envelope':True,
+                'comparison_groups':{'a':'Baseline Scratch','continuation':'Optimized Scratch'},
+                'evaluation_scope':'reused validation after optimization design',
                 'seed_mean_comparisons':[{'name':'identical','pairs':[{'a':'a','b':'b'}]}]}))
             args=SimpleNamespace(root=root,output=root/'evaluation',campaign=[campaign],comparisons=pairs,bootstrap=4,strict=True)
             with patch('analysis.flavour.s4.evaluate.plot_curves'):
@@ -506,6 +510,42 @@ class S4Tests(unittest.TestCase):
                 self.assertEqual(comparison['tau_branches']['electron__raw']['AP']['CI95'],[None,None])
             selected=next(x for x in result['experiments'] if x['name']=='continuation__selection')
             self.assertEqual(selected['config']['selection_envelope']['selected'],'a')
+            self.assertEqual(result['scope'],'reused validation after optimization design')
+            optimized=next(x for x in result['experiments'] if x['name']=='continuation')
+            self.assertEqual(optimized['comparison_group'],'Optimized Scratch')
+            self.assertEqual(optimized['checkpoint_selection']['rule'],'fixed_final_epoch')
+            self.assertEqual(optimized['checkpoint_selection']['epoch'],8)
+
+    def test_comparison_groups_keep_old_and_optimized_seeds_separate_in_plots_and_summary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);labels=np.arange(40)%4
+            experiments=[];frames={}
+            for group,confidence in [('Baseline Scratch',.4),('Optimized Scratch',.7)]:
+                for seed in [17,42]:
+                    name=group+str(seed);p=np.eye(4)[labels]*confidence+(1-confidence)/4
+                    report=MetricCache(labels,p).report()
+                    experiments.append({'name':name,'program':'train','comparison_group':group,
+                        'checkpoint_selection':{'rule':'fixed_final_epoch' if confidence==.7 else 'validation_NLL'},
+                        'config':{'initialization':'scratch','label_budget':1000,'seed':seed},
+                        'four_class':report,'common_support_four_class':report,'classwise_operating_points':{}})
+                    frames[name]=pd.DataFrame({'label':labels,**{f'p{c}':p[:,c] for c in range(4)}})
+            plot_curves(root,experiments,frames)
+            curves=pd.read_csv(root/'label_efficiency.csv')
+            self.assertEqual(set(curves.comparison_group),{'Baseline Scratch','Optimized Scratch'})
+            self.assertEqual(set(curves.seeds),{2})
+            nll=curves[curves.metric.eq('NLL')].set_index('comparison_group')['mean']
+            self.assertGreater(nll['Baseline Scratch'],nll['Optimized Scratch'])
+            health={'samples':1,'models':[{'all_healthy':True,'minimum_input_gradient_squared_norm':1.,
+                'activations':{'head.2':{'RMS_range':[.1,1.],'maximum_zero_fraction':0.}}}]}
+            evaluation={'experiments':experiments,'utc':'test','scope':'reused validation','requested_complete':True,
+                'pending':[],'paired_comparisons':[],'seed_mean_comparisons':[],'common_support':{},
+                'resampling_blocks':{},'bootstrap_replicates':4,'interval_scope':'conditional',
+                'tau_branch_comparison_scope':'test'}
+            compact=summarize(evaluation,health)
+            self.assertEqual(len(compact['label_statistics']),2)
+            self.assertTrue(all(row['seeds']==[17,42] for row in compact['label_statistics']))
+            self.assertEqual(len({row['comparison_group'] for row in compact['label_statistics']}),2)
+            self.assertNotIn('fixed validation NLL checkpoints',compact['selection_scope'])
 
     def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
         from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve

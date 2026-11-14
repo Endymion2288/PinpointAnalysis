@@ -117,6 +117,7 @@ def evaluate(args):
             for domain,w in [('raw',np.ones(len(reference))),('common_support',common)]:
                 tau_domains[branch+'__'+domain]=mask*w
     for name,config,manifest,path in candidates:
+        program=config.get('program','train')
         frame=align_frame(pd.read_parquet(path),reference)
         if not frame.tau_branch.equals(reference.tau_branch):raise ValueError('different accepted tau branch metadata')
         missing=[c for c in columns if c not in frame]
@@ -131,6 +132,10 @@ def evaluate(args):
             for domain,w in tau_domains.items()}
         tau=tau_metrics(frame)
         experiments.append({'name':name,'config':config,'program':config.get('program','train'),
+            'comparison_group':specifications.get('comparison_groups',{}).get(name,config.get('initialization','scratch')),
+            'checkpoint_selection':{'rule':config.get('selection_envelope',{}).get('selection',manifest.get('selection',
+                'fixed_frozen_probe' if program=='probes' else 'validation_NLL')),
+                'epoch':manifest.get('best_epoch'),'scope':config.get('selection_scope')},
             'four_class':cache.report(),'common_support_four_class':cache.report(common),
             'tau':tau,'prediction_diagnostics':prediction_diagnostics(cache.p),
             'classwise_operating_points':classwise_operating_points(frame),
@@ -168,7 +173,9 @@ def evaluate(args):
             bootstrap=np.stack([tau_samples[p['b']][domain]-tau_samples[p['a']][domain] for p in pairs]).mean(0)
             branch_result[domain]=tau_interval(delta.mean(0),bootstrap,delta)
         means.append({**spec,'metrics':result,'tau_branches':branch_result})
-    summary={'utc':datetime.now(timezone.utc).isoformat(),'scope':'S4 independent complete 10k validation; calibration/test frozen',
+    summary={'utc':datetime.now(timezone.utc).isoformat(),
+        'scope':specifications.get('evaluation_scope','S4 independent complete 10k validation; calibration/test frozen'),
+        'design_scope':specifications.get('design_scope'),
         'experiments':experiments,'strata':strata,'paired_comparisons':comparisons,'seed_mean_comparisons':means,
         'common_support':support,'resampling_blocks':blocks,'bootstrap_replicates':args.bootstrap,
         'pending':pending,'requested_complete':not pending,'seconds':time.perf_counter()-started,
@@ -207,7 +214,7 @@ def plot_curves(output,experiments,frames):
     groups={}
     for e in experiments:
         c=e['config'];representation=c.get('probe_representation','full')
-        identity=(c.get('initialization','scratch'),e['program'],representation)
+        identity=(e.get('comparison_group',c.get('initialization','scratch')),e['program'],representation)
         groups.setdefault(identity,[]).append(e)
     curve_rows=[]
     sections=list(dict.fromkeys((key[1],key[2]) for key in groups))
@@ -217,7 +224,7 @@ def plot_curves(output,experiments,frames):
     with PdfPages(output/'label_efficiency.pdf') as pdf:
         for program,representation in sections:
             fig,axes=plt.subplots(2,2,figsize=(11,8),constrained_layout=True)
-            for (initialization,kind,route),group in groups.items():
+            for (comparison_group,kind,route),group in groups.items():
                 if (kind,route)!=(program,representation):continue
                 budgets=sorted({e['config'].get('label_budget',100000) for e in group})
                 for ax,metric in zip(axes.flat,['macro_AP','NLL','class_2_AP','class_2_eff_at_0.01_FPR']):
@@ -225,11 +232,13 @@ def plot_curves(output,experiments,frames):
                         for budget in budgets]
                     mean=[float(np.mean(v)) for v in values]
                     spread=[float(np.std(v,ddof=1)) if len(v)>1 else np.nan for v in values]
-                    ax.plot(budgets,mean,marker='.',label=initialization,color=colors[initialization])
+                    ax.plot(budgets,mean,marker='.',label=comparison_group,color=colors[comparison_group])
                     finite=np.isfinite(spread)
                     if finite.any():ax.errorbar(np.asarray(budgets)[finite],np.asarray(mean)[finite],
-                        yerr=np.asarray(spread)[finite],fmt='none',capsize=2,color=colors[initialization])
-                    curve_rows.extend({'initialization':initialization,'program':program,'label_budget':budget,
+                        yerr=np.asarray(spread)[finite],fmt='none',capsize=2,color=colors[comparison_group])
+                    curve_rows.extend({'comparison_group':comparison_group,
+                        'initialization':','.join(dict.fromkeys(e['config'].get('initialization','scratch') for e in group)),
+                        'program':program,'label_budget':budget,
                         'representation':representation,'metric':metric,'mean':m,'training_seed_SD':s,'seeds':len(v)}
                         for budget,m,s,v in zip(budgets,mean,spread,values))
                     ax.set(xscale='log',xlabel='Unique labeled training events',ylabel=labels[metric])
