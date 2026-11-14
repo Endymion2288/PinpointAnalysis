@@ -301,7 +301,9 @@
         "W08"
       ],
       "planned_device_hours": 18,
-      "status": "pending"
+      "status": "in_progress",
+      "progress_report": "../../workbook/2026-11-14_stage239_r1_baselines_and_learning_gates.md",
+      "measured_progress": "B1-B4 real T3/T4 FP32 fitting passed; repaired B1 and B2 stable path passed real BF16 retraining; full Train/Tune campaign still pending"
     },
     {
       "id": "R2",

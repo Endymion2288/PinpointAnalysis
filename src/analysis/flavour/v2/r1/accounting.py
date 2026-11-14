@@ -1,0 +1,114 @@
+"""Collect actual Condor and Kubeflow allocation costs, including failed attempts."""
+
+import argparse
+from collections import defaultdict
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import re
+import subprocess
+import time
+
+from analysis.flavour.inventory import write_json
+
+
+def read_json(command):
+    value = subprocess.check_output(command, text=True)
+    return json.loads(value) if value.strip() else []
+
+
+def timestamp(value):
+    return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', type=Path, required=True)
+    args = parser.parse_args()
+    now = time.time()
+    submissions = [json.loads(p.read_text()) for p in sorted((args.root/'runtime').glob('*.submission.json'))]
+    condor = [s for s in submissions if s.get('submitted') and s.get('backend', 'condor') == 'condor']
+    groups = defaultdict(list)
+    for row in condor:
+        match = re.search(r'cluster (\d+)', row.get('stdout', ''))
+        if match:
+            row['cluster'] = int(match[1])
+            groups[row['schedd']].append(row)
+    allocations = []
+    attributes = ['ClusterId', 'ProcId', 'JobStatus', 'JobStartDate', 'JobCurrentStartDate', 'CompletionDate',
+        'RemoteWallClockTime', 'RequestCpus', 'RequestGpus', 'RemoteUserCpu', 'RemoteSysCpu', 'NumJobStarts',
+        'ExitCode', 'LastRemoteHost', 'RemoteHost', 'GPUs_DeviceName', 'AssignedGPUs', 'HoldReason', 'MemoryUsage']
+    for schedd, rows in groups.items():
+        ids = [r['cluster'] for r in rows]
+        constraint = ' || '.join(f'ClusterId == {c}' for c in ids)
+        common = ['-name', schedd, '-constraint', constraint, '-json', '-attributes', ','.join(attributes)]
+        live = read_json(['condor_q', *common])
+        history = read_json(['condor_history', *common, '-limit', str(len(ids)*2)])
+        lookup = {r['ClusterId']: r for r in history+live}
+        for row in rows:
+            ad = lookup.get(row['cluster'])
+            if ad is None:
+                allocations.append({'name': row['name'], 'backend': 'condor', 'cluster': row['cluster'], 'status': 'unresolved'})
+                continue
+            status = ad['JobStatus']
+            seconds = float(ad.get('RemoteWallClockTime', 0.))
+            if status == 2 and ad.get('JobCurrentStartDate'):
+                seconds += max(0., now-ad['JobCurrentStartDate'])
+            allocations.append({'name': row['name'], 'backend': 'condor', 'cluster': row['cluster'],
+                'status': status, 'ad': ad, 'allocation_seconds': seconds,
+                'device_hours': seconds/3600 if row['gpu'] else 0.,
+                'allocated_CPU_core_hours': seconds*ad.get('RequestCpus', row['cpus'])/3600,
+                'GPU': ad.get('GPUs_DeviceName'), 'GPU_model_provenance': 'job ad; training manifest if undefined'})
+    for row in submissions:
+        if not row.get('submitted') or row.get('backend') != 'kubeflow':
+            continue
+        pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-l',
+                          'job-name='+row['name'], '-o', 'json'])['items']
+        job = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'job', row['name'], '--ignore-not-found', '-o', 'json'])
+        stored = args.root/'audit'/f"{row['name']}.pods.json"
+        if not pods and stored.exists():
+            pods = json.loads(stored.read_text())['items']
+        if not pods and row['name'] == 'pinpoint-r1-profile-b4-k1':
+            prior = args.root/'audit/kubeflow_k1_pods.json'
+            if prior.exists():
+                pods = json.loads(prior.read_text())['items']
+        write_json(args.root/'audit'/f"{row['name']}.pods.json", {'items': pods})
+        write_json(args.root/'audit'/f"{row['name']}.job.json", job)
+        if not pods and job:
+            end = next((c.get('lastTransitionTime') for c in job.get('status', {}).get('conditions', [])
+                        if c['type'] in ['Complete', 'Failed'] and c['status'] == 'True'), None)
+            seconds = max(0., (timestamp(end) if end else now)-timestamp(job['metadata']['creationTimestamp']))
+            allocations.append({'name': row['name'], 'backend': 'kubeflow',
+                'status': 'terminal_lifecycle_upper_bound' if end else 'unresolved', 'flavor': row['flavor'],
+                'allocation_seconds': seconds, 'device_hours': seconds/3600,
+                'accounting': 'Pod already removed; Job creation-to-terminal duration is an allocation upper bound'})
+        for pod in pods:
+            scheduled = next((c.get('lastTransitionTime') for c in pod['status'].get('conditions', [])
+                              if c['type'] == 'PodScheduled' and c['status'] == 'True'), None)
+            ended = [s['state']['terminated']['finishedAt'] for s in pod['status'].get('containerStatuses', [])
+                     if 'terminated' in s.get('state', {})]
+            phase = pod['status']['phase']
+            end = max(map(timestamp, ended)) if ended and phase in ['Succeeded', 'Failed'] else now
+            seconds = max(0., end-timestamp(scheduled)) if scheduled else 0.
+            cpus = pod['spec']['containers'][0]['resources']['requests'].get('cpu', '0')
+            cpu = float(cpus[:-1])/1000 if cpus.endswith('m') else float(cpus)
+            allocations.append({'name': row['name'], 'backend': 'kubeflow', 'pod': pod['metadata']['name'],
+                'status': phase, 'flavor': row['flavor'], 'node': pod['spec'].get('nodeName'),
+                'allocation_seconds': seconds, 'device_hours': seconds/3600,
+                'allocated_CPU_core_hours': seconds*cpu/3600,
+                'accounting': 'from PodScheduled through last app/sidecar termination; includes image/init/failures'})
+            if ended and phase in ['Succeeded', 'Failed']:
+                response = subprocess.run(['kubectl', '--request-timeout=20s', '-n', 'xcheng',
+                    'logs', pod['metadata']['name'], '-c', 'v2'], capture_output=True, text=True)
+                if response.returncode == 0:
+                    (args.root/'logs'/f"{row['name']}.log").write_text(response.stdout)
+    active = [r['name'] for r in allocations if r['status'] in [1, 2, 5, 'Pending', 'Running', 'unresolved']]
+    write_json(args.root/'resources.json', {'UTC': datetime.now(timezone.utc).isoformat(), 'allocations': allocations,
+        'device_hours': sum(r.get('device_hours', 0.) for r in allocations),
+        'allocated_CPU_core_hours': sum(r.get('allocated_CPU_core_hours', 0.) for r in allocations),
+        'active_or_unresolved': active, 'interactive_fit': 'recorded separately from fit manifests; launch/setup upper bounds still required',
+        'heterogeneous_device_hours_are_not_FLOP_equivalent': True})
+
+
+if __name__ == '__main__':
+    main()
