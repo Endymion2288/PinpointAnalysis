@@ -64,6 +64,17 @@ class S4AcceptanceTests(unittest.TestCase):
                 'config': config, 'passed': True, 'checks': {'connected': True}, 'best_epoch': 1, 'selected_NLL': 1.}))
             self.assertTrue(fit_record(root, config, {'a': {}})['passed'])
 
+    def test_configured_LP_freeze_does_not_hide_missing_fine_tuning_gradients(self):
+        frozen = self.health()
+        frozen['intentional_encoder_freeze'] = True
+        frozen['gradient_squared_norms'] = {'input': 0., 'local': 0., 'linear_readout': 1.}
+        fine_tuned = self.health();fine_tuned['step'] = 2
+        self.assertTrue(all(training_health([frozen, fine_tuned], 2, 1, linear_probe_passes=1).values()))
+        self.assertFalse(all(training_health([frozen, fine_tuned], 2, 1).values()))
+        fine_tuned['gradient_squared_norms']['input'] = 0.
+        self.assertFalse(all(training_health([frozen, fine_tuned], 2, 1, linear_probe_passes=1).values()))
+        self.assertFalse(all(training_health([frozen], 1, 1, linear_probe_passes=1).values()))
+
     def test_active_and_missing_reservations_cannot_pass(self):
         report = {'allocations': [{'status': 'terminal'}, {'status': 'terminal'}]}
         self.assertTrue(terminal_allocations(report))

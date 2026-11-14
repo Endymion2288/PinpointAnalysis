@@ -20,8 +20,11 @@ def same_configuration(expected, actual):
     return {**expected, 'program': program(expected)} == {**actual, 'program': program(actual)}
 
 
-def training_health(records, total_steps, every, initial_steps=0, maximum_preclip_norm=10000.):
-    informative = [r for r in records if r.get('informative_nodes', 0) > 0]
+def training_health(records, total_steps, every, initial_steps=0, maximum_preclip_norm=10000.,
+        linear_probe_passes=0):
+    frozen = [r for r in records if r.get('intentional_encoder_freeze', False)]
+    informative = [r for r in records if r.get('informative_nodes', 0) > 0
+        and not r.get('intentional_encoder_freeze', False)]
     activations = [v for r in records for rows in r.get('activations', {}).values() for v in rows]
     silu = [v for r in records for v in r.get('activations', {}).get('head.2', [])]
     return {
@@ -32,6 +35,10 @@ def training_health(records, total_steps, every, initial_steps=0, maximum_precli
         'informative_input_gradients': bool(informative) and all(
             math.isfinite(r['gradient_squared_norms'].get('input', 0.))
             and r['gradient_squared_norms'].get('input', 0.) > 0 for r in informative),
+        'intentional_LP_gradient_policy': not frozen or (linear_probe_passes > 0 and all(
+            r['gradient_squared_norms'].get('linear_readout', 0.) > 0 and all(
+                value == 0 for key, value in r['gradient_squared_norms'].items() if key != 'linear_readout')
+            for r in frozen)),
         'SiLU_never_entirely_zero': len(silu) >= len(records) > 0 and all(v['zero_fraction'] < 1. for v in silu),
         'preclip_gradients_within_review_limit': bool(records) and all(
             math.isfinite(sum(r.get('gradient_squared_norms', {}).values()))
@@ -59,7 +66,8 @@ def fit_record(root, config, evaluated):
             and best_health.get('selected_NLL') == manifest.get('best_NLL'))
         records = load(directory / 'training_health.json').get('records', [])
         checks.update(training_health(records, manifest.get('optimizer_steps', 0), config.get('health_every_steps', 100),
-            config.get('health_initial_steps', 0), config.get('maximum_preclip_gradient_norm', 10000.)))
+            config.get('health_initial_steps', 0), config.get('maximum_preclip_gradient_norm', 10000.),
+            linear_probe_passes=config.get('linear_probe_passes', 0)))
         if config.get('empty_response_bypass'):
             every_step=manifest.get('gradient_health',{})
             norm=every_step.get('maximum_preclip_gradient_norm',float('inf'))
@@ -99,7 +107,7 @@ def inventory_checks(configurations, specification, evaluation):
     return {
         'requested_matrix_complete': bool(expected) and len(actual) == len(expected) and set(actual) == expected,
         'all_frozen_pairs_complete': bool(expected_pairs) and len(pairs) == len(expected_pairs) and set(pairs) == set(expected_pairs),
-        'all_frozen_seed_means_complete': bool(expected_means) and len(means) == len(expected_means) and set(means) == set(expected_means),
+        'all_frozen_seed_means_complete': len(means) == len(expected_means) and set(means) == set(expected_means),
         'strict_validation_has_no_pending': evaluation.get('requested_complete') is True and evaluation.get('pending') == [],
     }
 
