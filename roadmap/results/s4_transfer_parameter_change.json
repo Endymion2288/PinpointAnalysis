@@ -1,0 +1,46 @@
+{
+  "utc": "2026-11-14T03:28:49.599321+00:00",
+  "models": [
+    {
+      "name": "s4_optimized_scratch_n1000_s17",
+      "last_epoch": 8,
+      "maximum_parameter_change_since_initialization": {
+        "input": 0.0,
+        "local": 0.0,
+        "local_pool": 0.0015187989920377731
+      },
+      "checkpoint_scope": "last committed epoch; final only if manifest complete"
+    },
+    {
+      "name": "s4_optimized_mae3_n1000_s42",
+      "last_epoch": 8,
+      "maximum_parameter_change_since_initialization": {
+        "input": 0.0,
+        "local": 0.0,
+        "local_pool": 0.0017931759357452393
+      },
+      "checkpoint_scope": "last committed epoch; final only if manifest complete"
+    },
+    {
+      "name": "s4_optimized_scratch_n10000_s17",
+      "last_epoch": 6,
+      "maximum_parameter_change_since_initialization": {
+        "input": 0.10119067132472992,
+        "local": 0.06298600137233734,
+        "local_pool": 0.07245266437530518
+      },
+      "checkpoint_scope": "last committed epoch; final only if manifest complete"
+    },
+    {
+      "name": "s4_optimized_mae3_n10000_s42",
+      "last_epoch": 6,
+      "maximum_parameter_change_since_initialization": {
+        "input": 0.030744643881917,
+        "local": 0.05750630423426628,
+        "local_pool": 0.043335117399692535
+      },
+      "checkpoint_scope": "last committed epoch; final only if manifest complete"
+    }
+  ],
+  "scope": "same seeded constructor/SSL source import, compared with actual last checkpoint; no event predictions or refitting"
+}
