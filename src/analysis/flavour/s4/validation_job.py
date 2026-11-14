@@ -29,6 +29,9 @@ def verify_probe(directory,config,validation):
         if (not audit.get('passed') or audit.get('convergence_warnings') or
             not audit.get('finite_coefficients') or audit['fit_events']!=config['label_budget']):
             raise ValueError(config['name']+': converged fit-only readout required')
+        if config.get('probe_require_stationarity') and (not audit.get('stationarity_passed') or
+            audit.get('gradient_infinity_norm',float('inf'))>config['probe_linear_tolerance']+1e-10):
+            raise ValueError(config['name']+': measured convex-objective stationarity required')
         frame=pd.read_parquet(directory/(branch+'_linear_predictions.parquet'))
         keys=['run','chunk','row','label']
         if not frame[keys].sort_values(keys).reset_index(drop=True).equals(

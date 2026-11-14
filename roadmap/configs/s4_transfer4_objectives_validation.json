@@ -1,0 +1,19 @@
+{
+  "stage": "S4_valid_objective_comparison",
+  "experiments": [
+    {
+      "name": "s4_transfer4_objectives_validation",
+      "program": "validation_job",
+      "campaigns": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_transfer4_objectives_evaluation.json"
+      ],
+      "comparisons": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_transfer4_objectives_pairs.json",
+      "evaluation_output": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/transfer4_objectives",
+      "bootstrap": 400,
+      "strict": true,
+      "inspect_best_health": true,
+      "plot_training_health": true,
+      "wait_for_completion_seconds": 18000
+    }
+  ]
+}

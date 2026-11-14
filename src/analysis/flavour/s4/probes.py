@@ -15,9 +15,11 @@ import pyarrow as pa
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler,FunctionTransformer
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import log_loss
+from scipy.special import logsumexp,expit
+from threadpoolctl import threadpool_limits
 import torch
 from torch.utils.data import DataLoader
 
@@ -31,14 +33,37 @@ from analysis.flavour.s4.pretrain import feature_statistics
 from analysis.flavour.s4.train import build_model,validate_pretraining
 
 
+def linear_stationarity(pipeline,features,labels):
+    """Check the same mean logistic loss plus ||W||²/(2 C n) as sklearn."""
+    x=np.asarray(pipeline[:-1].transform(features),dtype=np.float64)
+    model=pipeline[-1];n=len(labels);scores=model.decision_function(x)
+    target=np.searchsorted(model.classes_,labels)
+    if scores.ndim==1:
+        residual=(expit(scores)-target)[:,None]
+        cross_entropy=np.mean(np.logaddexp(0,scores)-target*scores)
+    else:
+        log_normalizer=logsumexp(scores,axis=1)
+        residual=np.exp(scores-log_normalizer[:,None])
+        residual[np.arange(n),target]-=1
+        cross_entropy=np.mean(log_normalizer-scores[np.arange(n),target])
+    coefficient_gradient=residual.T@x/n+model.coef_/(model.C*n)
+    intercept_gradient=residual.mean(0)
+    return {'regularized_mean_objective':float(cross_entropy+np.square(model.coef_).sum()/(2*model.C*n)),
+        'gradient_infinity_norm':float(max(np.abs(coefficient_gradient).max(),np.abs(intercept_gradient).max())),
+        'objective_definition':'mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized',
+        'certificate_precision':'CPU float64 using the fitted scaler outputs'}
+
+
 def fit_probe(features, labels, mode, config):
     """Fit without held-out labels and retain numerical convergence evidence."""
     estimator=(LogisticRegression(C=1.,max_iter=config.get('probe_linear_max_iter',500),
-        tol=config.get('probe_linear_tolerance',1e-5),solver='lbfgs') if mode=='linear' else
+        tol=config.get('probe_linear_tolerance',1e-5),solver=config.get('probe_linear_solver','lbfgs')) if mode=='linear' else
         MLPClassifier(hidden_layer_sizes=(128,),alpha=.01,batch_size=128,learning_rate_init=.001,
             max_iter=100,early_stopping=True,validation_fraction=.15,n_iter_no_change=10,random_state=42))
-    pipeline=make_pipeline(StandardScaler(),estimator)
-    with warnings.catch_warnings(record=True) as caught:
+    # Preserve the scaler's original float32 rounding, then use float64 for
+    # both second-order solves and the objective/gradient certificate.
+    pipeline=make_pipeline(StandardScaler(),FunctionTransformer(np.asarray,kw_args={'dtype':np.float64}),estimator) if mode=='linear' else make_pipeline(StandardScaler(),estimator)
+    with threadpool_limits(limits=config.get('probe_solver_threads',1)),warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter('always',ConvergenceWarning)
         pipeline.fit(features,labels)
     messages=[str(row.message) for row in caught if issubclass(row.category,ConvergenceWarning)]
@@ -58,6 +83,13 @@ def fit_probe(features, labels, mode, config):
         'fit_accuracy':float(np.mean(estimator.classes_[probability.argmax(1)]==labels)),
         'coefficient_L2_norm':float(np.sqrt(sum(np.square(value).sum() for value in coefficients))),
         'C':estimator.C if mode=='linear' else None}
+    if mode=='linear':
+        with threadpool_limits(limits=config.get('probe_solver_threads',1)):
+            audit.update(linear_stationarity(pipeline,features,labels))
+        audit['stationarity_required']=config.get('probe_require_stationarity',False)
+        audit['stationarity_passed']=audit['gradient_infinity_norm']<=estimator.tol+1e-10
+        if audit['stationarity_required']:
+            audit['passed']=audit['passed'] and audit['stationarity_passed']
     return pipeline,audit
 
 
@@ -67,7 +99,7 @@ def extract(model,dataset,config,device,progress_path=None,role=None):
     options={'num_workers':config.get('workers',1),'collate_fn':collate_planes,'pin_memory':device.type=='cuda'}
     if options['num_workers']:options.update(multiprocessing_context='spawn',worker_init_fn=init_worker,prefetch_factor=1)
     loader=DataLoader(dataset,batch_sampler=sampler,**options)
-    result={key:[] for key in ['regional','global','local','summary','full']}
+    result={key:[] for key in config.get('extract_branches',['regional','global','local','summary','full'])}
     indices=[];completed=0;started=time.perf_counter();last_report=started
     for batch in loader:
         indices.append(batch.pop('index').numpy());batch.pop('label')
@@ -77,7 +109,7 @@ def extract(model,dataset,config,device,progress_path=None,role=None):
         branches=features['branches']
         values={'regional':branches[:,:3].flatten(1),'global':branches[:,3],
             'local':branches[:,4:].flatten(1),'summary':features['summary'],'full':features['head_input']}
-        for key,value in values.items():result[key].append(value.float().cpu().numpy())
+        for key in result:result[key].append(values[key].float().cpu().numpy())
         completed+=len(values['full'])
         now=time.perf_counter()
         if progress_path and (now-last_report>=30 or completed==len(dataset)):
@@ -100,14 +132,24 @@ def main():
     started=time.perf_counter();torch.set_num_threads(1);pa.set_cpu_count(1);pa.set_io_thread_count(1)
     torch.manual_seed(config.get('seed',42));np.random.seed(config.get('seed',42))
     validate_pretraining(config)
-    model=build_model(config)
-    if config.get('supervised_checkpoint'):
-        state=torch.load(config['supervised_checkpoint'],map_location='cpu',weights_only=False)
-        model.load_state_dict(state['model'],strict=True)
-    model.to(args.device).eval().requires_grad_(False)
-    train=LabelDataset(args.root,'train',config)
-    features=extract(model,train,config,torch.device(args.device),output/'progress.json','fit')
+    if config.get('required_solver_probe'):
+        probe=json.loads((args.root/'experiments'/config['required_solver_probe']/'solver_probe.json').read_text())
+        if not probe['passed']:raise RuntimeError('passing same-objective readout solver probe required')
     train_only=config.get('probe_scope')=='train_only_branches'
+    train=val=None
+    if config.get('probe_feature_source'):
+        from analysis.flavour.s4.feature_bank import load
+        (xfit,fitmeta),(xhold,holdmeta)=load(args.root,config)
+        features=xfit;yfit=fitmeta.label.to_numpy();yhold=holdmeta.label.to_numpy()
+        args.device='cpu'
+    else:
+        model=build_model(config)
+        if config.get('supervised_checkpoint'):
+            state=torch.load(config['supervised_checkpoint'],map_location='cpu',weights_only=False)
+            model.load_state_dict(state['model'],strict=True)
+        model.to(args.device).eval().requires_grad_(False)
+        train=LabelDataset(args.root,'train',config)
+        features=extract(model,train,config,torch.device(args.device),output/'progress.json','fit')
     if train_only:
         # Disjoint readout-fit/readout-probe; the S3 supervised encoder has
         # already seen some of these labels. This diagnoses readability, not
@@ -117,7 +159,7 @@ def main():
         y=train.metadata.label.to_numpy();yfit,yhold=y[fit],y[hold]
         holdmeta=train.metadata.iloc[hold].reset_index(drop=True)
         xfit={k:v[fit] for k,v in features.items()};xhold={k:v[hold] for k,v in features.items()}
-    else:
+    elif not config.get('probe_feature_source'):
         val=LabelDataset(args.root,'validation',config)
         xfit=features;xhold=extract(model,val,config,torch.device(args.device),output/'progress.json','validation')
         yfit=train.metadata.label.to_numpy();yhold=val.metadata.label.to_numpy();holdmeta=val.metadata.copy()
@@ -152,8 +194,8 @@ def main():
         'fit_events':len(yfit),'probe_events':len(yhold),'frozen_encoder':True,
         'scope':'train-only readable-information diagnostic; supervised S3 encoder saw upstream labels' if train_only else 'independent frozen linear-probe label efficiency on complete 10k validation',
         'calibration_test_used':False,'code_commit':os.environ.get('PINPOINT_CODE_COMMIT') or subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()})
-    train.native.close()
-    if not train_only:val.native.close()
+    if train is not None:train.native.close()
+    if val is not None:val.native.close()
     if not converged:
         raise RuntimeError('probe optimization did not converge; predictions are diagnostic only')
     write_json(output/'progress.json',{'phase':'complete','utc':datetime.now(timezone.utc).isoformat()})

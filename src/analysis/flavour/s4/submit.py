@@ -106,14 +106,22 @@ def submit(args):
                 comparison=inputs/'comparisons.json';comparison.write_text(Path(entry['comparisons']).read_text())
                 entry.update(campaigns=paths,comparisons=str(comparison))
             payload=json.dumps(specification,indent=2)+'\n'
+        elif args.stage=='probe_fit':
+            specification=json.loads(payload)
+            inputs=root/'code'/f'{name}.inputs';inputs.mkdir(exist_ok=True)
+            for i,entry in enumerate(specification['experiments']):
+                target=inputs/f'readouts_{i}.json'
+                target.write_text(Path(entry['readout_campaign']).read_text())
+                entry['readout_campaign']=str(target)
+            payload=json.dumps(specification,indent=2)+'\n'
         frozen.write_text(payload)
         args.campaign=frozen
-    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','parameter_audit','rel_diagnostic','frontend_profile','functional_probe','staging_profile','cache_profile'}
+    cpu_only = args.stage in {'data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','parameter_audit','solver_probe','probe_fit','rel_diagnostic','frontend_profile','functional_probe','staging_profile','cache_profile'}
     if args.stage == 'data':
         arguments = ['analysis.flavour.s4.prepare', 'create', '--root', str(root), '--task', '$(task)', '--cpus', '4']
     elif args.stage == 'assemble':
         arguments = ['analysis.flavour.s4.prepare','finalize','--root',str(root),'--cpus','4']
-    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan','validation_job','parameter_audit','rel_diagnostic','frontend_profile','functional_probe','staging_profile','cache_profile'}:
+    elif args.stage in {'query_baseline','compute_profile','budget_replay','matched_plan','validation_job','parameter_audit','solver_probe','probe_fit','rel_diagnostic','frontend_profile','functional_probe','staging_profile','cache_profile'}:
         if len(args.tasks)!=1:raise ValueError('one CPU diagnostic task per allocation')
         arguments=['analysis.flavour.s4.'+args.stage,'--root',str(root),'--campaign',str(args.campaign.resolve()),'--task',str(args.tasks[0])]
     else:
@@ -165,7 +173,7 @@ def submit(args):
         gpu = not cpu_only
         gpu_cpus=max(4,args.concurrency*(2 if prototype_pool else 3))
         cpu_cpus=1 if args.stage in {'validation_job','parameter_audit'} else 4
-        waiting_validation=args.stage in {'validation_job','parameter_audit'} and any(
+        waiting_validation=args.stage in {'validation_job','parameter_audit','probe_fit'} and any(
             c.get('wait_for_completion_seconds',0)>1800 for c in json.loads(args.campaign.read_text())['experiments'])
         text = f'''universe = vanilla
 executable = {wrapper}
@@ -257,7 +265,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--backend',choices=['condor','kubeflow'],required=True)
-    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','parameter_audit','rel_diagnostic','frontend_profile','functional_probe','staging_profile','cache_profile','pilot','pretrain','train','probes','worker','campaign'],required=True)
+    parser.add_argument('--stage',choices=['data','assemble','query_baseline','compute_profile','budget_replay','matched_plan','validation_job','parameter_audit','solver_probe','probe_fit','rel_diagnostic','frontend_profile','functional_probe','staging_profile','cache_profile','pilot','pretrain','train','probes','worker','campaign'],required=True)
     parser.add_argument('--name',required=True)
     parser.add_argument('--campaign',type=Path)
     parser.add_argument('--tasks',type=int,nargs='+',required=True)

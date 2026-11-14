@@ -53,7 +53,7 @@ class S4AccountingTests(unittest.TestCase):
             self.assertEqual(cached['organization_device_hours'], report['organization_device_hours'])
 
     def test_cpu_diagnostics_do_not_count_gpu_time(self):
-        for stage in ['cache_profile', 'parameter_audit']:
+        for stage in ['cache_profile', 'parameter_audit', 'solver_probe', 'probe_fit']:
             with self.subTest(stage=stage), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / 'logs').mkdir()
