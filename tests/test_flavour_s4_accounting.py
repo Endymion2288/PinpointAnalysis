@@ -11,6 +11,47 @@ from analysis.flavour.s4.accounting import refresh
 
 
 class S4AccountingTests(unittest.TestCase):
+    def test_successful_job_bounds_duration_after_pod_cleanup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'logs').mkdir(); (root / 'audit/backends').mkdir(parents=True)
+            (root / 'logs/submission_one.json').write_text(json.dumps({
+                'submitted': True, 'name': 'one', 'stage': 'campaign', 'backend': 'kubeflow',
+                'flavor': 'h100-47gb', 'pod_admission': {'spec': {'containers': [{'name': 's4',
+                    'resources': {'requests': {'cpu': '4', 'nvidia.com/mig-3g.47gb': '1'}}}]}}}))
+            (root / 'audit/backends/one.pods.json').write_text(json.dumps({'items': [{
+                'metadata': {'name': 'one-pod'}, 'status': {'phase': 'Running',
+                    'startTime': '2026-11-14T00:00:00Z', 'containerStatuses': [{'name': 's4',
+                        'state': {'running': {'startedAt': '2026-11-14T00:00:05Z'}}}]}}]}))
+            job = {'metadata': {'name': 'one', 'uid': 'job-uid'}, 'status': {
+                'completionTime': '2026-11-14T00:02:00Z', 'succeeded': 1,
+                'conditions': [{'type': 'Complete', 'status': 'True'}]}}
+            def run(command, **kwargs):
+                payload = job if 'job' in command else {'items': []}
+                return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr='')
+            active_job = {'metadata': job['metadata'], 'status': {'ready': 1}}
+            with patch('analysis.flavour.s4.accounting.subprocess.run', side_effect=lambda command, **kwargs:
+                    SimpleNamespace(returncode=0, stdout=json.dumps(active_job if 'job' in command else {'items': []}), stderr='')):
+                active = refresh(root)
+            self.assertEqual(active['allocations'][0]['status'], 'active_or_pending')
+            with patch('analysis.flavour.s4.accounting.subprocess.run', side_effect=run):
+                report = refresh(root)
+            row = report['allocations'][0]
+            self.assertEqual(row['status'], 'terminal')
+            self.assertEqual(row['allocation_seconds'], 120.)
+            self.assertAlmostEqual(report['organization_device_hours'], 120 / 3600)
+            self.assertAlmostEqual(report['CPU_allocation_hours'], 480 / 3600)
+            self.assertEqual(row['pods'][0]['allocation_estimate_kind'],
+                'job_completion_upper_bound_after_pod_cleanup')
+            self.assertTrue(row['pods'][0]['termination_inferred_from_successful_job'])
+            self.assertEqual(row['job_terminal_evidence']['uid'], 'job-uid')
+            # A subsequent missing Pod/Job must preserve the saved endpoint.
+            with patch('analysis.flavour.s4.accounting.subprocess.run', return_value=
+                    SimpleNamespace(returncode=0, stdout='{"items": []}', stderr='')) as command:
+                cached = refresh(root)
+            self.assertEqual(command.call_count, 1)
+            self.assertEqual(cached['organization_device_hours'], report['organization_device_hours'])
+
     def test_cache_profile_counts_cpu_allocation_without_gpu_time(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

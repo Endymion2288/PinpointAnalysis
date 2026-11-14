@@ -1,8 +1,12 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S3 revision 2修复重训及完整validation评价已完成，20模型、8,020次健康采样及18项严格检查通过。旧Head全零/encoder零梯度故障已修复，旧25模型的方法结论继续撤回。Multiscale+tracker通过本轮质量门槛，global latent弱利用和ντ未见明确增益仍保留为待解决问题。见[最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)、[完整数值](results/s3_repair_summary.json)与[修复合同](10_s3_repair.md)。**
+**当前状态：S4空响应修复后的18项分类重训、完整10k validation及4模型分支诊断已完成，21项技术检查全部通过。235,008次逐步梯度检查、2,916次内部健康采样、252项checkpoint检查及18次独立FP32 backward通过。当前方法比较以这批新模型为依据；旧故障结果只作诊断。见[最终报告](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[完整数值摘要](results/s4_empty_repair_summary.json)、[分支诊断](results/s4_empty_functional_paths_seed42.json)与[S4合同及后续计划](11_s4_pretraining.md)。**
 
-日期：2026-11-13。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2完成8个冻结screen和12个预先选定的确认训练，均4epochs、40,064updates；14个单seed、9个三seed配对及7条件域完整。Multiscale+tracker三seedmacro AP=0.46338±0.00189，fresh ParT=0.45434±0.00398；相对不加tracker的Δmacro AP=+0.02496，物理块CI95=[0.01984,0.02999]。Tracker候选使用额外输入，不能将跨模型收益归于backbone；pixel+bar-only继续以fresh ParT为基线。原生相对1mm、region8相对region32未显示明确三seed收益，global路径仍弱，ντ工作点未见明确改善。详见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和[当前配置](configs/s3.yaml)。旧25模型及旧晋级判断只作[故障诊断](results/s3_summary.json)。修复成本上界10.845833333 device-hours，累计S3上界42.084102011/120（含旧31.238268678），S2单列；全部allocation已结束。Calibration/test继续冻结；S4正在执行，S5–S6未执行，当前进展见[S4路线图](11_s4_pretraining.md)。
+日期：2026-11-14。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2的20模型及历史比较见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)；本次S4分类同时采用revision 3的`empty_response_bypass=true`，重新初始化Scratch，并从三套既有MAE3 encoder重新fine-tune，SSL encoder本身没有重训。
+
+新矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零，不能称全面改善。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
+
+本S4累计24.325865/60 device-hours，全部61个allocation已终止。当前不扩至1M，优先在原标签预算内比较更早checkpoint、较少重复曝光、学习率/正则和LP-FT；这些优化尚未执行。新路由下的EMA/Rel、compute-matched及frozen probes尚未重测，S5–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -20,6 +24,7 @@
 | [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
 | [09_s3_operations.md](09_s3_operations.md) | S3完整四分类合同、细粒度局部编码/module/融合对照、Pareto与三seed确认 |
 | [10_s3_repair.md](10_s3_repair.md) | S3故障诊断、论文依据、尺度与多尺度架构修复、最终重训结论及global弱分支后续对照 |
+| [11_s4_pretraining.md](11_s4_pretraining.md) | S4预训练合同、空响应修复后的18项重训结果、标签效率与低标签优化计划 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
@@ -122,4 +127,4 @@ S3方法晋级使用[完整四分类冻结合同](09_s3_operations.md)：三seed
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
-全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4已补充global frozen probes及固定checkpoint的完整10k路径诊断，见[stage129](../workbook/2026-11-13_stage129_s4_global_path_and_100k_validation.md)；这些诊断不等于重训消融。尚未测量：global重训净收益、全7.24M事件训练、generator/detector包络、冻结test及预期物理产额。沿用用户接受的split与detector-proxy；正式test按S6在模型、阈值和校准冻结后执行。
+全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4新矩阵完成18项分类重训；新seed42的Scratch/MAE3在1k/10k均完成完整10k路径诊断，见[stage145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)。MAE3两个预算的global置换ΔNLL为0.055214/0.025673，区间均为正；Scratch 10k实际效应很小。固定权重路径诊断不等于重训消融或物理因果重要性。尚未测量：global重训净收益、新路由下的frozen readability、全7.24M事件训练、generator/detector包络、冻结test及预期物理产额。沿用用户接受的split与detector-proxy；正式test按S6在模型、阈值和校准冻结后执行。

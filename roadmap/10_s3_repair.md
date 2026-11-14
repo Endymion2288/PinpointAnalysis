@@ -1,5 +1,7 @@
 # S3架构修复、重新训练与重新评价
 
+2026-11-14后续更新：S4定位并修复了空响应零占位节点引起的异常反向梯度。新18项Scratch/MAE3分类采用revision 3、`empty_response_bypass=true`，已完成重训及完整validation，见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)和[S4合同](11_s4_pretraining.md)。本页及原冻结配置保留S3历史口径，新路由的分类比较以S4新矩阵为依据。
+
 2026-11-13：S3 revision 2已完成20模型修复重训及完整validation评价，18项严格检查通过，见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和[完整数值](results/s3_repair_summary.json)。原25模型只保留为架构/训练故障诊断，原方法结论撤回；它们不能判断局部编码、context、latent fusion或native信息是否有效。本轮止于S3，calibration/test继续冻结。
 
 修复后Head整层失活消失，8,020次计划健康采样齐全，全部模型具有有效学习。Multiscale+tracker相对不加tracker的三seedΔmacro AP=+0.02496，CI95=[0.01984,0.02999]，该候选通过本轮质量晋级；相同pixel+bar输入下fresh ParT仍更强。Native/1mm、region8/32的净收益区间均含零。Global latent仍弱利用，ντ AP/工作点未见明确改善，不将整体学习作为所有融合分支充分工作的证明。累计S3设备时上界42.084102011/120，全部allocation已结束。

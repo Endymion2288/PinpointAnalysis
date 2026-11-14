@@ -34,6 +34,26 @@ def refresh(root):
                 payload=json.loads(response.stdout)
                 if payload['items']:write_json(cache,payload)
                 elif cache.exists():payload=json.loads(cache.read_text());row['cached_snapshot']=True
+            job_end=None
+            if row.get('cached_snapshot') and any(p.get('status',{}).get('phase') not in {'Succeeded','Failed'}
+                for p in payload.get('items',[])):
+                # CERN can garbage-collect a successful Pod before polling.
+                # Job completion follows Pod termination, so it is a measured
+                # conservative upper bound, never a synthetic Pod end time.
+                job_cache=snapshots/(submission['name']+'.job.json')
+                job=json.loads(job_cache.read_text()) if job_cache.exists() else {}
+                if not job.get('status',{}).get('completionTime'):
+                    response_job=subprocess.run(['kubectl','--request-timeout=30s','get','job','-n','xcheng',
+                        submission['name'],'-o','json'],capture_output=True,text=True)
+                    if response_job.returncode==0:
+                        job=json.loads(response_job.stdout);write_json(job_cache,job)
+                completed=any(c.get('type')=='Complete' and c.get('status')=='True'
+                    for c in job.get('status',{}).get('conditions',[]))
+                if completed and job.get('status',{}).get('completionTime'):
+                    job_end=job['status']['completionTime']
+                    row['job_terminal_evidence']={'name':job['metadata']['name'],'uid':job['metadata']['uid'],
+                        'completion_time':job_end,'succeeded':job['status'].get('succeeded'),
+                        'source':str(job_cache),'scope':'successful Job; Pod snapshot is cached after cleanup'}
             rows=[]
             for pod in payload.get('items',[]):
                 status=pod.get('status',{})
@@ -55,6 +75,8 @@ def refresh(root):
                     gpu_end=max(terminated).isoformat()
                 stopped=root/'logs'/f'{submission["name"]}_allocation_end.json'
                 allocation_kind='observed_pod_duration'
+                if not gpu_end and job_end:
+                    gpu_end=job_end;allocation_kind='job_completion_upper_bound_after_pod_cleanup'
                 if stopped.exists():
                     ended=json.loads(stopped.read_text());gpu_end=ended['allocation_end_utc']
                     allocation_kind=ended.get('estimate_kind','conservative_upper_bound')
@@ -66,6 +88,7 @@ def refresh(root):
                     'started_at':gpu_start or start,'finished_at':gpu_end,'allocation_seconds':max(0,duration),
                     'flavor':submission['flavor'],'GPU_resources':submission['pod_admission']['spec']['containers'][0]['resources'],
                     'gpu_container_terminal':bool(gpu_end),'allocation_estimate_kind':allocation_kind,
+                    'termination_inferred_from_successful_job':allocation_kind=='job_completion_upper_bound_after_pod_cleanup',
                     'training_container_requested_CPU_cores':cores})
             row.update(pods=rows,allocation_seconds=sum(r['allocation_seconds'] for r in rows),
                 status='terminal' if rows and all(r['gpu_container_terminal'] for r in rows) else 'active_or_pending')

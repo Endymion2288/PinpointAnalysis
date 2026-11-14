@@ -39,6 +39,24 @@ def audit(root, campaign, comparisons, evaluation_path):
     functional = load(root / 'experiments' / 's4_empty_functional_paths_seed42' / 'functional_paths.json')
     path_rows = functional.get('experiments', [])
     expected_paths = {f's4_empty_{kind}_n{budget}_s42' for kind in ['scratch', 'mae3'] for budget in [1000, 10000]}
+    path_groups = {'global_latent', 'all_regional', 'all_local', 'response_summary', 'all_spatial'}
+    path_statistics = []
+    for row in path_rows:
+        groups = row.get('branch_permutation', {})
+        complete = set(groups) == path_groups
+        for contrast in groups.values():
+            for domain in ['raw', 'common_support']:
+                for metric in ['NLL', 'macro_AP', 'class_2_AP']:
+                    values = contrast.get(domain, {}).get(metric, {})
+                    mappings, interval = values.get('per_mapping_deltas', []), values.get('CI95', [])
+                    complete &= (len(mappings) == 3 and len(interval) == 2
+                        and values.get('valid_replicates') == 400
+                        and all(isinstance(v, (int, float)) and math.isfinite(v)
+                            for v in [values.get('delta'), *mappings, *interval])
+                        and interval[0] <= interval[1])
+        complete &= (row.get('resampling_blocks', {}).get('resampling_blocks') == 128
+            and row.get('resampling_blocks', {}).get('accepted_family_links_used') is True)
+        path_statistics.append(bool(complete))
     checks = inventory_checks(configurations, comparison, evaluation)
     checks.update({
         'exact_18_fit_paired_matrix': len(configurations) == 18 and actual == expected,
@@ -76,6 +94,7 @@ def audit(root, campaign, comparisons, evaluation_path):
                 and p['cached_head_logit_maximum_error'] <= 2e-6 and p['presence_preserved'] is True
                 and p.get('head_replay_batch_shapes_and_recipient_order_preserved') is True
                 and p['permutation_seeds'] == [2026, 17, 42] for p in path_rows),
+        'all_branch_contrasts_have_finite_paired_statistics': len(path_statistics) == 4 and all(path_statistics),
         'training_health_figures_present': all((evaluation_path.parent / filename).is_file() for filename in
             ['classification_training_curves.pdf', 'classification_internal_health.pdf', 'classification_health_ranges.csv']),
         'all_allocations_terminal': terminal_allocations(accounting),

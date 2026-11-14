@@ -1,6 +1,6 @@
 # S4：可验证的预训练与标签效率
 
-状态更新（2026-11-14）：首批空响应诊断确认两个Scratch初始化的虚假占位节点梯度异常。此前S4三seed收益只保留为待复核测量，暂停作为预训练收益结论；原矩阵完整输出仍用于诊断。修复在空响应时屏蔽local与regional硬件路径、跳过无source的attention更新，保留事件、summary和可学习空响应概率。新冻结矩阵为`configs/s4_empty_repair.json`：Scratch/MAE3×1k/10k/100k×3 seeds，共18次重新训练，配方、标签子集与更新预算沿用原合同；两组同时使用相同新路由。全部32个初始化更新密集记录内部健康，每一步都检查裁剪前梯度norm≤10,000。先通过新的真实事件拟合与压力gate，再运行该矩阵。依据与实测见[阶段137](../workbook/2026-11-14_stage137_s4_empty_response_gradient.md)。预训练权重复用经过完整readback的三套MAE3，所有新训练从各自Scratch/MAE3起点重新开始。输出根仍为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`。
+状态更新（2026-11-14）：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；61个allocation均终止，累计账本24.325865/60 device-hours。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
 
 ## 1. 研究问题与固定条件
 
@@ -10,7 +10,7 @@
 
 沿用已接受的 detector-proxy、geometry 和 family split。既有 80k train、10k validation 原样保留，另从八个新 chunk/类选择 5k train/类，组成 100k train。所有 SSL 输入、重建验证和 probe-fit 均来自 train；独立 validation 只用于下游选择/评价。Calibration/test 不打开。
 
-下游共同 backbone 为 S3 revision 2 multiscale native + tracker：Peri-LN、QK-LN、LayerScale、FP32 normalized SiLU Head、全部 local blocks 直接读出。导出 features 的接口保持默认分类数值及 checkpoint 参数命名不变。预训练 decoder/teacher 在 fine-tuning 时丢弃；分类 heads 对所有初始化策略使用相同种子重新初始化。架构额外变更须另加 Scratch 控制。
+原始S4合同的共同backbone为S3 revision 2 multiscale native + tracker：Peri-LN、QK-LN、LayerScale、FP32 normalized SiLU Head、全部local blocks直接读出。本次18项分类同时采用revision 3的`empty_response_bypass=true`，由Scratch控制隔离预训练初始化的差别；原冻结配置用于复现历史。导出features的接口与checkpoint参数命名兼容，预训练decoder/teacher在fine-tuning时丢弃；分类heads对所有初始化策略使用相同种子重新初始化。
 
 ## 2. 文献依据与适配
 
@@ -39,7 +39,7 @@ MAE/EMA仅从observation构造目标；partial bar Rel另使用98k pretrain-fit�
 
 ## 4. 分阶段实验与预算
 
-S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译、失败、训练、probe 和评价；不同设备、MIG 与整卡分别列出，时长不换算成等价 FLOPs。先运行有限 pilot，再冻结正式实验配置；不自动耗尽上限。
+S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译、失败、训练、probe 和评价；不同设备、MIG 与整卡分别列出，时长不换算成等价 FLOPs。已累计24.325865 device-hours、282.757649 CPU allocation core-hours，包含历史尝试、初始化和保守结束上界。以下为研究工单；当前完成范围为修复后的18项full fine-tuning及完整路径/分类评价，新增路线下的frozen probe、EMA/Rel及compute-matched比较尚未重测。
 
 1. 完成 100k corpus、独立 Rel sidecars；train 内嵌套 98k pretrain-fit/2k reconstruction-probe。监督标签预算为嵌套的 1k/10k/100k，四类平衡，τ 子道按原样本比例分层。
 2. 导出 S3 encoder 的 local/regional/global/summary features，在 train 内 fit/probe-validation 上分别拟合 linear/MLP，测可读信息与实际梯度的差别。不能用 64-event 置换取代分类 probe。
@@ -55,22 +55,30 @@ S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译
 
 验收除结果文件完整外，要求 informative encoder 梯度、非饱和 head、非恒定预测、SSL 的 feature 方差和实际拟合证据；若出现明显异常，先定位架构/尺度/采样/优化并修复重训。最终记录所有 allocations 终态和资源成本；阶段报告与代码共同提交。
 
-配对比较冻结于 `configs/s4_pairs.json`；新增语义结果、τ 子道统计和监督预算规划见 [stage106](../workbook/2026-11-13_stage106_s4_paired_semantics_and_budget.md)。完整channel Rel的512-event同查询诊断已超过几何均值先验，见[stage119](../workbook/2026-11-13_stage119_s4_full_rel_event_information.md)及`results/s4_rel_semantics.json`；该结果与分类收益分别评价。
+当前配对冻结于[configs/s4_empty_pairs.json](configs/s4_empty_pairs.json)，全部9项配对和3项三seed均值已完成。MAE3−Scratch的raw结果如下，区间条件于已训练seeds和固定validation；训练seed SD在精简JSON中单列，均值不是ensemble。
 
-以下为修复前的历史观测，当前不作为S4方法结论；修复矩阵将重新评价对应分类和路径。完整路径及v6结果见[stage129](../workbook/2026-11-13_stage129_s4_global_path_and_100k_validation.md)。MAE3 seed42在1k/10k下global置换的NLL增量为0.051899/0.035174，95%区间均为正；local/regional仍有可测作用。100k的macro AP配对增量0.003371，区间跨零；common-support tau AP增量也未确认，不能把低标签收益或global利用直接推广为kinematics-independent tau改进。全部比较仍为固定validation，calibration/test冻结，矩阵未完成。
+| Labels | Macro AP: Scratch → MAE3 | Δmacro AP [CI95] | NLL: Scratch → MAE3 |
+| ---: | --- | --- | --- |
+| 1,000 | 0.288856 → 0.345980 | +0.057124 [0.052411, 0.062256] | 1.564575 → 1.447382 |
+| 10,000 | 0.425891 → 0.440384 | +0.014493 [0.010374, 0.018721] | 1.276154 → 1.252464 |
+| 100,000 | 0.469263 → 0.473555 | +0.004292 [0.002020, 0.006590] | 1.214263 → 1.207805 |
 
-三seed低标签结果见[stage133](../workbook/2026-11-13_stage133_s4_three_seed_low_label_results.md)。1k时MAE3−Scratch的macro AP均值增量0.057021，物理块CI95=[0.052512,0.061955]；hadronic τ AP在既定common-support诊断中增加0.017168，[0.006759,0.026996]。同时raw τ argmax F1下降0.050129，平均NLL1.450039仍高于ln4，1%FPR效率区间跨零。这些旧观测用于提出过拟合与硬决策优化候选，排序收益也须在修复矩阵中复核；不据此直接扩1M。
+1k平均NLL仍高于ln4=1.386294；1k/10k的τ argmax F1差值分别为−0.032139/−0.011317，物理块区间为负，且seed波动较大。三个预算的τ低FPR效率差值区间均跨零。100k raw τ AP差值+0.006024，[0.001484,0.010809]；common-support总体τ AP及macro AP收益未确认。Hadronic τ子道在common-support的AP差值为+0.015837/+0.009678/+0.004792，区间均为正，electron/muon子道未确认改善。排序收益不能替代概率、硬决策和高纯度工作点质量。
+
+新MAE3 seed42在1k/10k完整validation中，global置换的NLL增量为0.055214/0.025673，区间均为正；Head重放误差均为0。Scratch 10k对应效应只有0.00002515，实际很小。Local/regional与summary诊断保留在完整表中。这证明特定checkpoint的拟合路径依赖，不是重训ablation或物理因果重要性。最大train事件36,549个原生节点、14,599个local blocks、962个regional tokens全部参与，另有64个global latents；池化仍是压缩，不称无损。
+
+FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-11-13_stage119_s4_full_rel_event_information.md)，与本次分类比较分开。旧矩阵及其解释只保留于标明状态的阶段记录，不复用为新路由的收益证据。Calibration/test继续冻结。
 
 ## 6. 由实测结果驱动的后续优化
 
-v8三个独立seeds的10k macro AP增量为0.014604，[0.010073,0.019366]，τ AP区间跨零；global frozen probe在三种标签预算均有正收益。这些为修复前的测量，仅用于提出表示信息与分类readout/优化问题。以下属于后续候选扩展，未执行；是否执行由当前18项修复重训结果决定。
+新18项矩阵确认低标签排序收益，也确认1k过拟合、τ硬决策及低背景工作点仍不足。以下属于尚未执行的下一轮候选。先在原标签预算内固定train-inner选择合同，再对Scratch/MAE3共同优化；本轮不扩至1M。
 
 | 实测问题 | 待比较的改动 | 控制与选择 |
 | --- | --- | --- |
-| 1k最佳NLL均为第一轮，随后过拟合 | 降低重复曝光次数、增加早期checkpoint时间点；分别降低encoder学习率与加强readout正则 | 同设置Scratch/MAE，不只调MAE；记录每个唯一事件的曝光和实际updates |
-| Global frozen可读，但full fine-tuning概率仍差 | 先固定encoder拟合readout，再解冻的LP-FT；与单纯降低encoder学习率分别比较 | readout适配须覆盖相同summary/branch normalization定义，不能直接把sklearn标准化线性系数塞入不同Head |
+| 新1k全部最佳NLL均为第一轮，随后过拟合，MAE3平均NLL仍高于ln4 | 降低重复曝光次数、增加早期checkpoint时间点；分别降低encoder学习率与加强readout正则 | 同设置Scratch/MAE，不只调MAE；记录每个唯一事件的曝光和实际updates |
+| 新MAE3的global路径实际影响输出，但低标签概率与决策仍不理想 | 先固定encoder拟合readout，再解冻的LP-FT；与单纯降低encoder学习率分别比较 | readout适配须覆盖相同summary/branch normalization定义；新路由的frozen readability尚未重测 |
 | AP与τ argmax F1方向不同 | train-inner选择正则与决策规则，分别检查NLL、Brier、各类confusion和低FPR计数 | 不在现有validation上拟合class bias或温度；S6最终校准继续冻结 |
-| Rel相对MAE5在1k τ AP下降 | 检查冻结/解冻后的语义信息与事件分类冲突；仅在净收益候选上增加独立预训练seeds | 模拟语义监督和计算成本单列，保留MAE continuation对照 |
+| 本次只重测MAE3，未确认新路由下其他预训练目标的分类净收益 | 只有主要readout/训练问题解决后，才在同一路由复核EMA、partial Rel、continuation和frozen probes | 模拟语义监督和计算成本单列，保留Scratch及MAE continuation对照 |
 
 下一轮的超参数选择只用原nested-label子集内的固定分层train-inner folds，选择过程使用的标签仍计入同一1k/10k预算；按最终选择重新拟合全部该预算事件。验证集仅作冻结协议的后续评价，不能把多次查看validation描述成新的独立证据。追加方案要记录已观察S4结果后设计，沿用同一validation的区间也条件于这一步设计，不使用calibration/test。
 
