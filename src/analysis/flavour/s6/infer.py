@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 import resource
 import socket
+import subprocess
+import sys
 import time
 
 import numpy as np
@@ -223,21 +225,22 @@ def replay(args):
         raise RuntimeError('checkpoint replay requires review; evidence saved')
 
 
-def task(args):
-    campaign, candidates, configs, membership, models = configure(args)
+def run_task(args, prepared):
+    campaign, candidates, configs, membership, models = prepared
     plan = json.loads((args.root/'plan.json').read_text())
     spec = plan['tasks'][args.task]
     require_freeze(args.root, spec['split'])
     path = args.root/'shards'/f"{spec['split']}_{spec['shard']:04d}"
     dataset = Responses([path], json.loads(Path(plan['geometry']).read_text()), configs)
     result, auxiliary, report = predict(dataset, candidates, models, membership, args, health=True)
-    frame = dataset.metadata[KEY+['label']].copy()
+    columns = {}
     for name, probability in result.items():
         for c in range(4):
-            frame[f'{name}__p{c}'] = probability[:, c]
+            columns[f'{name}__p{c}'] = probability[:, c]
         for key, values in auxiliary[name].items():
             for c in range(values.shape[1]):
-                frame[f'{name}__{key}{c}'] = values[:, c]
+                columns[f'{name}__{key}{c}'] = values[:, c]
+    frame = pd.concat([dataset.metadata[KEY+['label']].reset_index(drop=True), pd.DataFrame(columns)], axis=1)
     destination = args.root/'predictions'/'nominal'/f"{args.task:04d}"
     destination.mkdir(parents=True, exist_ok=True)
     save_parquet(frame, destination/'probabilities.parquet')
@@ -250,9 +253,121 @@ def task(args):
     print(json.dumps({'task': args.task, 'events': len(frame), 'seconds': report['seconds'], 'status': 'complete'}), flush=True)
 
 
+def task(args):
+    run_task(args, configure(args))
+
+
+def profile(args):
+    prepared = configure(args)
+    campaign, candidates, configs, membership, models = prepared
+    plan = json.loads((args.root/'plan.json').read_text())
+    spec = plan['tasks'][args.task]
+    if spec['split'] != 'calibration':
+        raise ValueError('execution profiling uses calibration only')
+    path = args.root/'shards'/f"calibration_{spec['shard']:04d}"
+    selected = pd.read_parquet(path/'provenance.parquet').iloc[:args.limit]
+    trials, reference = [], None
+    for size in args.batch_sizes:
+        args.batch_size = size
+        dataset = Responses([path], json.loads(Path(plan['geometry']).read_text()), configs, selected)
+        result, _, report = predict(dataset, candidates, models, membership, args, health=False)
+        differences = {name: float(np.abs(p-reference[name]).max()) for name, p in result.items()} if reference else {}
+        trials.append({'batch_size': size, 'workers': args.workers, **report, 'difference_from_first': differences})
+        if reference is None:
+            reference = result
+    report = {'trials': trials, 'precision': args.precision, 'compile_local': args.compile_local,
+              'status': 'passed' if all(d <= .003 for t in trials for d in t['difference_from_first'].values()) else 'review_required'}
+    write_json(args.root/'audit'/f'{args.name}.json', report)
+    print(json.dumps({'profile': args.name, 'trials': [
+        {k: t[k] for k in ['batch_size', 'events', 'seconds', 'peak_GPU_MiB', 'difference_from_first']} for t in trials], 'status': report['status']}), flush=True)
+    if report['status'] != 'passed':
+        raise RuntimeError('batch-size invariance requires review')
+
+
+def worker(args):
+    policy = json.loads((args.root/'inference_policy.json').read_text())
+    for key in ['precision', 'compile_local', 'batch_size']:
+        if getattr(args, key) != policy[key]:
+            raise ValueError(f'inference policy mismatch: {key}')
+    prepared = configure(args)
+    plan = json.loads((args.root/'plan.json').read_text())
+    claims = args.root/'runtime'/'nominal_claims'
+    claims.mkdir(exist_ok=True)
+    completed = []
+    started = time.monotonic()
+    idle_since = None
+    while True:
+        chosen = None
+        incomplete_preparation = False
+        for task_id, spec in enumerate(plan['tasks']):
+            if spec['split'] != args.split:
+                continue
+            output = args.root/'predictions'/'nominal'/f'{task_id:04d}'/'summary.json'
+            if output.exists():
+                previous = json.loads(output.read_text())
+                if previous['candidates'] != [m['name'] for m in prepared[1]] or previous['events'] != spec['events']:
+                    raise ValueError('completed inference has different coverage/candidates')
+                continue
+            if not (args.root/'shards'/f"{spec['split']}_{spec['shard']:04d}"/'summary.json').exists():
+                incomplete_preparation = True
+                continue
+            claim = claims/f'{task_id:04d}'
+            try:
+                claim.mkdir()
+            except FileExistsError:
+                continue
+            chosen = task_id
+            write_json(claim/'owner.json', {'host': socket.gethostname(), 'pid': os.getpid(), 'UTC': datetime.now(timezone.utc).isoformat(),
+                       'worker': args.name, 'commit': os.environ.get('PINPOINT_CODE_COMMIT')})
+            break
+        if chosen is None:
+            if idle_since is None:
+                idle_since = time.monotonic()
+            if incomplete_preparation and time.monotonic()-idle_since < 60 and time.monotonic()-started < args.maximum_seconds:
+                # Preparation and inference overlap. A short wait permits GPU
+                # workers to consume newly finished CPU shards without a queue.
+                time.sleep(15)
+                continue
+            break
+        idle_since = None
+        args.task = chosen
+        try:
+            run_task(args, prepared)
+            completed.append(chosen)
+        finally:
+            (claim/'owner.json').unlink()
+            claim.rmdir()
+        if time.monotonic()-started >= args.maximum_seconds:
+            break
+    write_json(args.root/'runtime'/f'{args.name}.worker.json', {'status': 'complete', 'tasks': completed,
+        'seconds': time.monotonic()-started, 'GPU': torch.cuda.get_device_name(), 'host': socket.gethostname()})
+
+
+def pool(args):
+    """Independent claim-based lanes share one allocation; no duplicate writer."""
+    processes = []
+    logs = []
+    for lane in range(args.lanes):
+        name = f'{args.name}_lane{lane}'
+        command = [sys.executable, '-m', __name__, 'worker', '--root', str(args.root), '--campaign', str(args.campaign),
+                   '--split', args.split, '--name', name, '--batch-size', str(args.batch_size), '--workers', str(args.workers),
+                   '--precision', args.precision, '--maximum-seconds', str(args.maximum_seconds)]
+        if args.compile_local:
+            command += ['--compile-local']
+        log = (args.root/'logs'/f'{name}.log').open('w')
+        logs.append(log)
+        processes.append(subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT))
+    states = [process.wait() for process in processes]
+    for log in logs:
+        log.close()
+    write_json(args.root/'runtime'/f'{args.name}.pool.json', {'exit_codes': states, 'lanes': args.lanes, 'workers_per_lane': args.workers})
+    if any(states):
+        raise RuntimeError('an inference lane failed; inspect its EOS log')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['replay', 'task'])
+    parser.add_argument('command', choices=['replay', 'task', 'profile', 'worker', 'pool'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--source', type=Path)
@@ -265,6 +380,11 @@ def main():
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--events-per-class', type=int, default=4)
     parser.add_argument('--task', type=int, default=0)
+    parser.add_argument('--batch-sizes', nargs='+', type=int, default=[16, 64, 128])
+    parser.add_argument('--limit', type=int, default=1024)
+    parser.add_argument('--split', choices=['calibration', 'test'], default='calibration')
+    parser.add_argument('--lanes', type=int, default=2)
+    parser.add_argument('--maximum-seconds', type=int, default=27000)
     args = parser.parse_args()
     globals()[args.command](args)
 

@@ -145,7 +145,7 @@ def finalize(args):
     summaries = [json.loads((p/'summary.json').read_text()) for p in paths]
     catalog = pd.concat([pd.read_parquet(p/'provenance.parquet') for p in paths], ignore_index=True)
     expected = pd.read_parquet(args.root/'manifest.parquet', filters=[('split', '=', args.split)])
-    if len(catalog) != len(expected) or not catalog.sort_values(KEY)[KEY].reset_index(drop=True).equals(expected.sort_values(KEY)[KEY].reset_index(drop=True)):
+    if len(catalog) != len(expected) or not np.array_equal(catalog.sort_values(KEY)[KEY].to_numpy(), expected.sort_values(KEY)[KEY].to_numpy()):
         raise ValueError('S6 converted keys differ from accepted split')
     catalog.to_parquet(args.root/f'{args.split}_catalog.parquet', index=False, compression=COMPRESSION)
     truth = pd.concat([pd.read_parquet(p/'truth.parquet') for p in paths], ignore_index=True)
