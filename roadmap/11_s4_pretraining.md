@@ -85,6 +85,8 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 EMA3、MAE5、partial channel Rel5的[首批共同下游配置](configs/s4_repaired_objectives_a.json)已固定，见[阶段152](../workbook/2026-11-14_stage152_s4_repaired_objective_comparison.md)。包含1k/100k各三项fine-tuning和三项full/global frozen；10k沿用待完成OOF合同的共同配方。复用健康SSL来源、重新拟合下游，额外模拟语义及parent计算单列；新分类收益尚未测量。
 
+48项train-inner现已全部完成，137,088次逐步梯度检查及1,732次采样通过。10k共同规则选择early、第6次完整遍历，Scratch/MAE3 OOF NLL为1.302972/1.277887；[六项固定末轮重拟合](configs/s4_low_label_refit_10k.json)、[选择表](results/s4_low_label_selection_10k.json)及[同设置SSL下游](configs/s4_repaired_objectives_b.json)见[阶段154](../workbook/2026-11-14_stage154_s4_10k_inner_selection.md)。新10k完整预算validation收益尚未测量；不将1k的LP-FT选择直接推广至10k。
+
 新18项矩阵确认低标签排序收益，也确认1k过拟合、τ硬决策及低背景工作点仍不足。以下属于尚未执行的下一轮候选。先在原标签预算内固定train-inner选择合同，再对Scratch/MAE3共同优化；本轮不扩至1M。
 
 | 实测问题 | 待比较的改动 | 控制与选择 |
