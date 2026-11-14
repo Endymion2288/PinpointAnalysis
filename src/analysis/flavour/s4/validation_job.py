@@ -41,6 +41,22 @@ def main():
     write_json(output/'manifest.json',manifest)
     campaigns=[Path(p) for p in config['campaigns']]
     configurations={c['name']:c for p in campaigns for c in json.loads(p.read_text())['experiments']}
+    if config.get('wait_for_completion_seconds',0):
+        deadline=time.monotonic()+config['wait_for_completion_seconds']
+        while True:
+            waiting=[]
+            for name,c in configurations.items():
+                if c.get('program','train' if c.get('objective')=='classification' else 'pretrain')!='train':continue
+                path=args.root/'experiments'/name/'manifest.json'
+                status=json.loads(path.read_text()).get('status') if path.exists() else None
+                if status in {'failed','internal_health_failed','learning_review_required'}:
+                    raise RuntimeError(name+': upstream training failed; evaluation stopped')
+                if status!='complete':waiting.append(name)
+            if not waiting:break
+            if time.monotonic()>deadline:raise TimeoutError('bounded wait for frozen classification matrix expired')
+            manifest.update(status='waiting_for_frozen_fits',pending_train=waiting)
+            write_json(output/'manifest.json',manifest)
+            time.sleep(15)
     catalog=pd.read_parquet(args.root/'catalog.parquet')
     validation=catalog[catalog.split.eq('validation')];verified=[];pending=[];health=[]
     for name,c in configurations.items():

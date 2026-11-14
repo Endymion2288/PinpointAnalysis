@@ -157,6 +157,8 @@ def submit(args):
         gpu = not cpu_only
         gpu_cpus=max(4,args.concurrency*(2 if prototype_pool else 3))
         cpu_cpus=1 if args.stage=='validation_job' else 4
+        waiting_validation=args.stage=='validation_job' and any(
+            c.get('wait_for_completion_seconds',0)>1800 for c in json.loads(args.campaign.read_text())['experiments'])
         text = f'''universe = vanilla
 executable = {wrapper}
 arguments = {arguments_text}
@@ -168,7 +170,7 @@ request_cpus = {gpu_cpus if gpu else cpu_cpus}
 request_memory = {max(12000,args.concurrency*8000) if gpu else (3000 if args.stage=='validation_job' else 12000)}
 request_disk = {max(12,args.concurrency*2) if gpu else 4}GB
 requirements = (OpSysAndVer == "AlmaLinux9")
-+JobFlavour = "{'workday' if gpu or args.stage in {'budget_replay','matched_plan','functional_probe'} else 'microcentury'}"
++JobFlavour = "{'workday' if gpu or waiting_validation or args.stage in {'budget_replay','matched_plan','functional_probe'} else 'microcentury'}"
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 transfer_output_files = ""

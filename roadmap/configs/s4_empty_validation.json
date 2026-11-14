@@ -13,7 +13,8 @@
       "bootstrap": 400,
       "strict": true,
       "inspect_best_health": true,
-      "plot_training_health": true
+      "plot_training_health": true,
+      "wait_for_completion_seconds": 7200
     }
   ]
 }
