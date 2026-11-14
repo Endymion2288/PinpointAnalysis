@@ -9,6 +9,8 @@ from types import SimpleNamespace
 import subprocess
 import time
 
+import joblib
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import torch
@@ -18,7 +20,34 @@ from analysis.flavour.s2.readback import readback
 from analysis.flavour.s4.evaluate import evaluate
 
 
-def verify_probe(directory,config,validation):
+def replay_probe_predictions(directory, config, features, metadata):
+    """Reload small readouts and reproduce saved probabilities before cache cleanup."""
+    keys = ['run', 'chunk', 'row', 'label']
+    rows = {}
+    for branch in config.get('probe_branches', ['full', 'global']):
+        pipeline = joblib.load(directory / (branch + '_linear_readout.joblib'))
+        if not np.array_equal(pipeline.classes_, np.arange(4)):
+            raise ValueError(config['name'] + ': four-class readout ordering differs')
+        probability = pipeline.predict_proba(features[branch])
+        replay = metadata[keys].copy()
+        for c in range(4):
+            replay[f'p{c}'] = probability[:, c]
+        saved = pd.read_parquet(directory / (branch + '_linear_predictions.parquet'))
+        aligned = replay.merge(saved[keys + [f'p{c}' for c in range(4)]], on=keys,
+            how='outer', validate='one_to_one', suffixes=('_replay', '_saved'), indicator=True)
+        if not aligned['_merge'].eq('both').all():
+            raise ValueError(config['name'] + ': readout replay event keys differ')
+        a = aligned[[f'p{c}_replay' for c in range(4)]].to_numpy()
+        b = aligned[[f'p{c}_saved' for c in range(4)]].to_numpy()
+        error = float(np.max(np.abs(a - b)))
+        if not np.isfinite(error) or error > 1e-10:
+            raise ValueError(config['name'] + ': reloaded readout predictions differ')
+        rows[branch] = {'events': len(aligned), 'maximum_probability_difference': error,
+            'absolute_tolerance': 1e-10, 'passed': True}
+    return rows
+
+
+def verify_probe(directory,config,validation,feature_root=None):
     """Check numerical solver evidence and the exact frozen prediction catalog."""
     manifest=json.loads((directory/'manifest.json').read_text())
     if manifest.get('status')!='complete' or manifest.get('config')!=config:
@@ -37,8 +66,14 @@ def verify_probe(directory,config,validation):
         if not frame[keys].sort_values(keys).reset_index(drop=True).equals(
                 validation[keys].sort_values(keys).reset_index(drop=True)):
             raise ValueError(config['name']+': probe predictions differ from fixed validation catalog')
+    replay = None
+    if feature_root is not None and config.get('probe_feature_source'):
+        from analysis.flavour.s4.feature_bank import load
+        (features, metadata), = load(feature_root, config, splits=('validation',))
+        replay = replay_probe_predictions(directory, config, features, metadata)
     return {'name':config['name'],'branches':optimization,'fit_events':manifest['fit_events'],
-        'validation_events':manifest['probe_events'],'all_optimizers_converged':True}
+        'validation_events':manifest['probe_events'],'all_optimizers_converged':True,
+        'artifact_prediction_replay': replay}
 
 
 def checkpoint_configuration(expected, recorded):
@@ -87,7 +122,7 @@ def main():
             directory=args.root/'experiments'/name;path=directory/'manifest.json'
             if not path.exists() or json.loads(path.read_text()).get('status')!='complete':
                 pending.append(name);continue
-            probes.append(verify_probe(directory,c,validation));continue
+            probes.append(verify_probe(directory,c,validation,feature_root=args.root));continue
         if c.get('program','train' if c.get('objective')=='classification' else 'pretrain')!='train':continue
         directory=args.root/'experiments'/name;path=directory/'manifest.json'
         if not path.exists() or json.loads(path.read_text()).get('status')!='complete':

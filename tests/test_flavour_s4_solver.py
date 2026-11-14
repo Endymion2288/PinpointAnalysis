@@ -8,9 +8,11 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import joblib
 
 from analysis.flavour.s4.feature_bank import select_features,load
 from analysis.flavour.s4.probes import fit_probe
+from analysis.flavour.s4.validation_job import replay_probe_predictions
 
 
 class ReadoutSolverTests(unittest.TestCase):
@@ -93,6 +95,31 @@ class ReadoutSolverTests(unittest.TestCase):
                 self.assertEqual(result[0][1].row.tolist(),[3,1])
                 with self.assertRaisesRegex(ValueError,'representation mismatch: dim'):
                     load(root,{**case,'dim':64})
+
+    def test_saved_readout_replay_detects_changed_probabilities_with_identical_keys(self):
+        rng = np.random.default_rng(28)
+        features = {'full': rng.normal(size=(80, 8)).astype('float32')}
+        metadata = pd.DataFrame({'run': [10081]*80, 'chunk': [1]*80,
+            'row': np.arange(80), 'label': np.arange(80) % 4})
+        pipeline, audit = fit_probe(features['full'], metadata.label.to_numpy(), 'linear',
+            {'probe_linear_solver': 'newton-cg', 'probe_linear_tolerance': 1e-6,
+                'probe_require_stationarity': True})
+        self.assertTrue(audit['passed'])
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            joblib.dump(pipeline, directory / 'full_linear_readout.joblib')
+            frame = metadata.copy()
+            for c, values in enumerate(pipeline.predict_proba(features['full']).T):
+                frame[f'p{c}'] = values
+            path = directory / 'full_linear_predictions.parquet'
+            frame.iloc[::-1].to_parquet(path, index=False)
+            config = {'name': 'replay', 'probe_branches': ['full']}
+            replay = replay_probe_predictions(directory, config, features, metadata)
+            self.assertEqual(replay['full']['maximum_probability_difference'], 0.)
+            frame.loc[0, 'p0'] += .001
+            frame.to_parquet(path, index=False)
+            with self.assertRaisesRegex(ValueError, 'reloaded readout predictions differ'):
+                replay_probe_predictions(directory, config, features, metadata)
 
 
 if __name__ == '__main__':

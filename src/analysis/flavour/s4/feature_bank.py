@@ -36,7 +36,7 @@ def select_features(bank_metadata, desired_metadata, features):
     return {key: value[ids] for key, value in features.items()}
 
 
-def load(root, config):
+def load(root, config, splits=('train', 'validation')):
     source = root / 'experiments' / config['probe_feature_source']
     manifest = json.loads((source / 'manifest.json').read_text())
     if manifest['status'] != 'complete':
@@ -46,7 +46,7 @@ def load(root, config):
             raise ValueError('frozen feature representation mismatch: ' + key)
     bank = root / 'temporary_features' / config['probe_feature_source']
     result = []
-    for split in ['train', 'validation']:
+    for split in splits:
         metadata = pd.read_parquet(bank / (split + '_metadata.parquet'))
         arrays = {branch: np.load(bank / (split + '_' + branch + '.npy'), mmap_mode='r')
             for branch in config.get('probe_branches', ['full', 'global'])}

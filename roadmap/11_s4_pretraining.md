@@ -98,6 +98,8 @@ Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k
 
 本轮不扩至1M。完成剩余目标对照、驻点readout、完整物理统计、真实allocation终态和总成本后形成S4最终报告。当前已完成低标签重训和matched控制，S4整体仍进行中。
 
+完整v2评价还会重新加载30个full/global磁盘readouts，在同一10k validation特征上按事件键回放概率，最大绝对差要求≤1e-10，见[阶段173](../workbook/2026-11-14_stage173_s4_saved_readout_replay.md)。该回放与真实梯度驻点分开保存，通过后才清理临时feature数组；本步骤不重新拟合或调整模型。
+
 优化设计已观察前期S4 validation，后续区间条件于该设计、同一validation与既定权重；不能描述成新的独立泛化证据。Calibration/test及最终class bias、温度与工作点选择继续冻结。
 
 2026-11-13 23:18 UTC重新联网读取[Kumar等，ICLR 2022 LP-FT](https://arxiv.org/abs/2202.10054)及[Wortsman等，CVPR 2022 WiSE-FT](https://openaccess.thecvf.com/content/CVPR2022/html/Wortsman_Robust_Fine-Tuning_of_Zero-Shot_Models_CVPR_2022_paper.html)，源文件与URL记录位于输出根`literature/low_label_transfer_sources.json`。LP-FT给出随机Head与encoder同时更新可能扰动预训练特征的可检验假设；其论文主要研究OOD，当前数据尚未证明这种病因。WiSE-FT依赖可用的zero-shot分类模型，当前没有对应分类Head，暂不直接采用权重插值。前述CVPR 2025 Sonata/NOMAE和FASERCal仍为主要预训练依据。
