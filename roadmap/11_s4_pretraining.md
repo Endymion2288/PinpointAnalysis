@@ -1,8 +1,8 @@
 # S4：可验证的预训练与标签效率
 
-**2026-11-14 纠错：阶段155发现LP解冻后input/local编译层无训练梯度，local_pool有梯度使旧健康规则误通过。12项LP inner及其选择失效，1k优化重拟合结果不作结论；两预算须修复LP竞争者后重选。36项non-LP控制具有对应真实训练梯度可复用。修复与失效范围见[阶段155](../workbook/2026-11-14_stage155_s4_frozen_compile_gradient_failure.md)及[失效清单](results/s4_transfer_compilation_invalidation.json)。阶段160的真实CUDA固定权重回归已通过13项检查，六个1k新LP候选均在实际解冻训练中恢复input/local正梯度，12项完整重训仍进行中，尚无新的OOF选择与分类结论。见[阶段160](../workbook/2026-11-14_stage160_s4_transfer_gate_passed.md)及[回归实测](results/s4_transfer_compile_gate_v4.json)。阶段145的18项空响应修复基线没有LP阶段，不受此项冻结/解冻故障影响。**
+**2026-11-14 纠错：阶段155发现LP解冻后input/local编译层无训练梯度，local_pool有梯度使旧健康规则误通过。旧12项LP inner及其共同选择失效，旧1k优化重拟合结果不作结论。36项non-LP控制有真实训练梯度，可复用。修复与失效范围见[阶段155](../workbook/2026-11-14_stage155_s4_frozen_compile_gradient_failure.md)及[失效清单](results/s4_transfer_compilation_invalidation.json)。[阶段160](../workbook/2026-11-14_stage160_s4_transfer_gate_passed.md)真实CUDA固定权重回归13项检查通过；新1k六项LP已完成完整12 pass，重选仍为LP-FT 8 pass，三seed refits及三项目标对照已正式启动，见[阶段161](../workbook/2026-11-14_stage161_s4_repaired_1k_selection.md)。10k六项LP仍在重训，两预算均未形成新的优化分类结论。阶段162起评价同时要求真实input/local梯度与best/last参数改变。阶段145的18项空响应修复基线没有LP阶段，不受此次冻结/解冻故障影响。**
 
-状态更新（2026-11-14）：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；61个allocation均终止，累计账本24.325865/60 device-hours。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
+阶段145结果：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；阶段145时原61个allocation已终止，后续修复与对照继续累计同一账本。03:49:08 UTC总量30.386366/60 device-hours，当前仍有训练与评价运行。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
 
 ## 1. 研究问题与固定条件
 
@@ -41,7 +41,7 @@ MAE/EMA仅从observation构造目标；partial bar Rel另使用98k pretrain-fit�
 
 ## 4. 分阶段实验与预算
 
-S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译、失败、训练、probe 和评价；不同设备、MIG 与整卡分别列出，时长不换算成等价 FLOPs。已累计24.325865 device-hours、282.757649 CPU allocation core-hours，包含历史尝试、初始化和保守结束上界。以下为研究工单；当前完成范围为修复后的18项full fine-tuning及完整路径/分类评价，新增路线下的frozen probe、EMA/Rel及compute-matched比较尚未重测。
+S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译、失败、训练、probe 和评价；不同设备、MIG 与整卡分别列出，时长不换算成等价 FLOPs。03:49:08 UTC已累计30.386366 device-hours、344.887803 CPU allocation core-hours，包含历史尝试、初始化和保守结束上界。当前18项基线及matched-compute完整评价完成，1k新OOF重选完成；100k frozen probes、EMA/Rel、10k LP重选及新的固定refits仍进行中，S4未完成。
 
 1. 完成 100k corpus、独立 Rel sidecars；train 内嵌套 98k pretrain-fit/2k reconstruction-probe。监督标签预算为嵌套的 1k/10k/100k，四类平衡，τ 子道按原样本比例分层。
 2. 导出 S3 encoder 的 local/regional/global/summary features，在 train 内 fit/probe-validation 上分别拟合 linear/MLP，测可读信息与实际梯度的差别。不能用 64-event 置换取代分类 probe。
@@ -83,9 +83,9 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 不含失效LP的[readability评价](configs/s4_repaired_readability_evaluation.json)及[18项配对](configs/s4_repaired_readability_pairs.json)见[阶段157](../workbook/2026-11-14_stage157_s4_readability_evaluation_contract.md)：六项full/global收敛probes与六项阶段145正常fine-tuning，逐readout检查求解证据与完整validation输出。完整配对统计尚未测量。
 
-修复后的[监督计算对照计划](configs/s4_empty_matched_plan.json)已固定，见[阶段151](../workbook/2026-11-14_stage151_s4_repaired_compute_control_contract.md)。以阶段145的修复Scratch为parent，额外匹配既有MAE3声明矩阵预算，parent全部计算计入；与train-inner配方优化分开比较，新的continuation指标尚未测量。
+修复后的[监督计算对照计划](configs/s4_empty_matched_plan.json)已固定，见[阶段151](../workbook/2026-11-14_stage151_s4_repaired_compute_control_contract.md)。以阶段145的修复Scratch为parent，额外匹配既有MAE3声明矩阵预算，parent全部计算计入；与train-inner配方优化分开比较。
 
-该CPU计划已完成，三个预算的匹配误差为0.030651%/0.069562%/0.008342%，[训练配置](configs/s4_empty_supervised_matched.json)与[预算实测](results/s4_empty_matched_budgets.json)已生成。[阶段153](../workbook/2026-11-14_stage153_s4_repaired_compute_budget.md)记录12项固定配对、监督Head复用及frozen probe收敛后仍存在的概率误差；新的continuation收益尚未测量。
+三个预算的匹配误差为0.030651%/0.069562%/0.008342%，见[训练配置](configs/s4_empty_supervised_matched.json)与[预算实测](results/s4_empty_matched_budgets.json)。[阶段163](../workbook/2026-11-14_stage163_s4_compute_control_results.md)已完成12预测/12配对的完整10k评价：1k/10k监督continuation过拟合，100k相对Scratch的macro AP增量+0.000157、区间跨零，均未复现对应MAE3结果；三个监督envelope均保留原parent，同时计入全部continuation成本。该结论只覆盖固定seed42和所测continuation配方，不代表最优监督调参或跨硬件实测FLOPs等效。
 
 EMA3、MAE5、partial channel Rel5的[首批共同下游配置](configs/s4_repaired_objectives_a.json)已固定，见[阶段152](../workbook/2026-11-14_stage152_s4_repaired_objective_comparison.md)。包含1k/100k各三项fine-tuning和三项full/global frozen；10k沿用待完成OOF合同的共同配方。复用健康SSL来源、重新拟合下游，额外模拟语义及parent计算单列；新分类收益尚未测量。
 
