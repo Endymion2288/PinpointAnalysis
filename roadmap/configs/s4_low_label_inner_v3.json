@@ -390,7 +390,10 @@
       "transfer_recipe": "lpft",
       "complete_pass_steps": 52,
       "eligible_selection_first_epoch": 3,
-      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42"
+      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42",
+      "dependencies": [
+        "s4_transfer_compile_gate_v3_s42"
+      ]
     },
     {
       "seed": 42,
@@ -663,7 +666,10 @@
       "transfer_recipe": "lpft",
       "complete_pass_steps": 52,
       "eligible_selection_first_epoch": 3,
-      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42"
+      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42",
+      "dependencies": [
+        "s4_transfer_compile_gate_v3_s42"
+      ]
     },
     {
       "seed": 42,
@@ -936,7 +942,10 @@
       "transfer_recipe": "lpft",
       "complete_pass_steps": 49,
       "eligible_selection_first_epoch": 3,
-      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42"
+      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42",
+      "dependencies": [
+        "s4_transfer_compile_gate_v3_s42"
+      ]
     },
     {
       "seed": 42,
@@ -1218,7 +1227,8 @@
       "program": "train",
       "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4_transfer_compile_gate_v3_s42"
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
@@ -1519,7 +1529,8 @@
       "program": "train",
       "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4_transfer_compile_gate_v3_s42"
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
@@ -1820,7 +1831,8 @@
       "program": "train",
       "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4_transfer_compile_gate_v3_s42"
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
@@ -2112,7 +2124,10 @@
       "transfer_recipe": "lpft",
       "complete_pass_steps": 425,
       "eligible_selection_first_epoch": 3,
-      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42"
+      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42",
+      "dependencies": [
+        "s4_transfer_compile_gate_v3_s42"
+      ]
     },
     {
       "seed": 42,
@@ -2385,7 +2400,10 @@
       "transfer_recipe": "lpft",
       "complete_pass_steps": 425,
       "eligible_selection_first_epoch": 3,
-      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42"
+      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42",
+      "dependencies": [
+        "s4_transfer_compile_gate_v3_s42"
+      ]
     },
     {
       "seed": 42,
@@ -2658,7 +2676,10 @@
       "transfer_recipe": "lpft",
       "complete_pass_steps": 425,
       "eligible_selection_first_epoch": 3,
-      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42"
+      "required_transfer_probe": "s4_transfer_compile_gate_v3_s42",
+      "dependencies": [
+        "s4_transfer_compile_gate_v3_s42"
+      ]
     },
     {
       "seed": 42,
@@ -2940,7 +2961,8 @@
       "program": "train",
       "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4_transfer_compile_gate_v3_s42"
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
@@ -3241,7 +3263,8 @@
       "program": "train",
       "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4_transfer_compile_gate_v3_s42"
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
@@ -3542,7 +3565,8 @@
       "program": "train",
       "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
       "dependencies": [
-        "s4_mae_m75_e3_s42"
+        "s4_mae_m75_e3_s42",
+        "s4_transfer_compile_gate_v3_s42"
       ],
       "required_ssl_readbacks": [
         "s4_mae_m75_e3_s42"
