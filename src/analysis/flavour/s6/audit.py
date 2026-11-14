@@ -91,8 +91,10 @@ def run(args):
         ['evaluation/migration/summary.json', 'evaluation/migration/*.npz'], migration)
     cost = read('evaluation/resource_accounting.json')
     record('resource allocation evidence, backend closure and compact outputs',
-        'complete' if cost and not cost['active_jobs'] and (root/'evaluation/cleanup.json').exists() else 'open',
-        ['evaluation/resource_accounting.json', 'evaluation/cleanup.json'],
+        'complete' if cost and cost.get('backend_queries_complete') and not cost['active_jobs'] and
+        not any(f['unresolved_rows'] for f in cost['submitted_condor_factories']) and
+        (root/'evaluation/cleanup.json').exists() and (root/'evaluation/backend_closure.json').exists() else 'open',
+        ['evaluation/resource_accounting.json', 'evaluation/cleanup.json', 'evaluation/backend_closure.json'],
         {'accounting_present': cost is not None, 'active_jobs': len(cost['active_jobs']) if cost else None,
          'MIG_utilization_fraction': 'unmeasured where metrics unavailable'})
     record('timing/window and physical exposure scope', 'documented_input_limit', ['conditions.json', 'analysis_freeze.json'],
