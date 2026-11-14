@@ -22,6 +22,8 @@ Visible target为非核G4初始primary system：排除neutrinos，以可定义�
 
 完整十五项4-pass screen完成后，以validation NLL最低者为数据选择候选，six-way另作为预定FASERCal假设保留；与direct4去重后最多三种结构。三seed确认使用新的8完整passes配置，从各seed的MAE3 encoder重新初始化，不从4-pass cosine终点接续。评价按cohort隔离，同seed/同passes控制；主指标NLL、macro AP和τ工作点同时报告。全部selection仍使用既有validation，独立test仅在S6打开。
 
+Direct4/six-way两组是预先固定的控制，不依赖剩余screen结果，可先由HTCondor候补执行`configs/s5_confirmation_controls.json`。最后selection使用相同experiment names和配置，跨后端claims防止重复；只有数据选择的第三候选需要等待十五项screen全部完成。
+
 训练记录输入/局部/融合/head激活RMS和梯度、概率方差、有效aux样本数、实际参数更新及selected-checkpoint readback。新增路径做真实小样本拟合；出现整层失活或未学习则审查和修复。分支归一化、FP32 LayerNorm/SiLU head、LayerScale、QK normalization和空响应bypass继续使用。
 
 坐标revision 2显式保留bar的逐轴measurement mask；未测量轴在居中之后归零，tracker的ordinal z不进入这一路径。`s5_coordinates.json`包含五项重训，并以同一10维输入、相同模块和参数量比较absolute/relative；旧三项relative在启动前标为superseded。相对于raw基线增加分支的收益单独报告，不能全部归因于坐标居中。revision 2全路径16个真实train事件256步拟合达到NLL0.000301073、accuracy1.0；正式validation结论等待全矩阵。
