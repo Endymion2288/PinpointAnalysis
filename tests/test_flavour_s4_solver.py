@@ -1,10 +1,15 @@
 """Same convex objective and exact nested-row feature reuse."""
 import unittest
+import json
+from pathlib import Path
+from types import SimpleNamespace
+import tempfile
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 
-from analysis.flavour.s4.feature_bank import select_features
+from analysis.flavour.s4.feature_bank import select_features,load
 from analysis.flavour.s4.probes import fit_probe
 
 
@@ -40,6 +45,26 @@ class ReadoutSolverTests(unittest.TestCase):
             select_features(bank, desired.assign(label=3), features)
         with self.assertRaisesRegex(ValueError, 'exact requested labeled events'):
             select_features(bank, desired.assign(row=[9, 10]), features)
+
+    def test_load_reuses_exact_rows_and_rejects_changed_encoder(self):
+        metadata=pd.DataFrame({'run':[10081]*4,'chunk':[1]*4,'row':[0,1,2,3],'label':[0,1,2,3]})
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);output=root/'experiments/bank';output.mkdir(parents=True)
+            bank=root/'temporary_features/bank';bank.mkdir(parents=True)
+            case={'probe_feature_source':'bank','seed':42,'dim':96,'probe_branches':['full','global']}
+            (output/'manifest.json').write_text(json.dumps({'status':'complete','config':case}))
+            for split in ['train','validation']:
+                metadata.to_parquet(bank/(split+'_metadata.parquet'),index=False)
+                for branch in ['full','global']:
+                    np.save(bank/(split+'_'+branch+'.npy'),np.arange(12).reshape(4,3))
+            def desired(*args):
+                return SimpleNamespace(metadata=metadata.iloc[[3,1]].copy(),native=SimpleNamespace(close=lambda:None))
+            with patch('analysis.flavour.s4.feature_bank.LabelDataset',side_effect=desired):
+                result=load(root,case)
+                np.testing.assert_array_equal(result[0][0]['full'],np.arange(12).reshape(4,3)[[3,1]])
+                self.assertEqual(result[0][1].row.tolist(),[3,1])
+                with self.assertRaisesRegex(ValueError,'representation mismatch: dim'):
+                    load(root,{**case,'dim':64})
 
 
 if __name__ == '__main__':

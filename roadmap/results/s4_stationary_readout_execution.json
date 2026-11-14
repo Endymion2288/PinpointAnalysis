@@ -1,0 +1,83 @@
+{
+  "utc": "2026-11-14T04:36:54.383529+00:00",
+  "submissions": {
+    "pinpoint-s4-newton-cpu-0": {
+      "utc": "2026-11-14T04:34:49.937617+00:00",
+      "stage": "probe_fit",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205006.\n",
+      "code_commit": "62ca88606d2328b185ae022fb8d06d9365bd95e8"
+    },
+    "pinpoint-s4-newton-cpu-1": {
+      "utc": "2026-11-14T04:34:53.707689+00:00",
+      "stage": "probe_fit",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205007.\n",
+      "code_commit": "62ca88606d2328b185ae022fb8d06d9365bd95e8"
+    },
+    "pinpoint-s4-newton-cpu-2": {
+      "utc": "2026-11-14T04:34:56.643791+00:00",
+      "stage": "probe_fit",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird20.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 1578834.\n",
+      "code_commit": "62ca88606d2328b185ae022fb8d06d9365bd95e8"
+    },
+    "pinpoint-s4-newton-cpu-3": {
+      "utc": "2026-11-14T04:35:00.186201+00:00",
+      "stage": "probe_fit",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird20.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 1578835.\n",
+      "code_commit": "62ca88606d2328b185ae022fb8d06d9365bd95e8"
+    },
+    "pinpoint-s4-newton-cpu-4": {
+      "utc": "2026-11-14T04:35:04.686791+00:00",
+      "stage": "probe_fit",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205008.\n",
+      "code_commit": "62ca88606d2328b185ae022fb8d06d9365bd95e8"
+    },
+    "pinpoint-s4-transfer4-objectives-validation": {
+      "utc": "2026-11-14T04:35:09.593135+00:00",
+      "stage": "validation_job",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205009.\n",
+      "code_commit": "62ca88606d2328b185ae022fb8d06d9365bd95e8"
+    },
+    "pinpoint-s4-newton-solver-gate": {
+      "utc": "2026-11-14T04:27:41.005213+00:00",
+      "stage": "solver_probe",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205005.\n",
+      "code_commit": "c84452a215de417013ed98ffca14bec07362483f"
+    },
+    "pinpoint-s4-newton-feature-banks-compact": {
+      "utc": "2026-11-14T04:27:45.179952+00:00",
+      "stage": "campaign",
+      "backend": "condor",
+      "submitted": true,
+      "schedd": "bigbird20.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 1578832.\n",
+      "code_commit": "c84452a215de417013ed98ffca14bec07362483f"
+    }
+  },
+  "legacy": {
+    "scratch_and_mae3_100k_full": "failed to converge at 5000 LBFGS iterations; diagnostic only",
+    "readability_validation_2204995": "ExitCode1 at upstream optimization review",
+    "legacy_readout_2205000": "JobStatus3 formal removal, source/claims retained",
+    "new_feature_allocation_1578832": "formally held before allocation until CPU solver gate passes"
+  }
+}
