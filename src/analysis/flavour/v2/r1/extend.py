@@ -51,9 +51,10 @@ def main():
         if task == 'T3' and reference is not None:
             matched = dict(config)
             matched.update(name=f'compute_{family.lower()}_t3_s{args.seed}',
-                screen_seconds=reference['counters']['train_seconds'],
+                total_compute_seconds=reference['wall_seconds'],
+                final_inference_estimate_seconds=reference['full_Tune_inference_seconds'],
                 compute_reference=name.replace('_t3_', '_t4_'),
-                compute_matching='same GPU allocation, fresh initialization, equal loader+training seconds; validation separate',
+                compute_matching='same GPU allocation, fresh initialization, total operation wall budget including loader, training and validation; realized tolerance reported',
                 screen_only=False)
             execute(args.root, matched)
     write_json(args.root/'runtime'/f'extended_{family}_s{args.seed}{suffix}.json', {

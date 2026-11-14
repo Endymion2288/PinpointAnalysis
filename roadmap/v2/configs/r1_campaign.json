@@ -1,0 +1,253 @@
+{
+  "stage": "R1",
+  "status": "frozen_before_first_Tune_score",
+  "UTC": "2026-11-14T20:46:23.164538+00:00",
+  "r0": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14",
+  "train": "complete frozen 100k, T3 uses all 75k non-tau rows",
+  "Tune": "frozen 40k",
+  "screen_Tune": "frozen family-hash 1k/class; same rows for every trial",
+  "families": [
+    "B1",
+    "B2",
+    "B3",
+    "B4"
+  ],
+  "tasks": [
+    "T3",
+    "T4"
+  ],
+  "seed_screen": 42,
+  "learning_rates": {
+    "B1": [
+      0.0003,
+      0.001
+    ],
+    "B2": [
+      0.0001,
+      0.0003
+    ],
+    "B3": [
+      0.0001,
+      0.0003
+    ],
+    "B4": [
+      0.0003,
+      0.001
+    ]
+  },
+  "screen_train_seconds_per_trial": 300.0,
+  "HPO": "four trials/family, same allocated device-minutes; T3/T4 and two LRs within a family share one allocation; heterogeneous devices are not FLOP equivalent",
+  "screen_selection": [
+    "maximum common non-tau BA3",
+    "minimum NLL3 on ties"
+  ],
+  "architecture_ranking": "Scratch; arithmetic mean of T3 and T4 conditional BA3, then mean NLL3",
+  "extension": {
+    "passes": 4,
+    "fresh_from_same_initialization": true,
+    "schedule": "5% warmup, cosine to 5% initial learning rate; record updates and per-row exposures",
+    "compute_control": "T3 and T4 paired sequentially on one allocation; T3 additional timed control from fresh initialization",
+    "minimum_common_exposures": "four per non-tau Train row"
+  },
+  "seeds": [
+    17,
+    42,
+    2026
+  ],
+  "seed_expansion": "two strongest neural families and B4 common reference",
+  "B0": {
+    "learning_rates": [
+      0.05,
+      0.1
+    ],
+    "boosting_iterations": 300,
+    "seeds": [
+      17,
+      42,
+      2026
+    ],
+    "cost": "CPU thread and wall seconds separate"
+  },
+  "MAE_reference": "B4-MAE T4, seed42, same supervised recipe and separate historical SSL cost",
+  "modality_controls": [
+    "retrain B1 and B4 T3 without tracker at four passes",
+    "paired pixel/tracker removal diagnoses reliance; it is not a retrained incremental-value estimate"
+  ],
+  "domains": [
+    "all",
+    "pixel_centered",
+    "large_scintillator",
+    "active",
+    "empty",
+    "tracker_active",
+    "tracker_empty",
+    "occupancy"
+  ],
+  "stress": "fixed Tune 400/class nominal/noise/combined; accepted S6 amplitudes and paired ideal tracker redigitization",
+  "bootstrap": {
+    "replicates": 400,
+    "unit": "accepted-family-connected physical source blocks",
+    "paired": true,
+    "training_seed_uncertainty": "separate per-seed values and sample SD"
+  },
+  "budget": {
+    "roadmap_device_hour_envelope": 18,
+    "policy": "priority is early scheduling across GPU models/full-card/MIG; report actual resource by model; update projection from profiles"
+  },
+  "profiles": {
+    "profile_b1_a5": {
+      "GPU": "Tesla T4",
+      "events_per_train_second": 42.246626081253275,
+      "GPU_peak_MiB": 1076.662109375,
+      "parameters": 793674,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 48.47724398301216,
+        "training_exposures": 2048,
+        "data_wait_seconds": 2.8884614848939236,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b2_a4": {
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "events_per_train_second": 25.63944049526809,
+      "GPU_peak_MiB": 1996.15869140625,
+      "parameters": 199882,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 79.87693804698938,
+        "training_exposures": 2048,
+        "data_wait_seconds": 2.022885300015332,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b2_a6": {
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "events_per_train_second": 25.389331218128607,
+      "GPU_peak_MiB": 1995.041015625,
+      "parameters": 199882,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 80.66380253992975,
+        "training_exposures": 2048,
+        "data_wait_seconds": 2.404991140589118,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b2_k4": {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "events_per_train_second": 48.59394039828818,
+      "GPU_peak_MiB": 2042.69677734375,
+      "parameters": 199882,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 42.14517248887569,
+        "training_exposures": 2048,
+        "data_wait_seconds": 1.2529536115471274,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b3_a4": {
+      "GPU": "Tesla T4",
+      "events_per_train_second": 6.071712293996787,
+      "GPU_peak_MiB": 3324.08349609375,
+      "parameters": 303010,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 337.301884680026,
+        "training_exposures": 2048,
+        "data_wait_seconds": 2.85305473828339,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b3_k8": {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "events_per_train_second": 29.100745842848344,
+      "GPU_peak_MiB": 1796.4609375,
+      "parameters": 303010,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 70.3762031069491,
+        "training_exposures": 2048,
+        "data_wait_seconds": 1.3086833071429282,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b4_a4": {
+      "GPU": "NVIDIA H100 NVL",
+      "events_per_train_second": 19.71122919468557,
+      "GPU_peak_MiB": 216.65087890625,
+      "parameters": 897992,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 103.90016674110666,
+        "training_exposures": 2048,
+        "data_wait_seconds": 1.3370551753323525,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    },
+    "profile_b4_k9": {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "events_per_train_second": 29.09766747215768,
+      "GPU_peak_MiB": 775.40478515625,
+      "parameters": 897992,
+      "counters": {
+        "updates": 256,
+        "train_seconds": 70.3836485161446,
+        "training_exposures": 2048,
+        "data_wait_seconds": 2.3491966251749545,
+        "validation_seconds": 0.0,
+        "exposure_by_class": [
+          524,
+          539,
+          484,
+          501
+        ]
+      }
+    }
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "collaboration": "homologous model and explicit geometry cuts; exact original weights/run/cuts unavailable"
+}

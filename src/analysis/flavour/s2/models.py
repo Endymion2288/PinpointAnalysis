@@ -13,7 +13,7 @@ from torch.utils.checkpoint import checkpoint
 
 def masked_pool(x,mask):
     mean=(x*mask[...,None]).sum(-2)/mask.sum(-1,keepdim=True).clamp_min(1)
-    maximum=x.masked_fill(~mask[...,None],-16384.).amax(-2)
+    maximum=x.masked_fill(~mask[...,None],-1e4).amax(-2)
     maximum=torch.where(mask.any(-1,keepdim=True),maximum,torch.zeros_like(maximum))
     return torch.cat([mean,maximum],dim=-1)
 
@@ -107,9 +107,7 @@ class EdgeBlock(nn.Module):
         center=x[:,:,None,:].expand_as(other)
         edges=self.edge(torch.cat([center,other-center],dim=-1))
         valid=mask[batch,neighbors]&mask[:,:,None]&neighbor_finite
-        # A power-of-two sentinel is exactly representable in BF16. A compiled
-        # fused max backward must compare against the same rounded value.
-        edges=edges.masked_fill(~valid[...,None],-16384.).amax(-2)
+        edges=edges.masked_fill(~valid[...,None],-1e4).amax(-2)
         edges=torch.where(valid.any(-1,keepdim=True),edges,torch.zeros_like(edges))
         return (edges+self.skip(x))*mask[...,None]
 

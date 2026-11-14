@@ -28,7 +28,7 @@ def submit_kubeflow(args, root, script, archive):
                              'mountPropagation': 'HostToContainer'}]}]}
     metadata = {'name': args.name, 'namespace': 'xcheng', 'labels': labels}
     job = {'apiVersion': 'batch/v1', 'kind': 'Job', 'metadata': metadata,
-           'spec': {'backoffLimit': 0, 'activeDeadlineSeconds': 28800,
+           'spec': {'backoffLimit': 0, 'activeDeadlineSeconds': args.deadline_seconds,
                     'template': {'metadata': {'labels': labels}, 'spec': spec}}}
     folder = root/'kubeflow'
     folder.mkdir(exist_ok=True)
@@ -85,6 +85,8 @@ def main():
     parser.add_argument("--gpu", action="store_true")
     parser.add_argument("--gpu-model", help="Exact observed CUDA device name, for matched-compute campaigns")
     parser.add_argument("--disk", default="12GB")
+    parser.add_argument("--job-flavour", default="workday")
+    parser.add_argument("--deadline-seconds", type=int, default=28800)
     parser.add_argument("--min-capability", type=float, default=8.0)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
@@ -133,7 +135,7 @@ def main():
                f"log = {root}/logs/{args.name}.$(ClusterId).log",
                'environment = "PINPOINT_JOB_ID=$(ClusterId).$(Process)"',
                f"request_cpus = {args.cpus}", f"request_memory = {args.memory}", f"request_disk = {args.disk}",
-               'requirements = (OpSysAndVer == "AlmaLinux9")', '+JobFlavour = "workday"',
+               'requirements = (OpSysAndVer == "AlmaLinux9")', f'+JobFlavour = "{args.job_flavour}"',
                "should_transfer_files = YES", "when_to_transfer_output = ON_EXIT", 'transfer_output_files = ""']
     if args.gpu:
         requirement = f"(GlobalMemoryMb >= 10000) && (Capability >= {args.min_capability})"

@@ -82,6 +82,7 @@ def main():
     for name in names:
         folder = output/name
         folder.mkdir()
+        condition_metadata = []
         changed_geometry = output/f'{name}_geometry.json'
         write_json(changed_geometry, conditions[name].geometry)
         write_json(folder/'plan.json', {**plan, 'geometry': str(changed_geometry), 'condition': parameters[name]})
@@ -95,11 +96,12 @@ def main():
                     ('bar', 'channel_id', 'bar_channels'), ('tracker_hypothesis', 'station', 'tracker_channels')]:
                 rows[column] = [len(event[detector][field]) for event in current]
             rows['all_empty'] = rows[['pixel_channels', 'bar_channels', 'tracker_channels']].sum(1).eq(0)
+            condition_metadata.append(rows)
             pq.write_table(pa.Table.from_pylist(current), destination/'observations.parquet', compression=COMPRESSION)
             pq.write_table(pa.Table.from_pylist([{'label': int(y), 'label_status': 'consistent'} for y in rows.label]),
                            destination/'targets.parquet', compression=COMPRESSION)
             rows.to_parquet(destination/'provenance.parquet', index=False, compression=COMPRESSION)
-        frame.to_parquet(folder/'catalog.parquet', index=False, compression=COMPRESSION)
+        pd.concat(condition_metadata, ignore_index=True).to_parquet(folder/'catalog.parquet', index=False, compression=COMPRESSION)
     write_json(output/'preparation.json', {'status': 'complete', 'events': len(frame),
         'raw_counts': frame.label.value_counts().sort_index().to_dict(), 'conditions': parameters,
         'selection': 'frozen Tune family hash, 400/class', 'nominal_tracker_redigitization_exact': True,

@@ -18,6 +18,7 @@ from analysis.flavour.v2.r1.config import recipe
 from analysis.flavour.v2.r1.data import R1Dataset, collate
 from analysis.flavour.v2.r1.models import build_model, branch_groups
 from analysis.flavour.v2.r1.tasks import task_loss, probabilities, three_labels
+from analysis.flavour.v2.r1.health import Activations
 
 
 def measure(model, batches, task, bf16=False):
@@ -67,6 +68,7 @@ def run(args):
                 started = time.perf_counter()
                 model = build_model(config).cuda()
                 groups = branch_groups(model)
+                activations = Activations(model)
                 watch = {name: params[0][1] for name, params in groups.items()}
                 optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.)
                 record = {'family': family, 'task': task, 'config': config, 'status': 'running',
@@ -84,6 +86,7 @@ def run(args):
                     sampled = step in [1, 4, 16] or step % 32 == 0
                     before = {name: p.detach().clone() for name, p in watch.items()} if sampled else {}
                     if sampled:
+                        activations.start()
                         gpu['tracker'].requires_grad_(True)
                         if 'nodes' in gpu:
                             gpu['nodes'].requires_grad_(True)
@@ -110,6 +113,7 @@ def run(args):
                         updates = {name: float((p-before[name]).detach().float().square().mean().sqrt()) for name, p in watch.items()}
                         record['health'].append({'step': step, 'gradient_squared_norms': grad,
                             'parameter_update_RMS': updates, 'input_gradient_squared_norms': sensitivity,
+                            'activations': activations.finish(),
                             'logit_std': logits.detach().float().std(0, unbiased=False).cpu().tolist()})
                     if step % 32 == 0:
                         final = measure(model, batches, task, args.bf16)
@@ -126,6 +130,7 @@ def run(args):
                     'nonconstant_probability': final['distinct_vectors'] >= 4 and max(final['probability_std']) > .05,
                     'branch_gradients': all(any(h['gradient_squared_norms'][name] > 0 for h in record['health']) for name in active_groups),
                     'branch_updates': all(any(h['parameter_update_RMS'][name] > 0 for h in record['health']) for name in active_groups)}
+                checks['finite_branch_activations'] = all(value['finite'] for h in record['health'] for value in h['activations'].values())
                 record.update(status='complete' if all(checks.values()) else 'failed_learning_gate',
                     final=final, steps=step, checks={k: bool(v) for k,v in checks.items()},
                     training_event_exposures=sum(len(batches[(i-1) % len(batches)]['label']) for i in range(1, step+1)),
