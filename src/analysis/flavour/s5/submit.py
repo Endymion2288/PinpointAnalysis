@@ -10,7 +10,32 @@ import subprocess
 import tarfile
 
 from analysis.flavour.s2.kubeflow import GPU_FLAVORS, kubectl
-from analysis.flavour.s4.submit import choose_schedd
+
+
+def choose_schedd(root):
+    snapshot = subprocess.check_output(['condor_status', '-schedd', '-af', 'Name', 'TotalRunningJobs', 'TotalIdleJobs', 'TotalHeldJobs'], text=True)
+    exclusions_path = root/'runtime/schedd_exclusions.json'
+    exclusions = json.loads(exclusions_path.read_text()) if exclusions_path.exists() else {}
+    candidates = []
+    checks = []
+    for line in snapshot.splitlines():
+        name, running, idle, held = line.split()
+        if name.startswith('bigbird'):
+            candidates.append((int(idle), int(held), int(running), name))
+    for *_, name in sorted(candidates):
+        if name in exclusions:
+            checks.append({'schedd': name, 'compatible': False, 'measured_incompatibility': exclusions[name]})
+            continue
+        policy = subprocess.run(['condor_config_val', '-name', name, '-schedd', 'SUBMIT_REQUIREMENT_NoEos'], capture_output=True, text=True)
+        routed = policy.returncode == 0 and 'regexp("^/eos", Iwd)' in policy.stdout
+        if policy.returncode or (policy.stdout.strip().lower() != 'true' and not routed):
+            checks.append({'schedd': name, 'compatible': False, 'EOS_policy': policy.stdout})
+            continue
+        ping = subprocess.run(['condor_ping', '-type', 'SCHEDD', '-name', name, '-table', 'WRITE'], capture_output=True, text=True)
+        checks.append({'schedd': name, 'EOS_policy': policy.stdout, 'WRITE': ping.stdout})
+        if ping.returncode == 0 and 'ALLOW' in ping.stdout:
+            return name, snapshot, checks
+    raise RuntimeError('no compatible WRITE-authorized schedd')
 
 
 def submit(args):
@@ -46,7 +71,7 @@ def submit(args):
                 'commit': commit, 'archive': str(archive), 'tasks': args.tasks, 'gpu': args.gpu,
                 'submitted': False, 'command': command}
     if args.backend == 'condor':
-        chosen, snapshot, checks = choose_schedd()
+        chosen, snapshot, checks = choose_schedd(root)
         directory = Path.home()/'condor/Pinpoint/flavour_s5'/args.name
         directory.mkdir(parents=True, exist_ok=True)
         redirect = 'exec > '+shlex.quote(str(root/'logs'/f'{args.name}.'))+'"${PINPOINT_JOB_ID}".log 2>&1'
