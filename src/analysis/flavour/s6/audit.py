@@ -28,6 +28,11 @@ def run(args):
     test = read('predictions/test_completion.json')
     record('all accepted independent test scores with empty responses retained',
         'complete' if test and test['events'] == 724441 else 'open', ['predictions/test_completion.json'], test)
+    health = read('audit/inference_health_readback.json')
+    record('internal activation readback for all frozen checkpoints and inference shards',
+        'complete' if health and health['all_sampled_finite'] and
+        health['splits']['test']['events'] == 724441 else 'open', ['audit/inference_health_readback.json'],
+        {'first_batch_per_shard': True, 'readback_complete': health is not None})
     expected = [(n, s['name']) for n in model_names(freeze['candidates']) for s in freeze['candidates']['prior_scenarios']]
     outputs = []
     missing = []
