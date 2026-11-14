@@ -3,10 +3,11 @@ import unittest
 
 import numpy as np
 import torch
+import pyarrow as pa
 
 from analysis.flavour.s3.dataset import collate_planes
 from analysis.flavour.s5.model import PhysicsModel, losses
-from analysis.flavour.s5.objects import reconstruct, vertex_candidate
+from analysis.flavour.s5.objects import reconstruct, vertex_candidate, match_truth
 
 
 class ModelContractTest(unittest.TestCase):
@@ -53,6 +54,13 @@ class GeometryContractTest(unittest.TestCase):
         self.assertEqual(len(result['tracks']), 1)
         self.assertLess(result['tracks'][0]['rms'], 1e-10)
         self.assertEqual(result['object_features'].shape, (31,))
+        truth = {'pixel_truth_rows': [list(range(5)), [50]*5, [50]*5, [9]*5], 'tracker_truth_rows': [[]]*5,
+                 'family_hi': 1, 'family_lo': 2, 'vertex_mm': [1., 1., 0.], 'tau_decay_vertex_mm': None,
+                 'interaction_track_ids': [9], 'tau_direct_track_ids': []}
+        row = pa.Table.from_pylist([truth]).to_pandas().iloc[0].to_dict()
+        matched = match_truth(result, row, observation, geometry)
+        self.assertEqual(matched['pixel_tracks_matched'], 1)
+        self.assertEqual(matched['pixel_truth_recovered'], 1)
         observation['pixel'] = {'channel_id': np.array([], int), 'xyz_mm': np.empty((0, 3))}
         result = reconstruct(observation, geometry)
         self.assertEqual(len(result['tracks']), 0)

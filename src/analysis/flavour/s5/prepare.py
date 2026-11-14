@@ -13,6 +13,7 @@ import pyarrow.parquet as pq
 import uproot
 
 from analysis.flavour.s5.truth import event_truth, group_flat
+from analysis.flavour.s2.train import atomic_output
 
 
 def initialize(root, source):
@@ -61,7 +62,7 @@ def create(root, task, limit=None):
     table = pa.Table.from_pylist([{k: v for k, v in r.items() if k not in ['family_hi', 'family_lo']} for r in output])
     for key in ['family_hi', 'family_lo']:
         table = table.append_column(key, pa.array([r[key] for r in output], type=pa.uint64()))
-    pq.write_table(table, destination, compression='gzip')
+    atomic_output(destination, lambda stream: pq.write_table(table, stream, compression='gzip'))
     summary = {'task': task, 'events': len(output), 'seconds': time.monotonic()-started, 'source': str(path), 'output': str(destination),
                'branch_disagreements': sum(r['tau_branch'] != r['tau_branch_catalog'] for r in output),
                'valid_tau_decays': sum(r['tau_decay_valid'] for r in output), 'charm': sum(r['charm_presence'] for r in output)}
@@ -81,7 +82,7 @@ def finalize(root):
     joined = catalog[key+['label']].merge(frame[key+['label']], on=key, validate='one_to_one', suffixes=('', '_side'))
     if len(joined) != len(catalog) or len(frame) != len(catalog) or not (joined.label == joined.label_side).all():
         raise ValueError('sidecar event-key/label mismatch')
-    pq.write_table(table, root/'truth.parquet', compression='gzip')
+    atomic_output(root/'truth.parquet', lambda stream: pq.write_table(table, stream, compression='gzip'))
     summary = {'events': len(frame), 'tau_branches': frame[frame.label.eq(2)].tau_branch.value_counts().to_dict(),
                'branch_disagreements': int((frame.tau_branch != frame.tau_branch_catalog).sum()),
                'mask_counts': {k: int(frame[k].sum()) for k in ['vertex_valid', 'tau_branch_valid', 'tau_prong_valid', 'tau_decay_valid', 'bar_semantic_valid', 'charm_label_valid', 'visible_target_valid']},

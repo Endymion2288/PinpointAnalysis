@@ -12,6 +12,7 @@ from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
 from analysis.flavour.datasets import NativeShard
+from analysis.flavour.s2.train import atomic_output
 
 
 TRACKER_Z_MM = np.array([47.4, 1237.4, 2427.4])
@@ -182,7 +183,7 @@ def reconstruct(observation, geometry):
 
 def match_truth(reco, truth, observation, geometry):
     """Runs AFTER reconstruction. Cannot change candidates or input features."""
-    p = np.asarray(truth['pixel_truth_rows'], dtype=float)
+    p = np.stack(truth['pixel_truth_rows']).astype(float)
     nx, ny = len(geometry['pixel_Xpos']), len(geometry['pixel_Ypos'])
     labels = {}
     truth_planes = {}
@@ -207,7 +208,7 @@ def match_truth(reco, truth, observation, geometry):
             matched.add(tid)
     reconstructable = {tid for tid, planes in truth_planes.items() if len(planes) >= 3}
     # Reproduce only the accepted digitizer's index/keep map for evaluation.
-    raw = np.asarray(truth['tracker_truth_rows'], dtype=float)
+    raw = np.stack(truth['tracker_truth_rows']).astype(float)
     cell_labels = []
     if raw.shape[1]:
         cells = np.column_stack([raw[0].astype(int), np.floor(raw[2:4].T/.1).astype(int)])
@@ -249,6 +250,8 @@ def match_truth(reco, truth, observation, geometry):
 
 def create_shard(root, task, limit=None):
     started = time.monotonic()
+    if not (root/'truth_summary.json').exists():
+        raise RuntimeError('wait for completed truth assembly before object extraction')
     paths = sorted(p for p in (root/'shards').iterdir() if (p/'observations.parquet').exists())
     path = paths[task]
     metadata = pd.read_parquet(path/'provenance.parquet')
@@ -273,7 +276,7 @@ def create_shard(root, task, limit=None):
         if limit and len(output) >= limit:
             break
     dest = root/'object_parts'/f'{task:03d}.parquet' if not limit else root/f'objects_smoke_{task:03d}.parquet'
-    pq.write_table(pa.Table.from_pylist(output), dest, compression='gzip')
+    atomic_output(dest, lambda stream: pq.write_table(pa.Table.from_pylist(output), stream, compression='gzip'))
     print(json.dumps({'task': task, 'events': len(output), 'seconds': time.monotonic()-started, 'output': str(dest)}), flush=True)
 
 
@@ -288,7 +291,7 @@ def finalize_objects(root):
     frame = metadata[key+['label', 'split']].merge(frame, on=key, validate='one_to_one')
     if len(frame) != len(metadata):
         raise ValueError('object key coverage incomplete')
-    frame.to_parquet(root/'objects.parquet', index=False, compression='gzip')
+    atomic_output(root/'objects.parquet', lambda stream: frame.to_parquet(stream, index=False, compression='gzip'))
     output = {}
     for (split, label), group in frame.groupby(['split', 'label']):
         row = {'events': len(group), 'cluster_count': int(group.cluster_count.sum()),
