@@ -100,7 +100,15 @@ def main():
     parser.add_argument('--source', type=Path)
     parser.add_argument('--task', type=int, default=0)
     parser.add_argument('--limit', type=int)
+    parser.add_argument('--wait-seconds', type=int, default=0)
     args = parser.parse_args()
+    if args.stage == 'finalize_objects' and args.wait_seconds:
+        deadline = time.monotonic()+args.wait_seconds
+        expected = len(list((args.root/'shards').iterdir()))
+        while len(list((args.root/'object_parts').glob('*.parquet'))) != expected:
+            if time.monotonic() >= deadline:
+                raise TimeoutError('object extraction has not completed')
+            time.sleep(10)
     if args.stage == 'initialize':
         initialize(args.root, args.source)
     elif args.stage == 'create':
