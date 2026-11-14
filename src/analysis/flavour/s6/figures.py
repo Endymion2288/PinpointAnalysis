@@ -178,6 +178,9 @@ def physical(args):
             ax.set(xscale='log', xlabel='Assumed tau prior', ylabel=ylabel, ylim=(0, 1))
             ax.grid(alpha=.25)
     axes[0].legend(fontsize=8)
+    efficiency = [v['fixed'][f'class_2_efficiency@{target}'] for v in results for target in ['0.01', '0.001']]
+    axes[0].set_ylim(0, max(efficiency)*1.3)
+    axes[1].set(yscale='log', ylim=(1e-4, 1))
     fig.suptitle('Frozen independent test: fixed prior scenarios and block intervals')
     save(fig, root, 'tau_prior_scenarios')
     balanced = json.loads((primary/'balanced/result.json').read_text())
@@ -190,10 +193,12 @@ def physical(args):
         lo, hi = np.array(intervals, dtype=float).T
         ax.vlines(np.arange(len(rows)), lo, hi)
         ax.plot(np.arange(len(rows)), y, 'o')
-        labels = [v['stratum'][len(prefix):].replace('1000000000', 'inf') for v in rows]
-        ax.set(xticks=np.arange(len(rows)), xticklabels=labels, ylim=(0, 1), xlabel=title,
+        labels = [v['stratum'][len(prefix):].replace('1000000000', '1e9')+f'\nTau events: {v["class_counts"][2]:,}' for v in rows]
+        finite = np.r_[lo, hi]
+        upper = max(.01, float(np.nanmax(finite))*1.3) if np.isfinite(finite).any() else .01
+        ax.set(xticks=np.arange(len(rows)), xticklabels=labels, ylim=(0, min(1, upper)), xlabel=title,
             ylabel='Tau efficiency' if ax is axes[0] else None)
-        ax.tick_params(axis='x', labelrotation=40)
+        ax.tick_params(axis='x', labelrotation=40, labelsize=8)
         ax.grid(alpha=.25)
     fig.suptitle('Fixed validation 1% background cut; conditional block intervals')
     save(fig, root, 'tau_physical_conditions')

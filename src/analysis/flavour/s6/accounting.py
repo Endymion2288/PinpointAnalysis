@@ -82,6 +82,32 @@ def collect(args):
                 'CPU_allocation_core_hours': seconds*cpus/3600, 'allocation_started_at': start,
                 'allocation_finished_at': terminal['finishedAt'], 'scheduled_start_observed': scheduled is not None,
                 'main_container_seconds': (parse(terminal['finishedAt'])-parse(terminal['startedAt'])).total_seconds()})
+    observed_jobs = {owner['uid'] for p in pods.values() for owner in p['metadata'].get('ownerReferences', [])}
+    for path in (args.root/'runtime').glob('*.job_terminal.json'):
+        job = json.loads(path.read_text())
+        if job['metadata']['uid'] in observed_jobs:
+            continue
+        snapshot = path.with_name(path.name.replace('.job_terminal.json', '.last_observed.json'))
+        if not snapshot.exists():
+            continue
+        pod = json.loads(snapshot.read_text())
+        ends = [v['lastTransitionTime'] for v in job['status'].get('conditions', [])
+                if v['type'] in ['Failed', 'Complete'] and v['status'] == 'True']
+        starts = [v['lastTransitionTime'] for v in pod['status'].get('conditions', [])
+                  if v['type'] == 'PodScheduled' and v['status'] == 'True']
+        if not ends or not starts:
+            continue
+        parse = lambda v: datetime.fromisoformat(v.replace('Z', '+00:00'))
+        seconds = (parse(max(ends))-parse(min(starts))).total_seconds()
+        resources = next(c['resources'] for c in pod['spec']['containers'] if c['name'] == 's6')
+        cpu = str(resources.get('requests', {}).get('cpu', 0))
+        cpus = float(cpu.removesuffix('m'))/(1000 if cpu.endswith('m') else 1)
+        pod_costs.append({'pod': pod['metadata']['name'], 'seconds': seconds, 'device_hours': seconds/3600,
+            'resources': resources, 'exit': None, 'phase': None, 'observed_job_status': job['status'],
+            'CPU_allocation_core_hours': seconds*cpus/3600, 'allocation_started_at': min(starts),
+            'allocation_finished_at_upper_bound': max(ends), 'scheduled_start_observed': True,
+            'allocation_estimate_kind': 'conservative upper bound to terminal Job time; Pod termination not retained',
+            'failure_reason': 'unmeasured; extra exec exit137 alone does not identify the main container kill reason'})
     cancellation_names = {p.name.removesuffix('.cancellation.json') for p in (args.root/'runtime').glob('*.cancellation.json')}
     factories = []
     for schedd, entries in groups.items():
@@ -99,6 +125,7 @@ def collect(args):
         'backend_queries_complete': all(q.get('exit') == 0 for q in snapshots),
         'kubeflow_GPU_allocation_device_hours': sum(p['device_hours'] for p in pod_costs),
         'kubeflow_CPU_allocation_core_hours': sum(p['CPU_allocation_core_hours'] for p in pod_costs),
+        'kubeflow_cost_contains_upper_bound': any('allocation_estimate_kind' in p for p in pod_costs),
         'unmeasured': ['monetary price', 'GPU utilization fraction when MIG metrics/RBAC unavailable'],
         'device_convention': 'one requested MIG instance counts as one allocated device, not an entire physical H100; flavors listed separately',
         'scope': 'backend allocation runtime including failed attempts; Kubeflow includes time from observed PodScheduled through main termination, including initialization/image pull; requested flavor CPU only; queue wait excluded from allocation hours',
