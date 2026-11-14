@@ -1,12 +1,12 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S4架构修复后的18项分类基线已完成。后续发现的LP解冻编译断梯度也已修复，48项有效train-inner重新选择后，1k/10k三seed重拟合及完整10k评价通过，见[有效低标签结果](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)。1k MAE3 NLL改善但macro AP下降；10k两项均改善。新驻点求解回归四项通过，五种初始化正在同一MIG并发提取100k特征，见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。100k其他目标训练及完整45预测/66配对仍进行中；旧故障结果继续只作诊断。**
+**当前状态：S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results.md)。修复后的五初始化×三个标签预算共15项seed42分类训练、30个驻点frozen读出、45套完整10k预测和66项配对全部完成，20项收尾检查通过。MAE3相对Scratch的raw macro AP增量为+0.033039/+0.025899/+0.005324，物理块区间均为正；EMA3弱于MAE3，Rel存在总体与τ指标取舍。114条allocation全部终止，35.399029/60 device-hours；临时特征已清理。旧故障结果继续只作诊断，calibration/test冻结，本轮不扩1M。**
 
 日期：2026-11-14。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2的20模型及历史比较见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)；本次S4分类同时采用revision 3的`empty_response_bypass=true`，重新初始化Scratch，并从三套既有MAE3 encoder重新fine-tune，SSL encoder本身没有重训。
 
-新矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零，不能称全面改善。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
+阶段145基线矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
 
-上述三预算数值为阶段145有效基线。后续[优化及完整对照](11_s4_pretraining.md#6-修复后优化结果与剩余对照)已经完成有效1k/10k共同重选和三seed比较：新MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223。修复后的监督matched-compute控制完成；EMA/Rel的100k与驻点frozen读出继续执行。04:51:58 UTC的账本快照累计33.802762/60 device-hours，所有失败和恢复计入原账本。当前不扩至1M，S5–S6未执行。
+后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；S5–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
@@ -24,7 +24,7 @@
 | [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
 | [09_s3_operations.md](09_s3_operations.md) | S3完整四分类合同、细粒度局部编码/module/融合对照、Pareto与三seed确认 |
 | [10_s3_repair.md](10_s3_repair.md) | S3故障诊断、论文依据、尺度与多尺度架构修复、最终重训结论及global弱分支后续对照 |
-| [11_s4_pretraining.md](11_s4_pretraining.md) | S4预训练合同、空响应修复后的18项重训结果、标签效率与低标签优化计划 |
+| [11_s4_pretraining.md](11_s4_pretraining.md) | S4预训练合同、有效低标签三seed结果、五初始化完整评价、失败诊断与后续选择 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
@@ -127,4 +127,4 @@ S3方法晋级使用[完整四分类冻结合同](09_s3_operations.md)：三seed
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
-全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4新矩阵完成18项分类重训；新seed42的Scratch/MAE3在1k/10k均完成完整10k路径诊断，见[stage145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)。MAE3两个预算的global置换ΔNLL为0.055214/0.025673，区间均为正；Scratch 10k实际效应很小。固定权重路径诊断不等于重训消融或物理因果重要性。尚未测量：global重训净收益、新路由下的frozen readability、全7.24M事件训练、generator/detector包络、冻结test及预期物理产额。沿用用户接受的split与detector-proxy；正式test按S6在模型、阈值和校准冻结后执行。
+全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4完成空响应修复、低标签共同重选、matched-compute、五初始化分类与frozen readability。有效优化MAE3 seed42在10k的global置换ΔNLL为0.060310，区间为正；100k frozen global相对Scratch的macro AP增量为0.063814，[0.056307,0.072226]。固定权重路径诊断和线性读出分别说明路径依赖与可读信息。尚未测量：global重训净收益、全7.24M事件训练、generator/detector包络、冻结test及预期物理产额。沿用用户接受的split与detector-proxy；正式test按S6在模型、阈值和校准冻结后执行。

@@ -1,8 +1,10 @@
 # S4：可验证的预训练与标签效率
 
-**2026-11-14 纠错与有效结果：阶段155发现LP解冻后input/local编译断梯度，旧12项LP inner及旧1k优化模型作废，见[失效清单](results/s4_transfer_compilation_invalidation.json)。修复后真实CUDA gate通过，48项有效inner完成并重做两预算选择：1k LP-FT/8 pass、10k early/6 pass。新的三seed完整10k评价和实际参数更新均通过，见[阶段167](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)：1k MAE3 NLL 1.447382→1.358905、macro AP 0.345980→0.330614；10k MAE3 NLL 1.252464→1.238574、macro AP 0.440384→0.448223。概率与排序权衡分开解释，旧故障模型未进入以上结果。100k frozen full读出达到5,000次L-BFGS上限，旧完整readability评价已因上游需审查而停止；同目标Newton-CG、真实驻点验收及GPU/CPU拆分恢复见[阶段166](../workbook/2026-11-14_stage166_s4_convex_readout_recovery.md)，同目标v2真实回归四项已通过，100k驻点读出继续执行，见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。阶段145有效基线不受LP故障影响。**
+**最终状态：S4本轮已完成，见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。15项seed42分类训练、30个驻点full/global读出、45套完整10k预测和66项配对完成，20项检查通过；[精简数值](results/s4_fp64_objectives_summary.json)及[终态清理](results/s4_final_closure.json)已保存。114条allocation全部终止，35.399029/60 device-hours、423.043924 CPU allocation core-hours。MAE3保留为后续基线；低标签固定C=1的概率失败另列诊断，本轮不扩1M。**
 
-阶段145结果：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；阶段145时原61个allocation已终止，后续修复与对照继续累计同一账本。03:49:08 UTC总量30.386366/60 device-hours，当前仍有训练与评价运行。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
+**2026-11-14 纠错与有效结果：阶段155发现LP解冻后input/local编译断梯度，旧12项LP inner及旧1k优化模型作废，见[失效清单](results/s4_transfer_compilation_invalidation.json)。修复后真实CUDA gate通过，48项有效inner完成并重做两预算选择：1k LP-FT/8 pass、10k early/6 pass。新的三seed完整10k评价和实际参数更新均通过，见[阶段167](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)：1k MAE3 NLL 1.447382→1.358905、macro AP 0.345980→0.330614；10k MAE3 NLL 1.252464→1.238574、macro AP 0.440384→0.448223。概率与排序权衡分开解释，旧故障模型未进入以上结果。100k frozen full读出达到5,000次L-BFGS上限，旧完整readability评价已因上游需审查而停止；同目标Newton-CG、真实驻点验收及GPU/CPU拆分恢复见[阶段166](../workbook/2026-11-14_stage166_s4_convex_readout_recovery.md)，同目标v2真实回归四项通过；最终100k设备接续已完成，见第7节，中间执行见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。阶段145有效基线不受LP故障影响。**
+
+阶段145结果：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；阶段145时原61个allocation已终止，后续修复与对照继续累计同一账本。03:49:08 UTC历史快照为30.386366/60 device-hours，当时仍有训练与评价运行；最终费用见页首。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
 
 ## 1. 研究问题与固定条件
 
@@ -41,7 +43,7 @@ MAE/EMA仅从observation构造目标；partial bar Rel另使用98k pretrain-fit�
 
 ## 4. 分阶段实验与预算
 
-S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译、失败、训练、probe 和评价；不同设备、MIG 与整卡分别列出，时长不换算成等价 FLOPs。03:49:08 UTC已累计30.386366 device-hours、344.887803 CPU allocation core-hours，包含历史尝试、初始化和保守结束上界。当前18项基线及matched-compute完整评价完成，1k新OOF重选完成；100k frozen probes、EMA/Rel、10k LP重选及新的固定refits仍进行中，S4未完成。
+S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译、失败、训练、probe 和评价；不同设备、MIG与整卡分别列出，时长不换算成等价FLOPs。最终35.399029 device-hours、423.043924 CPU allocation core-hours，包含历史尝试、初始化、失败与保守结束上界。基线、有效低标签重选、matched-compute及完整目标/readout比较均完成。
 
 1. 完成 100k corpus、独立 Rel sidecars；train 内嵌套 98k pretrain-fit/2k reconstruction-probe。监督标签预算为嵌套的 1k/10k/100k，四类平衡，τ 子道按原样本比例分层。
 2. 导出 S3 encoder 的 local/regional/global/summary features，在 train 内 fit/probe-validation 上分别拟合 linear/MLP，测可读信息与实际梯度的差别。不能用 64-event 置换取代分类 probe。
@@ -92,11 +94,11 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 修复后的监督matched-compute控制已完成12预测/12配对，见[阶段163](../workbook/2026-11-14_stage163_s4_compute_control_results.md)。声明矩阵操作匹配误差为0.030651%/0.069562%/0.008342%，所有parent计算计入。1k/10k continuation过拟合，100k相对Scratch的macro AP变化+0.000157、区间跨零；三个监督envelope均保留原parent，同时计入全部continuation成本。该结论只覆盖固定seed42及所测监督配方，不代表最优监督调参或硬件实测FLOPs等效。
 
-EMA3、MAE5、partial channel Rel5的1k下游修复已完成，10k正常候选按新共同选择复用，100k三项fine-tuning仍运行。所有来源SSL已经健康/学习readback，复用encoder而不重训SSL本身；channel Rel使用额外模拟语义监督，不能称纯自监督标签效率。统一目标比较冻结于[30配置/45预测](configs/s4_transfer4_objectives_evaluation.json)及[66配对](configs/s4_transfer4_objectives_pairs.json)。
+EMA3、MAE5、partial channel Rel5的三个预算下游训练均已完成；10k正常候选按新共同选择复用。所有来源SSL已通过健康/学习readback；channel Rel使用额外模拟语义监督，不能称纯自监督标签效率。最终目标比较冻结于[30配置/45预测](configs/s4_fp64_objectives_evaluation.json)及[66配对](configs/s4_fp64_objectives_pairs.json)。
 
-Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k full Scratch/MAE3仍触及上限，旧完整readability评价已停止。首轮同目标回归中Newton-CG全部满足1e-6梯度要求，但L-BFGS参考梯度超过原1e-8要求。[同目标v2回归](configs/s4_newton_solver_gate_v2.json)为参考增加`ftol=0`的continuation，保持原阈值和目标；四项真实回归已全部通过，参考梯度9.87e-10至4.88e-9、最大概率差4.93e-5，见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。[五项GPU暂存features](configs/s4_newton_v2_feature_banks.json)已在同一H10047GB MIG五并发，各提取一次100k train/10k validation；[15项CPU readouts](configs/s4_newton_v2_readouts.json)按精确nested-label事件键分别拟合；GPU不等待CPU求解。暂存数组在完整验收后删除，只保留小型readouts、预测和provenance。100k实际驻点仍待测，未收敛旧模型仅作诊断。
+Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k full Scratch/MAE3仍触及上限，旧完整readability评价已停止。首轮同目标回归中Newton-CG全部满足1e-6梯度要求，但L-BFGS参考梯度超过原1e-8要求。[同目标v2回归](configs/s4_newton_solver_gate_v2.json)为参考增加`ftol=0`的continuation，保持原阈值和目标；四项真实回归已全部通过，参考梯度9.87e-10至4.88e-9、最大概率差4.93e-5，见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。[五项GPU暂存features](configs/s4_newton_v2_feature_banks.json)已在同一H10047GB MIG五并发，各提取一次100k train/10k validation；[15项CPU readouts](configs/s4_newton_v2_readouts.json)按精确nested-label事件键分别拟合；GPU不等待CPU求解。最终100k采用已过真实gate的设备FP64执行，独立CPU驻点全部通过；1k/10k复用原CPU fits。暂存数组已在完整验收后删除，保留小型readouts、预测和provenance；未收敛旧模型仅作诊断。
 
-本轮不扩至1M。完成剩余目标对照、驻点readout、完整物理统计、真实allocation终态和总成本后形成S4最终报告。当前已完成低标签重训和matched控制，S4整体仍进行中。
+本轮不扩至1M。目标对照、驻点readout、完整条件统计、真实allocation终态和总成本已完成。最终100k采用真实8项CPU/GPU gate通过的FP64设备Hessian products，五组full/global独立CPU梯度均≤1e-6，保持原C/scaler/凸目标。原耗时CPU任务在替代产物通过后正式终止，费用保留，旧配置不改写。
 
 完整v2评价还会重新加载30个full/global磁盘readouts，在同一10k validation特征上按事件键回放概率，最大绝对差要求≤1e-10，见[阶段173](../workbook/2026-11-14_stage173_s4_saved_readout_replay.md)。该回放与真实梯度驻点分开保存，通过后才清理临时feature数组；本步骤不重新拟合或调整模型。
 
@@ -105,3 +107,13 @@ Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k
 优化设计已观察前期S4 validation，后续区间条件于该设计、同一validation与既定权重；不能描述成新的独立泛化证据。Calibration/test及最终class bias、温度与工作点选择继续冻结。
 
 2026-11-13 23:18 UTC重新联网读取[Kumar等，ICLR 2022 LP-FT](https://arxiv.org/abs/2202.10054)及[Wortsman等，CVPR 2022 WiSE-FT](https://openaccess.thecvf.com/content/CVPR2022/html/Wortsman_Robust_Fine-Tuning_of_Zero-Shot_Models_CVPR_2022_paper.html)，源文件与URL记录位于输出根`literature/low_label_transfer_sources.json`。LP-FT给出随机Head与encoder同时更新可能扰动预训练特征的可检验假设；其论文主要研究OOD，当前数据尚未证明这种病因。WiSE-FT依赖可用的zero-shot分类模型，当前没有对应分类Head，暂不直接采用权重插值。前述CVPR 2025 Sonata/NOMAE和FASERCal仍为主要预训练依据。
+
+## 7. 最终目标与读出结论
+
+最后的五初始化比较仅为seed42，三seed低标签证据在第6节另列。MAE3−Scratch的raw macro AP增量在1k/10k/100k为+0.033039/+0.025899/+0.005324，CI95均为正；NLL增量为−0.055747/−0.036485/−0.007624，均为负。100k common-support macro AP区间跨零，macro F1和balanced accuracy也未确认提高。Hadronic τ子道在common-support的AP增加，electron/muon子道及低FPR效率收益未确认。
+
+EMA3相对MAE3在三个预算的macro AP/NLL均退化，raw/common-support区间支持该差别。MAE5相对MAE3未建立raw总体排序收益；Channel Rel5在1k提高macro AP但降低τ AP，100k只确认raw NLL小幅降低。Rel的global线性可读性在10k/100k提高，完整fine-tuning没有相同一致收益。保留MAE3作后续有限标签基线，不根据最低单点NLL扩量。
+
+100k frozen global的MAE3 macro AP为0.404062，Scratch为0.340248，差+0.063814 [0.056307,0.072226]。这是固定线性配方的可读信息证据，结合完整10k路径置换解释具体checkpoint；global重训净收益仍未测量。固定C=1的1k full广泛过度自信保留为失败诊断，后续在原标签预算内分组train-inner选择正则化。
+
+15项分类的147,130次更新、1,710次计划健康采样、210项checkpoint读回和15次独立best FP32 backward通过；30个磁盘readouts完整10k回放误差为0。20项[收尾检查](results/s4_fp64_objectives_acceptance.json)全部通过后，清理3,643,405,382 bytes临时feature/gate缓存和9个终态AFS目录。小型readouts、预测与来源manifest保留；重新回放须按冻结配置重建缓存。完整图、计数区间、资源分项及复现命令见阶段181。

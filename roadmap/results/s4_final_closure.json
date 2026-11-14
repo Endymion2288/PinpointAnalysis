@@ -1,0 +1,76 @@
+{
+  "utc": "2026-11-14T06:29:50.062024+00:00",
+  "status": "complete",
+  "strict_output_gate_passed": true,
+  "output_checks": 20,
+  "cohort": {
+    "trained_models": 15,
+    "predictions": 45,
+    "paired_comparisons": 66,
+    "validation_events_per_prediction": 10000,
+    "class_counts": [
+      2500,
+      2500,
+      2500,
+      2500
+    ],
+    "optimizer_updates": 147130,
+    "health_samples": 1710,
+    "checkpoint_checks": 210,
+    "selected_FP32_backward_models": 15,
+    "frozen_readout_replays": 30,
+    "maximum_replay_probability_error": 0.0,
+    "maximum_every_update_preclip_gradient_norm": 307.56500244140625,
+    "seed": 42
+  },
+  "resource_cost": {
+    "terminal_allocations": 114,
+    "all_terminal": true,
+    "organization_device_hours": 35.3990293525,
+    "cap_device_hours": 60,
+    "CPU_allocation_core_hours": 423.0439235327778,
+    "device_hours_by_backend_device": {
+      "condor:NVIDIA H100L-2-24C MIG 2g.24gb": 18.66444444444444,
+      "kubeflow:h100-47gb": 10.740418241388888,
+      "condor:NVIDIA H100L-1-12C MIG 1g.12gb": 5.922222222222222,
+      "condor:Tesla V100-PCIE-32GB": 0.07194444444444445
+    },
+    "scope": "actual durations by allocation; MIG and full GPUs kept distinct, no equivalent-FLOPs conversion; all readiness/failure time included"
+  },
+  "cleanup": {
+    "feature_files": 36,
+    "feature_bytes_removed": 3643405382,
+    "feature_cleanup_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_feature_cache_cleanup.json",
+    "AFS_directories_removed_this_closure": 9,
+    "AFS_bytes_removed_this_closure": 16627,
+    "AFS_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/afs_terminal_cleanup_objectives_final.json"
+  },
+  "figure_review": {
+    "four_class_PDF_pages": 45,
+    "viewed": [
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/label_efficiency_train_full.png",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/classification_internal_health.png",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_four_class_scratch_100k.png"
+    ],
+    "all_plot_text_English": true
+  },
+  "decisions": {
+    "one_million_expansion": false,
+    "next_supervised_initialization_reference": "MAE3 with corrected train-inner-selected protocol",
+    "EMA3_promoted": false,
+    "low_label_C1_full_readouts": "converged diagnostic; probability generalization failure retained",
+    "next_readout_design": "physical-group train-inner regularization selection within original label budgets",
+    "frozen_test_or_calibration_used": false,
+    "consistent_additional_overall_ranking_superiority_across_budgets": false
+  },
+  "scope": "15 seed42 fine-tunes plus stationary full/global readouts; pointwise physical-block intervals condition on weights and reused validation; prior three-seed results retained separately",
+  "sources": {
+    "evaluation": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/summary.json",
+    "training_health": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_objectives_validation/training_health_summary.json",
+    "acceptance": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/fp64_objectives_acceptance.json",
+    "accounting": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/campaign_accounting.json",
+    "acceleration": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_acceleration_gate_s42/solver_probe.json",
+    "superseded_CPU_stop": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_recovery_and_superseded_cpu_stop.json"
+  },
+  "code_commit": "3ff6837d2a8b2f96aa58bdd44a868219be9c22ee"
+}

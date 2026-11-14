@@ -1,0 +1,894 @@
+{
+  "utc": "2026-11-14T06:35:22.936688+00:00",
+  "checks": {
+    "requested_matrix_complete": true,
+    "all_frozen_pairs_complete": true,
+    "all_frozen_seed_means_complete": true,
+    "strict_validation_has_no_pending": true,
+    "frozen_evaluation_inputs": true,
+    "validation_worker_complete": true,
+    "all_fits_configs_checkpoints_and_internal_health": true,
+    "actual_encoder_parameter_updates": true,
+    "all_required_pretraining_measured_learning": true,
+    "all_stationary_readouts_replayed": true,
+    "same_objective_solver_regressions": true,
+    "device_acceleration_regressions": true,
+    "complete_10k_balanced_validation": true,
+    "predictions_nonconstant": true,
+    "physical_block_bootstrap": true,
+    "raw_common_support_and_tau_contrasts": true,
+    "classwise_finite_MC_counts": true,
+    "terminal_allocation_evidence": true,
+    "organization_budget": true,
+    "plots_present": true
+  },
+  "strict_output_gate_passed": true,
+  "fits": [
+    {
+      "name": "s4_transfer4_optimized_scratch_n1000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 14,
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_optimized_mae3_n1000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 14,
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_ema3_n1000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 14,
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_mae5_n1000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 14,
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_rel_channel5_n1000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 14,
+      "passed": true
+    },
+    {
+      "name": "s4_optimized_scratch_n10000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 46,
+      "passed": true
+    },
+    {
+      "name": "s4_optimized_mae3_n10000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 46,
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_ema3_n10000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 46,
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_mae5_n10000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 46,
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_rel_channel5_n10000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 46,
+      "passed": true
+    },
+    {
+      "name": "s4_empty_scratch_n100000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 282,
+      "passed": true
+    },
+    {
+      "name": "s4_empty_mae3_n100000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 282,
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_ema3_n100000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 282,
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_mae5_n100000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 282,
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_rel_channel5_n100000_s42",
+      "program": "train",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "checkpoint_readback": true,
+        "independent_best_FP32_backward": true,
+        "scheduled_samples_present": true,
+        "health_decisions_pass": true,
+        "finite_sampled_activations": true,
+        "informative_input_gradients": true,
+        "intentional_LP_gradient_policy": true,
+        "LP_phase_matches_frozen_recipe": true,
+        "SiLU_never_entirely_zero": true,
+        "preclip_gradients_within_review_limit": true,
+        "every_update_gradient_review": true
+      },
+      "health_samples": 282,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_scratch_n1000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_scratch_n10000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_scratch_n100000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae3_n1000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae3_n10000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_mae3_n100000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_ema3_n1000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_ema3_n10000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_ema3_n100000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae5_n1000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae5_n10000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_mae5_n100000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_rel_channel5_n1000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_rel_channel5_n10000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_rel_channel5_n100000_s42",
+      "program": "probes",
+      "checks": {
+        "complete": true,
+        "frozen_configuration": true,
+        "calibration_test_unused": true,
+        "evaluated": true,
+        "frozen_fit_and_validation_counts": true,
+        "finite_full_and_global_features": true,
+        "global_probe_evaluated": true
+      },
+      "health_samples": 0,
+      "passed": true
+    }
+  ],
+  "probes": [
+    {
+      "name": "s4_newton_frozen_scratch_n1000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_scratch_n10000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_scratch_n100000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae3_n1000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae3_n10000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_mae3_n100000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_ema3_n1000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_ema3_n10000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_ema3_n100000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae5_n1000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_mae5_n10000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_mae5_n100000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_rel_channel5_n1000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_newton_frozen_rel_channel5_n10000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    },
+    {
+      "name": "s4_fp64_frozen_rel_channel5_n100000_s42",
+      "checks": {
+        "complete_optimization_inventory": true,
+        "replay_matches_saved_optimization": true,
+        "complete_replay_inventory": true,
+        "fit_counts": true,
+        "full_stationary_same_objective": true,
+        "full_saved_probability_replay": true,
+        "global_stationary_same_objective": true,
+        "global_saved_probability_replay": true
+      },
+      "passed": true
+    }
+  ],
+  "pretraining": [
+    {
+      "name": "s4_ema_m75_e3_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_mae_barrel_channels_e2_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_mae_cont_e2_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_mae_m75_e3_s42",
+      "passed": true
+    }
+  ],
+  "parameter_updates": [
+    {
+      "name": "s4_transfer4_optimized_scratch_n1000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_optimized_mae3_n1000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_ema3_n1000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_mae5_n1000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_transfer4_rel_channel5_n1000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_optimized_scratch_n10000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_optimized_mae3_n10000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_ema3_n10000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_mae5_n10000_s42",
+      "passed": true
+    },
+    {
+      "name": "s4_repaired_rel_channel5_n10000_s42",
+      "passed": true
+    }
+  ],
+  "solver_regressions": [
+    {
+      "name": "s4_newton_solver_gate_v2_s42",
+      "passed": true
+    }
+  ],
+  "acceleration_regressions": [
+    {
+      "name": "s4_fp64_acceleration_gate_s42",
+      "passed": true
+    }
+  ],
+  "health_samples": 1710,
+  "organization_device_hours": 35.3990293525,
+  "CPU_allocation_hours": 423.0439235327778,
+  "calibration_test_used": false,
+  "scope": "completed frozen objective cohort, numerical and artifact evidence; technical completion does not establish probability generalization or method promotion",
+  "sources": {
+    "campaign": "roadmap/configs/s4_fp64_objectives_evaluation.json",
+    "comparisons": "roadmap/configs/s4_fp64_objectives_pairs.json",
+    "evaluation": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/summary.json",
+    "validation": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_objectives_validation",
+    "accounting": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/campaign_accounting.json"
+  }
+}

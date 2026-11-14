@@ -1,0 +1,346 @@
+{
+  "utc": "2026-11-14T06:14:45.936574+00:00",
+  "passed": true,
+  "seconds": 31.74057145603001,
+  "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+  "code_commit": "faf6e33b09696e2b548bc077bedc1b7e42535f2b",
+  "scope": "same cached train rows/scaler/C=1/objective; original CPU stationarity threshold; no validation selection",
+  "cases": [
+    {
+      "reference": "s4_newton_frozen_scratch_n1000_s42",
+      "branch": "full",
+      "CPU_reference": {
+        "regularized_mean_objective": 0.1768569279045074,
+        "gradient_infinity_norm": 6.764287125819192e-08,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 1.1925977982940594e-09,
+      "maximum_fit_probability_difference": 3.1342231274766874e-05,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          15
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 1000,
+        "input_features": 1440,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 0.0953449737912865,
+        "fit_accuracy": 0.977,
+        "coefficient_L2_norm": 12.770053449343813,
+        "C": 1.0,
+        "regularized_mean_objective": 0.1768569290971052,
+        "gradient_infinity_norm": 5.199076903259913e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 429,
+        "seconds": 1.5495311848353595,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_scratch_n1000_s42",
+      "branch": "global",
+      "CPU_reference": {
+        "regularized_mean_objective": 1.06044521007101,
+        "gradient_infinity_norm": 1.609806685853865e-08,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 3.964377714993361e-10,
+      "maximum_fit_probability_difference": 3.134223155409899e-05,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          10
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 1000,
+        "input_features": 192,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 1.0203257558861587,
+        "fit_accuracy": 0.588,
+        "coefficient_L2_norm": 8.958104447699874,
+        "C": 1.0,
+        "regularized_mean_objective": 1.0604452104674478,
+        "gradient_infinity_norm": 5.603988415402877e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 298,
+        "seconds": 0.45249042101204395,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_mae3_n1000_s42",
+      "branch": "full",
+      "CPU_reference": {
+        "regularized_mean_objective": 0.3105777694637918,
+        "gradient_infinity_norm": 2.654033648128763e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 1.5473666792331642e-10,
+      "maximum_fit_probability_difference": 2.1200833182799528e-05,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          13
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 1000,
+        "input_features": 1440,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 0.1747818058924043,
+        "fit_accuracy": 0.977,
+        "coefficient_L2_norm": 16.484291049408835,
+        "C": 1.0,
+        "regularized_mean_objective": 0.3105777693090551,
+        "gradient_infinity_norm": 2.1430507356608132e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 648,
+        "seconds": 0.7482791470829397,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_mae3_n1000_s42",
+      "branch": "global",
+      "CPU_reference": {
+        "regularized_mean_objective": 1.0862292956805628,
+        "gradient_infinity_norm": 7.117144647713898e-08,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 3.5136338283336954e-12,
+      "maximum_fit_probability_difference": 6.840376419292582e-06,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          10
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 1000,
+        "input_features": 192,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 1.0497727399671126,
+        "fit_accuracy": 0.551,
+        "coefficient_L2_norm": 8.539331904941433,
+        "C": 1.0,
+        "regularized_mean_objective": 1.0862292956840764,
+        "gradient_infinity_norm": 1.2828840607960467e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 383,
+        "seconds": 0.47626100899651647,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_scratch_n10000_s42",
+      "branch": "full",
+      "CPU_reference": {
+        "regularized_mean_objective": 1.0348027068441905,
+        "gradient_infinity_norm": 7.696357807257556e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 2.5314634832795946e-09,
+      "maximum_fit_probability_difference": 0.00015209091121748397,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          16
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 10000,
+        "input_features": 1440,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 1.0182054622212107,
+        "fit_accuracy": 0.5663,
+        "coefficient_L2_norm": 18.22045061236768,
+        "C": 1.0,
+        "regularized_mean_objective": 1.034802704312727,
+        "gradient_infinity_norm": 8.841774192240744e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 1988,
+        "seconds": 1.6249623619951308,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_scratch_n10000_s42",
+      "branch": "global",
+      "CPU_reference": {
+        "regularized_mean_objective": 1.31966698624236,
+        "gradient_infinity_norm": 1.7624209647979538e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 1.1148193479471047e-11,
+      "maximum_fit_probability_difference": 1.6224831225430947e-05,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          10
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 10000,
+        "input_features": 192,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 1.3190786645589805,
+        "fit_accuracy": 0.3683,
+        "coefficient_L2_norm": 3.430411771115163,
+        "C": 1.0,
+        "regularized_mean_objective": 1.3196669862312118,
+        "gradient_infinity_norm": 9.762858376424538e-08,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 339,
+        "seconds": 0.49676609388552606,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_mae3_n10000_s42",
+      "branch": "full",
+      "CPU_reference": {
+        "regularized_mean_objective": 1.0824886253924035,
+        "gradient_infinity_norm": 7.127991741997201e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 2.893791872793372e-10,
+      "maximum_fit_probability_difference": 6.79579047496437e-05,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          24
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 10000,
+        "input_features": 1440,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 1.0626454013357105,
+        "fit_accuracy": 0.5448,
+        "coefficient_L2_norm": 19.922466282963164,
+        "C": 1.0,
+        "regularized_mean_objective": 1.0824886251030243,
+        "gradient_infinity_norm": 4.213999382075395e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 3115,
+        "seconds": 2.5175470248796046,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    },
+    {
+      "reference": "s4_newton_frozen_mae3_n10000_s42",
+      "branch": "global",
+      "CPU_reference": {
+        "regularized_mean_objective": 1.273803254098481,
+        "gradient_infinity_norm": 1.7868052678132898e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs"
+      },
+      "absolute_objective_difference": 5.545075509871822e-11,
+      "maximum_fit_probability_difference": 1.9704291445044042e-05,
+      "passed": true,
+      "candidate": {
+        "solver": "newton-cg",
+        "execution": "device FP64 analytic gradient and Hessian products",
+        "device": "cuda",
+        "iterations": [
+          11
+        ],
+        "maximum_iterations": 200,
+        "tolerance": 1e-06,
+        "convergence_warnings": [],
+        "finite_coefficients": true,
+        "passed": true,
+        "fit_events": 10000,
+        "input_features": 192,
+        "standardization": "fit on fitted-label events only; original float32 rounding preserved",
+        "fit_NLL": 1.2693592191141787,
+        "fit_accuracy": 0.4049,
+        "coefficient_L2_norm": 9.427962996232063,
+        "C": 1.0,
+        "regularized_mean_objective": 1.2738032541539317,
+        "gradient_infinity_norm": 3.2271668147003907e-07,
+        "objective_definition": "mean multinomial NLL + squared coefficient norm / (2 C n); intercept unpenalized",
+        "certificate_precision": "CPU float64 using the fitted scaler outputs",
+        "stationarity_required": true,
+        "stationarity_passed": true,
+        "hessian_products": 932,
+        "seconds": 0.6096003560815006,
+        "optimizer_implementation": "sklearn 1.5.2 _newton_cg, maxinner=200, Wolfe line search"
+      }
+    }
+  ]
+}
