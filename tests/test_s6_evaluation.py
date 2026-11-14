@@ -7,6 +7,7 @@ from analysis.flavour.s6.bootstrap import weights
 from analysis.flavour.s6.bootstrap import ci
 from analysis.flavour.s6.evaluate import FixedCache, exact_interval, reliability, fixed_block_intervals
 from analysis.flavour.s6.gfaser import legacy_record
+from analysis.flavour.s3.metrics import MetricCache
 
 
 class FinalEvaluationTest(unittest.TestCase):
@@ -62,6 +63,15 @@ class FinalEvaluationTest(unittest.TestCase):
         self.assertEqual((record['vx'], record['vy'], record['vz']), (.01, -.02, -2.2))
         self.assertEqual(record['scatteringType'], -1)
         self.assertTrue(np.isnan(record['XSec']))
+
+    def test_overlap_zero_weight_events_do_not_change_statistics(self):
+        y = np.tile(np.arange(4), 2)
+        p = np.array([[.7, .1, .1, .1], [.1, .6, .2, .1], [.1, .1, .7, .1], [.25]*4,
+                      [.1, .7, .1, .1], [.8, .1, .05, .05], [.9, .05, .025, .025], [.05, .05, .05, .85]])
+        w = np.array([1, 2, 3, 4, 0, 0, 0, 0.])
+        full = MetricCache(y, p).compute(w)[0]
+        retained = MetricCache(y[:4], p[:4]).compute(w[:4])[0]
+        np.testing.assert_allclose(full, retained, rtol=1e-12, atol=1e-12, equal_nan=True)
 
 
 if __name__ == '__main__':
