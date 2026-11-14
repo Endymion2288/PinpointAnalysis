@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import socket
 import subprocess
 import time
 
@@ -217,7 +218,15 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(1); pa.set_cpu_count(1); pa.set_io_thread_count(1)
     started = time.perf_counter()
+    claim_path = args.root / 'claims' / config['name'] / 'state.json'
+    claim = json.loads(claim_path.read_text()) if claim_path.exists() else {}
+    execution = {'backend': 'condor' if os.environ.get('PINPOINT_JOB_ID') else
+        'kubeflow' if os.environ.get('KUBERNETES_SERVICE_HOST') else 'local',
+        'allocation_name': claim.get('job'), 'host': socket.gethostname(),
+        'scheduler_job_id': os.environ.get('PINPOINT_JOB_ID'),
+        'resource_scope': 'formal parent allocation; duration charged once to its submission record'}
     manifest = {'utc': datetime.now(timezone.utc).isoformat(), 'status': 'running', 'config': config,
+        'execution': execution,
         'GPU': torch.cuda.get_device_name(device) if device.type=='cuda' else None,
         'precision': f'{device.type.upper()} FP32; TF32 disabled',
         'code_commit': os.environ.get('PINPOINT_CODE_COMMIT') or
@@ -225,6 +234,7 @@ def main():
     write_json(output / 'manifest.json', manifest)
     rows = [inspect(args.root, name, config, output, device) for name in config['checkpoints']]
     write_json(output / 'functional_paths.json', {'experiments': rows,
+        'execution': execution,
         'calibration_test_used': False, 'fitting_or_selection': False,
         'precision': f'{device.type.upper()} FP32',
         'scope': 'fixed-weight fitted-path reliance on complete 10k validation; correlations between branches are broken; not retrained ablations or causal physical importance',

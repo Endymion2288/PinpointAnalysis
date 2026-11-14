@@ -1148,12 +1148,6 @@
         17,
         42
       ],
-      "execution_context": {
-        "parent_job": "pinpoint-s4-recovery-c",
-        "parent_pod": "pinpoint-s4-recovery-c-9pxgf",
-        "parent_pod_uid": "785f0fc2-f25d-4469-b28a-3273a14149dd",
-        "resource_scope": "fixed-checkpoint inference concurrent with formally allocated parent training; no new GPU request; device duration charged once to parent allocation"
-      },
       "readback_before_probe": true,
       "dependencies": [
         "s4_empty_scratch_n1000_s42",
