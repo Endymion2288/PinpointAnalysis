@@ -36,6 +36,9 @@ def audit(root, campaign, comparisons, evaluation_path):
     stress = pd.read_parquet(stress_path / 'measurements.parquet') if (stress_path / 'measurements.parquet').exists() else pd.DataFrame()
     catalog = pd.read_parquet(root / 'catalog.parquet', columns=['split', 'pixel_channels', 'bar_channels', 'tracker_channels'])
     maximum_occupancy = int(catalog.loc[catalog.split.eq('train'), ['pixel_channels', 'bar_channels', 'tracker_channels']].sum(axis=1).max())
+    functional = load(root / 'experiments' / 's4_empty_functional_paths_seed42' / 'functional_paths.json')
+    path_rows = functional.get('experiments', [])
+    expected_paths = {f's4_empty_{kind}_n{budget}_s42' for kind in ['scratch', 'mae3'] for budget in [1000, 10000]}
     checks = inventory_checks(configurations, comparison, evaluation)
     checks.update({
         'exact_18_fit_paired_matrix': len(configurations) == 18 and actual == expected,
@@ -63,6 +66,16 @@ def audit(root, campaign, comparisons, evaluation_path):
             and all(set(p.get('metrics', {})) == {'raw', 'common_support'}
                 and set(p.get('tau_branches', {})) == {b + '__' + d for b in ['electron', 'muon', 'hadronic']
                     for d in ['raw', 'common_support']} for p in evaluation.get('paired_comparisons', [])),
+        'classwise_finite_MC_counts': len(evaluated) == 18 and all(len(e.get('classwise_operating_points', {})) == 4
+            and all(set(points) == {'FPR_0.01', 'FPR_0.001'} and all(p['signal_events'] == 2500
+                and p['background_events'] == 7500 and 'background_count_interval_95' in p for p in points.values())
+                for points in e['classwise_operating_points'].values()) for e in evaluated.values()),
+        'repaired_fixed_weight_branch_evidence': len(path_rows) == 4 and {p['experiment'] for p in path_rows} == expected_paths
+            and functional.get('calibration_test_used') is False and functional.get('fitting_or_selection') is False
+            and all(p['events'] == 10000 and p['cached_head_matches_original'] is True
+                and p['cached_head_logit_maximum_error'] <= 2e-6 and p['presence_preserved'] is True
+                and p.get('head_replay_batch_shapes_and_recipient_order_preserved') is True
+                and p['permutation_seeds'] == [2026, 17, 42] for p in path_rows),
         'training_health_figures_present': all((evaluation_path.parent / filename).is_file() for filename in
             ['classification_training_curves.pdf', 'classification_internal_health.pdf', 'classification_health_ranges.csv']),
         'all_allocations_terminal': terminal_allocations(accounting),

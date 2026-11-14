@@ -70,6 +70,15 @@ def inspect(root, name, config, output, device='cpu'):
     device = torch.device(device)
     directory = root / 'experiments' / name
     manifest = json.loads((directory / 'manifest.json').read_text())
+    if config.get('readback_before_probe', False):
+        from analysis.flavour.s2.readback import readback as inspect_checkpoint
+        from analysis.flavour.s4.health import inspect as inspect_health
+        catalog = pd.read_parquet(root / 'catalog.parquet')
+        inspect_checkpoint(root, manifest['config'], {'GPU': manifest['gpu_name'], 'torch': '2.7.1'},
+            catalog[catalog.split.eq('validation')])
+        health = inspect_health(root, name, catalog)
+        if not health['passed']:
+            raise RuntimeError(name + ': selected-checkpoint health failed before branch probe')
     readback = json.loads((directory / 'final_checkpoint_checks.json').read_text())
     if manifest['status'] != 'complete' or readback['status'] != 'pass':
         raise ValueError('completed, read-back classification checkpoint required: ' + name)

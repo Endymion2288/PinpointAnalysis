@@ -57,13 +57,13 @@ S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译
 
 配对比较冻结于 `configs/s4_pairs.json`；新增语义结果、τ 子道统计和监督预算规划见 [stage106](../workbook/2026-11-13_stage106_s4_paired_semantics_and_budget.md)。完整channel Rel的512-event同查询诊断已超过几何均值先验，见[stage119](../workbook/2026-11-13_stage119_s4_full_rel_event_information.md)及`results/s4_rel_semantics.json`；该结果与分类收益分别评价。
 
-完整路径及v6结果见[stage129](../workbook/2026-11-13_stage129_s4_global_path_and_100k_validation.md)。MAE3 seed42在1k/10k下global置换的NLL增量为0.051899/0.035174，95%区间均为正；local/regional仍有可测作用。100k的macro AP配对增量0.003371，区间跨零；common-support tau AP增量也未确认，不能把低标签收益或global利用直接推广为kinematics-independent tau改进。全部比较仍为固定validation，calibration/test冻结，矩阵未完成。
+以下为修复前的历史观测，当前不作为S4方法结论；修复矩阵将重新评价对应分类和路径。完整路径及v6结果见[stage129](../workbook/2026-11-13_stage129_s4_global_path_and_100k_validation.md)。MAE3 seed42在1k/10k下global置换的NLL增量为0.051899/0.035174，95%区间均为正；local/regional仍有可测作用。100k的macro AP配对增量0.003371，区间跨零；common-support tau AP增量也未确认，不能把低标签收益或global利用直接推广为kinematics-independent tau改进。全部比较仍为固定validation，calibration/test冻结，矩阵未完成。
 
-三seed低标签结果见[stage133](../workbook/2026-11-13_stage133_s4_three_seed_low_label_results.md)。1k时MAE3−Scratch的macro AP均值增量0.057021，物理块CI95=[0.052512,0.061955]；hadronic τ AP在既定common-support诊断中增加0.017168，[0.006759,0.026996]。同时raw τ argmax F1下降0.050129，平均NLL1.450039仍高于ln4，1%FPR效率区间跨零。该结果支持低标签排序收益，过拟合与硬决策问题保留为后续针对性优化依据；不据此直接扩1M。
+三seed低标签结果见[stage133](../workbook/2026-11-13_stage133_s4_three_seed_low_label_results.md)。1k时MAE3−Scratch的macro AP均值增量0.057021，物理块CI95=[0.052512,0.061955]；hadronic τ AP在既定common-support诊断中增加0.017168，[0.006759,0.026996]。同时raw τ argmax F1下降0.050129，平均NLL1.450039仍高于ln4，1%FPR效率区间跨零。这些旧观测用于提出过拟合与硬决策优化候选，排序收益也须在修复矩阵中复核；不据此直接扩1M。
 
 ## 6. 由实测结果驱动的后续优化
 
-v8三个独立seeds的10k macro AP增量为0.014604，[0.010073,0.019366]，τ AP区间跨零；global frozen probe在三种标签预算均有正收益。优先保留可读的预训练表示，区分表示信息和分类readout/优化问题。以下属于下一轮预先冻结的扩展，未执行，不替换当前S4主矩阵。
+v8三个独立seeds的10k macro AP增量为0.014604，[0.010073,0.019366]，τ AP区间跨零；global frozen probe在三种标签预算均有正收益。这些为修复前的测量，仅用于提出表示信息与分类readout/优化问题。以下属于后续候选扩展，未执行；是否执行由当前18项修复重训结果决定。
 
 | 实测问题 | 待比较的改动 | 控制与选择 |
 | --- | --- | --- |
