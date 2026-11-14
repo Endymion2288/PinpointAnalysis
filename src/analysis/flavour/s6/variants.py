@@ -1,6 +1,7 @@
 """Frozen paired digitizer inference, sharing native input and primary models."""
 import argparse
 from bisect import bisect_right
+import copy
 import json
 import os
 from pathlib import Path
@@ -97,6 +98,46 @@ def worker(args):
         finally:
             (claim/'owner.json').unlink()
             claim.rmdir()
+
+
+def run_available(args, prepared):
+    """Consume one ready paired task during a gap in nominal CPU preparation.
+
+    Reuse resident primary weights; no new checkpoint loading or compilation
+    policy. Nominal inference receives priority whenever a shard is available.
+    """
+    from analysis.flavour.s6.infer import representations
+    config = json.loads((args.root/'conditions.json').read_text())
+    campaign, candidates, _, _, models = prepared
+    candidates = [m for m in candidates if m['name'] in config['models']]
+    if len(candidates) != len(config['models']):
+        return False
+    configs, membership = representations(candidates)
+    manifest = pd.read_parquet(args.root/'variants_manifest.parquet', columns=['shard'])
+    shards = sorted(manifest.shard.unique())
+    claims = args.root/'runtime/variant_claims'
+    claims.mkdir(exist_ok=True)
+    for task in range((len(shards)+7)//8):
+        if (args.root/'predictions/variants'/f'{task:04d}/summary.json').exists():
+            continue
+        if not all((args.root/'shards'/f'test_{s:04d}/summary.json').exists() for s in shards[task*8:(task+1)*8]):
+            continue
+        claim = claims/f'{task:04d}'
+        try:
+            claim.mkdir()
+        except FileExistsError:
+            continue
+        write_json(claim/'owner.json', {'host': socket.gethostname(), 'pid': os.getpid(), 'started': time.time(),
+            'mode': 'resident primary models during nominal preparation gap'})
+        local = copy.copy(args)
+        local.task, local.shards_per_task = task, 8
+        try:
+            run(local, (campaign, candidates, configs, membership, models))
+        finally:
+            (claim/'owner.json').unlink()
+            claim.rmdir()
+        return True
+    return False
 
 
 def finalize(args):

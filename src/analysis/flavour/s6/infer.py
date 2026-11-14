@@ -325,6 +325,11 @@ def worker(args):
                        'worker': args.name, 'commit': os.environ.get('PINPOINT_CODE_COMMIT')})
             break
         if chosen is None:
+            if args.split == 'test':
+                from analysis.flavour.s6.variants import run_available
+                if run_available(args, prepared):
+                    idle_since = None
+                    continue
             if idle_since is None:
                 idle_since = time.monotonic()
             if incomplete_preparation and time.monotonic()-idle_since < 60 and time.monotonic()-started < args.maximum_seconds:
