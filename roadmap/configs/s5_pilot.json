@@ -52,7 +52,8 @@
       ],
       "relative_path": true,
       "use_objects": true,
-      "pilot_steps": 256
+      "pilot_steps": 256,
+      "coordinate_revision": 2
     }
   ]
 }

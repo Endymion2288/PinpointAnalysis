@@ -22,6 +22,8 @@ Visible target为非核G4初始primary system：排除neutrinos，以可定义�
 
 训练记录输入/局部/融合/head激活RMS和梯度、概率方差、有效aux样本数、实际参数更新及selected-checkpoint readback。新增路径做真实小样本拟合；出现整层失活或未学习则审查和修复。分支归一化、FP32 LayerNorm/SiLU head、LayerScale、QK normalization和空响应bypass继续使用。
 
+坐标revision 2显式保留bar的逐轴measurement mask；未测量轴在居中之后归零，tracker的ordinal z不进入这一路径。`s5_coordinates.json`包含五项重训，并以同一10维输入、相同模块和参数量比较absolute/relative；旧三项relative在启动前标为superseded。相对于raw基线增加分支的收益单独报告，不能全部归因于坐标居中。revision 2全路径16个真实train事件256步拟合达到NLL0.000301073、accuracy1.0；正式validation结论等待全矩阵。
+
 ## 方法依据与适配
 
 - [FASERCal论文及本地汇报](02_literature.md)：六类、共享encoder、vertex/visible momentum/charm、多任务uncertainty weighting；当前pixel语义不具备精确soft mixture，先用逐track bar沉积构造event semantic fractions。
@@ -36,3 +38,5 @@ Visible target为非核G4初始primary system：排除neutrinos，以可定义�
 四分类与六类合并使用同事件paired block bootstrap，400次；训练seed spread另报。τ分道、衰变材料/位置、prong、可见性、charm和containment给分母、通过数、CI95；1%/0.1% background acceptance工作点与efficiency–purity同时报告。能量/真实vertex common-support是条件诊断，不能输入或用于真实推理选择。
 
 预测/重建px、py、pT、θ、wrapped Δφ分别给偏差和68/95% quantiles，近零pT mask明确；quality-cut扫描必须同时给coverage。absolute/raw与预测vertex-relative并存，真实vertex-centred只作oracle。可见/不可见secondary、正确/错误/随机组画原生响应，score与观测量关系以总体计数支撑。结论至少包括一个有区间的困难通道解释，并列待查原因。
+
+Containment采用观测端边缘/末端signal fraction作为leakage proxy，保留有效mask，不称作真实shower containment。辅助回归同时报告预测/目标方差及相对于仅10k所选train标签均值的误差，避免把近常数输出当成功重建。正式评价入口为`analysis.flavour.s5.evaluate`，原生响应诊断由CPU批作业`analysis.flavour.s5.diagnostics`生成。

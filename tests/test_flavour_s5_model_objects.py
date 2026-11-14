@@ -11,6 +11,28 @@ from analysis.flavour.s5.objects import reconstruct, vertex_candidate, match_tru
 
 
 class ModelContractTest(unittest.TestCase):
+    def test_bar_relative_path_cannot_observe_unmeasured_coordinate(self):
+        torch.set_num_threads(1)
+        model = PhysicsModel({'dim': 32, 'latents': 4, 'region_queries': 2, 'empty_response_bypass': True, 'relative_path': True})
+        with torch.no_grad():
+            model.auxiliary_heads['vertex'][-1].weight.zero_()
+            model.auxiliary_heads['vertex'][-1].bias.zero_()
+        nodes = np.zeros((3, 18), dtype='float32')
+        nodes[:, :3] = [.5, .2, -.7]
+        nodes[:, 4] = nodes[:, 13] = nodes[:, 15] = 1
+        event = {'nodes': nodes, 'groups': np.zeros(3, int), 'modules': np.zeros(3, int), 'label': 0, 'index': 0}
+        captured = []
+        handle = model.relative_branch[0].register_forward_pre_hook(lambda module, inputs: captured.append(inputs[0].detach().clone()))
+        model.eval()
+        with torch.no_grad():
+            model(collate_planes([event]))
+            nodes[:, 0] = 123.
+            model(collate_planes([event]))
+        handle.remove()
+        torch.testing.assert_close(captured[0], captured[1])
+        torch.testing.assert_close(captured[0][0, :3], torch.tensor([0., .2, -.7]))
+        torch.testing.assert_close(captured[0][0, 6:9], torch.tensor([0., 1., 1.]))
+
     def test_masked_auxiliary_does_not_train_missing_targets(self):
         torch.set_num_threads(1)
         torch.manual_seed(42)

@@ -8,7 +8,7 @@ import time
 import numpy as np
 import pandas as pd
 from scipy.stats import beta, spearmanr
-from sklearn.metrics import average_precision_score, confusion_matrix, log_loss
+from sklearn.metrics import average_precision_score, confusion_matrix, log_loss, roc_auc_score
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s2.evaluate import common_support_weights, tau_metrics
@@ -16,10 +16,11 @@ from analysis.flavour.s3.metrics import MetricCache, NAMES, bootstrap_weights, i
 from analysis.flavour.s4.evaluate import tau_statistics, tau_interval, TAU_NAMES
 
 
-TRUTH_FIELDS = ['run', 'chunk', 'row', 'tau_branch', 'tau_decay_valid', 'tau_decay_vertex_mm', 'tau_decay_z_mm',
+TRUTH_FIELDS = ['run', 'chunk', 'row', 'label', 'tau_branch', 'tau_decay_valid', 'tau_decay_vertex_mm', 'tau_decay_z_mm',
                 'tau_decay_length_mm', 'tau_decay_location', 'tau_decay_contained', 'tau_direct_prongs', 'tau_direct_prongs_hit',
                 'tau_visible_any', 'tau_visible_pixel', 'tau_visible_bar', 'tau_visible_tracker', 'charm_presence',
                 'charm_branch', 'vertex_mm', 'vertex_supervision_valid', 'visible_p3_GeV', 'visible_E_GeV', 'visible_target_valid', 'six_label']
+TRUTH_FIELDS += ['bar_semantic_fractions', 'bar_semantic_valid', 'charm_label_valid']
 
 
 def binomial(k, n):
@@ -33,6 +34,9 @@ def tau_domains(frame):
     for flag in ['tau_visible_any', 'tau_visible_pixel', 'tau_visible_tracker', 'tau_decay_contained', 'charm_presence']:
         for value in [False, True]:
             groups[f'{flag}_{int(value)}'] = frame[flag].eq(value).to_numpy()
+    if 'response_contained_proxy' in frame:
+        for value in [False, True]:
+            groups[f'response_contained_proxy_{int(value)}'] = frame.response_contained_proxy.eq(value).to_numpy()
     for prong in [0, 1, 3]:
         groups[f'prongs_{prong}'] = frame.tau_direct_prongs.eq(prong).to_numpy()
     for location in sorted(frame.loc[signal, 'tau_decay_location'].unique()):
@@ -67,7 +71,7 @@ def operating_tables(frame, common):
 def conditional_correlations(frame):
     result = []
     columns = ['pixel_channels', 'bar_channels', 'tracker_channels', 'pixel_tracks', 'tracker_tracks',
-               'cluster_count', 'vertex_sigma_z_mm']
+               'cluster_count', 'vertex_sigma_z_mm', 'pixel_edge_fraction', 'bar_end_signal_fraction', 'centroid_slope_change']
     for label in range(4):
         selected = frame.label.eq(label)
         for observable in columns:
@@ -139,7 +143,43 @@ def kinematics(frame, config):
     return result
 
 
-def calculate(entry, common, weights):
+def auxiliary_quality(frame, config, reference):
+    result = {}
+    for task in config.get('auxiliaries', []):
+        count = {'vertex': 3, 'kinematics': 4, 'semantics': 3, 'charm': 1}[task]
+        prediction = frame[[f'pred_{task}_{i}' for i in range(count)]].to_numpy()
+        if task == 'vertex':
+            target = np.stack(frame.vertex_mm)/[210, 210, 3000]
+            valid = frame.vertex_supervision_valid.to_numpy()
+        elif task == 'kinematics':
+            momentum = np.stack(frame.visible_p3_GeV)
+            target = np.column_stack([np.arcsinh(momentum[:, 0]), np.arcsinh(momentum[:, 1]), np.log1p(np.maximum(momentum[:, 2], 0)), np.log1p(frame.visible_E_GeV)])/7.
+            valid = frame.visible_target_valid.to_numpy() & (momentum[:, 2] >= 0)
+        elif task == 'semantics':
+            target = np.stack(frame.bar_semantic_fractions)
+            valid = frame.bar_semantic_valid.to_numpy()
+        else:
+            target = frame.charm_presence.to_numpy(dtype=float)[:, None]
+            valid = frame.charm_label_valid.to_numpy()
+        prediction, target = prediction[valid], target[valid]
+        mean = np.asarray(reference[task])
+        row = {'events': int(valid.sum()), 'prediction_std': prediction.std(0).tolist(), 'target_std': target.std(0).tolist(), 'reference': 'constant mean fitted only to selected 10k train labels'}
+        if task in ['vertex', 'kinematics']:
+            row.update(component_MSE=np.mean((prediction-target)**2, axis=0).tolist(),
+                       constant_train_mean_MSE=np.mean((mean-target)**2, axis=0).tolist())
+        elif task == 'semantics':
+            p = np.exp(prediction-prediction.max(1, keepdims=True)); p /= p.sum(1, keepdims=True)
+            row.update(soft_cross_entropy=float(-np.mean(np.sum(target*np.log(np.maximum(p, 1e-15)), axis=1))),
+                       constant_train_mean_cross_entropy=float(-np.mean(np.sum(target*np.log(np.maximum(mean, 1e-15)), axis=1))))
+        else:
+            score = prediction[:, 0]
+            row.update(AP=float(average_precision_score(target[:, 0], score)), AUROC=float(roc_auc_score(target[:, 0], score)),
+                       BCE=float(np.mean(np.logaddexp(0, score)-target[:, 0]*score)), prevalence=float(target.mean()))
+        result[task] = row
+    return result
+
+
+def calculate(entry, common, weights, reference):
     name, frame, manifest = entry
     config = manifest['config']
     cache = MetricCache(frame.label.to_numpy(), frame[[f'p{c}' for c in range(4)]].to_numpy())
@@ -155,6 +195,7 @@ def calculate(entry, common, weights):
               'probabilities': prediction_diagnostics(cache.p), 'operating_points': operating_tables(frame, common),
               'score_observable_correlations': conditional_correlations(frame), 'kinematics': kinematics(frame, config) if 'pred_vertex_0' in frame else None,
               'all_empty': cache.report(frame.all_empty.to_numpy(dtype=float))}
+    report['auxiliary_quality'] = auxiliary_quality(frame, config, reference)
     report['tau_domain_metrics'] = {k: dict(zip(TAU_NAMES, tau_statistics(cache, mask.astype(float)).tolist())) for k, mask in tau_masks.items()}
     report['common_support_tau_domain_metrics'] = {k: dict(zip(TAU_NAMES, tau_statistics(cache, mask*common).tolist())) for k, mask in tau_masks.items()}
     if all(f'q{i}' in frame for i in range(6)):
@@ -223,6 +264,8 @@ def run(args):
                 columns.append('tau_branch')
             if columns:
                 frame = frame.merge(supplement[key+columns], on=key, how='left', validate='one_to_one', sort=False)
+        diagnostics = pd.read_parquet(args.root/'measurement_diagnostics.parquet')
+        frame = frame.merge(diagnostics, on=key, how='left', validate='one_to_one', sort=False)
         if len(frame) != 10000 or frame.six_label.isna().any():
             raise ValueError('incomplete full validation or missing truth join')
         if entries and not frame[key].equals(entries[0][1][key]):
@@ -230,8 +273,12 @@ def run(args):
         entries.append((directory.name, frame, manifest))
     common, support = common_support_weights(entries[0][1])
     weights, block_summary = bootstrap_weights(entries[0][1], args.bootstrap)
+    from analysis.flavour.s5.dataset import PhysicsDataset
+    reference_dataset = PhysicsDataset(args.root, 'train', {**configs[0], 'use_objects': False, 'bucket_size': 0})
+    reference = {k: reference_dataset.targets[k][reference_dataset.targets[k+'_mask']].mean(0).tolist() for k in ['vertex', 'kinematics', 'semantics', 'charm']}
+    reference_dataset.native.close()
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        computed = list(executor.map(lambda entry: calculate(entry, common, weights), entries))
+        computed = list(executor.map(lambda entry: calculate(entry, common, weights, reference), entries))
     results = {row[0]: row for row in computed}
     index = {(row[2]['config'].get('variant'), row[2]['config'].get('seed')): row[0] for row in entries}
     pairs = []
@@ -239,7 +286,8 @@ def run(args):
         if variant == 'direct4' or ('direct4', seed) not in index:
             continue
         pairs.append((index[('direct4', seed)], index[(variant, seed)]))
-    for a, b in [('vertex', 'relative'), ('relative', 'relative_objects'), ('vertex_kinematics', 'kinematics_relative')]:
+    for a, b in [('vertex', 'relative'), ('relative', 'relative_objects'), ('vertex_kinematics', 'kinematics_relative'),
+                 ('absolute_coordinates', 'relative'), ('kinematics_absolute', 'kinematics_relative')]:
         for seed in [17, 42, 2026]:
             if (a, seed) in index and (b, seed) in index:
                 pairs.append((index[(a, seed)], index[(b, seed)]))

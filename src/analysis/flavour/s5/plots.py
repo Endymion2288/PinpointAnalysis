@@ -130,7 +130,7 @@ def plot_results(output, entries, report, root):
     save(fig, output, 'object_vertex_resolution_coverage')
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
     for experiment in report['experiments']:
-        if experiment['variant'] not in ['vertex_kinematics', 'kinematics_relative'] or experiment['seed'] != 42:
+        if experiment['variant'] not in ['kinematics_absolute', 'kinematics_relative'] or experiment['seed'] != 42:
             continue
         rows = [r for r in experiment['kinematics']['groups'] if r['class'] == 'all']
         for axis, component in zip(axes, ['pT_relative', 'delta_theta_rad', 'wrapped_delta_phi_rad']):

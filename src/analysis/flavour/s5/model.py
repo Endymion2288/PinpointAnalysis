@@ -22,7 +22,7 @@ class PhysicsModel(PlaneModuleClassifierV2):
             self.object_branch = nn.Sequential(nn.Linear(31, 128), nn.LayerNorm(128), nn.SiLU(), nn.Linear(128, width), nn.LayerNorm(width))
             self.object_scale = nn.Parameter(torch.full((width,), .1))
         if config.get('relative_path'):
-            self.relative_branch = nn.Sequential(nn.Linear(7, 96), nn.LayerNorm(96), nn.SiLU())
+            self.relative_branch = nn.Sequential(nn.Linear(10, 96), nn.LayerNorm(96), nn.SiLU())
             self.relative_pool = nn.Sequential(nn.Linear(192, width), nn.LayerNorm(width))
             self.relative_scale = nn.Parameter(torch.full((width,), .1))
         # Initialize added heads without reinitializing the encoder.
@@ -40,14 +40,17 @@ class PhysicsModel(PlaneModuleClassifierV2):
             if self.config.get('relative_path'):
                 nodes = observation['nodes'].float()
                 valid = observation['local_mask'] & (nodes[..., 15] > 0) & (nodes[..., 14] < .5)
-                count = valid.sum(1).clamp_min(1)
-                xyz = (nodes[..., :3]*valid[..., None]).sum(1)/count[:, None]
+                axis_mask = valid[..., None] & torch.cat([nodes[..., 3:5] > 0, torch.ones_like(valid[..., None])], -1)
+                count = axis_mask.sum(1)
+                axis_present = count > 0
+                xyz = (nodes[..., :3]*axis_mask).sum(1)/count.clamp_min(1)
                 event = observation['event_index']
                 # Tracker z in the raw representation is an ordinal code;
                 # only pixel/bar physical positions enter this relative path.
-                relative = xyz-vertex[event]
+                relative = xyz if self.config.get('relative_mode') == 'absolute' else xyz-vertex[event]
+                relative = relative*axis_present
                 detector = nodes[:, 0, 12:14]
-                values = self.relative_branch(torch.cat([relative, relative.square(), detector[:, :1]], -1))
+                values = self.relative_branch(torch.cat([relative, relative.square(), axis_present.float(), detector[:, :1]], -1))
                 pooled, _ = segment_pool(values, event, valid.any(1), len(raw))
                 fused = fused+self.relative_scale*self.relative_pool(pooled)
             if self.config.get('use_objects'):

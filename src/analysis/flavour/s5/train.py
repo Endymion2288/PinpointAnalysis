@@ -63,6 +63,8 @@ def run(args):
     gate = json.loads((args.root/'pilot/gate.json').read_text())
     if not gate['gate_passed']:
         raise RuntimeError('S5 real-event fit gate required')
+    if config.get('coordinate_revision', 1) > gate['config'].get('coordinate_revision', 1):
+        raise RuntimeError('coordinate revision requires a matching real-event fit gate')
     destination = args.root/'experiments'/config['name']
     destination.mkdir(parents=True, exist_ok=True)
     if (destination/'manifest.json').exists():
@@ -159,7 +161,9 @@ def run(args):
             step += 1
             if step % config.get('progress_every_steps', 100) == 0:
                 write_json(destination/'progress.json', {'epoch': epoch+1, 'step': step, 'seconds': time.monotonic()-started,
-                           'classification_loss': float(values['classification'].detach()), 'maximum_preclip_gradient': maximum_gradient})
+                           'classification_loss': float(values['classification'].detach()), 'maximum_preclip_gradient': maximum_gradient,
+                           'GPU_peak_allocated_bytes': torch.cuda.max_memory_allocated() if device.type == 'cuda' else None,
+                           'GPU_reserved_bytes': torch.cuda.memory_reserved() if device.type == 'cuda' else None})
         prediction = predict(model, val_loader, device, bf16)
         measured = metrics(validation.metadata.label.to_numpy(), prediction['probability'])
         row = {'epoch': epoch+1, 'train_losses': {k: v/count for k, v in loss_sum.items()}, 'validation': measured,
