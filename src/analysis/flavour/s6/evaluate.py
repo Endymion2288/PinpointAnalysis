@@ -161,6 +161,9 @@ def strata(frame, config):
         groups['pixel_edge_fraction_gt_5pct'] = frame.pixel_edge_fraction.to_numpy() > .05
         groups['last_pixel_plane_active'] = frame.pixel_last_plane_fraction.to_numpy() > 0
         groups['last_bar_panel_active'] = frame.bar_last_panel_energy_fraction.to_numpy() > 0
+    if 'model_active' in frame:
+        groups['model_active'] = frame.model_active.to_numpy()
+        groups['model_empty'] = ~frame.model_active.to_numpy()
     return groups
 
 
@@ -216,6 +219,10 @@ def one(args):
         scores[f'raw_p{c}'], scores[f'p{c}'] = p_raw[:, c], p[:, c].astype('float32')
     scores.to_parquet(destination/'scores.parquet', index=False, compression=COMPRESSION)
     frame = joined(args.root, raw)
+    members, _ = probability_columns(name, campaign)
+    candidate = next(m for m in campaign['models'] if m['name'] == members[0])
+    modalities = candidate['config'].get('modalities', ['pixel', 'bar'])
+    frame['model_active'] = np.logical_or.reduce([frame[m+'_channels'].to_numpy() > 0 for m in modalities])
     result = {'name': name, 'scenario': scenario, 'prior': prior, 'temperature': cal['temperature'],
         'metrics': report(cache, weight), 'raw_balanced_metrics': report(MetricCache(y, p_raw), bootstrap.weights(y, [.25]*4)),
         'class_counts': np.bincount(y, minlength=4).tolist(), 'confusion_raw_counts':
@@ -225,6 +232,9 @@ def one(args):
         'reliability_before_temperature': reliability(y, transform(p_raw, 1., prior), weight, config['reliability_bins']),
         'Neff': float(weight.sum()**2/(weight@weight)),
         'weight_quantiles': np.quantile(weight, [0, .01, .5, .99, 1]).tolist()}
+    result['activity_definition'] = {'detector_active': 'any pixel/bar/tracker measurement',
+        'model_active': 'any supplied modality measurement', 'supplied_modalities': modalities,
+        'model_active_events': int(frame.model_active.sum())}
     matrix, blocks = bootstrap.load(args.root, raw)
     sample_names = METRIC_NAMES+fixed.names
     samples = np.zeros((len(matrix), len(sample_names)))
@@ -242,6 +252,8 @@ def one(args):
         for n, mask in [('all', np.ones(len(frame), bool)), ('target_envelope', envelope),
             ('target_envelope_and_active', envelope & active),
             ('target_envelope_active_selected', envelope & active & (resolved != 4)), ('pixel_centered', target),
+            ('target_envelope_and_model_active', envelope & frame.model_active.to_numpy()),
+            ('target_envelope_model_active_selected', envelope & frame.model_active.to_numpy() & (resolved != 4)),
             ('pixel_centered_and_active', target & active),
             ('pixel_centered_active_and_frozen_selection', target & active & (resolved != 4))]:
             cutflow.append({'target_FPR': point['target_FPR'], 'cut': n,

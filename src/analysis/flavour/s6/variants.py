@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import socket
+import subprocess
+import sys
 import time
 
 import numpy as np
@@ -120,9 +122,29 @@ def finalize(args):
         'variants': len(config['variants']), 'nominal_maximum_probability_differences': differences})
 
 
+def pool(args):
+    processes, logs = [], []
+    for lane in range(args.lanes):
+        path = args.root/'logs'/f'{args.name}_lane{lane}.log'
+        stream = path.open('w')
+        logs.append(stream)
+        command = [sys.executable, '-m', 'analysis.flavour.s6.variants', 'worker', '--root', str(args.root),
+            '--campaign', str(args.campaign), '--batch-size', str(args.batch_size), '--workers', str(args.workers),
+            '--precision', args.precision, '--shards-per-task', str(args.shards_per_task)]
+        if args.compile_local:
+            command += ['--compile-local']
+        processes.append(subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT))
+    states = [p.wait() for p in processes]
+    for stream in logs:
+        stream.close()
+    write_json(args.root/'runtime'/f'{args.name}.pool.json', {'lanes': args.lanes, 'exit_codes': states})
+    if any(states):
+        raise RuntimeError('paired variation inference failed; inspect EOS lane logs')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['worker', 'finalize'])
+    parser.add_argument('command', choices=['worker', 'pool', 'finalize'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--models', nargs='+')
@@ -133,6 +155,8 @@ def main():
     parser.add_argument('--compile-local', action='store_true')
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--workers', type=int, default=4)
+    parser.add_argument('--lanes', type=int, default=4)
+    parser.add_argument('--name', default='variants')
     args = parser.parse_args()
     globals()[args.command](args)
 
