@@ -1,0 +1,21 @@
+{
+  "stage": "S4_phase_safe_parameter_changes",
+  "experiments": [
+    {
+      "name": "s4_transfer4_1k_parameter_audit",
+      "program": "parameter_audit",
+      "targets": [
+        "s4_transfer4_optimized_scratch_n1000_s17",
+        "s4_transfer4_optimized_scratch_n1000_s42",
+        "s4_transfer4_optimized_scratch_n1000_s2026",
+        "s4_transfer4_optimized_mae3_n1000_s17",
+        "s4_transfer4_optimized_mae3_n1000_s42",
+        "s4_transfer4_optimized_mae3_n1000_s2026",
+        "s4_transfer4_ema3_n1000_s42",
+        "s4_transfer4_mae5_n1000_s42",
+        "s4_transfer4_rel_channel5_n1000_s42"
+      ],
+      "wait_for_completion_seconds": 10800
+    }
+  ]
+}

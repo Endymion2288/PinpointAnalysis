@@ -92,6 +92,10 @@ def main():
         m=json.loads(path.read_text())
         frozen=checkpoint_configuration(c,m['config'])
         report=readback(args.root,frozen,{'GPU':m['gpu_name'],'torch':'2.7.1'},validation)
+        if c.get('transfer_recipe'):
+            from analysis.flavour.s4.parameter_audit import inspect as inspect_parameters
+            if not inspect_parameters(args.root,name)['passed']:
+                raise RuntimeError(name+': encoder parameter updates absent; review actual training')
         if config.get('inspect_best_health',False):
             from analysis.flavour.s4.health import inspect
             diagnostic=inspect(args.root,name,catalog)
@@ -101,8 +105,9 @@ def main():
         if not rows or not all(r['healthy'] for r in rows):raise RuntimeError(name+': internal training health failed')
         encoder_rows=[r for r in rows if not r.get('intentional_encoder_freeze',False)]
         frozen_rows=[r for r in rows if r.get('intentional_encoder_freeze',False)]
-        if not all(r['gradient_squared_norms'].get('input',0)>0 for r in encoder_rows if r.get('informative_nodes',0)>0):
-            raise RuntimeError(name+': informative input gradient absent')
+        for branch in ['input','local']:
+            if not all(r['gradient_squared_norms'].get(branch,0)>0 for r in encoder_rows if r.get('informative_nodes',0)>0):
+                raise RuntimeError(name+': informative '+branch+' gradient absent')
         if frozen_rows and (not c.get('linear_probe_passes') or not all(
             r['gradient_squared_norms'].get('linear_readout',0)>0 and all(
                 value==0 for key,value in r['gradient_squared_norms'].items() if key!='linear_readout') for r in frozen_rows)):
@@ -121,6 +126,8 @@ def main():
             'maximum_preclip_gradient_norm':maximum_norm,'gradient_review_limit':limit,
             'gradient_review_pass':maximum_norm<=limit,
             'minimum_input_gradient_squared_norm':min(r['gradient_squared_norms'].get('input',0) for r in encoder_rows if r.get('informative_nodes',0)>0),
+            'minimum_local_gradient_squared_norm':min(r['gradient_squared_norms'].get('local',0) for r in encoder_rows if r.get('informative_nodes',0)>0),
+            'parameter_updates_checked':bool(c.get('transfer_recipe')),
             'intentional_LP_samples':len(frozen_rows),
             'checkpoint_epoch':report['best_epoch']})
         verified.append(name)

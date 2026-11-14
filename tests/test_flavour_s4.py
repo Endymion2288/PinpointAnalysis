@@ -424,7 +424,7 @@ class S4Tests(unittest.TestCase):
             (directory/'manifest.json').write_text(json.dumps({'status':'complete','gpu_name':'NVIDIA H100 NVL',
                 'config':recorded}))
             (directory/'training_health.json').write_text(json.dumps({'records':[{'healthy':True,
-                'informative_nodes':3,'gradient_squared_norms':{'input':1.},'activations':{}}]}))
+                'informative_nodes':3,'gradient_squared_norms':{'input':1.,'local':1.},'activations':{}}]}))
             pd.DataFrame({'run':[10081],'chunk':[0],'row':[0],'label':[0],
                 'split':['validation']}).to_parquet(root/'catalog.parquet',index=False)
             job=root/'job.json';job.write_text(json.dumps({'experiments':[{'name':'validation',
@@ -439,6 +439,12 @@ class S4Tests(unittest.TestCase):
             self.assertEqual(report['verified_train'],['legacy'])
             summary=json.loads((root/'experiments/validation/training_health_summary.json').read_text())
             self.assertEqual(summary['samples'],1)
+            (directory/'training_health.json').write_text(json.dumps({'records':[{'healthy':True,
+                'informative_nodes':3,'gradient_squared_norms':{'input':1.,'local':0.},'activations':{}}]}))
+            with patch('sys.argv',['validation','--root',str(root),'--campaign',str(job),'--task','0']),patch(
+                'analysis.flavour.s4.validation_job.readback',return_value={'best_epoch':1}),patch(
+                'analysis.flavour.s4.validation_job.evaluate'),self.assertRaisesRegex(RuntimeError,'informative local gradient absent'):
+                validate_completed_campaign()
 
     def test_checkpoint_config_resolves_only_legacy_dispatch_default(self):
         original={'name':'legacy','objective':'classification','seed':42,'learning_rate':3e-4}
