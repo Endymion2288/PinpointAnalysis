@@ -1,7 +1,14 @@
 """Paired readout-proxy variations; field/material changes require transport."""
+import argparse
+import json
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+import pyarrow.parquet as pq
 
 from analysis.flavour.readout import modality_state, pixel_positions, tracker_measurements
+from analysis.flavour.inventory import COMPRESSION
 
 
 def family_seed(meta):
@@ -108,3 +115,80 @@ class Condition:
             tracker = subset(tracker, tracker['station'] != p['drop_tracker_station'])
         state = modality_state(pixel, bars, tracker)
         return {'pixel': pixel, 'bar': bars, 'tracker_hypothesis': tracker, **state}
+
+
+def select_families(frame, per_class, seed):
+    frame = frame.copy()
+    frame['_order'] = stable_uniform(frame.family_hi.to_numpy(dtype='uint64') ^ frame.family_lo.to_numpy(dtype='uint64'), seed)
+    selected = frame.sort_values('_order', kind='stable').groupby('label', sort=False).head(per_class)
+    families = selected[['family_hi', 'family_lo']].drop_duplicates()
+    return frame.merge(families, on=['family_hi', 'family_lo'], how='inner', validate='many_to_one').drop(columns='_order').sort_values(['run', 'chunk', 'row'])
+
+
+def plan(args):
+    config = json.loads(args.config.read_text())
+    frame = pd.read_parquet(args.root/'manifest.parquet', filters=[('split', '=', 'test')])
+    for name, count in [('variants', config['paired_digitizer_sample']['events_per_class']), ('transport', config['transport']['events_per_class'])]:
+        selected = select_families(frame, count, config['paired_digitizer_sample']['seed'])
+        selected.to_parquet(args.root/f'{name}_manifest.parquet', index=False, compression=COMPRESSION)
+        print(json.dumps({'subset': name, 'events': len(selected), 'counts': selected.label.value_counts().sort_index().to_dict(), 'response_opened': False}), flush=True)
+    (args.root/'conditions.json').write_text(args.config.read_text())
+
+
+def smoke(args):
+    """Eight pre-existing validation events; no test payload is opened."""
+    from analysis.flavour.s6.infer import Responses
+    from analysis.flavour.inventory import write_json
+    from analysis.flavour.create_data import ROOT_TREES
+    import uproot
+    import awkward as ak
+    source_plan = json.loads((args.source/'plan.json').read_text())
+    geometry = json.loads(Path(source_plan['geometry']).read_text())
+    catalog = pd.read_parquet(args.source/'catalog.parquet')
+    selected = []
+    for _, group in catalog[catalog.split.eq('validation')].groupby('label'):
+        selected.append(group.sort_values('tracker_channels').iloc[[0, -1]])
+    selected = pd.concat(selected).drop_duplicates(['run', 'chunk', 'row'])
+    paths = sorted(p for p in (args.source/'shards').iterdir() if (p/'observations.parquet').exists())
+    data = Responses(paths, geometry, [], selected)
+    hardware = json.loads((args.root/'audit/bar_hardware_map.json').read_text())
+    config = json.loads(args.config.read_text())
+    checks = []
+    for index, meta in enumerate(data.metadata.to_dict('records')):
+        original = data.native[int(data.indexes[index])]['observations']
+        path = Path(source_plan['input_root'])/str(meta['run'])/f"{meta['run']}_{meta['chunk']:03d}.root"
+        with uproot.open(path, array_cache=None, object_cache=None) as file:
+            raw = file[ROOT_TREES['tracker']].arrays(['trackerID', 'x', 'y', 'z'], entry_start=meta['row'], entry_stop=meta['row']+1, library='ak')
+            raw = {k: ak.to_numpy(raw[k][0]) for k in raw.fields}
+        ideal, _ = tracker_measurements(raw, family_seed(meta))
+        reproduced = Condition(geometry, {'tracker_sigma_scale': 1.}, hardware)(original, meta, ideal)
+        tracker_identical = all(np.array_equal(v, reproduced['tracker_hypothesis'][k]) for k, v in original['tracker_hypothesis'].items())
+        if not tracker_identical:
+            raise ValueError('saved ideal crossings do not reproduce nominal tracker')
+        for variant in config['variants']:
+            changed = Condition(geometry, variant['parameters'], hardware)(original, meta, ideal)
+            counts = [len(changed[n][k]) for n, k in [('pixel', 'channel_id'), ('bar', 'channel_id'), ('tracker_hypothesis', 'station')]]
+            finite = all(np.isfinite(value).all() for n in ['pixel', 'bar', 'tracker_hypothesis'] for value in changed[n].values())
+            if not finite:
+                raise ValueError('nonfinite readout variation')
+            if variant['name'] == 'nominal' and not all(np.array_equal(v, changed[n][k]) for n in ['pixel', 'bar', 'tracker_hypothesis'] for k, v in original[n].items()):
+                raise ValueError('nominal variant changed observations')
+            checks.append({'run': int(meta['run']), 'chunk': int(meta['chunk']), 'row': int(meta['row']), 'label': int(meta['label']),
+                           'variant': variant['name'], 'counts': counts, 'finite': finite, 'tracker_sigma1_nominal_identical': tracker_identical})
+    data.native.close()
+    write_json(args.root/'audit/conditions_smoke.json', {'events': len(data), 'variants': len(config['variants']), 'checks': checks, 'test_used': False, 'status': 'passed'})
+    print(json.dumps({'events': len(data), 'variants': len(config['variants']), 'tracker_sigma1_nominal_identical': True, 'status': 'passed'}), flush=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=['plan', 'smoke'])
+    parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--config', type=Path, required=True)
+    parser.add_argument('--source', type=Path)
+    args = parser.parse_args()
+    globals()[args.command](args)
+
+
+if __name__ == '__main__':
+    main()

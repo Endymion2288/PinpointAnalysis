@@ -23,7 +23,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from analysis.flavour.datasets import CachedNativeDataset
-from analysis.flavour.inventory import write_json
+from analysis.flavour.inventory import COMPRESSION, write_json
 from analysis.flavour.s2.train import save_parquet
 from analysis.flavour.s3.dataset import plane_tokens, collate_planes
 from analysis.flavour.s3.health import TrainingHealth
@@ -379,7 +379,7 @@ def finalize(args):
         summary = json.loads((part/'summary.json').read_text())
         table = pq.read_table(part/'probabilities.parquet')
         if writer is None:
-            writer = pq.ParquetWriter(temporary, table.schema, compression='zstd')
+            writer = pq.ParquetWriter(temporary, table.schema, compression=COMPRESSION)
         writer.write_table(table)
         keys.append(table.select(KEY).to_pandas())
         summaries.append(summary)
