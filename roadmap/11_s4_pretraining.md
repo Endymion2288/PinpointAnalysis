@@ -71,35 +71,33 @@ S4 本轮组织上限 **60 device-hours**，包括所有后端的 pilot、编译
 
 FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-11-13_stage119_s4_full_rel_event_information.md)，与本次分类比较分开。旧矩阵及其解释只保留于标明状态的阶段记录，不复用为新路由的收益证据。Calibration/test继续冻结。
 
-## 6. 由实测结果驱动的后续优化
+## 6. 修复后优化结果与剩余对照
 
-2026-11-14执行合同已固定，见[阶段146](../workbook/2026-11-14_stage146_s4_train_inner_optimization_contract.md)和[48项train-inner配置](configs/s4_low_label_inner.json)。四种配方覆盖更早checkpoint、较低encoder LR、正则和LP-FT，对Scratch/MAE3及1k/10k各做三折；仅以train-inner OOF NLL共同选择配方和完整遍历次数，再固定末轮重拟合三seeds。各预算进展如下，完整重拟合的新validation收益尚未测量。
+有效的[48项train-inner矩阵](configs/s4_low_label_inner_v4.json)采用四种共同配方：early、低encoder LR、强正则、LP-FT，各预算/初始化三折。修复后的12项LP与36项正常non-LP共同完成137,088次更新、2,112,000次曝光和1,732次健康采样，所有informative FT的input/local梯度为正，见[健康汇总](results/s4_transfer4_inner_health.json)。旧LP矩阵的同名选择与checkpoint继续作废。
 
-1k的24项inner训练已完成，334项健康采样通过；共同OOF规则选择LP-FT、第8次完整遍历，Scratch/MAE3 OOF NLL为1.433131/1.390133，仍高于ln4，未解决低标签概率质量。六项三seed重拟合已正式提交，配置为[configs/s4_low_label_refit_1k.json](configs/s4_low_label_refit_1k.json)，见[阶段148](../workbook/2026-11-14_stage148_s4_1k_inner_selection.md)及[选择表](results/s4_low_label_selection_1k.json)。10k矩阵继续运行，完整预算的新validation收益尚未测量。修复后的[六项full/global frozen probes](configs/s4_empty_frozen_probes.json)也已提交。
+按原train-inner共同OOF NLL规则，1k选择LP-FT/8 pass，Scratch/MAE3 OOF NLL为1.448791/1.389765；10k选择early/6 pass，为1.302972/1.277887。两者均在全部原nested-label预算内选择，不增加事件类别标签。1k六项修复refit已重新训练；10k六项正常候选与新选择的实际训练设置完全一致，保留原配置与成本复用，见[复用证据](results/s4_transfer4_10k_candidate_reuse.json)。
 
-1k新旧模型的[12模型评价](configs/s4_optimized_1k_evaluation.json)与[12项配对/4项seed均值](configs/s4_optimized_1k_pairs.json)已固定，见[阶段149](../workbook/2026-11-14_stage149_s4_optimized_evaluation_contract.md)。四组分别绘图和汇总，避免相同initialization的新旧模型混合；每个模型记录真实checkpoint选择方式。优化方案在查看旧结果后设计，本次10k validation复用的条件性范围保存在评价合同中。
+两预算三seed完整评价、实际参数更新和独立FP32均通过，见[阶段167](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)与[精简数值](results/s4_transfer4_low_label_summary.json)：
 
-首批1k frozen probes出现L-BFGS 500次上限未收敛，输出改作诊断。固定C=1及tol不变，另以max_iter=5000及明确收敛证据生成[六项新任务](configs/s4_converged_frozen_probes.json)，见[阶段150](../workbook/2026-11-14_stage150_s4_probe_solver_and_checkpoint_plots.md)。训练图也按实际提交epoch标记固定末轮，LP冻结采样单独计数。
+| Labels / initialization | Baseline → optimized macro AP | Baseline → optimized NLL | Interpretation |
+| --- | --- | --- | --- |
+| 1k Scratch | 0.288856 → 0.307071 | 1.564575 → 1.407840 | Probability/ranking improve; NLL remains above ln4 |
+| 1k MAE3 | 0.345980 → 0.330614 | 1.447382 → 1.358905 | Probability improves; ranking decreases |
+| 10k Scratch | 0.425891 → 0.423526 | 1.276154 → 1.272265 | Small changes, paired intervals cross zero |
+| 10k MAE3 | 0.440384 → 0.448223 | 1.252464 → 1.238574 | Both improve in all three seeds |
 
-不含失效LP的[readability评价](configs/s4_repaired_readability_evaluation.json)及[18项配对](configs/s4_repaired_readability_pairs.json)见[阶段157](../workbook/2026-11-14_stage157_s4_readability_evaluation_contract.md)：六项full/global收敛probes与六项阶段145正常fine-tuning，逐readout检查求解证据与完整validation输出。完整配对统计尚未测量。
+优化MAE3相对共同Scratch的τ F1在三个seed均有正增量，但0.1% FPR仅7个背景、1k MAE3只保留0/1/1个τ，10k为8/6/4，仍不能作稳定高纯度结论。Common-support的τ AP相对基线增量区间仍跨零。完整raw/common-support、τ子道和逐类计数保存于冻结评价；seed均值不等同ensemble。
 
-修复后的[监督计算对照计划](configs/s4_empty_matched_plan.json)已固定，见[阶段151](../workbook/2026-11-14_stage151_s4_repaired_compute_control_contract.md)。以阶段145的修复Scratch为parent，额外匹配既有MAE3声明矩阵预算，parent全部计算计入；与train-inner配方优化分开比较。
+新有效seed42分支检查完成，见[分支实测](results/s4_transfer4_functional_paths.json)：10k global置换的NLL增量Scratch为0.000085，MAE3为0.060310，后者common-support为0.056311；local/regional也影响MAE3预测。完整10k、三套presence-preserving映射和400次物理块bootstrap支持当前checkpoint确实使用这些分支；它们是拟合路径依赖，不能解释为重训ablation或物理因果重要性。
 
-三个预算的匹配误差为0.030651%/0.069562%/0.008342%，见[训练配置](configs/s4_empty_supervised_matched.json)与[预算实测](results/s4_empty_matched_budgets.json)。[阶段163](../workbook/2026-11-14_stage163_s4_compute_control_results.md)已完成12预测/12配对的完整10k评价：1k/10k监督continuation过拟合，100k相对Scratch的macro AP增量+0.000157、区间跨零，均未复现对应MAE3结果；三个监督envelope均保留原parent，同时计入全部continuation成本。该结论只覆盖固定seed42和所测continuation配方，不代表最优监督调参或跨硬件实测FLOPs等效。
+修复后的监督matched-compute控制已完成12预测/12配对，见[阶段163](../workbook/2026-11-14_stage163_s4_compute_control_results.md)。声明矩阵操作匹配误差为0.030651%/0.069562%/0.008342%，所有parent计算计入。1k/10k continuation过拟合，100k相对Scratch的macro AP变化+0.000157、区间跨零；三个监督envelope均保留原parent，同时计入全部continuation成本。该结论只覆盖固定seed42及所测监督配方，不代表最优监督调参或硬件实测FLOPs等效。
 
-EMA3、MAE5、partial channel Rel5的[首批共同下游配置](configs/s4_repaired_objectives_a.json)已固定，见[阶段152](../workbook/2026-11-14_stage152_s4_repaired_objective_comparison.md)。包含1k/100k各三项fine-tuning和三项full/global frozen；10k沿用待完成OOF合同的共同配方。复用健康SSL来源、重新拟合下游，额外模拟语义及parent计算单列；新分类收益尚未测量。
+EMA3、MAE5、partial channel Rel5的1k下游修复已完成，10k正常候选按新共同选择复用，100k三项fine-tuning仍运行。所有来源SSL已经健康/学习readback，复用encoder而不重训SSL本身；channel Rel使用额外模拟语义监督，不能称纯自监督标签效率。统一目标比较冻结于[30配置/45预测](configs/s4_transfer4_objectives_evaluation.json)及[66配对](configs/s4_transfer4_objectives_pairs.json)。
 
-48项train-inner现已全部完成，137,088次逐步梯度检查及1,732次采样通过。10k共同规则选择early、第6次完整遍历，Scratch/MAE3 OOF NLL为1.302972/1.277887；[六项固定末轮重拟合](configs/s4_low_label_refit_10k.json)、[选择表](results/s4_low_label_selection_10k.json)及[同设置SSL下游](configs/s4_repaired_objectives_b.json)见[阶段154](../workbook/2026-11-14_stage154_s4_10k_inner_selection.md)。新10k完整预算validation收益尚未测量；不将1k的LP-FT选择直接推广至10k。
+Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k full Scratch/MAE3仍触及上限，旧完整readability评价已停止。新的[同目标Newton-CG回归](configs/s4_newton_solver_gate.json)采用同features、fit-only scaler和C=1，要求真实梯度驻点与同目标概率/目标值对照。通过后[五项GPU暂存features](configs/s4_newton_feature_banks.json)各提取一次100k train/10k validation，[15项CPU readouts](configs/s4_newton_readouts.json)按精确nested-label事件键分别拟合；GPU不等待CPU求解。暂存数组在完整验收后删除，只保留小型readouts、预测和provenance。新驻点结果尚未测量，未收敛旧模型仅作诊断。
 
-新18项矩阵确认低标签排序收益，也确认1k过拟合、τ硬决策及低背景工作点仍不足。以下属于尚未执行的下一轮候选。先在原标签预算内固定train-inner选择合同，再对Scratch/MAE3共同优化；本轮不扩至1M。
+本轮不扩至1M。完成剩余目标对照、驻点readout、完整物理统计、真实allocation终态和总成本后形成S4最终报告。当前已完成低标签重训和matched控制，S4整体仍进行中。
 
-| 实测问题 | 待比较的改动 | 控制与选择 |
-| --- | --- | --- |
-| 新1k全部最佳NLL均为第一轮，随后过拟合，MAE3平均NLL仍高于ln4 | 降低重复曝光次数、增加早期checkpoint时间点；分别降低encoder学习率与加强readout正则 | 同设置Scratch/MAE，不只调MAE；记录每个唯一事件的曝光和实际updates |
-| 新MAE3的global路径实际影响输出，但低标签概率与决策仍不理想 | 先固定encoder拟合readout，再解冻的LP-FT；与单纯降低encoder学习率分别比较 | readout适配须覆盖相同summary/branch normalization定义；新路由的frozen readability尚未重测 |
-| AP与τ argmax F1方向不同 | train-inner选择正则与决策规则，分别检查NLL、Brier、各类confusion和低FPR计数 | 不在现有validation上拟合class bias或温度；S6最终校准继续冻结 |
-| 本次只重测MAE3，未确认新路由下其他预训练目标的分类净收益 | 只有主要readout/训练问题解决后，才在同一路由复核EMA、partial Rel、continuation和frozen probes | 模拟语义监督和计算成本单列，保留Scratch及MAE continuation对照 |
-
-下一轮的超参数选择只用原nested-label子集内的固定分层train-inner folds，选择过程使用的标签仍计入同一1k/10k预算；按最终选择重新拟合全部该预算事件。验证集仅作冻结协议的后续评价，不能把多次查看validation描述成新的独立证据。追加方案要记录已观察S4结果后设计，沿用同一validation的区间也条件于这一步设计，不使用calibration/test。
+优化设计已观察前期S4 validation，后续区间条件于该设计、同一validation与既定权重；不能描述成新的独立泛化证据。Calibration/test及最终class bias、温度与工作点选择继续冻结。
 
 2026-11-13 23:18 UTC重新联网读取[Kumar等，ICLR 2022 LP-FT](https://arxiv.org/abs/2202.10054)及[Wortsman等，CVPR 2022 WiSE-FT](https://openaccess.thecvf.com/content/CVPR2022/html/Wortsman_Robust_Fine-Tuning_of_Zero-Shot_Models_CVPR_2022_paper.html)，源文件与URL记录位于输出根`literature/low_label_transfer_sources.json`。LP-FT给出随机Head与encoder同时更新可能扰动预训练特征的可检验假设；其论文主要研究OOD，当前数据尚未证明这种病因。WiSE-FT依赖可用的zero-shot分类模型，当前没有对应分类Head，暂不直接采用权重插值。前述CVPR 2025 Sonata/NOMAE和FASERCal仍为主要预训练依据。
