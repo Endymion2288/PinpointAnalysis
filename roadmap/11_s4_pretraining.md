@@ -81,6 +81,8 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 首批1k frozen probes出现L-BFGS 500次上限未收敛，输出改作诊断。固定C=1及tol不变，另以max_iter=5000及明确收敛证据生成[六项新任务](configs/s4_converged_frozen_probes.json)，见[阶段150](../workbook/2026-11-14_stage150_s4_probe_solver_and_checkpoint_plots.md)。训练图也按实际提交epoch标记固定末轮，LP冻结采样单独计数。
 
+不含失效LP的[readability评价](configs/s4_repaired_readability_evaluation.json)及[18项配对](configs/s4_repaired_readability_pairs.json)见[阶段157](../workbook/2026-11-14_stage157_s4_readability_evaluation_contract.md)：六项full/global收敛probes与六项阶段145正常fine-tuning，逐readout检查求解证据与完整validation输出。完整配对统计尚未测量。
+
 修复后的[监督计算对照计划](configs/s4_empty_matched_plan.json)已固定，见[阶段151](../workbook/2026-11-14_stage151_s4_repaired_compute_control_contract.md)。以阶段145的修复Scratch为parent，额外匹配既有MAE3声明矩阵预算，parent全部计算计入；与train-inner配方优化分开比较，新的continuation指标尚未测量。
 
 该CPU计划已完成，三个预算的匹配误差为0.030651%/0.069562%/0.008342%，[训练配置](configs/s4_empty_supervised_matched.json)与[预算实测](results/s4_empty_matched_budgets.json)已生成。[阶段153](../workbook/2026-11-14_stage153_s4_repaired_compute_budget.md)记录12项固定配对、监督Head复用及frozen probe收敛后仍存在的概率误差；新的continuation收益尚未测量。

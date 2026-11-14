@@ -1,0 +1,135 @@
+{
+  "pairs": [
+    {
+      "name": "full_frozen_mae3_minus_scratch_n1000",
+      "a": "s4_converged_frozen_scratch_n1000_s42",
+      "b": "s4_converged_frozen_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "global_frozen_mae3_minus_scratch_n1000",
+      "a": "s4_converged_frozen_scratch_n1000_s42__global",
+      "b": "s4_converged_frozen_mae3_n1000_s42__global",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "full_minus_global_frozen_scratch_n1000",
+      "a": "s4_converged_frozen_scratch_n1000_s42__global",
+      "b": "s4_converged_frozen_scratch_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "baseline_finetuned_minus_full_frozen_scratch_n1000",
+      "a": "s4_converged_frozen_scratch_n1000_s42",
+      "b": "s4_empty_scratch_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "full_minus_global_frozen_mae3_n1000",
+      "a": "s4_converged_frozen_mae3_n1000_s42__global",
+      "b": "s4_converged_frozen_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "baseline_finetuned_minus_full_frozen_mae3_n1000",
+      "a": "s4_converged_frozen_mae3_n1000_s42",
+      "b": "s4_empty_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "full_frozen_mae3_minus_scratch_n10000",
+      "a": "s4_converged_frozen_scratch_n10000_s42",
+      "b": "s4_converged_frozen_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "global_frozen_mae3_minus_scratch_n10000",
+      "a": "s4_converged_frozen_scratch_n10000_s42__global",
+      "b": "s4_converged_frozen_mae3_n10000_s42__global",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "full_minus_global_frozen_scratch_n10000",
+      "a": "s4_converged_frozen_scratch_n10000_s42__global",
+      "b": "s4_converged_frozen_scratch_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "baseline_finetuned_minus_full_frozen_scratch_n10000",
+      "a": "s4_converged_frozen_scratch_n10000_s42",
+      "b": "s4_empty_scratch_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "full_minus_global_frozen_mae3_n10000",
+      "a": "s4_converged_frozen_mae3_n10000_s42__global",
+      "b": "s4_converged_frozen_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "baseline_finetuned_minus_full_frozen_mae3_n10000",
+      "a": "s4_converged_frozen_mae3_n10000_s42",
+      "b": "s4_empty_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "full_frozen_mae3_minus_scratch_n100000",
+      "a": "s4_converged_frozen_scratch_n100000_s42",
+      "b": "s4_converged_frozen_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "global_frozen_mae3_minus_scratch_n100000",
+      "a": "s4_converged_frozen_scratch_n100000_s42__global",
+      "b": "s4_converged_frozen_mae3_n100000_s42__global",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "full_minus_global_frozen_scratch_n100000",
+      "a": "s4_converged_frozen_scratch_n100000_s42__global",
+      "b": "s4_converged_frozen_scratch_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "baseline_finetuned_minus_full_frozen_scratch_n100000",
+      "a": "s4_converged_frozen_scratch_n100000_s42",
+      "b": "s4_empty_scratch_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "full_minus_global_frozen_mae3_n100000",
+      "a": "s4_converged_frozen_mae3_n100000_s42__global",
+      "b": "s4_converged_frozen_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "baseline_finetuned_minus_full_frozen_mae3_n100000",
+      "a": "s4_converged_frozen_mae3_n100000_s42",
+      "b": "s4_empty_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    }
+  ],
+  "seed_mean_comparisons": [],
+  "include_global_frozen": true,
+  "paired_tau_branches": true,
+  "evaluation_scope": "S4 complete 10k validation for repaired frozen readability and stage145 fine-tuning; calibration/test frozen",
+  "design_scope": "Fixed C=1 probes with numerical convergence, seed42, no hyperparameter search on validation. Frozen-head input transforms and standardized multinomial readout differ from full fine-tuning; this is a readability and training-protocol comparison, not a causal branch-importance measurement."
+}

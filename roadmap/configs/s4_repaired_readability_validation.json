@@ -1,0 +1,20 @@
+{
+  "stage": "S4_repaired_frozen_readability",
+  "calibration_test_used": false,
+  "experiments": [
+    {
+      "name": "s4_repaired_readability_validation",
+      "program": "validation_job",
+      "campaigns": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_repaired_readability_evaluation.json"
+      ],
+      "comparisons": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_repaired_readability_pairs.json",
+      "evaluation_output": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/repaired_readability",
+      "bootstrap": 400,
+      "strict": true,
+      "inspect_best_health": true,
+      "plot_training_health": true,
+      "wait_for_completion_seconds": 10800
+    }
+  ]
+}

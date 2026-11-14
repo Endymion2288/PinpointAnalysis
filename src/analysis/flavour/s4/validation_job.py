@@ -18,6 +18,26 @@ from analysis.flavour.s2.readback import readback
 from analysis.flavour.s4.evaluate import evaluate
 
 
+def verify_probe(directory,config,validation):
+    """Check numerical solver evidence and the exact frozen prediction catalog."""
+    manifest=json.loads((directory/'manifest.json').read_text())
+    if manifest.get('status')!='complete' or manifest.get('config')!=config:
+        raise ValueError(config['name']+': complete frozen probe configuration required')
+    optimization=json.loads((directory/'probe_optimization.json').read_text())
+    for branch in config.get('probe_branches',['full','global']):
+        audit=optimization[branch+'_linear']
+        if (not audit.get('passed') or audit.get('convergence_warnings') or
+            not audit.get('finite_coefficients') or audit['fit_events']!=config['label_budget']):
+            raise ValueError(config['name']+': converged fit-only readout required')
+        frame=pd.read_parquet(directory/(branch+'_linear_predictions.parquet'))
+        keys=['run','chunk','row','label']
+        if not frame[keys].sort_values(keys).reset_index(drop=True).equals(
+                validation[keys].sort_values(keys).reset_index(drop=True)):
+            raise ValueError(config['name']+': probe predictions differ from fixed validation catalog')
+    return {'name':config['name'],'branches':optimization,'fit_events':manifest['fit_events'],
+        'validation_events':manifest['probe_events'],'all_optimizers_converged':True}
+
+
 def checkpoint_configuration(expected, recorded):
     """Resolve only the legacy task-dispatch default; retain strict fit settings."""
     def explicit(config):
@@ -58,8 +78,13 @@ def main():
             write_json(output/'manifest.json',manifest)
             time.sleep(15)
     catalog=pd.read_parquet(args.root/'catalog.parquet')
-    validation=catalog[catalog.split.eq('validation')];verified=[];pending=[];health=[]
+    validation=catalog[catalog.split.eq('validation')];verified=[];pending=[];health=[];probes=[]
     for name,c in configurations.items():
+        if c.get('program')=='probes':
+            directory=args.root/'experiments'/name;path=directory/'manifest.json'
+            if not path.exists() or json.loads(path.read_text()).get('status')!='complete':
+                pending.append(name);continue
+            probes.append(verify_probe(directory,c,validation));continue
         if c.get('program','train' if c.get('objective')=='classification' else 'pretrain')!='train':continue
         directory=args.root/'experiments'/name;path=directory/'manifest.json'
         if not path.exists() or json.loads(path.read_text()).get('status')!='complete':
@@ -101,6 +126,8 @@ def main():
         verified.append(name)
     write_json(output/'training_health_summary.json',{'models':health,'samples':sum(r['samples'] for r in health),
         'scope':'sampled activation and gradient evidence including extreme finite gradients; checkpoint readback checked separately'})
+    write_json(output/'probe_optimization_summary.json',{'models':probes,
+        'scope':'fixed-fit-label standardization, solver convergence and exact validation keys; no hyperparameter selection'})
     evaluate(SimpleNamespace(root=args.root,campaign=campaigns,comparisons=Path(config['comparisons']),
         output=Path(config['evaluation_output']),bootstrap=config.get('bootstrap',400),strict=config.get('strict',False)))
     if config.get('plot_training_health',False):

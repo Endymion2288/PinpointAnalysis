@@ -29,7 +29,7 @@ from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operation
 from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix,cached_shape_table
 from analysis.flavour.s4.campaign import host_memory
 from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
-from analysis.flavour.s4.validation_job import main as validate_completed_campaign, checkpoint_configuration
+from analysis.flavour.s4.validation_job import main as validate_completed_campaign, checkpoint_configuration,verify_probe
 from analysis.flavour.s4.worker import main as run_campaign_worker
 from analysis.flavour.s4.health import inspect as inspect_best_health
 from analysis.flavour.s2.train import atomic_output
@@ -594,6 +594,25 @@ class S4Tests(unittest.TestCase):
             with patch('sys.argv',['validation','--root',str(root),'--campaign',str(job),'--task','0']),\
                     self.assertRaisesRegex(RuntimeError,'upstream fit requires review'):
                 validate_completed_campaign()
+
+    def test_probe_readback_rejects_unconverged_solver_and_mismatched_catalog(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);config={'name':'frozen','program':'probes','label_budget':1000,'probe_branches':['full']}
+            manifest={'status':'complete','config':config,'fit_events':1000,'probe_events':2}
+            (root/'manifest.json').write_text(json.dumps(manifest))
+            frame=pd.DataFrame({'run':[10081,10082],'chunk':[0,0],'row':[1,2],'label':[0,1]})
+            frame.to_parquet(root/'full_linear_predictions.parquet',index=False)
+            audit={'full_linear':{'passed':True,'convergence_warnings':[],'finite_coefficients':True,'fit_events':1000}}
+            (root/'probe_optimization.json').write_text(json.dumps(audit))
+            self.assertTrue(verify_probe(root,config,frame)['all_optimizers_converged'])
+            audit['full_linear']['convergence_warnings']=['iteration limit']
+            (root/'probe_optimization.json').write_text(json.dumps(audit))
+            with self.assertRaisesRegex(ValueError,'converged fit-only'):
+                verify_probe(root,config,frame)
+            audit['full_linear']['convergence_warnings']=[]
+            (root/'probe_optimization.json').write_text(json.dumps(audit))
+            with self.assertRaisesRegex(ValueError,'fixed validation catalog'):
+                verify_probe(root,config,frame.assign(row=[0,2]))
 
     def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
         from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve
