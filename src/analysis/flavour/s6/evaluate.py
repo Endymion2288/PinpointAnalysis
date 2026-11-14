@@ -335,7 +335,23 @@ def compare(args):
         subset = pd.DataFrame(rows).query('scenario == "balanced"').set_index('name').loc[members]
         spread[initialization] = {n: {'seed_values': subset[n].tolist(), 'sample_SD': float(subset[n].std(ddof=1))}
             for n in METRIC_NAMES}
-    write_json(args.root/'evaluation/paired_comparisons.json', {'contrasts': contrasts,
+    controls = []
+    pairs = [
+        ('native_minus_1mm', 's3r_multiscale_native_s42_e4', 's3r_multiscale_1mm_s42_e4'),
+        ('tracker_minus_native', 's3r_multiscale_tracker_s42_e4', 's3r_multiscale_native_s42_e4'),
+        ('vertex_kinematics_minus_direct4', 's5_confirm8_vertex_kinematics_n10000_s42', 's5_confirm8_direct4_n10000_s42'),
+        ('six_minus_direct4', 's5_confirm8_six_n10000_s42', 's5_confirm8_direct4_n10000_s42')]
+    for label, left, right in pairs:
+        a = np.load(args.root/'evaluation/models'/left/'balanced/bootstrap.npz')
+        b = np.load(args.root/'evaluation/models'/right/'balanced/bootstrap.npz')
+        ar = json.loads((args.root/'evaluation/models'/left/'balanced/result.json').read_text())
+        br = json.loads((args.root/'evaluation/models'/right/'balanced/result.json').read_text())
+        av, bv = {**ar['metrics'], **ar['fixed']}, {**br['metrics'], **br['fixed']}
+        controls.append({'comparison': label, 'left': left, 'right': right, 'scenario': 'balanced',
+            'scope': 'fixed seed42 stage controls; working points frozen separately per model; training-seed uncertainty not estimated for these controls',
+            'metrics': {str(n): {'delta': av[str(n)]-bv[str(n)], **bootstrap.ci(a['values'][:, i]-b['values'][:, i])}
+                for i, n in enumerate(a['names'])}})
+    write_json(args.root/'evaluation/paired_comparisons.json', {'contrasts': contrasts, 'stage_control_contrasts': controls,
         'training_seed_spread_separate_from_event_intervals': spread})
 
 
