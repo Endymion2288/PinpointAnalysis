@@ -77,12 +77,36 @@ def inspect(root,config,device):
                     r.get('intentional_encoder_freeze') for r in records[:2]) and all(
                     r['gradient_squared_norms'].get(key,0)>0 for r in records[2:] for key in ['input','local']) and delta>0
                 checks[row['precision']+'_'+mode+'_healthy']=row['all_sampled_healthy']
+            if mode=='phase_safe_compiled':
+                # Compare execution paths at identical final weights. Separate
+                # BF16 optimization trajectories amplify rounding through Adam
+                # and cannot isolate a compiler error from AMP quantization.
+                model.eval();reference=build_model({**case,'compile_local':False}).to(device).eval()
+                reference.load_state_dict(model.state_dict(),strict=True)
+                with torch.no_grad():
+                    fp32=reference(batch).float()
+                    compiled_fp32=model(batch).float()
+                    with torch.autocast('cuda',dtype=torch.bfloat16):
+                        eager_bf16=reference(batch).float();compiled_bf16=model(batch).float()
+                eager_error=float((eager_bf16-fp32).square().mean().sqrt())
+                compiled_error=float((compiled_bf16-fp32).square().mean().sqrt())
+                limit=2*eager_error+1e-4
+                fixed={'precision':row['precision'],'comparison':'identical final weights and eight train events',
+                    'FP32_compiled_maximum_logit_error':float((compiled_fp32-fp32).abs().max()),
+                    'BF16_eager_vs_FP32_logit_RMS':eager_error,'BF16_compiled_vs_FP32_logit_RMS':compiled_error,
+                    'BF16_compiler_error_limit':limit,
+                    'BF16_eager_compiled_maximum_probability_difference':float((eager_bf16.softmax(-1)-compiled_bf16.softmax(-1)).abs().max()),
+                    'criterion':'FP32 max error <1e-4; compiled BF16 RMS to FP32 <=2 times eager BF16 RMS +1e-4'}
+                reports.append(fixed)
+                checks[row['precision']+'_same_weight_FP32_parity']=fixed['FP32_compiled_maximum_logit_error']<1e-4
+                checks[row['precision']+'_same_weight_BF16_roundoff_envelope']=compiled_error<=limit
+                del reference
             health.close();del model,optimizer,health;torch.cuda.empty_cache()
-        tolerance=.025 if bf16 else 1e-4
         difference=float((trajectories['phase_safe_compiled']-trajectories['eager']).abs().max())
-        checks[('BF16' if bf16 else 'FP32')+'_eager_compiled_logits_match']=difference<tolerance
+        if not bf16:
+            checks['FP32_eager_compiled_training_trajectories_match']=difference<1e-4
         reports.append({'precision':'BF16' if bf16 else 'FP32','eager_compiled_maximum_logit_error':difference,
-            'tolerance':tolerance})
+            'scope':'separate optimizer trajectories; BF16 difference is descriptive, fixed-weight reference comparison is gated'})
     report={'utc':datetime.now(timezone.utc).isoformat(),'config':config,'passed':all(checks.values()),
         'checks':checks,'experiments':reports,'events':counts.iloc[ids][['run','chunk','row','label']].to_dict('records'),
         'seconds':time.perf_counter()-started,'GPU':torch.cuda.get_device_name(),'code_commit':os.environ.get('PINPOINT_CODE_COMMIT'),
