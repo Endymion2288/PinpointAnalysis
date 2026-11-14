@@ -48,8 +48,9 @@ def readback(root, config, hardware, validation):
     predictions = pd.read_parquet(output / 'validation_predictions.parquet')
     count = manifest['validation_events']
     n_epochs = config['epochs']
-    steps = n_epochs * config['steps_per_epoch']
-    selected = min(history, key=lambda item: item['validation']['NLL'])
+    steps_per_pass = config.get('complete_pass_steps', config.get('steps_per_epoch'))
+    steps = n_epochs * steps_per_pass
+    selected = history[-1] if config.get('select_final_epoch') else min(history, key=lambda item: item['validation']['NLL'])
     probabilities = predictions[[f'p{c}' for c in range(4)]].to_numpy()
     keys = ['run', 'chunk', 'row', 'label']
     ordered = lambda frame: frame[keys].sort_values(keys).reset_index(drop=True)
@@ -91,7 +92,8 @@ def readback(root, config, hardware, validation):
         'all_optimizer_steps_applied': last['optimizer_steps'] == manifest['optimizer_steps'] == steps and
             last['amp_skipped_steps'] == manifest['amp_skipped_steps'] == 0 and
             history[-1]['attempted_optimizer_steps_cumulative'] == steps,
-        'NLL_selection': best['epoch'] == last['best_epoch'] == manifest['best_epoch'] == selected['epoch'] and
+        ('fixed_final_epoch_selection' if config.get('select_final_epoch') else 'NLL_selection'):
+            best['epoch'] == last['best_epoch'] == manifest['best_epoch'] == selected['epoch'] and
             np.isclose(manifest['best_NLL'], selected['validation']['NLL'], rtol=0, atol=1e-10) and
             np.isclose(log_loss(predictions.label, probabilities, labels=[0, 1, 2, 3]),
                        selected['validation']['NLL'], rtol=0, atol=1e-8),
@@ -108,8 +110,8 @@ def readback(root, config, hardware, validation):
             np.array_equal(probabilities, last['best_probabilities']),
         'all_epoch_probabilities_present': bool(valid_epochs),
         'epoch_metrics_match_history': bool(epoch_metrics_match),
-        'exposures_recorded': all(0 < item['train_exposures'] <= config['steps_per_epoch'] * config['batch_size']
-                                  for item in history),
+        'exposures_recorded': all(item['train_exposures'] == manifest['train_events'] if config.get('transfer_recipe')
+            else 0 < item['train_exposures'] <= steps_per_pass * config['batch_size'] for item in history),
     }
     report = {
         'utc': datetime.now(timezone.utc).isoformat(), 'experiment': name,
@@ -120,6 +122,7 @@ def readback(root, config, hardware, validation):
         'code_commit': os.environ.get('PINPOINT_CODE_COMMIT') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         'training_code_commit': manifest.get('code_commit'),
         'scope': 'completed-model CPU checkpoint, optimizer and prediction readback; accepted catalog unchanged',
+        'checkpoint_selection': manifest.get('selection'),
         'epoch_predictions_error': epoch_error,
     }
     write_json(output / 'final_checkpoint_checks.json', report)

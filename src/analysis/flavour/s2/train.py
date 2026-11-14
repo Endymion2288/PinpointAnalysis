@@ -100,7 +100,7 @@ def evaluate(model,loader,device,amp_dtype):
 
 
 def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_extra=None,
-        health_factory=None, optimizer_factory=None):
+        health_factory=None, optimizer_factory=None, sampler_factory=None):
     config=json.loads(args.campaign.read_text())['experiments'][args.task]
     experiment=config['name']
     output=args.root/'experiments'/experiment
@@ -126,8 +126,9 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
     val=dataset_class(args.root,'validation',config)
     if not len(train) or not len(val):
         raise ValueError('train/validation subset empty')
-    train_sampler=SpatialBatchSampler(train,config.get('batch_size',4),seed,steps=config.get('steps_per_epoch'))
-    val_sampler=SpatialBatchSampler(val,config.get('batch_size',4),seed,shuffle=False)
+    sampler_factory=sampler_factory or SpatialBatchSampler
+    train_sampler=sampler_factory(train,config.get('batch_size',4),seed,steps=config.get('steps_per_epoch'))
+    val_sampler=sampler_factory(val,config.get('batch_size',4),seed,shuffle=False)
     workers=config.get('workers',2)
     options={'num_workers':workers,'collate_fn':collate_fn or collate_spatial,'pin_memory':device.type=='cuda',
              'generator':torch.Generator().manual_seed(seed)}
@@ -170,7 +171,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         'parameters':sum(p.numel() for p in model.parameters()),'device':str(device),
         'gpu_name':torch.cuda.get_device_name() if device.type=='cuda' else None,'torch':torch.__version__,
         'python':sys.version,'numpy':np.__version__,'pyarrow':pa.__version__,
-        'mixed_precision':str(dtype) if device.type=='cuda' else None,'selection':'validation_NLL',
+        'mixed_precision':str(dtype) if device.type=='cuda' else None,
+        'selection':'fixed_final_epoch' if config.get('select_final_epoch') else 'validation_NLL',
         'normalization':'fixed_physical_scales_no_truth','calibration_test_used':False,
         'local_blocks':'same_plane_4mm_then_canonical_chunks32_no_event_truncation',
         'schema_whitelist':'18_observation_features_plus_8_current_representation_counts_and_signal_sums',
@@ -246,7 +248,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
             timing['transfer']+=time.perf_counter()-t
             optimizer.zero_grad(set_to_none=True)
             diagnostic=health is not None and (optimizer_steps<config.get('health_initial_steps',0)
-                or optimizer_steps%config.get('health_every_steps',100)==0)
+                or optimizer_steps%config.get('health_every_steps',100)==0
+                or getattr(model,'needs_transfer_health',False))
             if diagnostic:
                 health.start(batch)
             t=time.perf_counter()
@@ -331,8 +334,8 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
             'attempted_optimizer_steps_cumulative':(epoch+1)*len(train_sampler),
             'amp_skipped_steps_cumulative':amp_skipped_steps,'timing_cumulative':timing.copy()}
         history.append(record)
-        improved=score<best
-        if score<best:
+        improved=config.get('select_final_epoch',False) or score<best
+        if improved:
             best,best_epoch=score,epoch+1
             best_model=copy.deepcopy(model.state_dict())
             best_probabilities=p.copy()

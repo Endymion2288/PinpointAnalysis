@@ -65,6 +65,26 @@ class TrainingTests(unittest.TestCase):
     def test_step_warmup_resume_matches_uninterrupted_run(self):
         self.check_resume({'schedule':'warmup_cosine_steps','warmup_steps':1})
 
+    def test_fixed_final_epoch_does_not_select_on_validation_NLL(self):
+        config={'name':'fixed','architecture':'part','dim':8,'pair_bias':False,
+                'epochs':2,'batch_size':4,'workers':0,'seed':42,'select_final_epoch':True}
+        good=np.eye(4)*.6+.1
+        bad=np.roll(good,1,axis=1)
+        with tempfile.TemporaryDirectory() as temporary,patch.object(train,'SpatialDataset',TinySpatialDataset):
+            root=Path(temporary);campaign=root/'campaign.json'
+            campaign.write_text(json.dumps({'experiments':[config]}))
+            with patch.object(train,'evaluate',side_effect=[(np.arange(4),good),(np.arange(4),bad)]):
+                train.run(argparse.Namespace(root=root,campaign=campaign,task=0,device='cpu'))
+            output=root/'experiments/fixed'
+            manifest=json.loads((output/'manifest.json').read_text())
+            history=json.loads((output/'history.json').read_text())
+            best=torch.load(output/'best.pt',weights_only=False)
+            self.assertLess(history[0]['validation']['NLL'],history[1]['validation']['NLL'])
+            self.assertEqual(best['epoch'],2)
+            self.assertEqual(manifest['best_epoch'],2)
+            self.assertEqual(manifest['selection'],'fixed_final_epoch')
+            np.testing.assert_array_equal(pd.read_parquet(output/'validation_predictions.parquet')[[f'p{i}' for i in range(4)]],bad)
+
     def check_resume(self, overrides):
         config={'name':'test','architecture':'part','dim':8,'pair_bias':False,
                 'epochs':2,'batch_size':4,'workers':0,'seed':42}

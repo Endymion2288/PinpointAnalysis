@@ -73,6 +73,8 @@ def evaluate(args):
     configs={c['name']:c for path in args.campaign for c in json.loads(path.read_text())['experiments']}
     candidates=[];pending=[]
     for name,config in configs.items():
+        if 'selection_fold' in config:
+            continue  # Train-inner predictions are never independent validation.
         program=config.get('program','train' if config.get('objective')=='classification' else 'pretrain')
         if program not in {'train','probes'} or config.get('probe_scope')=='train_only_branches':continue
         directory=args.root/'experiments'/name

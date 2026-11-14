@@ -26,6 +26,12 @@ def validate_pretraining(config):
 
 def build_model(config):
     model=PlaneModuleClassifierV2(config)
+    model.head[3].p=config.get('classifier_dropout',.1)
+    if config.get('linear_probe_passes',0):
+        # During LP, only linear_readout is trainable. The nonlinear path is
+        # exactly zero until full fine-tuning, with compatible parameter names.
+        torch.nn.init.zeros_(model.head[-1].weight)
+        torch.nn.init.zeros_(model.head[-1].bias)
     if config.get('supervised_initial_checkpoint'):
         if config.get('pretrained_checkpoint'):
             raise ValueError('choose one supervised/SSL initialization')
@@ -61,13 +67,27 @@ def main():
     if config.get('empty_response_bypass') and not pilot['config'].get('empty_response_bypass'):
         raise RuntimeError('empty-response repair requires a matching real-event optimization gate')
     validate_pretraining(config)
-    run(args,dataset_class=LabelDataset,model_factory=build_model,collate_fn=collate_planes,
-        health_factory=TrainingHealth,optimizer_factory=optimizer_for,
-        manifest_extra={'stage':'S4','label_budget':config.get('label_budget'),
+    extra={'stage':'S4','label_budget':config.get('label_budget'),
             'initialization':config.get('initialization','scratch'),
-            'same_backbone':'S3 revision2 multiscale native pixel/bar/tracker',
+            'same_backbone':'S3 revision3 multiscale native pixel/bar/tracker' if config.get('empty_response_bypass') else 'S3 revision2 multiscale native pixel/bar/tracker',
             'random_downstream_heads':'head,linear_readout,head_input_norm,branch_norms,summary',
-            'calibration_test_used':False})
+            'calibration_test_used':False}
+    options={}
+    if config.get('transfer_recipe'):
+        from analysis.flavour.s4.low_label import CompletePassSampler, TrainInnerDataset, TransferAdamW, TransferHealth
+        options.update(sampler_factory=CompletePassSampler)
+        dataset=TrainInnerDataset if 'selection_fold' in config else LabelDataset
+        if 'selection_fold' in config:
+            extra.update(selection='train_inner_NLL',
+                selection_scope='family-grouped train-inner fold within original nested label budget; no independent validation read',
+                original_validation_used=False)
+        else:
+            extra.update(selection_scope='recipe and training length fixed by train-inner selection')
+        health,optimizer=TransferHealth,TransferAdamW
+    else:
+        dataset,health,optimizer=LabelDataset,TrainingHealth,optimizer_for
+    run(args,dataset_class=dataset,model_factory=build_model,collate_fn=collate_planes,
+        health_factory=health,optimizer_factory=optimizer,manifest_extra=extra,**options)
 
 
 if __name__=='__main__':main()

@@ -71,6 +71,8 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 ## 6. 由实测结果驱动的后续优化
 
+2026-11-14执行合同已固定，见[阶段146](../workbook/2026-11-14_stage146_s4_train_inner_optimization_contract.md)和[48项train-inner配置](configs/s4_low_label_inner.json)。四种配方覆盖更早checkpoint、较低encoder LR、正则和LP-FT，对Scratch/MAE3及1k/10k各做三折；仅以train-inner OOF NLL共同选择配方和完整遍历次数，再固定末轮重拟合三seeds。该轮实际训练与新validation收益尚未测量。
+
 新18项矩阵确认低标签排序收益，也确认1k过拟合、τ硬决策及低背景工作点仍不足。以下属于尚未执行的下一轮候选。先在原标签预算内固定train-inner选择合同，再对Scratch/MAE3共同优化；本轮不扩至1M。
 
 | 实测问题 | 待比较的改动 | 控制与选择 |
