@@ -13,7 +13,7 @@ from analysis.flavour.inventory import write_json
 ATTRIBUTES = ['ClusterId', 'ProcId', 'JobStatus', 'ExitCode', 'ExitBySignal', 'RequestCpus', 'RequestMemory',
     'RequestGpus', 'RemoteWallClockTime', 'RemoteUserCpu', 'RemoteSysCpu', 'MemoryUsage', 'JobStartDate',
     'CompletionDate', 'EnteredCurrentStatus', 'QDate', 'RemoteHost', 'LastRemoteHost', 'HoldReason', 'RemoveReason',
-    'AssignedGPUs', 'LastMatchTime', 'NumJobStarts', 'MATCH_EXP_Machine']
+    'AssignedGPUs', 'LastMatchTime', 'NumJobStarts', 'MATCH_EXP_Machine', 'ResidentSetSize', 'ResidentSetSize_RAW']
 
 
 def collect(args):
