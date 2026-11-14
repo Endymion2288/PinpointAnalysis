@@ -1,0 +1,491 @@
+{
+  "status": "frozen",
+  "UTC": "2026-11-14T13:50:23.738039+00:00",
+  "freeze": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s6_2026-11-14/analysis_freeze.json",
+  "calibration_events": 722272,
+  "test_events": 724441,
+  "calibrators": {
+    "s4_empty_mae3_n100000_s17": {
+      "temperature": 1.0649907672168994,
+      "balanced_NLL_before": 1.2039202580199593,
+      "balanced_NLL_after": 1.2034430826397,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s4_empty_mae3_n100000_s42": {
+      "temperature": 1.0404321570433823,
+      "balanced_NLL_before": 1.2046515792252028,
+      "balanced_NLL_after": 1.204463832073482,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s4_empty_mae3_n100000_s2026": {
+      "temperature": 1.0116058168737232,
+      "balanced_NLL_before": 1.210031026866646,
+      "balanced_NLL_after": 1.2100153795490378,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s4_empty_scratch_n100000_s17": {
+      "temperature": 1.043284182625407,
+      "balanced_NLL_before": 1.2129227577311803,
+      "balanced_NLL_after": 1.2127080747538797,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s4_empty_scratch_n100000_s42": {
+      "temperature": 1.0331513511196349,
+      "balanced_NLL_before": 1.2120420758040829,
+      "balanced_NLL_after": 1.2119139694581436,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s4_empty_scratch_n100000_s2026": {
+      "temperature": 1.024651048243728,
+      "balanced_NLL_before": 1.2124948917694351,
+      "balanced_NLL_after": 1.2124249027290497,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s5_confirm8_direct4_n10000_s42": {
+      "temperature": 1.1498269892504185,
+      "balanced_NLL_before": 1.2378488586310907,
+      "balanced_NLL_after": 1.2355227823251977,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s5_confirm8_vertex_kinematics_n10000_s42": {
+      "temperature": 1.138058641415253,
+      "balanced_NLL_before": 1.236413546972475,
+      "balanced_NLL_after": 1.2344237982175952,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s5_confirm8_six_n10000_s42": {
+      "temperature": 1.1635420812462405,
+      "balanced_NLL_before": 1.2358675796521603,
+      "balanced_NLL_after": 1.2330473749275526,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s3r_multiscale_1mm_s42_e4": {
+      "temperature": 1.0991189638654522,
+      "balanced_NLL_before": 1.2460145871920938,
+      "balanced_NLL_after": 1.2450928855793548,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s3r_multiscale_native_s42_e4": {
+      "temperature": 1.1103599520881435,
+      "balanced_NLL_before": 1.2433987973304381,
+      "balanced_NLL_after": 1.2422825758627396,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s3r_multiscale_tracker_s42_e4": {
+      "temperature": 1.0758260722382136,
+      "balanced_NLL_before": 1.2216140089213068,
+      "balanced_NLL_after": 1.2209769369612187,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "s4_repaired_rel_channel5_n100000_s42": {
+      "temperature": 1.045424592190922,
+      "balanced_NLL_before": 1.2001727351734401,
+      "balanced_NLL_after": 1.1999345121338525,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "mae3_100k_ensemble": {
+      "temperature": 1.0071432019330058,
+      "balanced_NLL_before": 1.202473559382228,
+      "balanced_NLL_after": 1.2024675514815044,
+      "at_bound": false,
+      "validation_events": 10000
+    },
+    "scratch_100k_ensemble": {
+      "temperature": 1.012530570617348,
+      "balanced_NLL_before": 1.2099531466270554,
+      "balanced_NLL_after": 1.209934738136143,
+      "at_bound": false,
+      "validation_events": 10000
+    }
+  },
+  "primary_thresholds": [
+    {
+      "scenario": "balanced",
+      "target_FPR": 0.01,
+      "classes": [
+        {
+          "threshold": 0.7591919415498152,
+          "validation_FPR": 0.010000000000000002,
+          "background_passed": 75,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.6359720043812237,
+          "validation_FPR": 0.010000000000000002,
+          "background_passed": 75,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.44672818113951235,
+          "validation_FPR": 0.010000000000000002,
+          "background_passed": 75,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.6061927450149197,
+          "validation_FPR": 0.010000000000000002,
+          "background_passed": 75,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "balanced",
+      "target_FPR": 0.001,
+      "classes": [
+        {
+          "threshold": 0.9137186501575062,
+          "validation_FPR": 0.0009333333333333333,
+          "background_passed": 7,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8428039176577973,
+          "validation_FPR": 0.0009333333333333333,
+          "background_passed": 7,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.5169396210906857,
+          "validation_FPR": 0.0009333333333333333,
+          "background_passed": 7,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8413534802593631,
+          "validation_FPR": 0.0009333333333333333,
+          "background_passed": 7,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "production_sampling",
+      "target_FPR": 0.01,
+      "classes": [
+        {
+          "threshold": 0.5751463782936164,
+          "validation_FPR": 0.00979894707169078,
+          "background_passed": 106,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8664512370667818,
+          "validation_FPR": 0.00996400152089772,
+          "background_passed": 86,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.2062375372545047,
+          "validation_FPR": 0.009905678436908628,
+          "background_passed": 79,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.5443227547911723,
+          "validation_FPR": 0.009983764918447002,
+          "background_passed": 64,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "production_sampling",
+      "target_FPR": 0.001,
+      "classes": [
+        {
+          "threshold": 0.8308399005848315,
+          "validation_FPR": 0.0009963145934351824,
+          "background_passed": 12,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.955739453425127,
+          "validation_FPR": 0.0009615401364258253,
+          "background_passed": 10,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.2631794733006215,
+          "validation_FPR": 0.0007901241929889681,
+          "background_passed": 8,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8339752402568404,
+          "validation_FPR": 0.000768419121020277,
+          "background_passed": 6,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "tau_1_percent",
+      "target_FPR": 0.01,
+      "classes": [
+        {
+          "threshold": 0.5061629847108269,
+          "validation_FPR": 0.009880000000000002,
+          "background_passed": 125,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8570682799514806,
+          "validation_FPR": 0.009729999999999999,
+          "background_passed": 109,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.02592542454499822,
+          "validation_FPR": 0.009983838383838385,
+          "background_passed": 77,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.6495242887136067,
+          "validation_FPR": 0.009915492957746477,
+          "background_passed": 68,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "tau_1_percent",
+      "target_FPR": 0.001,
+      "classes": [
+        {
+          "threshold": 0.7922905857391819,
+          "validation_FPR": 0.0009555555555555555,
+          "background_passed": 16,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.9351694249074405,
+          "validation_FPR": 0.0007699999999999999,
+          "background_passed": 31,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.03431217186611042,
+          "validation_FPR": 0.0009575757575757576,
+          "background_passed": 8,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8838615750695386,
+          "validation_FPR": 0.0007549295774647887,
+          "background_passed": 7,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "tau_0p1_percent",
+      "target_FPR": 0.01,
+      "classes": [
+        {
+          "threshold": 0.5073910682540151,
+          "validation_FPR": 0.00988133333333333,
+          "background_passed": 127,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8551097825655541,
+          "validation_FPR": 0.009746999999999997,
+          "background_passed": 116,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.002632150807883089,
+          "validation_FPR": 0.009998398398398394,
+          "background_passed": 77,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.6583388589346705,
+          "validation_FPR": 0.009946932952924393,
+          "background_passed": 71,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.01,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    },
+    {
+      "scenario": "tau_0p1_percent",
+      "target_FPR": 0.001,
+      "classes": [
+        {
+          "threshold": 0.8024248927250168,
+          "validation_FPR": 0.0009355555555555556,
+          "background_passed": 16,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.9306276511884912,
+          "validation_FPR": 0.0008310000000000001,
+          "background_passed": 37,
+          "background_events": 7500,
+          "background_passed_below_25": false,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.0035073501225543736,
+          "validation_FPR": 0.0009597597597597596,
+          "background_passed": 8,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        },
+        {
+          "threshold": 0.8887914331197793,
+          "validation_FPR": 0.000744079885877318,
+          "background_passed": 7,
+          "background_events": 7500,
+          "background_passed_below_25": true,
+          "target_FPR": 0.001,
+          "tie_rule": "inclusive >=; conservative whole tie groups"
+        }
+      ]
+    }
+  ],
+  "primary_priors": [
+    {
+      "name": "balanced",
+      "prior": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    {
+      "name": "production_sampling",
+      "prior": [
+        0.12084228656240309,
+        0.5739652097824642,
+        0.08986642151433255,
+        0.21532608214080015
+      ]
+    },
+    {
+      "name": "tau_1_percent",
+      "prior": [
+        0.1,
+        0.6,
+        0.01,
+        0.29
+      ]
+    },
+    {
+      "name": "tau_0p1_percent",
+      "prior": [
+        0.1,
+        0.6,
+        0.001,
+        0.299
+      ]
+    }
+  ],
+  "test_used_for_fitting": false
+}

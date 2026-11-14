@@ -4,7 +4,7 @@
 
 **S4本轮已完成，原合同逐项证据见[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)，最终五初始化比较见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。MAE3保留为有限标签基线，τ高纯度收益未确认；本轮不扩1M。114条allocation全部终止，35.399029/60 device-hours。**
 
-**S5已完成，26个神经网络、3个HGB及33项同事件比较见[最终结果](../workbook/2026-11-14_stage203_s5_final_results.md)。[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact-target联合匹配及2,500个τ的几何投影/响应读回；完整证据见[要求映射](results/s5_scope_completion_audit.json)。Vertex+kinematics仅有小幅NLL收益；完整域six-way的τ AP下降，而较小exact-target共同域区间跨零。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU allocation core-hours。S6未执行。**
+**S5已完成，26个神经网络、3个HGB及33项同事件比较见[最终结果](../workbook/2026-11-14_stage203_s5_final_results.md)。[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact-target联合匹配及2,500个τ的几何投影/响应读回；完整证据见[要求映射](results/s5_scope_completion_audit.json)。Vertex+kinematics仅有小幅NLL收益；完整域six-way的τ AP下降，而较小exact-target共同域区间跨零。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU allocation core-hours。S6正在执行：全部722,272 calibration与15个温度mapping完成，2026-11-14 13:50:23Z冻结后开放724,441独立test；[冻结记录](../workbook/2026-11-14_stage219_s6_analysis_freeze.md)。Test、条件影响与最终合同审查尚未完成。**
 
 S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global重训净收益仍未测量。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test冻结。
 
