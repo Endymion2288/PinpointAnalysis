@@ -1,12 +1,12 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S4空响应修复后的18项分类重训、完整10k validation及4模型分支诊断已完成，21项技术检查全部通过。235,008次逐步梯度检查、2,916次内部健康采样、252项checkpoint检查及18次独立FP32 backward通过。当前方法比较以这批新模型为依据；旧故障结果只作诊断。见[最终报告](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[完整数值摘要](results/s4_empty_repair_summary.json)、[分支诊断](results/s4_empty_functional_paths_seed42.json)与[S4合同及后续计划](11_s4_pretraining.md)。**
+**当前状态：S4架构修复后的18项分类基线已完成。后续发现的LP解冻编译断梯度也已修复，48项有效train-inner重新选择后，1k/10k三seed重拟合及完整10k评价通过，见[有效低标签结果](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)。1k MAE3 NLL改善但macro AP下降；10k两项均改善。新驻点求解回归四项通过，五种初始化正在同一MIG并发提取100k特征，见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。100k其他目标训练及完整45预测/66配对仍进行中；旧故障结果继续只作诊断。**
 
 日期：2026-11-14。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2的20模型及历史比较见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)；本次S4分类同时采用revision 3的`empty_response_bypass=true`，重新初始化Scratch，并从三套既有MAE3 encoder重新fine-tune，SSL encoder本身没有重训。
 
 新矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零，不能称全面改善。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
 
-阶段145结束时S4累计24.325865/60 device-hours，彼时61个allocation均已终止。后续[低标签优化](11_s4_pretraining.md#6-由实测结果驱动的后续优化)已启动：1k的24项train-inner训练完成，固定OOF规则选中LP-FT八次完整遍历，六项三seed重拟合已冻结；10k矩阵继续运行，修复后frozen probes已提交。当前不扩至1M，新路由下的EMA/Rel及compute-matched尚未重测，S5–S6未执行。
+上述三预算数值为阶段145有效基线。后续[优化及完整对照](11_s4_pretraining.md#6-修复后优化结果与剩余对照)已经完成有效1k/10k共同重选和三seed比较：新MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223。修复后的监督matched-compute控制完成；EMA/Rel的100k与驻点frozen读出继续执行。04:51:58 UTC的账本快照累计33.802762/60 device-hours，所有失败和恢复计入原账本。当前不扩至1M，S5–S6未执行。
 
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 

@@ -1,0 +1,76 @@
+{
+  "utc": "2026-11-14T05:12:31.707477+00:00",
+  "solver_gate": {
+    "passed": true,
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_newton_solver_gate_v2_s42/solver_probe.json"
+  },
+  "submissions": {
+    "pinpoint-s4-newton-features-mig47-v2": {
+      "backend": "kubeflow",
+      "concurrency": 5,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "flavor": "h100-47gb"
+    },
+    "pinpoint-s4-newton-features-compact-v2": {
+      "backend": "condor",
+      "concurrency": 2,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205011.\n"
+    },
+    "pinpoint-s4-newton-v2-cpu-0": {
+      "backend": "condor",
+      "concurrency": 1,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205012.\n"
+    },
+    "pinpoint-s4-newton-v2-cpu-1": {
+      "backend": "condor",
+      "concurrency": 1,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205013.\n"
+    },
+    "pinpoint-s4-newton-v2-cpu-2": {
+      "backend": "condor",
+      "concurrency": 1,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205014.\n"
+    },
+    "pinpoint-s4-newton-v2-cpu-3": {
+      "backend": "condor",
+      "concurrency": 1,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205015.\n"
+    },
+    "pinpoint-s4-newton-v2-cpu-4": {
+      "backend": "condor",
+      "concurrency": 1,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205016.\n"
+    },
+    "pinpoint-s4-stationary-v2-validation": {
+      "backend": "condor",
+      "concurrency": 1,
+      "code_commit": "dc5758e708d4d97b9b308abd1091fe1ec3c564fc",
+      "submitted": true,
+      "schedd": "bigbird21.cern.ch",
+      "response": "Submitting job(s).\n1 job(s) submitted to cluster 2205017.\n"
+    }
+  },
+  "idle_condor_feature_candidate_removed": true,
+  "feature_job_pod": "pinpoint-s4-newton-features-mig47-v2-5gnfd",
+  "feature_job_mode": "five concurrent encoders on one H100 NVL MIG 3g.47gb; no GPU readout fitting",
+  "calibration_test_used": false
+}
