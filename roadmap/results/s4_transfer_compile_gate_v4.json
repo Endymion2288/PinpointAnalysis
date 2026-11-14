@@ -1,0 +1,582 @@
+{
+  "utc": "2026-11-14T03:42:46.661745+00:00",
+  "config": {
+    "seed": 42,
+    "architecture": "plane_module_v2",
+    "dim": 96,
+    "compression": "multiscale",
+    "latents": 64,
+    "region_queries": 2,
+    "region_blocks": 32,
+    "readout_skip": true,
+    "local_chunk_blocks": 2048,
+    "compile_local": true,
+    "local_execution_version": 3,
+    "residual_scale": 0.1,
+    "modalities": [
+      "pixel",
+      "bar",
+      "tracker"
+    ],
+    "pitch_mm": 0.0,
+    "window_pixels": 16,
+    "signal": true,
+    "local_residual": true,
+    "batch_size": 16,
+    "workers": 1,
+    "cache_shards": 2,
+    "bucket_size": 256,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.1,
+    "clip_grad_norm": 1.0,
+    "schedule": "warmup_cosine_steps",
+    "warmup_steps": 32,
+    "health_every_steps": 100,
+    "progress_every_steps": 100,
+    "epochs": 8,
+    "queries_per_kind": 64,
+    "reconstruction_probe_events": 256,
+    "ssl_gate_steps": 256,
+    "occupancy_positive_weight": 3.0,
+    "ema_momentum": 0.996,
+    "variance_weight": 5.0,
+    "distill_reconstruction_weight": 0.5,
+    "rel_weight": 0.25,
+    "mask_ratio": 0.75,
+    "pilot_steps": 768,
+    "name": "s4_transfer_compile_gate_v4_s42",
+    "objective": "classification",
+    "initialization": "scratch",
+    "label_budget": 1000,
+    "label_subset_seed": 20261113,
+    "minimum_learning_rate": 1e-05,
+    "required_pilot": "s4_empty_backbone_health_s42",
+    "train_domain": "all",
+    "program": "transfer_probe",
+    "empty_response_bypass": true,
+    "architecture_revision": 3,
+    "maximum_preclip_gradient_norm": 10000.0,
+    "health_initial_steps": 8,
+    "inner_folds": 3,
+    "inner_split_seed": 20261114,
+    "encoder_lr_scale": 0.1,
+    "classifier_dropout": 0.3,
+    "linear_probe_passes": 2,
+    "transfer_recipe": "lpft",
+    "complete_pass_steps": 74,
+    "select_final_epoch": true
+  },
+  "passed": true,
+  "checks": {
+    "FP32_eager_frozen_then_updated": true,
+    "FP32_eager_healthy": true,
+    "FP32_phase_safe_compiled_frozen_then_updated": true,
+    "FP32_phase_safe_compiled_healthy": true,
+    "FP32_same_weight_FP32_parity": true,
+    "FP32_same_weight_BF16_roundoff_envelope": true,
+    "FP32_eager_compiled_training_trajectories_match": true,
+    "BF16_eager_frozen_then_updated": true,
+    "BF16_eager_healthy": true,
+    "BF16_phase_safe_compiled_frozen_then_updated": true,
+    "BF16_phase_safe_compiled_healthy": true,
+    "BF16_same_weight_FP32_parity": true,
+    "BF16_same_weight_BF16_roundoff_envelope": true
+  },
+  "events": [
+    {
+      "run": 10081,
+      "chunk": 72,
+      "row": 607,
+      "label": 0
+    },
+    {
+      "run": 10081,
+      "chunk": 72,
+      "row": 52,
+      "label": 0
+    },
+    {
+      "run": 10082,
+      "chunk": 53,
+      "row": 859,
+      "label": 1
+    },
+    {
+      "run": 10082,
+      "chunk": 53,
+      "row": 383,
+      "label": 1
+    },
+    {
+      "run": 10083,
+      "chunk": 10,
+      "row": 488,
+      "label": 2
+    },
+    {
+      "run": 10083,
+      "chunk": 10,
+      "row": 302,
+      "label": 2
+    },
+    {
+      "run": 10084,
+      "chunk": 50,
+      "row": 301,
+      "label": 3
+    },
+    {
+      "run": 10084,
+      "chunk": 50,
+      "row": 160,
+      "label": 3
+    }
+  ],
+  "seconds": 88.56458369502798,
+  "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+  "code_commit": "6c3dce5929a726340d38b809e224f7b0cf7405d5",
+  "scope": "eight original train events, two LP and three full updates, identical initialization and batches; includes LP eval; no validation fitting",
+  "experiments": [
+    {
+      "precision": "FP32",
+      "mode": "legacy_compiled",
+      "input_parameter_maximum_change": 0.0,
+      "all_sampled_healthy": false,
+      "training_records": [
+        {
+          "step": 1,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 2,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 3,
+          "intentional_encoder_freeze": false,
+          "healthy": false,
+          "failure_reasons": [
+            "full fine-tuning has no gradient to input",
+            "full fine-tuning has no gradient to local"
+          ],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 4,
+          "intentional_encoder_freeze": false,
+          "healthy": false,
+          "failure_reasons": [
+            "full fine-tuning has no gradient to input",
+            "full fine-tuning has no gradient to local"
+          ],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 5,
+          "intentional_encoder_freeze": false,
+          "healthy": false,
+          "failure_reasons": [
+            "full fine-tuning has no gradient to input",
+            "full fine-tuning has no gradient to local"
+          ],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        }
+      ]
+    },
+    {
+      "precision": "FP32",
+      "mode": "eager",
+      "input_parameter_maximum_change": 9.038671851158142e-05,
+      "all_sampled_healthy": true,
+      "training_records": [
+        {
+          "step": 1,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 2,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 3,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 98.80497741699219,
+          "local_gradient_squared_norm": 53.711212158203125
+        },
+        {
+          "step": 4,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 62.625160217285156,
+          "local_gradient_squared_norm": 31.637306213378906
+        },
+        {
+          "step": 5,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 41.80217742919922,
+          "local_gradient_squared_norm": 22.98299789428711
+        }
+      ]
+    },
+    {
+      "precision": "FP32",
+      "mode": "phase_safe_compiled",
+      "input_parameter_maximum_change": 9.038671851158142e-05,
+      "all_sampled_healthy": true,
+      "training_records": [
+        {
+          "step": 1,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 2,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 3,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 98.80497741699219,
+          "local_gradient_squared_norm": 53.71118927001953
+        },
+        {
+          "step": 4,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 62.625160217285156,
+          "local_gradient_squared_norm": 31.637306213378906
+        },
+        {
+          "step": 5,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 41.80218505859375,
+          "local_gradient_squared_norm": 22.982994079589844
+        }
+      ]
+    },
+    {
+      "precision": "FP32",
+      "comparison": "identical final weights and eight train events",
+      "FP32_compiled_maximum_logit_error": 8.940696716308594e-07,
+      "BF16_eager_vs_FP32_logit_RMS": 0.005080304108560085,
+      "BF16_compiled_vs_FP32_logit_RMS": 0.005543682724237442,
+      "BF16_compiler_error_limit": 0.01026060821712017,
+      "BF16_eager_compiled_maximum_probability_difference": 0.0015895366668701172,
+      "criterion": "FP32 max error <1e-4; compiled BF16 RMS to FP32 <=2 times eager BF16 RMS +1e-4"
+    },
+    {
+      "precision": "FP32",
+      "eager_compiled_maximum_logit_error": 9.08970832824707e-07,
+      "scope": "separate optimizer trajectories; BF16 difference is descriptive, fixed-weight reference comparison is gated"
+    },
+    {
+      "precision": "BF16",
+      "mode": "legacy_compiled",
+      "input_parameter_maximum_change": 0.0,
+      "all_sampled_healthy": false,
+      "training_records": [
+        {
+          "step": 1,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 2,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 3,
+          "intentional_encoder_freeze": false,
+          "healthy": false,
+          "failure_reasons": [
+            "full fine-tuning has no gradient to input",
+            "full fine-tuning has no gradient to local"
+          ],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 4,
+          "intentional_encoder_freeze": false,
+          "healthy": false,
+          "failure_reasons": [
+            "full fine-tuning has no gradient to input",
+            "full fine-tuning has no gradient to local"
+          ],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 5,
+          "intentional_encoder_freeze": false,
+          "healthy": false,
+          "failure_reasons": [
+            "full fine-tuning has no gradient to input",
+            "full fine-tuning has no gradient to local"
+          ],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        }
+      ]
+    },
+    {
+      "precision": "BF16",
+      "mode": "eager",
+      "input_parameter_maximum_change": 9.036436676979065e-05,
+      "all_sampled_healthy": true,
+      "training_records": [
+        {
+          "step": 1,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 2,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 3,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 98.29483032226562,
+          "local_gradient_squared_norm": 52.325740814208984
+        },
+        {
+          "step": 4,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 63.99789810180664,
+          "local_gradient_squared_norm": 32.973628997802734
+        },
+        {
+          "step": 5,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 41.28390121459961,
+          "local_gradient_squared_norm": 23.282827377319336
+        }
+      ]
+    },
+    {
+      "precision": "BF16",
+      "mode": "phase_safe_compiled",
+      "input_parameter_maximum_change": 9.046867489814758e-05,
+      "all_sampled_healthy": true,
+      "training_records": [
+        {
+          "step": 1,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 2,
+          "intentional_encoder_freeze": true,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 0,
+          "local_gradient_squared_norm": 0
+        },
+        {
+          "step": 3,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 98.85478973388672,
+          "local_gradient_squared_norm": 53.70228958129883
+        },
+        {
+          "step": 4,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 61.7933235168457,
+          "local_gradient_squared_norm": 31.49603843688965
+        },
+        {
+          "step": 5,
+          "intentional_encoder_freeze": false,
+          "healthy": true,
+          "failure_reasons": [],
+          "informative_nodes": 2761,
+          "input_gradient_squared_norm": 40.51152801513672,
+          "local_gradient_squared_norm": 22.207597732543945
+        }
+      ]
+    },
+    {
+      "precision": "BF16",
+      "comparison": "identical final weights and eight train events",
+      "FP32_compiled_maximum_logit_error": 9.238719940185547e-07,
+      "BF16_eager_vs_FP32_logit_RMS": 0.004559353459626436,
+      "BF16_compiled_vs_FP32_logit_RMS": 0.004345135763287544,
+      "BF16_compiler_error_limit": 0.009218706919252872,
+      "BF16_eager_compiled_maximum_probability_difference": 0.0015645623207092285,
+      "criterion": "FP32 max error <1e-4; compiled BF16 RMS to FP32 <=2 times eager BF16 RMS +1e-4"
+    },
+    {
+      "precision": "BF16",
+      "eager_compiled_maximum_logit_error": 0.01985645294189453,
+      "scope": "separate optimizer trajectories; BF16 difference is descriptive, fixed-weight reference comparison is gated"
+    }
+  ],
+  "new_inner_first_FT_observation_utc": "2026-11-14T03:45:53.589026+00:00",
+  "new_inner_first_FT_observations": [
+    {
+      "name": "s4_inner_lpft4_mae3_n1000_f0_s42",
+      "samples": 13,
+      "FT_samples": 4,
+      "all_sampled_healthy": true,
+      "first_FT": {
+        "step": 105,
+        "informative_nodes": 6269,
+        "input_gradient_squared_norm": 3.2105677127838135,
+        "local_gradient_squared_norm": 0.05025713890790939
+      }
+    },
+    {
+      "name": "s4_inner_lpft4_mae3_n1000_f1_s42",
+      "samples": 13,
+      "FT_samples": 4,
+      "all_sampled_healthy": true,
+      "first_FT": {
+        "step": 105,
+        "informative_nodes": 16159,
+        "input_gradient_squared_norm": 3.522606611251831,
+        "local_gradient_squared_norm": 0.04229839891195297
+      }
+    },
+    {
+      "name": "s4_inner_lpft4_mae3_n1000_f2_s42",
+      "samples": 14,
+      "FT_samples": 6,
+      "all_sampled_healthy": true,
+      "first_FT": {
+        "step": 99,
+        "informative_nodes": 4951,
+        "input_gradient_squared_norm": 1.2412396669387817,
+        "local_gradient_squared_norm": 0.0204947367310524
+      }
+    },
+    {
+      "name": "s4_inner_lpft4_scratch_n1000_f0_s42",
+      "samples": 13,
+      "FT_samples": 4,
+      "all_sampled_healthy": true,
+      "first_FT": {
+        "step": 105,
+        "informative_nodes": 6269,
+        "input_gradient_squared_norm": 158.7386474609375,
+        "local_gradient_squared_norm": 120.30903625488281
+      }
+    },
+    {
+      "name": "s4_inner_lpft4_scratch_n1000_f1_s42",
+      "samples": 14,
+      "FT_samples": 5,
+      "all_sampled_healthy": true,
+      "first_FT": {
+        "step": 105,
+        "informative_nodes": 16159,
+        "input_gradient_squared_norm": 94.90625,
+        "local_gradient_squared_norm": 58.82860565185547
+      }
+    },
+    {
+      "name": "s4_inner_lpft4_scratch_n1000_f2_s42",
+      "samples": 14,
+      "FT_samples": 6,
+      "all_sampled_healthy": true,
+      "first_FT": {
+        "step": 99,
+        "informative_nodes": 4951,
+        "input_gradient_squared_norm": 55.7835578918457,
+        "local_gradient_squared_norm": 36.61903762817383
+      }
+    }
+  ]
+}
