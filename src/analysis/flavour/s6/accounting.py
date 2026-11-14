@@ -60,8 +60,9 @@ def collect(args):
     pods = {}
     for path in (args.root/'runtime').glob('*.terminal.json'):
         value = json.loads(path.read_text())
-        if value.get('kind') == 'Pod' or 'containerStatuses' in value.get('status', {}):
-            pods[value['metadata']['uid']] = value
+        for item in value.get('items', [value]):
+            if item.get('kind') == 'Pod' or 'containerStatuses' in item.get('status', {}):
+                pods[item['metadata']['uid']] = item
     pod_costs = []
     for value in pods.values():
         status = value['status']

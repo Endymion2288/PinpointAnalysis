@@ -35,3 +35,17 @@ Reliability图/ECE明确bins/counts及有限统计；temperature校准没有自�
 - FASERCal的matched GENIE/NuWro flavour/charm差异沿用`02_literature.md`，不能直接移植其数值。
 
 网络页面和标题记录在EOS `literature/sources.json`。CERN flavor按[官方文档](https://ml.docs.cern.ch/)申请，H10047GB MIG与其他可用卡分别计时；复用已记录终态避免凭据过期阻塞记账。HTCondor提交前实时选兼容schedd；AFS仅放小脚本，数据、图、日志和模型均写EOS。批处理开始前做小样本验证，按CPU预算限制解压和BLAS线程；最终删除临时native/ideal caches，保留概率、紧凑统计及复现输入定义。
+
+## 完成结果与证据
+
+S6已完成；[最终中文报告](../workbook/2026-11-14_stage236_s6_final_results.md)给样本、冻结顺序、完整主表、四prior、工作点原始计数、paired控制、物理条件、失败恢复与成本。[精简JSON](results/s6_summary.json)、[60项模型/prior CSV](results/s6_metrics.csv)和[原要求映射](results/s6_scope_completion_audit.json)保存在Git；大数据与图留在`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s6_2026-11-14`。
+
+2026-11-14T13:50:23.738039Z冻结后开放全部724,441 test；calibration722,272，15个probability mappings、60项结果、400次物理块bootstrap齐全。主MAE3 ensemble的balanced accuracy0.435225878、CI95[0.433704723,0.436685364]，相对同预算Scratch的差+0.003353622、CI[+0.002507538,+0.004166165]。冻结validation 1%背景阈值下τ效率0.035556301，test实际weighted FPR0.012080097，balanced τ纯度0.495236618；τprior降至1%/0.1%时纯度仅0.028099373/0.002867199。Test未重选温度、priors、cuts、subset或模型，旧故障S3不参与结论。
+
+直接科学交付包括14个paired readout条件（32,000×14响应）、8个实际G4 transport条件（5,888响应）、GENIE3.04/Pythia6 Standard–NUX的3,512独立hard scatters、9模型共同energy/vertex/exact-target支持、63个非空物理strata及score/energy migration。τ/charm compact truth重放的9,400个响应逐值相同；13个checkpoint在calibration/test各227块的首batch内部采样均healthy/finite。Nominal数值重放对主ensemble的argmax与两个τcuts均无计数变化。
+
+方法层面的结果为：同预算MAE有小幅收益，tracker总体收益明确，原生粒度的BA/τ工作点收益当前未确认；高occupancy与pixel-centered域的低τ效率需在下一轮train/validation分离原因。Combined/noise/gain等proxy可明显改变性能；transport与generator整体τ效率差统计区间较宽，不能称等价或泛化已充分证明。
+
+资源按实际终态、失败和初始化计入：HTCondor220.648333 CPU allocation core-hours、0.984444 GPU device-hours；Kubeflow47GB MIG为1.531389 instance-hours（含缺失Pod终态的一项保守上界），requested CPU33.690556 core-hours。全部queue/Pod/Job已关闭，28.572 GB临时产物清理、46个旧AFS提交目录删除；2,701份任务summary及日志已归档读回。GPU utilization fraction因MIG/RBAC接口不可测，标为未测量。
+
+真实硬件systematic幅度、timing/window、NuWro、physical flux/exposure、luminosity产额、significance及unfolding仍为未测量。用户接受的proxy基值继续使用；这些输入边界不触发重复认证。后续新模型需新的选择合同与独立确认数据，本轮test保持为公开冻结结果。

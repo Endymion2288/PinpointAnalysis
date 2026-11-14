@@ -4,9 +4,11 @@
 
 **S4本轮已完成，原合同逐项证据见[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)，最终五初始化比较见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。MAE3保留为有限标签基线，τ高纯度收益未确认；本轮不扩1M。114条allocation全部终止，35.399029/60 device-hours。**
 
-**S5已完成，26个神经网络、3个HGB及33项同事件比较见[最终结果](../workbook/2026-11-14_stage203_s5_final_results.md)。[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact-target联合匹配及2,500个τ的几何投影/响应读回；完整证据见[要求映射](results/s5_scope_completion_audit.json)。Vertex+kinematics仅有小幅NLL收益；完整域six-way的τ AP下降，而较小exact-target共同域区间跨零。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU allocation core-hours。S6正在执行：全部722,272 calibration与15个温度mapping完成，2026-11-14 13:50:23Z冻结后开放724,441独立test；[冻结记录](../workbook/2026-11-14_stage219_s6_analysis_freeze.md)。Test、条件影响与最终合同审查尚未完成。**
+**S6已完成，见[最终结果](../workbook/2026-11-14_stage236_s6_final_results.md)、[执行合同](13_s6_final_evaluation.md)与[要求映射](results/s6_scope_completion_audit.json)。**全部722,272 calibration、15个温度mapping及724,441独立test完成；2026-11-14 13:50:23Z冻结后才开放test。60项模型/prior结果、400次block区间、读出/transport/generator与物理分层均已交付。主MAE3 ensemble BA43.5226%，冻结validation 1%阈值下τ效率3.5556%、test实际weighted FPR1.2080%；相对Scratch有小幅收益，低背景τ选择仍不足。后端全部结束，缓存与AFS旧脚本已清理。
 
-S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global重训净收益仍未测量。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test冻结。
+S5的26个神经网络、3个HGB及33项同事件比较见[最终结果](../workbook/2026-11-14_stage203_s5_final_results.md)。[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact-target联合匹配及2,500个τ的几何投影/响应读回；完整证据见[要求映射](results/s5_scope_completion_audit.json)。Vertex+kinematics仅有小幅NLL收益；完整域six-way的τ AP下降，而较小exact-target共同域区间跨零。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU allocation core-hours。
+
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global重训净收益仍未测量。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test按后续S6冻结合同完成。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
@@ -98,6 +100,8 @@ generator variations 需兼容当前能区与 target；尽量匹配 incoming neu
 
 最终方法与原生分辨率/模态/pretraining 的每项贡献均能用同 split 的表格追溯；阶段报告说明事实、支持范围、假设和下一项可测问题。
 
+执行结果：全部60项模型/prior独立test结果、13个checkpoint内部健康采样、14个paired读出条件、8个实际G4 transport条件及匹配generator对照均完成。Generator使用3,512个独立hard scatters的GENIE3.04/Pythia6 Standard–NUX对照；整体BA/NLL/τ工作点差的区间跨零，不能解释为等价。τ/charm compact truth逐值复放保持9,400个响应完全相同。所有条件沿用冻结校准与cuts；真实硬件幅度、NuWro、timing、exposure、yield和significance未测量。主结果、四prior、条件区间、负结果和资源成本见[阶段236](../workbook/2026-11-14_stage236_s6_final_results.md)，原要求逐项证据见[完成映射](results/s6_scope_completion_audit.json)。
+
 ## 8. 计算与调度合同
 
 | Resource item | Initial proposal | Measurement / decision |
@@ -147,4 +151,4 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 S5已完成，入口为[研究合同与结果](12_s5_physics.md)、[最终矩阵](../workbook/2026-11-14_stage203_s5_final_results.md)和[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)。保留revision 3多尺度backbone、MAE3起点、direct4控制及vertex+kinematics候选；完整域six-way与当前对象构造没有建立分类净收益。S5已在10k标签预算内完成train-family选择的方向ridge读出，方位角仍弱。
 
-下一阶段为S6：先冻结候选、概率校准、阈值和selection，再打开既有独立test；沿用用户接受的detector-proxy基值。Proxy条件扰动与真实硬件系统误差分别表述。更强的轨迹实例关联、物理站点/磁场下的q/p拟合和新的vector/probabilistic head需独立实验合同。全7.24M训练、真实响应/generator系统包络和物理产额均未测量。
+S6现已完成：候选、概率校准、四prior、阈值和selection均在开放test前冻结，最终报告保留原阈值下实际test FPR。后续优先用train/validation研究高occupancy与细拓扑的信息利用，分离表示压缩、优化不足和探测器接受度，再以新独立数据确认。更强的轨迹实例关联、物理站点/磁场下的q/p拟合和新的vector/probabilistic head需独立实验合同。全7.24M训练、真实硬件约束的系统误差、NuWro和物理产额均未测量；已完成的proxy压力与Standard–NUX对照不替代这些项目。

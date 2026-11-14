@@ -1,6 +1,10 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S5已完成，见[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)、[原始范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[数值JSON](results/s5_summary.json)及[CSV](results/s5_metrics.csv)。26个神经网络、3个HGB、33项配对及完整10k validation全部完成；1,291次内部健康采样和checkpoint复算通过。三seed vertex+kinematics的NLL差−0.001956、CI95[−0.003363,−0.000725]，macro AP/τ AP净收益未建立；six-way的τ AP差−0.004764、CI[−0.008558,−0.001192]。修复后px/pz/E及收敛py读出有小幅至中等收益，方位角仍弱。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU core-hours；EOS释放1.134 GB、AFS提交脚本已清理。旧故障结果继续只作诊断，独立test和概率校准留给S6。**
+**当前状态：S6已完成。**全部722,272 calibration与724,441独立test完成15模型/ensemble × 四个prior的冻结评价；主MAE3 ensemble的balanced accuracy为**43.5226%**，CI95[43.3705%,43.6685%]。相对同预算Scratch增量为+0.3354个百分点，CI[+0.2508,+0.4166]；τ在冻结validation 1%背景阈值下效率为**3.5556%**，test实际weighted FPR为1.2080%。方法有小幅收益，当前低背景τ选择仍不足。旧故障S3结果只作诊断，不参与结论。
+
+入口：[最终中文报告](../workbook/2026-11-14_stage236_s6_final_results.md)、[S6合同与结果](13_s6_final_evaluation.md)、[精简JSON](results/s6_summary.json)、[60项指标CSV](results/s6_metrics.csv)、[原范围证据映射](results/s6_scope_completion_audit.json)。14个paired读出条件、5,888个真实transport响应、3,512个独立generator hard scatters及τ/charm compact truth均已完成。条件幅度沿用用户接受的detector-proxy；真实硬件误差、NuWro、物理flux/exposure及产额未测量。所有S6后端已关闭，临时缓存与过时AFS脚本已清理。
+
+S5已完成，见[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)、[原始范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[数值JSON](results/s5_summary.json)及[CSV](results/s5_metrics.csv)。26个神经网络、3个HGB、33项配对及完整10k validation全部完成；1,291次内部健康采样和checkpoint复算通过。三seed vertex+kinematics的NLL差−0.001956、CI95[−0.003363,−0.000725]，macro AP/τ AP净收益未建立；six-way的τ AP差−0.004764、CI[−0.008558,−0.001192]。修复后px/pz/E及收敛py读出有小幅至中等收益，方位角仍弱。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU core-hours；EOS释放1.134 GB、AFS提交脚本已清理。
 
 [18项原要求与57条直接证据](results/s5_scope_completion_audit.json)已逐项对应。补充exact-target联合支持保留3,179事件、Neff2,886.875；该域six-way τ AP差的区间跨零，不能把完整域下降外推为所有条件域结论。全部2,500个τ已有材料/间隙、pixel面投影及pitch/response诊断；当前seed42高纯度选择的首面投影域0/655，经独立score-key读回确认，HGB控制4/655。占用/位置关联与细拓扑利用仍待分离。总计13份主图和1份补充英文PDF。
 
@@ -10,7 +14,7 @@ S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results
 
 阶段145基线矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
 
-后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；S5结果见当前入口，S6未执行。
+后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；后续S5/S6结果见各自入口。
 
 [全范围完成性审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)已将原S4六项执行要求与早期pilot、几何/语义控制、三seed、matched-compute和最后矩阵逐项对应，[证据映射](results/s4_scope_completion_audit.json)保留直接产物路径和结论范围。研究完成包含明确的负结果；最终20项检查只覆盖最后矩阵的技术交付。
 
@@ -32,6 +36,7 @@ S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results
 | [10_s3_repair.md](10_s3_repair.md) | S3故障诊断、论文依据、尺度与多尺度架构修复、最终重训结论及global弱分支后续对照 |
 | [11_s4_pretraining.md](11_s4_pretraining.md) | S4预训练合同、有效低标签三seed结果、五初始化完整评价、失败诊断与后续选择 |
 | [12_s5_physics.md](12_s5_physics.md) | S5六类/物理任务、观测对象、三seed确认、回归修复与完整验证结果 |
+| [13_s6_final_evaluation.md](13_s6_final_evaluation.md) | 概率校准、冻结独立test、paired读出/transport、generator、物理分层和最终资源证据 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
@@ -134,4 +139,4 @@ S3方法晋级使用[完整四分类冻结合同](09_s3_operations.md)：三seed
 
 若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
 
-全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4完成空响应修复、低标签共同重选、matched-compute、五初始化分类与frozen readability。有效优化MAE3 seed42在10k的global置换ΔNLL为0.060310，区间为正；100k frozen global相对Scratch的macro AP增量为0.063814，[0.056307,0.072226]。固定权重路径诊断和线性读出分别说明路径依赖与可读信息。尚未测量：global重训净收益、全7.24M事件训练、generator/detector包络、冻结test及预期物理产额。沿用用户接受的split与detector-proxy；正式test按S6在模型、阈值和校准冻结后执行。
+全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4完成空响应修复、低标签共同重选、matched-compute、五初始化分类与frozen readability。有效优化MAE3 seed42在10k的global置换ΔNLL为0.060310，区间为正；100k frozen global相对Scratch的macro AP增量为0.063814，[0.056307,0.072226]。固定权重路径诊断和线性读出分别说明路径依赖与可读信息。S6完成2026-11-14 13:50:23Z冻结后的独立test、proxy条件效应与GENIE/Pythia6 Standard–NUX对照。尚未测量：global重训净收益、全7.24M事件训练、真实硬件约束的系统误差、NuWro及物理产额。后续高occupancy/细拓扑研究须建立新的train/validation合同与独立确认数据；本轮test保持为已公开的冻结评价。

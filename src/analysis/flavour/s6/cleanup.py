@@ -18,7 +18,9 @@ def run(args):
     closure = json.loads((root/'evaluation/backend_closure.json').read_text())
     if remaining or cost['active_jobs'] or not cost['backend_queries_complete']:
         raise ValueError('analysis or resource evidence still incomplete')
-    if any(f['unresolved_rows'] for f in cost['submitted_condor_factories']):
+    if any(f['unresolved_rows'] for f in cost['submitted_condor_factories']) or any(
+        s['status'] == 'unresolved' for s in cost.get('kubeflow_submissions', [])
+    ):
         raise ValueError('unresolved backend records')
     if closure['condor_active_jobs'] or closure['kubeflow_active_pods']:
         raise ValueError('backend still active')

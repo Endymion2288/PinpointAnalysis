@@ -1,6 +1,6 @@
 # S2 运行状态与复现入口
 
-S2已完成并验收。35项H100/LCG108/BF16科学配置均四轮完成、各14项CPU读回pass；严格评价与`--require-complete`真实exit0。最终39结果、41单seed配对、4三seed均值、2项交互、0 pending，组织终态成本92.73055556 GPUh，149条后端记录全部终止、无缺失历史。[阶段55总报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[版本化数值表](results/s2_summary.json)给出完整结论。沿用用户接受的samples/split/proxy；calibration/test冻结，S3–S6未执行。下文注明时间的运行记录为历史快照。
+S2已完成并验收。35项H100/LCG108/BF16科学配置均四轮完成、各14项CPU读回pass；严格评价与`--require-complete`真实exit0。最终39结果、41单seed配对、4三seed均值、2项交互、0 pending，组织终态成本92.73055556 GPUh，149条后端记录全部终止、无缺失历史。[阶段55总报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[版本化数值表](results/s2_summary.json)给出完整结论。沿用用户接受的samples/split/proxy。本文记录S2结束时的calibration/test冻结状态；后续S3–S6已完成，见[S6最终结果](13_s6_final_evaluation.md)。下文运行记录为历史快照。
 
 ## 当前产物
 

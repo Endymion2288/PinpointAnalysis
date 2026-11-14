@@ -1,0 +1,75 @@
+{
+  "UTC": "2026-11-14T15:31:17.507132+00:00",
+  "scope": "all submitted S6 clusters and app=pinpoint-s6 namespace xcheng resources",
+  "condor_active_jobs": [],
+  "kubeflow_active_pods": [],
+  "kubeflow_jobs_remaining": [],
+  "condor_queue_queries": [
+    {
+      "schedd": "bigbird20.cern.ch",
+      "command": [
+        "condor_q",
+        "-name",
+        "bigbird20.cern.ch",
+        "-constraint",
+        "ClusterId == 1582694 || ClusterId == 1582692 || ClusterId == 1582697 || ClusterId == 1582713 || ClusterId == 1582703 || ClusterId == 1582706 || ClusterId == 1582715 || ClusterId == 1582768 || ClusterId == 1582765 || ClusterId == 1582784 || ClusterId == 1582709 || ClusterId == 1582710 || ClusterId == 1582746 || ClusterId == 1582761 || ClusterId == 1582711 || ClusterId == 1582719 || ClusterId == 1582717 || ClusterId == 1582756 || ClusterId == 1582760 || ClusterId == 1582772 || ClusterId == 1582775 || ClusterId == 1582776 || ClusterId == 1582779 || ClusterId == 1582780 || ClusterId == 1582766 || ClusterId == 1582771 || ClusterId == 1582777 || ClusterId == 1582724 || ClusterId == 1582729 || ClusterId == 1582732 || ClusterId == 1582744 || ClusterId == 1582750 || ClusterId == 1582728 || ClusterId == 1582753 || ClusterId == 1582764 || ClusterId == 1582752 || ClusterId == 1582738 || ClusterId == 1582762 || ClusterId == 1582725 || ClusterId == 1582734 || ClusterId == 1582757 || ClusterId == 1582755 || ClusterId == 1582749 || ClusterId == 1582770",
+        "-json",
+        "-attributes",
+        "ClusterId,ProcId,JobStatus,ExitCode,ExitBySignal,RequestCpus,RequestMemory,RequestGpus,RemoteWallClockTime,RemoteUserCpu,RemoteSysCpu,MemoryUsage,JobStartDate,CompletionDate,EnteredCurrentStatus,QDate,RemoteHost,LastRemoteHost,HoldReason,RemoveReason,AssignedGPUs,LastMatchTime,NumJobStarts,MATCH_EXP_Machine,ResidentSetSize,ResidentSetSize_RAW"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "records": 0
+    },
+    {
+      "schedd": "bigbird21.cern.ch",
+      "command": [
+        "condor_q",
+        "-name",
+        "bigbird21.cern.ch",
+        "-constraint",
+        "ClusterId == 2207854",
+        "-json",
+        "-attributes",
+        "ClusterId,ProcId,JobStatus,ExitCode,ExitBySignal,RequestCpus,RequestMemory,RequestGpus,RemoteWallClockTime,RemoteUserCpu,RemoteSysCpu,MemoryUsage,JobStartDate,CompletionDate,EnteredCurrentStatus,QDate,RemoteHost,LastRemoteHost,HoldReason,RemoveReason,AssignedGPUs,LastMatchTime,NumJobStarts,MATCH_EXP_Machine,ResidentSetSize,ResidentSetSize_RAW"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "records": 0
+    },
+    {
+      "schedd": "bigbird15.cern.ch",
+      "command": [
+        "condor_q",
+        "-name",
+        "bigbird15.cern.ch",
+        "-constraint",
+        "ClusterId == 17040232",
+        "-json",
+        "-attributes",
+        "ClusterId,ProcId,JobStatus,ExitCode,ExitBySignal,RequestCpus,RequestMemory,RequestGpus,RemoteWallClockTime,RemoteUserCpu,RemoteSysCpu,MemoryUsage,JobStartDate,CompletionDate,EnteredCurrentStatus,QDate,RemoteHost,LastRemoteHost,HoldReason,RemoveReason,AssignedGPUs,LastMatchTime,NumJobStarts,MATCH_EXP_Machine,ResidentSetSize,ResidentSetSize_RAW"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "records": 0
+    }
+  ],
+  "resource_accounting_UTC": "2026-11-14T15:30:37.631003+00:00",
+  "kubeflow_query": {
+    "command": [
+      "kubectl",
+      "--request-timeout=25s",
+      "get",
+      "pods,jobs",
+      "-n",
+      "xcheng",
+      "-l",
+      "app=pinpoint-s6",
+      "-o",
+      "json"
+    ],
+    "exit": 0,
+    "items": []
+  },
+  "kubeflow_deletion_evidence": "runtime/kubeflow_jobs_cleanup.json"
+}

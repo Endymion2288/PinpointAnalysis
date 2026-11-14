@@ -150,14 +150,32 @@ def migration(args):
         'forward_folding_or_unfolding_validated': False, 'physical_exposure': 'unmeasured'}
     write_json(destination/'summary.json', {'score_energy_matrices': output, 'auxiliary': diagnostic,
         'empty_response_included': True, 'definition': 'rows condition on fixed true-energy bins; raw counts, no extrapolation or response inversion'})
-    p = np.load(destination/'mae3_100k_ensemble_balanced.npz')
-    fig, axes = plt.subplots(1, 4, figsize=(15, 4))
+    energy(args)
+
+
+def energy(args):
+    """Plot the compact frozen response matrices without rereading events."""
+    root = args.root
+    p = np.load(root/'evaluation/migration/mae3_100k_ensemble_balanced.npz')
+    energy_edges = p['energy_edges_GeV']
+    labels = [f'{low:g}–{high:g}' if high < 1e9 else f'≥{low:g}'
+              for low, high in zip(energy_edges[:-1], energy_edges[1:])]
+    fig, axes = plt.subplots(1, 4, figsize=(15, 4), layout='constrained')
+    cmap = plt.colormaps['viridis'].copy()
+    cmap.set_bad('lightgray')
     for c, ax in enumerate(axes):
         values = p[f'class_{c}_energy_score']
-        values = np.divide(values, values.sum(1, keepdims=True), out=np.zeros_like(values), where=values.sum(1, keepdims=True) > 0)
-        ax.imshow(values, aspect='auto', origin='lower', vmin=0, vmax=1, cmap='viridis')
-        ax.set(title=CLASSES[c], xlabel='True-class score bin', ylabel='True energy bin' if c == 0 else None)
-    fig.suptitle('Score response by incoming energy; independent test, row fractions')
+        counts = values.sum(1)
+        fractions = np.divide(values, counts[:, None], out=np.full_like(values, np.nan), where=counts[:, None] > 0)
+        im = ax.imshow(fractions, aspect='auto', origin='lower', vmin=0, vmax=1, cmap=cmap,
+            extent=[p['score_edges'][0], p['score_edges'][-1], -.5, len(counts)-.5])
+        ax.set(title=CLASSES[c], xlabel='True-class probability', yticks=range(len(counts)),
+            yticklabels=labels if c == 0 else [], xticks=[0, .5, 1],
+            ylabel='Incoming energy [GeV]' if c == 0 else None)
+        for i in np.flatnonzero(counts == 0):
+            ax.text(.5, i, 'No events', ha='center', va='center')
+    fig.colorbar(im, ax=axes, label='Fraction in energy row', shrink=.8)
+    fig.suptitle('Independent test: score response by incoming energy')
     save(fig, root, 'energy_score_response')
 
 
@@ -229,7 +247,7 @@ def physical(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['render', 'migration', 'physical'])
+    parser.add_argument('command', choices=['render', 'migration', 'physical', 'energy'])
     parser.add_argument('--root', type=Path, required=True)
     args = parser.parse_args()
     globals()[args.command](args)
