@@ -79,6 +79,8 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 首批1k frozen probes出现L-BFGS 500次上限未收敛，输出改作诊断。固定C=1及tol不变，另以max_iter=5000及明确收敛证据生成[六项新任务](configs/s4_converged_frozen_probes.json)，见[阶段150](../workbook/2026-11-14_stage150_s4_probe_solver_and_checkpoint_plots.md)。训练图也按实际提交epoch标记固定末轮，LP冻结采样单独计数。
 
+修复后的[监督计算对照计划](configs/s4_empty_matched_plan.json)已固定，见[阶段151](../workbook/2026-11-14_stage151_s4_repaired_compute_control_contract.md)。以阶段145的修复Scratch为parent，额外匹配既有MAE3声明矩阵预算，parent全部计算计入；与train-inner配方优化分开比较，新的continuation指标尚未测量。
+
 新18项矩阵确认低标签排序收益，也确认1k过拟合、τ硬决策及低背景工作点仍不足。以下属于尚未执行的下一轮候选。先在原标签预算内固定train-inner选择合同，再对Scratch/MAE3共同优化；本轮不扩至1M。
 
 | 实测问题 | 待比较的改动 | 控制与选择 |

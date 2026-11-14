@@ -55,6 +55,24 @@ def nearest_prefix(costs,target):
     return steps,int(totals[steps-1])
 
 
+def cached_shape_table(directory,case,events):
+    """Reuse a completed same-subset shape pass without decoding observations."""
+    manifest=json.loads((directory/'manifest.json').read_text())
+    if manifest['status']!='complete':
+        raise ValueError('shape cache source must be complete')
+    source=next(c for c in manifest['config']['supervised_cases']
+        if (c['label_budget'],c['seed'])==(case['label_budget'],case['seed']))
+    fields=['label_budget','seed','label_subset_seed','train_domain','modalities','compression',
+        'pitch_mm','window_pixels','region_blocks','local_residual','signal']
+    if any(source.get(k)!=case.get(k) for k in fields):
+        raise ValueError('shape cache requires the same labeled subset and token grouping')
+    path=directory/f'shapes_n{case["label_budget"]}.npy'
+    table=np.load(path,allow_pickle=False)
+    if table.shape!=(events,3) or not np.issubdtype(table.dtype,np.integer) or np.any(table<0):
+        raise ValueError('shape cache dimensions differ from current labeled events')
+    return table,path
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True);parser.add_argument('--campaign',type=Path,required=True)
@@ -77,11 +95,16 @@ def main():
         data=ShapeLabels(args.root,'train',case)
         # One shape pass per labeled event; every repeated sampler prefix then
         # costs only integer arithmetic. Keep this small table, not embeddings.
-        loader=DataLoader(data,batch_size=128,num_workers=3,multiprocessing_context='spawn',
-            worker_init_fn=init_worker,prefetch_factor=1)
-        table=torch.cat(list(loader)).numpy()
-        np.save(output/f'shapes_n{case["label_budget"]}.npy',table)
-        del loader;data.native.close()
+        if config.get('reuse_shapes_from'):
+            table,shape_source=cached_shape_table(Path(config['reuse_shapes_from']),case,len(data))
+        else:
+            loader=DataLoader(data,batch_size=128,num_workers=3,multiprocessing_context='spawn',
+                worker_init_fn=init_worker,prefetch_factor=1)
+            table=torch.cat(list(loader)).numpy()
+            shape_source=output/f'shapes_n{case["label_budget"]}.npy'
+            np.save(shape_source,table)
+            del loader
+        data.native.close()
         epochs=case['epochs'];offset=epochs
         baseline_operations=0;baseline_exposures=0
         baseline=SpatialBatchSampler(data,case.get('batch_size',16),case['seed'],steps=case['steps_per_epoch'])
@@ -104,6 +127,7 @@ def main():
                 'per_epoch_steps':steps,'additional_matrix_operations':cumulative,'target':target,'seconds':time.perf_counter()-started})
         selected,operations=nearest_prefix(costs,target)
         row={'label_budget':case['label_budget'],'pretraining_matrix_operations':target,
+            'shape_table_source':str(shape_source),
             'baseline_supervised_matrix_operations':baseline_operations,
             'additional_supervised_matrix_operations':operations,'relative_matching_error':(operations-target)/target,
             'MAE3_plus_finetuning_matrix_operations':target+baseline_operations,
@@ -113,7 +137,7 @@ def main():
             'additional_train_exposures':sum(sum(x[:selected]) for x in exposures),
             'per_epoch_matrix_operations':[sum(x[:selected]) for x in costs]}
         if abs(row['relative_matching_error'])>.005:raise RuntimeError('cannot match proxy budget within 0.5%')
-        name=f's4_supervised_matched_n{case["label_budget"]}_s{case["seed"]}'
+        name=f'{config.get("continuation_name_prefix","s4_supervised_matched")}_n{case["label_budget"]}_s{case["seed"]}'
         case.update(name=name,program='train',initialization='supervised_matched_mae3',supervised_initial_checkpoint=str(parent/'best.pt'),
             epochs=epochs,steps_per_epoch=selected,sampler_epoch_offset=offset,
             dependencies=[base['name']],matched_budget=row,

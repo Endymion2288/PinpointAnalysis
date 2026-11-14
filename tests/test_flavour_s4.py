@@ -26,7 +26,7 @@ from analysis.flavour.s3.metrics import MetricCache
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
 from analysis.flavour.s4.compute_profile import MatrixOperations,shape_operations
-from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix
+from analysis.flavour.s4.matched_plan import event_shape,compact_batch,nearest_prefix,cached_shape_table
 from analysis.flavour.s4.campaign import host_memory
 from analysis.flavour.s4.rel_diagnostic import inspect as inspect_bar_semantics
 from analysis.flavour.s4.validation_job import main as validate_completed_campaign, checkpoint_configuration
@@ -377,7 +377,7 @@ class S4Tests(unittest.TestCase):
 
     def test_shape_budget_matches_actual_forward_backward_hooks(self):
         for objective in ['mae','mae_rel','distill','classification']:
-            config={**self.config,'objective':objective}
+            config={**self.config,'objective':objective,'empty_response_bypass':objective=='classification'}
             if objective=='classification':
                 model=PlaneModuleClassifierV2(config).train();batch=collate_planes([self.item(),self.item(19)])
                 counter=MatrixOperations(model);loss=model(batch).square().mean()
@@ -566,6 +566,22 @@ class S4Tests(unittest.TestCase):
         self.assertEqual(selected_history_index({'config':{}},history),0)
         self.assertEqual(selected_history_index({'config':{'select_final_epoch':True}},history),1)
         self.assertEqual(selected_history_index({'config':{},'checkpoint_selection':{'epoch':2}},history),1)
+
+    def test_shape_cache_accepts_empty_response_repair_but_rejects_changed_label_subset(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);case={'label_budget':1000,'seed':42,'label_subset_seed':20261113,
+                'modalities':['pixel','bar','tracker'],'region_blocks':32}
+            (root/'manifest.json').write_text(json.dumps({'status':'complete','config':{'supervised_cases':[case]}}))
+            expected=np.array([[3,2,2],[4,3,2]],dtype=np.int64)
+            np.save(root/'shapes_n1000.npy',expected)
+            actual,_=cached_shape_table(root,{**case,'empty_response_bypass':True},2)
+            np.testing.assert_array_equal(actual,expected)
+            with self.assertRaisesRegex(ValueError,'same labeled subset'):
+                cached_shape_table(root,{**case,'label_subset_seed':17},2)
+            with self.assertRaisesRegex(ValueError,'same labeled subset'):
+                cached_shape_table(root,{**case,'region_blocks':16},2)
+            with self.assertRaisesRegex(ValueError,'dimensions differ'):
+                cached_shape_table(root,case,3)
 
     def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
         from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve
