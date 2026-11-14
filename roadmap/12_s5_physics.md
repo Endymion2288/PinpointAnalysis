@@ -1,5 +1,7 @@
 # S5：τ、charm、辅助任务与可重建对象
 
+**已完成。**[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)与[精简JSON](results/s5_summary.json)记录26个神经网络、3个HGB和33项完整配对。八pass三seed中，vertex+kinematics的NLL小幅改善，但macro AP和τ AP净收益未建立；six-way的τ AP下降。1,291次内部健康采样、真实六类fit及完整方向读出审查通过；方位角仍弱，明确保留。全部后端终止，重复产物和AFS提交脚本清理完成。下文保留执行合同及方法依据。
+
 本阶段沿用已接受的110k事件、split和detector-proxy；100k train、10k validation。Calibration/test留给S6。输出根：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14`。S4 revision 3是原生响应backbone，MAE3为起点。既有故障结果不进入科学对照。
 
 ## 标签与输入边界

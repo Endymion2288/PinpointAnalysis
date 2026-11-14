@@ -1,12 +1,14 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results.md)。修复后的五初始化×三个标签预算共15项seed42分类训练、30个驻点frozen读出、45套完整10k预测和66项配对全部完成，20项收尾检查通过。MAE3相对Scratch的raw macro AP增量为+0.033039/+0.025899/+0.005324，物理块区间均为正；EMA3弱于MAE3，Rel存在总体与τ指标取舍。114条allocation全部终止，35.399029/60 device-hours；临时特征已清理。旧故障结果继续只作诊断，calibration/test冻结，本轮不扩1M。**
+**当前状态：S5已完成，见[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)、[数值JSON](results/s5_summary.json)及[CSV](results/s5_metrics.csv)。26个神经网络、3个HGB、33项配对及完整10k validation全部完成；1,291次内部健康采样和checkpoint复算通过。三seed vertex+kinematics的NLL差−0.001956、CI95[−0.003363,−0.000725]，macro AP/τ AP净收益未建立；six-way的τ AP差−0.004764、CI[−0.008558,−0.001192]。修复后px/pz/E及收敛py读出有小幅至中等收益，方位角仍弱。全部后端终止，2.673889 device-hours、61.256111 CPU core-hours；EOS释放1.134 GB、AFS提交脚本已清理。旧故障结果继续只作诊断，独立test和概率校准留给S6。**
+
+S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results.md)。修复后的五初始化×三个标签预算共15项seed42分类训练、30个驻点frozen读出、45套完整10k预测和66项配对完成；MAE3相对Scratch的raw macro AP增量为+0.033039/+0.025899/+0.005324。其114条allocation已终止，35.399029/60 device-hours，与上述S5资源分开统计。
 
 日期：2026-11-14。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2的20模型及历史比较见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)；本次S4分类同时采用revision 3的`empty_response_bypass=true`，重新初始化Scratch，并从三套既有MAE3 encoder重新fine-tune，SSL encoder本身没有重训。
 
 阶段145基线矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
 
-后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；S5–S6未执行。
+后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；S5结果见当前入口，S6未执行。
 
 [全范围完成性审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)已将原S4六项执行要求与早期pilot、几何/语义控制、三seed、matched-compute和最后矩阵逐项对应，[证据映射](results/s4_scope_completion_audit.json)保留直接产物路径和结论范围。研究完成包含明确的负结果；最终20项检查只覆盖最后矩阵的技术交付。
 
@@ -27,6 +29,7 @@
 | [09_s3_operations.md](09_s3_operations.md) | S3完整四分类合同、细粒度局部编码/module/融合对照、Pareto与三seed确认 |
 | [10_s3_repair.md](10_s3_repair.md) | S3故障诊断、论文依据、尺度与多尺度架构修复、最终重训结论及global弱分支后续对照 |
 | [11_s4_pretraining.md](11_s4_pretraining.md) | S4预训练合同、有效低标签三seed结果、五初始化完整评价、失败诊断与后续选择 |
+| [12_s5_physics.md](12_s5_physics.md) | S5六类/物理任务、观测对象、三seed确认、回归修复与完整验证结果 |
 | [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
 | [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
 
