@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import math
 from pathlib import Path
 
+import pandas as pd
+
 from analysis.flavour.inventory import write_json
 from analysis.flavour.s4.accept import fit_record, inventory_checks, load, terminal_allocations
 
@@ -27,11 +29,27 @@ def audit(root, campaign, comparisons, evaluation_path):
             and bool(readback.get('checks')) and all(readback['checks'].values())
             and bool(readback.get('learning_checks')) and all(readback['learning_checks'].values())})
     accounting = load(root / 'campaign_accounting.json')
+    pilot_name = next(iter(configurations.values())).get('required_pilot')
+    pilot = load(root / 'pilot' / pilot_name / 'gate.json')
+    stress_path = root / 'stress' / pilot_name
+    stress_summary = load(stress_path / 'summary.json')
+    stress = pd.read_parquet(stress_path / 'measurements.parquet') if (stress_path / 'measurements.parquet').exists() else pd.DataFrame()
+    catalog = pd.read_parquet(root / 'catalog.parquet', columns=['split', 'pixel_channels', 'bar_channels', 'tracker_channels'])
+    maximum_occupancy = int(catalog.loc[catalog.split.eq('train'), ['pixel_channels', 'bar_channels', 'tracker_channels']].sum(axis=1).max())
     checks = inventory_checks(configurations, comparison, evaluation)
     checks.update({
         'exact_18_fit_paired_matrix': len(configurations) == 18 and actual == expected,
         'all_use_repaired_route_and_initial_health': all(c.get('empty_response_bypass') is True
             and c.get('architecture_revision') == 3 and c.get('health_initial_steps') == 32 for c in configurations.values()),
+        'real_train_memorization_gate': pilot.get('gate_passed') is True
+            and pilot.get('config', {}).get('empty_response_bypass') is True,
+        'BF16_empty_and_maximum_occupancy_stress': stress_summary.get('precision') == 'BF16'
+            and len(stress) == 6 and bool(stress.finite.all())
+            and set(stress['mode']) == {'inference', 'backward'}
+            and int(stress.raw_channels.max()) == maximum_occupancy and int(stress.raw_channels.min()) == 0
+            and bool(stress.raw_channels.eq(stress.represented_nodes).where(stress.raw_channels.gt(0), True).all())
+            and bool((stress.loc[stress['mode'].eq('backward') & stress.raw_channels.gt(0), 'input_gradient_squared_norm'] > 0).all())
+            and bool((stress.loc[stress['mode'].eq('backward') & stress.raw_channels.eq(0), 'input_gradient_squared_norm'] == 0).all()),
         'all_fits_checkpoints_and_internal_health': bool(fits) and all(r['passed'] for r in fits),
         'three_measured_pretraining_sources': len(pretrained) == 3 and all(r['passed'] for r in pretrained),
         'complete_balanced_10k_validation': len(evaluated) == 18 and all(r['four_class']['events'] == 10000
