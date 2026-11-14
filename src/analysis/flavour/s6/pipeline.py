@@ -25,7 +25,9 @@ def calibrate(args):
         if any(not v['healthy'] for v in summary['health'].values()):
             raise ValueError('calibration internal output requires review')
     args.split = 'calibration'
+    print(json.dumps({'calibration_finalize': 'all parts ready; merging metadata'}), flush=True)
     prepare.finalize(args)
+    print(json.dumps({'calibration_finalize': 'merging probabilities'}), flush=True)
     infer.finalize(args)
     campaign = json.loads(args.campaign.read_text())
     for i, name in enumerate(calibration.model_names(campaign)):
@@ -61,6 +63,9 @@ def test_finalize(args):
 
 
 def main():
+    import pyarrow as pa
+    pa.set_cpu_count(1)
+    pa.set_io_thread_count(1)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['calibrate', 'test_finalize'])
     parser.add_argument('--root', type=Path, required=True)

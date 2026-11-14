@@ -177,6 +177,8 @@ def convert_response(output, destination, metadata, geometry):
     from analysis.flavour.create_data import BRANCHES, ROOT_TREES, lists
     from analysis.flavour.inventory import COMPRESSION
     from analysis.flavour.readout import pixel_channels, bar_channels, tracker_measurements, modality_state
+    from analysis.flavour.s5.truth import group_flat, primary_decay, charmed
+    from analysis.flavour.s2.prepare import classify_tau_daughters
     with uproot.open(output) as source:
         if source['event'].num_entries != len(metadata):
             raise ValueError('transport event coverage differs')
@@ -186,6 +188,9 @@ def convert_response(output, destination, metadata, geometry):
         if not np.allclose(actual, expected, atol=2e-4, rtol=0):
             raise ValueError('transport changed fixed input vertices')
         data = {n: source[ROOT_TREES[n]].arrays(k, library='ak') for n, k in BRANCHES.items()}
+        primary = group_flat(source['primaries'], ['evtID', 'PDG', 'trackID'])
+        tau = group_flat(source['tau'])
+        charm = group_flat(source['charm'])
         observations, ideals, rows = [], [], []
         for i, meta in enumerate(metadata.to_dict('records')):
             h = {n: {k: ak.to_numpy(v[k][i]) for k in v.fields} for n, v in data.items()}
@@ -198,8 +203,17 @@ def convert_response(output, destination, metadata, geometry):
                 'has_response': state['has_response'].tolist(), 'outside_acceptance': [-1, -1, -1],
                 'fit_attempted': False, 'momentum_censored': -1})
             ideals.append(lists(ideal))
+            prim = primary.get(int(event['evtID'][i]), {'PDG': np.array([], dtype=int), 'trackID': np.array([], dtype=int)})
+            ids = prim['trackID'][np.abs(prim['PDG']) == 15]
+            direct, vertex, valid = primary_decay(tau.get(int(event['evtID'][i]), {}), ids)
+            children = charm.get(int(event['evtID'][i]), {}).get('PDG', np.array([], dtype=int))
             rows.append({**meta, 'pixel_channels': len(pixel['channel_id']), 'bar_channels': len(bars['channel_id']),
-                'tracker_channels': len(tracker['station']), 'all_empty': not state['has_response'].any()})
+                'tracker_channels': len(tracker['station']), 'all_empty': not state['has_response'].any(),
+                'resim_tau_branch': classify_tau_daughters(direct['PDG']) if direct and meta['label'] == 2 else
+                    'unknown' if meta['label'] == 2 else 'not_tau', 'resim_tau_decay_valid': bool(valid),
+                'resim_tau_decay_vertex_mm': vertex.tolist() if valid else None,
+                'resim_charm_primary': any(charmed(p) for p in prim['PDG']),
+                'resim_charm_e': bool((np.abs(children) == 11).any()), 'resim_charm_mu': bool((np.abs(children) == 13).any())})
     destination.mkdir(parents=True, exist_ok=True)
     pq.write_table(pa.Table.from_pylist(observations), destination/'observations.parquet', compression=COMPRESSION)
     pq.write_table(pa.Table.from_pylist([{'label': int(m['label'])} for m in rows]), destination/'targets.parquet', compression=COMPRESSION)
