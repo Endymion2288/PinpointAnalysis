@@ -86,12 +86,23 @@ def functional_plots(report_path, output):
     pd.DataFrame(records).to_csv(output/'functional_paths.csv', index=False)
 
 
+def selected_history_index(row, history):
+    """Use the submitted checkpoint rule even if another epoch has lower NLL."""
+    epoch=row.get('checkpoint_selection',{}).get('epoch')
+    if epoch is not None:
+        return next(i for i,item in enumerate(history) if item['epoch']==epoch)
+    if row['config'].get('select_final_epoch'):
+        return len(history)-1
+    return int(np.argmin([item['validation']['NLL'] for item in history]))
+
+
 def classification_plots(root, evaluation_path, output):
     """Display overfitting and the observed gradient/activation ranges."""
     evaluation=json.loads(evaluation_path.read_text())
     models=[row for row in evaluation['experiments'] if row['program']=='train'
         and not row['config'].get('selection_envelope')]
-    colors={kind:f'C{i}' for i,kind in enumerate(dict.fromkeys(row['config']['initialization'] for row in models))}
+    colors={kind:f'C{i}' for i,kind in enumerate(dict.fromkeys(
+        row.get('comparison_group',row['config']['initialization']) for row in models))}
     output.mkdir(parents=True,exist_ok=True)
     with PdfPages(output/'classification_training_curves.pdf') as pdf:
         for budget in sorted({row['config']['label_budget'] for row in models}):
@@ -101,12 +112,12 @@ def classification_plots(root, evaluation_path, output):
                 config=row['config']
                 if config['label_budget']!=budget:continue
                 history=json.loads((root/'experiments'/row['name']/'history.json').read_text())
-                kind=config['initialization'];seed=config['seed'];color=colors[kind]
+                kind=row.get('comparison_group',config['initialization']);seed=config['seed'];color=colors[kind]
                 label=kind if kind not in seen else None;seen.add(kind)
                 x=[r['optimizer_steps_cumulative'] for r in history]
                 series=[[r['train_loss'] for r in history],[r['validation']['NLL'] for r in history],
                     [r['validation']['classwise']['2']['PR_AUC'] for r in history]]
-                selected=int(np.argmin(series[1]))
+                selected=selected_history_index(row,history)
                 for ax,values in zip(axes,series):
                     ax.plot(x,values,color=color,linestyle='-' if seed==42 else '--',
                         alpha=1. if seed==42 else .55,label=label)
@@ -115,17 +126,19 @@ def classification_plots(root, evaluation_path, output):
                 ax.set(xlabel='Applied optimizer updates',ylabel=title)
             axes[0].set_yscale('log');axes[1].axhline(np.log(4),color='0.5',linewidth=.8,label='Balanced constant prior')
             axes[0].legend(fontsize=7)
-            fig.suptitle(f'{budget:,} labeled events; dots select validation NLL; dashed lines show seeds 17/2026')
+            fig.suptitle(f'{budget:,} labeled events; dots mark submitted checkpoints; dashed lines show seeds 17/2026')
             pdf.savefig(fig);fig.savefig(output/f'training_curves_n{budget}.png',dpi=150);plt.close(fig)
     ranges=[]
     for row in models:
         directory=root/'experiments'/row['name']
         records=json.loads((directory/'training_health.json').read_text())['records']
-        gradients=[r['gradient_squared_norms']['input'] for r in records if r['informative_nodes']>0]
+        gradients=[r['gradient_squared_norms']['input'] for r in records
+            if r['informative_nodes']>0 and not r.get('intentional_encoder_freeze',False)]
         silu=[a for r in records for a in r['activations']['head.2']]
         selected_path=directory/'best_checkpoint_health.json'
         selected=json.loads(selected_path.read_text()) if selected_path.exists() else {}
         ranges.append({'name':row['name'],'health_samples':len(records),
+            'intentional_LP_samples':sum(r.get('intentional_encoder_freeze',False) for r in records),
             'input_gradient_squared_norm_min':min(gradients),'input_gradient_squared_norm_max':max(gradients),
             'SiLU_RMS_min':min(v['RMS'] for v in silu),'SiLU_RMS_max':max(v['RMS'] for v in silu),
             'SiLU_exact_zero_fraction_max':max(v['zero_fraction'] for v in silu),

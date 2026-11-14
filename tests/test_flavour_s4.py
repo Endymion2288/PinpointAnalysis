@@ -20,6 +20,8 @@ from analysis.flavour.s4.prepare import bar_contributions
 from analysis.flavour.s4.pretrain import evaluate,feature_statistics
 from analysis.flavour.s4.evaluate import evaluate as evaluate_classification,classwise_operating_points,tau_statistics,plot_curves
 from analysis.flavour.s4.summarize import summarize
+from analysis.flavour.s4.probes import fit_probe
+from analysis.flavour.s4.plots import selected_history_index
 from analysis.flavour.s3.metrics import MetricCache
 from analysis.flavour.s4.train import build_model as build_downstream
 from analysis.flavour.s4.query_baseline import QueryOnly
@@ -546,6 +548,24 @@ class S4Tests(unittest.TestCase):
             self.assertTrue(all(row['seeds']==[17,42] for row in compact['label_statistics']))
             self.assertEqual(len({row['comparison_group'] for row in compact['label_statistics']}),2)
             self.assertNotIn('fixed validation NLL checkpoints',compact['selection_scope'])
+
+    def test_unconverged_probe_is_diagnostic_and_converged_fit_uses_only_fit_events(self):
+        rng=np.random.default_rng(42);features=rng.normal(size=(160,24));labels=np.arange(160)%4
+        _,failed=fit_probe(features,labels,'linear',{'probe_linear_max_iter':1})
+        self.assertFalse(failed['passed'])
+        self.assertTrue(failed['convergence_warnings'])
+        fitted,healthy=fit_probe(features,labels,'linear',{'probe_linear_max_iter':2000})
+        self.assertTrue(healthy['passed'])
+        self.assertEqual(healthy['fit_events'],len(labels))
+        self.assertLess(max(healthy['iterations']),healthy['maximum_iterations'])
+        np.testing.assert_allclose(fitted[0].mean_,features.mean(0))
+        self.assertTrue(np.isfinite(fitted.predict_proba(features*10)).all())
+
+    def test_training_plot_marks_fixed_final_checkpoint_even_when_earlier_nll_is_lower(self):
+        history=[{'epoch':1,'validation':{'NLL':1.2}},{'epoch':2,'validation':{'NLL':1.3}}]
+        self.assertEqual(selected_history_index({'config':{}},history),0)
+        self.assertEqual(selected_history_index({'config':{'select_final_epoch':True}},history),1)
+        self.assertEqual(selected_history_index({'config':{},'checkpoint_selection':{'epoch':2}},history),1)
 
     def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
         from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve

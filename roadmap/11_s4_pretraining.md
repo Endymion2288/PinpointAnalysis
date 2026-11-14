@@ -77,6 +77,8 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 1k新旧模型的[12模型评价](configs/s4_optimized_1k_evaluation.json)与[12项配对/4项seed均值](configs/s4_optimized_1k_pairs.json)已固定，见[阶段149](../workbook/2026-11-14_stage149_s4_optimized_evaluation_contract.md)。四组分别绘图和汇总，避免相同initialization的新旧模型混合；每个模型记录真实checkpoint选择方式。优化方案在查看旧结果后设计，本次10k validation复用的条件性范围保存在评价合同中。
 
+首批1k frozen probes出现L-BFGS 500次上限未收敛，输出改作诊断。固定C=1及tol不变，另以max_iter=5000及明确收敛证据生成[六项新任务](configs/s4_converged_frozen_probes.json)，见[阶段150](../workbook/2026-11-14_stage150_s4_probe_solver_and_checkpoint_plots.md)。训练图也按实际提交epoch标记固定末轮，LP冻结采样单独计数。
+
 新18项矩阵确认低标签排序收益，也确认1k过拟合、τ硬决策及低背景工作点仍不足。以下属于尚未执行的下一轮候选。先在原标签预算内固定train-inner选择合同，再对Scratch/MAE3共同优化；本轮不扩至1M。
 
 | 实测问题 | 待比较的改动 | 控制与选择 |
