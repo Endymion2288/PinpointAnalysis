@@ -149,10 +149,13 @@ def finalize(args):
         raise ValueError('S6 converted keys differ from accepted split')
     catalog.to_parquet(args.root/f'{args.split}_catalog.parquet', index=False, compression=COMPRESSION)
     truth = pd.concat([pd.read_parquet(p/'truth.parquet') for p in paths], ignore_index=True)
+    from analysis.flavour.s6.truth_geometry import tau_material_labels
+    truth, geometry_labels = tau_material_labels(truth, json.loads(Path(plan_data['geometry']).read_text()))
     truth.to_parquet(args.root/f'{args.split}_truth.parquet', index=False, compression=COMPRESSION)
     write_json(args.root/f'{args.split}_preparation.json', {'status': 'complete', 'events': len(catalog), 'shards': len(paths),
         'task_seconds_sum': sum(s['seconds'] for s in summaries), 'bytes': sum(s['bytes'] for s in summaries),
-        'maximum_task_RSS_MiB': max(s['peak_rss_MiB'] for s in summaries), 'split_unchanged': True})
+        'maximum_task_RSS_MiB': max(s['peak_rss_MiB'] for s in summaries), 'split_unchanged': True,
+        'tau_geometry_labels': geometry_labels})
     print(json.dumps({'split': args.split, 'events': len(catalog), 'status': 'complete'}), flush=True)
 
 
