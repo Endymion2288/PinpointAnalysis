@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -34,9 +35,15 @@ def main():
     output = args.root/'diagnostics'/args.name
     output.mkdir(parents=True, exist_ok=False)
     model_dir = args.root/'experiments'/args.model
-    config = json.loads((model_dir/'config.json').read_text())
-    config.update(compile_local=args.compile_local, workers=2, cache_shards=2,
-                  drop_modality=args.drop_modality, bf16=torch.cuda.get_device_capability()[0]>=8)
+    manifest = json.loads((model_dir/'manifest.json').read_text())
+    config = manifest['config'].copy()
+    neural = config['family'] != 'B0'
+    capable = neural and torch.cuda.get_device_capability()[0]>=8
+    config.update(compile_local=bool(config.get('compile_local') and args.compile_local and capable),
+        workers=2, cache_shards=2, drop_modality=args.drop_modality,
+        bf16=bool(config.get('bf16', True) and capable))
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
     if config['family'] == 'B0':
         config.update(task=config['task'], batch_size=32)
     with tempfile.TemporaryDirectory(prefix='r1-infer-') as scratch:
@@ -57,7 +64,9 @@ def main():
             shutdown_loader(loader)
         save_predictions(output/'predictions.parquet', data, indices, p, logits)
         write_json(output/'manifest.json', {'status': 'complete', 'model': args.model, 'input_root': str(args.input_root),
-            'drop_modality': args.drop_modality, 'checkpoint': args.checkpoint, 'GPU': torch.cuda.get_device_name(),
+            'drop_modality': args.drop_modality, 'checkpoint': args.checkpoint,
+            'GPU': torch.cuda.get_device_name() if neural else 'CPU', 'actual_inference_config': config,
+            'allocation_id': os.environ.get('PINPOINT_JOB_ID'),
             'metrics': quick_report(data.metadata.iloc[indices].label.to_numpy(), p),
             'events': len(indices), 'inference_seconds': inference_seconds, 'wall_seconds': time.perf_counter()-started,
             'scope': 'masked-input measures reliance; retrained controls measure incremental modality value',

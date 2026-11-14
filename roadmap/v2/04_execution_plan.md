@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0已完成，R1正在执行。**四个神经网络已通过真实三类/四类小样本拟合，B1空投影与B2数值路径经过修复和BF16重训；完整Train100k/Tune40k转换、正式基线与泛化比较仍在进行，见[stage239](../../workbook/2026-11-14_stage239_r1_baselines_and_learning_gates.md)。先完成共同输入、任务和资源对齐的比较，再由收敛与错误结构决定后续计算投入。
+**R0已完成，R1正在执行。**完整Train100k/Tune40k已通过身份、标签、PE与计数验收；四个神经网络通过真实三类/四类学习及集成检查，B0三seed已完成，B1–B4正式screen在Condor/Kubeflow并行推进。冻结合同见[配置](configs/r1_campaign.json)，实际数据与首批基线见[stage241](../../workbook/2026-11-14_stage241_r1_full_data_and_comparison_pipeline.md)。四pass、神经网络三seed、完整paired比较和stress仍待完成。
 
 本文件与 [experiment_plan.json](experiment_plan.json) 记录研究合同及执行状态。W01–W03由`analysis.flavour.v2`实现并完成HTCondor验证，见[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[r0_results.json](r0_results.json)；W04–W06已开始实现与验证，W08待实际完整结果。R1入口位于`analysis.flavour.v2.r1`，本JSON不能直接交给旧训练CLI。已有accepted samples、response参数和路径工具继续复用。阶段编号使用R0–R7，与已完成的旧S0–S6区分。
 

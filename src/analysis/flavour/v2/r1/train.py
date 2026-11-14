@@ -90,6 +90,7 @@ def run(args):
     data_root = Path(config['data_root'])
     scratch_parent = os.environ.get('PINPOINT_V2_SCRATCH', os.environ.get('_CONDOR_SCRATCH_DIR', '/tmp'))
     record = {'status': 'running', 'config': config, 'GPU': torch.cuda.get_device_name(),
+        'allocation_id': os.environ.get('PINPOINT_JOB_ID'),
         'submitted_config': submitted_config, 'capability': list(torch.cuda.get_device_capability()),
         'history': [], 'health': [], 'Cal_A_Cut_B_Confirm_payload_read': False}
     with tempfile.TemporaryDirectory(prefix='r1-train-', dir=scratch_parent) as scratch, MemoryMonitor() as memory:

@@ -87,8 +87,9 @@ def screen(args):
 
 def select(args):
     contract = json.loads((args.root/'campaign.json').read_text())
-    selected = {}
-    for family in FAMILIES:
+    destination = args.root/'selected_recipes.json'
+    selected = json.loads(destination.read_text())['selected'] if destination.exists() else {}
+    for family in args.families:
         for task in ['T3', 'T4']:
             candidates = []
             for lr in contract['learning_rates'][family]:
@@ -101,9 +102,9 @@ def select(args):
             winner = max(candidates, key=lambda value: value[:2])
             selected[f'{family}_{task}'] = {'screen': winner[2], 'metrics': winner[3]['metrics'],
                 'learning_rate': winner[3]['config']['learning_rate']}
-    write_json(args.root/'selected_recipes.json', {'status': 'complete', 'selected': selected,
+    write_json(destination, {'status': 'complete' if len(selected)==8 else 'partially_selected', 'selected': selected,
         'selection_rule': contract['screen_selection']})
-    for family in FAMILIES+['B4-MAE']:
+    for family in args.families+(['B4-MAE'] if 'B4' in args.families else []):
         for task in (['T4'] if family == 'B4-MAE' else ['T3', 'T4']):
             name = f'final_{family.lower()}_{task.lower()}_s42'
             key = f"{'B4' if family == 'B4-MAE' else family}_{task}"

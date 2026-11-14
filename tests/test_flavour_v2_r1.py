@@ -123,6 +123,37 @@ class ObservationTests(unittest.TestCase):
 
 
 class MetricTests(unittest.TestCase):
+    def test_condition_keeps_nominal_tau_threshold(self):
+        from analysis.flavour.v2.r1.stress_evaluate import frozen_points
+        from analysis.flavour.v2.r1.metrics import quick_report
+        y = np.arange(32) % 4
+        p = np.full((32, 4), .1)
+        p[np.arange(32), y] = .7
+        reference = quick_report(y, p)
+        shifted = p.copy()
+        shifted[y==0] = [.05, .1, .8, .05]
+        frame = pd.DataFrame({'label': y, **{f'p{c}': shifted[:, c] for c in range(4)}})
+        rows, _ = frozen_points(frame, reference)
+        tau = next(r for r in rows if r['name']=='tau_FPR_0.01')
+        self.assertAlmostEqual(tau['actual_FPR'], 1/3)
+        self.assertEqual(tau['selected_background'], 8)
+        self.assertEqual(tau['efficiency'], 1.)
+
+    def test_paired_bootstrap_keeps_benchmark_prior_and_exact_pairing(self):
+        from analysis.flavour.v2.r1.evaluate import scalar_summary, paired, SCALARS
+        y = np.arange(24) % 4
+        p = np.tile([.5, .2, .1, .2], (24, 1))
+        frame = pd.DataFrame({'label': y, **{f'p{c}': p[:, c] for c in range(4)}})
+        weights = np.where(y == 0, 5., 1.)
+        compute = scalar_summary(frame)
+        # Class balance is fixed even when block resampling changes the mixture.
+        np.testing.assert_allclose(compute(), compute(weights))
+        result = paired(frame, frame, [np.ones(24), weights])
+        self.assertEqual(set(result), set(SCALARS))
+        for row in result.values():
+            self.assertEqual(row['difference_a_minus_b'], 0.)
+            self.assertEqual(row['95pct'], [0., 0.])
+
     def test_weighted_three_and_four_metrics_against_sklearn_with_ties(self):
         from sklearn.metrics import average_precision_score, balanced_accuracy_score, log_loss, roc_auc_score
         rng = np.random.default_rng(42)

@@ -49,6 +49,10 @@ def main():
         raise ValueError('HGB prediction identities differ')
     for c, value in zip(model.classes_, p.T):
         frame[f'p{c}'] = value
+    subset = pd.read_parquet(args.root/'data/tune_screen.parquet', columns=['run', 'chunk', 'row'])
+    positions = pd.MultiIndex.from_frame(frame[['run', 'chunk', 'row']]).get_indexer(pd.MultiIndex.from_frame(subset))
+    if (positions < 0).any():
+        raise ValueError('fixed screen identities absent from HGB Tune predictions')
     frame.to_parquet(output/'predictions.parquet', index=False, compression=COMPRESSION)
     coverage = train[['run', 'chunk', 'row', 'label']].copy()
     coverage['boosting_iterations'] = args.iterations
@@ -57,6 +61,7 @@ def main():
     write_json(output/'config.json', config)
     write_json(output/'manifest.json', {'status': 'complete', 'config': config,
         'metrics': quick_report(tune.label.to_numpy(), p), 'train_metrics': quick_report(train.label.to_numpy(), train_p),
+        'screen_metrics': quick_report(tune.label.to_numpy()[positions], p[positions]),
         'unique_train_events': len(train), 'fit_seconds': fit_seconds, 'wall_seconds': time.perf_counter()-started,
         'device': 'CPU', 'threads': args.threads, 'Cal_A_Cut_B_Confirm_payload_read': False,
         'probability_std': p.std(0).tolist(), 'distinct_probability_vectors': len(np.unique(p, axis=0))})

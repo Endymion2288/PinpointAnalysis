@@ -69,31 +69,41 @@ def scalar_summary(frame):
     cache3 = Metrics(three_targets(y[keep]), p[keep] if p.shape[1] == 3 else three_from_four(p[keep]))
     cache4 = Metrics(y, p) if p.shape[1] == 4 else None
     def compute(weight=None):
-        w = np.ones(len(y)) if weight is None else weight
-        r3 = cache3.report(w[keep])
-        r4 = cache4.report(w) if cache4 is not None else None
+        w = np.ones(len(y)) if weight is None else np.asarray(weight, dtype='float64')
+        def balanced(labels, values, classes):
+            support = np.bincount(labels, weights=values, minlength=classes)
+            return values/np.maximum(support[labels], 1e-30)
+        r3 = cache3.report(balanced(cache3.y, w[keep], 3))
+        r4 = cache4.report(balanced(y, w, 4)) if cache4 is not None else None
         return np.array([r3['BA'], r3['NLL'], r3['macro_AP'], r3['macro_AUROC'],
             *(r3['per_class'][c]['recall'] for c in range(3)),
             r4['per_class'][2]['eff_FPR_0.01'] if r4 else np.nan,
             r4['per_class'][2]['eff_FPR_0.001'] if r4 else np.nan,
-            r4['NLL'] if r4 else np.nan])
+            r4['NLL'] if r4 else np.nan,
+            *(r3['per_class'][c][f'eff_FPR_{fpr}'] for c in range(3) for fpr in [.01, .001]),
+            *(r3['per_class'][c][f'eff_purity_{purity}'] for c in range(3) for purity in [.8, .9]),
+            r4['BA'] if r4 else np.nan])
     return compute
 
 
 SCALARS = ['BA3', 'NLL3', 'macro_AP3', 'macro_AUROC3', 'recall_e', 'recall_mu', 'recall_NC',
-           'tau_eff_1pct', 'tau_eff_0p1pct', 'NLL4']
+           'tau_eff_1pct', 'tau_eff_0p1pct', 'NLL4',
+           *[f'{name}_eff_FPR_{fpr}' for name in ['e', 'mu', 'NC'] for fpr in [.01, .001]],
+           *[f'{name}_eff_purity_{purity}' for name in ['e', 'mu', 'NC'] for purity in [.8, .9]], 'BA4']
 
 
-def paired(a, b, weights):
-    left, right = scalar_summary(a), scalar_summary(b)
-    point = left()-right()
-    samples = np.array([left(w)-right(w) for w in weights])
+def interval(point, samples):
     result = {}
     for c, name in enumerate(SCALARS):
         valid = np.isfinite(samples[:, c])
         result[name] = {'difference_a_minus_b': float(point[c]) if np.isfinite(point[c]) else None,
             '95pct': np.quantile(samples[valid, c], [.025, .975]).tolist() if valid.any() else [None, None]}
     return result
+
+
+def paired(a, b, weights):
+    left, right = scalar_summary(a), scalar_summary(b)
+    return interval(left()-right(), np.array([left(w)-right(w) for w in weights]))
 
 
 def main():
@@ -125,6 +135,7 @@ def main():
         for domain, report in reports[entry['name']].items():
             if report['T3']:
                 rows.append({'name': entry['name'], 'family': entry['family'], 'task': entry['task'],
+                    'kind': entry.get('kind', 'main'),
                     'seed': entry['seed'], 'domain': domain, 'events': report['events'],
                     'non_tau_events': report['non_tau_events'],
                     **{f'{key}3': report['T3'][key] for key in ['BA', 'NLL', 'macro_AP', 'macro_AUROC']},
@@ -135,11 +146,20 @@ def main():
     write_json(output/'bootstrap_design.json', {**design, 'replicates': args.replicates, 'seed': 20261116,
         'paired': True, 'scope': 'development Tune intervals; training seed spread reported separately'})
     comparisons = []
+    cache = {}
     for pair in config.get('pairs', []):
-        comparisons.append({**pair, 'metrics': paired(frames[pair['a']], frames[pair['b']], weights)})
+        domain = pair.get('domain', 'all')
+        mask = np.ones(len(catalog), dtype=bool) if domain == 'all' else catalog[domain].to_numpy(dtype=bool)
+        for name in [pair['a'], pair['b']]:
+            key = (name, domain)
+            if key not in cache:
+                compute = scalar_summary(frames[name].loc[mask].reset_index(drop=True))
+                cache[key] = (compute(), np.asarray([compute(w[mask]) for w in weights]))
+        left, right = cache[(pair['a'], domain)], cache[(pair['b'], domain)]
+        comparisons.append({**pair, 'domain': domain, 'metrics': interval(left[0]-right[0], left[1]-right[1])})
     spread = []
     table = pd.DataFrame(rows)
-    for key, group in table[table.domain.eq('all')].groupby(['family', 'task']):
+    for key, group in table[table.domain.eq('all') & table.kind.eq('main')].groupby(['family', 'task']):
         if group.seed.nunique() > 1:
             spread.append({'family': key[0], 'task': key[1], 'seeds': group.seed.tolist(),
                 'BA3_values': group.BA3.tolist(), 'BA3_mean': float(group.BA3.mean()),

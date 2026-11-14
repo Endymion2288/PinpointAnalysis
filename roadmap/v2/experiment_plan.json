@@ -4,7 +4,7 @@
   "status": "design_with_completed_R0_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0/W01-W03 implemented and completed; W04-W08 pending; no new generalization result",
+  "implementation_status": "R0 complete; R1 full140k data and B0 three-seed baselines complete; neural screening active, final comparisons pending",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -302,8 +302,8 @@
       ],
       "planned_device_hours": 18,
       "status": "in_progress",
-      "progress_report": "../../workbook/2026-11-14_stage239_r1_baselines_and_learning_gates.md",
-      "measured_progress": "B1-B4 real T3/T4 FP32 fitting passed; repaired B1 and B2 stable path passed real BF16 retraining; full Train/Tune campaign still pending"
+      "progress_report": "../../workbook/2026-11-14_stage241_r1_full_data_and_comparison_pipeline.md",
+      "measured_progress": "140k identities/labels/PE conserved; eight actual learning gates and full runner smoke passed; B0 T3/T4 complete; B1-B4 screen submitted across Condor and Kubeflow"
     },
     {
       "id": "R2",
@@ -461,10 +461,10 @@
     "W01": "complete",
     "W02": "complete",
     "W03": "complete",
-    "W04": "pending",
-    "W05": "pending",
-    "W06": "pending",
+    "W04": "in_progress",
+    "W05": "in_progress",
+    "W06": "in_progress",
     "W07": "pending",
-    "W08": "pending"
+    "W08": "in_progress"
   }
 }
