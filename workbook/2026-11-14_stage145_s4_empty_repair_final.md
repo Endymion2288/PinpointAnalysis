@@ -159,4 +159,4 @@ python -m analysis.flavour.s4.accept_empty \
 
 ## 下一步计划
 
-本轮不扩至1M。先在原1k/10k预算内固定分层train-inner folds，对相同Scratch/MAE3比较更早checkpoint、较少重复曝光、学习率/正则和LP-FT；选择过程使用的标签计入原预算，再对全预算重拟合。LP-FT依据及适配限制见[S4路线图](../roadmap/11_s4_pretraining.md)；不在当前validation拟合温度或class bias。验收同时要求NLL相对均匀先验、τ argmax及低FPR计数，不只看AP。新的方案记录为已观察本轮validation后设计；最终calibration/test和系统效应仍按后续冻结阶段执行。
+本轮不扩至1M。先在原1k/10k预算内固定分层train-inner folds，对相同Scratch/MAE3比较更早checkpoint、较少重复曝光、学习率/正则和LP-FT；选择过程使用的标签计入原预算，再对全预算重拟合。LP-FT依据及适配限制见[S4路线图](../roadmap/archive/2026-11-14_v1/11_s4_pretraining.md)；不在当前validation拟合温度或class bias。验收同时要求NLL相对均匀先验、τ argmax及低FPR计数，不只看AP。新的方案记录为已观察本轮validation后设计；最终calibration/test和系统效应仍按后续冻结阶段执行。

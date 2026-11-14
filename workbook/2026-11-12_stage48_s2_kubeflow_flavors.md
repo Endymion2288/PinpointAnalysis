@@ -8,7 +8,7 @@
 
 新增显式`--gpu-flavor`，同时选择GPU product与resource键，避免将相同product下的H100 94GB整卡和47GB MIG混淆。GPU flavor省略手写CPU/RAM，由CERN平台自动注入；保留CPU-only probe的原请求。提交前检查冻结硬件，MIG与其他产品不能用于本S2科学配置。Probe增加实际显存记录，核算增加逐resource-hours和未准入Pod的终态零成本记录。
 
-完整文档、六种NVIDIA flavor表、提交与Pod dry-run、存储、配额及迁移方法写入[roadmap/08_kubeflow.md](../roadmap/08_kubeflow.md)。已读取CERN总览、getting-started、training、environments、monitoring页面；并核对Kubernetes GPU scheduling和NVIDIA device plugin上游资料。
+完整文档、六种NVIDIA flavor表、提交与Pod dry-run、存储、配额及迁移方法写入[roadmap/08_kubeflow.md](../roadmap/archive/2026-11-14_v1/08_kubeflow.md)。已读取CERN总览、getting-started、training、environments、monitoring页面；并核对Kubernetes GPU scheduling和NVIDIA device plugin上游资料。
 
 ## 详细数据
 

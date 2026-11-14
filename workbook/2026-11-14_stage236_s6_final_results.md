@@ -4,7 +4,7 @@
 
 ## 阶段目标
 
-完成[执行路线图第7节](../roadmap/04_execution.md#7-s6系统效应与最终物理结果)和[S6冻结合同](../roadmap/13_s6_final_evaluation.md)：概率校准、全部accepted独立test、预定方法对照、物理分层、读出与真实transport扰动、可用generator对照、τ/charm实现证据、统计区间、英文图和资源关闭。样本、split和detector-proxy沿用用户接受状态，来源认证与真实硬件标定不再作为前置工作。
+完成[执行路线图第7节](../roadmap/archive/2026-11-14_v1/04_execution.md#7-s6系统效应与最终物理结果)和[S6冻结合同](../roadmap/archive/2026-11-14_v1/13_s6_final_evaluation.md)：概率校准、全部accepted独立test、预定方法对照、物理分层、读出与真实transport扰动、可用generator对照、τ/charm实现证据、统计区间、英文图和资源关闭。样本、split和detector-proxy沿用用户接受状态，来源认证与真实硬件标定不再作为前置工作。
 
 ## 工作内容与冻结边界
 
@@ -18,9 +18,9 @@
 
 所有accepted test事件均保留，包括空响应。主方法为100k标签预算MAE3的seeds17/42/2026三份raw probability均值，再拟合一个ensemble temperature。Scratch三seed ensemble为同预算pretraining控制。另有S3修复版native/1mm/tracker、S5 direct4/vertex+kinematics/six及channel-Rel5的预定seed42控制；总计13个checkpoint、15个单模型或ensemble、四个prior，共60项结果。跨阶段控制的预算不同，不把其差异解释成总体架构排名。
 
-主模型采用此前重新训练验证的revision 3多尺度编码器：dim96、64个latents、32个region blocks×2 queries、readout skip、残差scale0.1、Head与融合尺度规范化，并使用empty-response bypass。完整架构与训练论文依据在[S3修复](../roadmap/10_s3_repair.md)及[S4](../roadmap/11_s4_pretraining.md)。本阶段评价这些已修复checkpoint，内部采样另见下文；没有沿用36,547→124→24的故障模型结果。
+主模型采用此前重新训练验证的revision 3多尺度编码器：dim96、64个latents、32个region blocks×2 queries、readout skip、残差scale0.1、Head与融合尺度规范化，并使用empty-response bypass。完整架构与训练论文依据在[S3修复](../roadmap/archive/2026-11-14_v1/10_s3_repair.md)及[S4](../roadmap/archive/2026-11-14_v1/11_s4_pretraining.md)。本阶段评价这些已修复checkpoint，内部采样另见下文；没有沿用36,547→124→24的故障模型结果。
 
-Calibration仅拟合单参数temperature；原有10k validation按固定规则选择每类1%和0.1%背景阈值。**2026-11-14T13:50:23.738039Z**写入`analysis_freeze.json`后才开放test。模型、prior、温度、阈值、条件、subset与统计定义均未用test重选。失败分块按相同冻结campaign恢复。校准与label-shift解释依据Guo等ICML2017、Lipton等ICML2018；引用及适用范围见[S6方法依据](../roadmap/13_s6_final_evaluation.md#方法与计算依据)。
+Calibration仅拟合单参数temperature；原有10k validation按固定规则选择每类1%和0.1%背景阈值。**2026-11-14T13:50:23.738039Z**写入`analysis_freeze.json`后才开放test。模型、prior、温度、阈值、条件、subset与统计定义均未用test重选。失败分块按相同冻结campaign恢复。校准与label-shift解释依据Guo等ICML2017、Lipton等ICML2018；引用及适用范围见[S6方法依据](../roadmap/archive/2026-11-14_v1/13_s6_final_evaluation.md#方法与计算依据)。
 
 事件统计采用7,240个accepted-family连接的source-chunk物理块，seed2026、400次block bootstrap。配对比较复用同一组重采样；generator两个样本的hard scatter独立，采用独立source-file block。区间为pointwise percentile 95%，条件于既有checkpoint、calibrator、阈值及训练种子；三seed spread另列，不当作完整训练不确定度。Raw整数尾计数另给Clopper–Pearson区间，Neff不替代raw分母。
 

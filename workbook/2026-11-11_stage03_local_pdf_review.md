@@ -1,6 +1,6 @@
 # 阶段 03：更新本地 PDF 后的证据核对与路线图修订
 
-四份更新后的 PDF 均可读取，共 61 页；已阅读提取全文，并渲染查看 27 页关键图表。新增 [本地汇报核对](../roadmap/05_local_studies.md)，修订 [研究路线图](../roadmap/README.md)及数据、模型、执行和配置合同。主要变化是增加 pixel 粒度×联合/投影对照、fiducial 分层、FASER 同工作点比较，以及 reconstruction resolution–coverage 评价。
+四份更新后的 PDF 均可读取，共 61 页；已阅读提取全文，并渲染查看 27 页关键图表。新增 [本地汇报核对](../roadmap/archive/2026-11-14_v1/05_local_studies.md)，修订 [研究路线图](../roadmap/README.md)及数据、模型、执行和配置合同。主要变化是增加 pixel 粒度×联合/投影对照、fiducial 分层、FASER 同工作点比较，以及 reconstruction resolution–coverage 评价。
 
 ## 阶段目标
 

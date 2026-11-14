@@ -8,7 +8,7 @@
 
 ## 架构、训练与执行修复
 
-S3 revision 2已确认旧Head的整层数值失活，修复重训与20模型评价见[阶段87](2026-11-13_stage87_s3_repair_final_results.md)。本轮共同backbone保留Peri-LN、QK normalization、LayerScale、各分支及concat归一化、FP32 Linear→LayerNorm→SiLU Head和独立linear logits路径。论文与适配依据见[修复路线图](../roadmap/10_s3_repair.md)，包括ICML 2025 Peri-LN、ICCV 2021 LayerScale、ICML 2023 QK normalization及CVPR 2024 PTv3；预训练主要参考FASERCal、CVPR 2025 NOMAE/Sonata和VICReg，见[S4方法合同](../roadmap/11_s4_pretraining.md)。替换激活函数只是组合修复的一部分。
+S3 revision 2已确认旧Head的整层数值失活，修复重训与20模型评价见[阶段87](2026-11-13_stage87_s3_repair_final_results.md)。本轮共同backbone保留Peri-LN、QK normalization、LayerScale、各分支及concat归一化、FP32 Linear→LayerNorm→SiLU Head和独立linear logits路径。论文与适配依据见[修复路线图](../roadmap/archive/2026-11-14_v1/10_s3_repair.md)，包括ICML 2025 Peri-LN、ICCV 2021 LayerScale、ICML 2023 QK normalization及CVPR 2024 PTv3；预训练主要参考FASERCal、CVPR 2025 NOMAE/Sonata和VICReg，见[S4方法合同](../roadmap/archive/2026-11-14_v1/11_s4_pretraining.md)。替换激活函数只是组合修复的一部分。
 
 局部窗口内保留原生通道位置残差，所有local blocks均参与多尺度读出，并有独立regional与global路径。最大已测train事件为36,549个原生节点、14,599个local blocks、962个regional tokens和64个global latents。分类不再仅经过固定少量module/latent queries；池化仍会压缩信息，不能称为无损编码。
 

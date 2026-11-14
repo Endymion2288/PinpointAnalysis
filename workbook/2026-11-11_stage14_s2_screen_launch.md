@@ -12,7 +12,7 @@
 
 1573741.0/1 分别执行配置 index0（ParT native joint）与 index6（ParticleNet native joint），模型版本 `6a0ab0d`，均为 Tesla V100-PCIE-32GB、LCG_107。此后继续 index1–5/7–11，不重提仍运行的两个配置。每次 submission 记录当前 schedd 负载/兼容性和 ClusterId。
 
-新增 [roadmap/07_s2_operations.md](../roadmap/07_s2_operations.md)，统一列出实际产物、运行/恢复命令、软件环境和科学验收未完成项；同步 roadmap 入口，避免将 S2 误写为尚未实现或已全部完成。
+新增 [roadmap/07_s2_operations.md](../roadmap/archive/2026-11-14_v1/07_s2_operations.md)，统一列出实际产物、运行/恢复命令、软件环境和科学验收未完成项；同步 roadmap 入口，避免将 S2 误写为尚未实现或已全部完成。
 
 ## 详细数据
 

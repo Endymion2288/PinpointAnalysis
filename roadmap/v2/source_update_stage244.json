@@ -1,0 +1,136 @@
+{
+  "checked_UTC": "2026-11-14T22:02:50.148174+00:00",
+  "sources": [
+    {
+      "name": "FASERCal",
+      "url": "https://arxiv.org/html/2604.07037v2",
+      "HTTP_status": 200,
+      "resolved_url": "https://arxiv.org/html/2604.07037v2",
+      "bytes": 351740,
+      "title_or_results": "Towards foundation-style models for energy-frontier heterogeneousneutrino detectors via self-supervised pre-training"
+    },
+    {
+      "name": "NuGraph2 context-aware",
+      "url": "https://arxiv.org/html/2509.10684v2",
+      "HTTP_status": 200,
+      "resolved_url": "https://arxiv.org/html/2509.10684v2",
+      "bytes": 112677,
+      "title_or_results": "NuGraph2 with Context–Aware Inputs: Physics–Inspired Improvements in Semantic Segmentation"
+    },
+    {
+      "name": "Particle Transformer",
+      "url": "https://proceedings.mlr.press/v162/qu22b.html",
+      "HTTP_status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v162/qu22b.html",
+      "bytes": 14899,
+      "title_or_results": "Particle Transformer for Jet Tagging"
+    },
+    {
+      "name": "pAUC DRO",
+      "url": "https://proceedings.mlr.press/v162/zhu22g.html",
+      "HTTP_status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v162/zhu22g.html",
+      "bytes": 14952,
+      "title_or_results": "When AUC meets DRO: Optimizing Partial AUC for Deep Learning with Non-Convex Convergence Guarantee"
+    },
+    {
+      "name": "GPU software support",
+      "url": "https://docs.pytorch.org/docs/stable/generated/torch.cuda.get_arch_list.html",
+      "HTTP_status": 200,
+      "resolved_url": "https://docs.pytorch.org/docs/stable/generated/torch.cuda.get_arch_list.html",
+      "bytes": 1977,
+      "title_or_results": "Redirecting&hellip;"
+    },
+    {
+      "name": "Exa.TrkX literature search",
+      "url": "https://inspirehep.net/api/literature?q=title%20exatrkx&size=3&fields=titles,arxiv_eprints,dois,publication_info,abstracts",
+      "HTTP_status": 200,
+      "resolved_url": "https://inspirehep.net/api/literature?q=title%20exatrkx&size=3&fields=titles,arxiv_eprints,dois,publication_info,abstracts",
+      "bytes": 826,
+      "title_or_results": []
+    },
+    {
+      "name": "ACTS learned tracking search",
+      "url": "https://inspirehep.net/api/literature?q=title%20%22learning%20to%20reconstruct%20particle%20tracks%22&size=3&fields=titles,arxiv_eprints,dois,abstracts",
+      "HTTP_status": 200,
+      "resolved_url": "https://inspirehep.net/api/literature?q=title%20%22learning%20to%20reconstruct%20particle%20tracks%22&size=3&fields=titles,arxiv_eprints,dois,abstracts",
+      "bytes": 1114,
+      "title_or_results": []
+    },
+    {
+      "name": "Exa.TrkX",
+      "url": "https://inspirehep.net/api/literature/1851403?fields=titles,arxiv_eprints,dois,abstracts,publication_info",
+      "HTTP_status": 200,
+      "bytes": 60430,
+      "metadata": {
+        "titles": [
+          {
+            "title": "Performance of a geometric deep learning pipeline for HL-LHC particle tracking",
+            "source": "Springer"
+          },
+          {
+            "title": "Performance of a Geometric Deep Learning Pipeline for HL-LHC Particle Tracking",
+            "source": "arXiv"
+          },
+          {
+            "title": "Physics and Computing Performance of the Exa.TrkX TrackML Pipeline",
+            "source": "arXiv"
+          }
+        ],
+        "arxiv_eprints": [
+          {
+            "value": "2103.06995",
+            "categories": [
+              "physics.data-an",
+              "cs.LG",
+              "hep-ex"
+            ]
+          }
+        ],
+        "dois": [
+          {
+            "value": "10.1140/epjc/s10052-021-09675-8",
+            "source": "Springer"
+          },
+          {
+            "value": "10.1140/epjc/s10052-021-09675-8",
+            "source": "arXiv",
+            "material": "publication"
+          }
+        ],
+        "abstracts": [
+          {
+            "value": "The Exa.TrkX project has applied geometric learning concepts such as metric learning and graph neural networks to HEP particle tracking. Exa.TrkX’s tracking pipeline groups detector measurements to form track candidates and filters them. The pipeline, originally developed using the TrackML dataset (a simulation of an LHC-inspired tracking detector), has been demonstrated on other detectors, including DUNE Liquid Argon TPC and CMS High-Granularity Calorimeter. This paper documents new developments needed to study the physics and computing performance of the Exa.TrkX pipeline on the full TrackML dataset, a first step towards validating the pipeline using ATLAS and CMS data. The pipeline achieves tracking efficiency and purity similar to production tracking algorithms. Crucially for future HEP applications, the pipeline benefits significantly from GPU acceleration, and its computational requirements scale close to linearly with the number of particles in the event.",
+            "source": "Springer"
+          },
+          {
+            "value": "The Exa.TrkX project has applied geometric learning concepts such as metric learning and graph neural networks to HEP particle tracking. Exa.TrkX's tracking pipeline groups detector measurements to form track candidates and filters them. The pipeline, originally developed using the TrackML dataset (a simulation of an LHC-inspired tracking detector), has been demonstrated on other detectors, including DUNE Liquid Argon TPC and CMS High-Granularity Calorimeter. This paper documents new developments needed to study the physics and computing performance of the Exa.TrkX pipeline on the full TrackML dataset, a first step towards validating the pipeline using ATLAS and CMS data. The pipeline achieves tracking efficiency and purity similar to production tracking algorithms. Crucially for future HEP applications, the pipeline benefits significantly from GPU acceleration, and its computational requirements scale close to linearly with the number of particles in the event.",
+            "source": "arXiv"
+          }
+        ],
+        "publication_info": [
+          {
+            "year": 2021,
+            "artid": "876",
+            "page_start": "876",
+            "journal_issue": "10",
+            "journal_title": "Eur.Phys.J.C",
+            "journal_record": {
+              "$ref": "https://inspirehep.net/api/journals/1613946"
+            },
+            "journal_volume": "81"
+          }
+        ]
+      },
+      "review_scope": "INSPIRE indexed abstract and journal metadata"
+    },
+    {
+      "name": "Exa.TrkX arXiv",
+      "url": "https://arxiv.org/abs/2103.06995",
+      "HTTP_status": 200,
+      "bytes": 47638,
+      "title": "Performance of a Geometric Deep Learning Pipeline for HL-LHC Particle Tracking",
+      "review_scope": "abstract"
+    }
+  ]
+}

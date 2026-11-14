@@ -94,7 +94,7 @@ G1a/G1b 先单因素，只有二者各有价值才组合。G1c 是重训 ablatio
 
 ### 4.2 Pixel tracking 与顶点
 
-先实现多候选方向相容关联与 robust fit/RANSAC/Kalman 类控制，替代 mutual-nearest-only 的早期决策。对 shower 核心、孤立轨、缺层、散射和次级起点分别定义 eligible 对象。再比较 learned edge classification 或 Object Condensation [H3–H4]；观测候选图先固定，truth 只监督边/实例 labels。
+先实现多候选方向相容关联与 robust fit/RANSAC/Kalman 类控制，替代 mutual-nearest-only 的早期决策。对 shower 核心、孤立轨、缺层、散射和次级起点分别定义 eligible 对象。再比较 learned edge classification 或 Object Condensation [H3–H4、H6]；观测候选图先固定，truth 只监督边/实例 labels。参照Exa.TrkX分别评价构图、筛选和整轨形成，记录每一步的信号损失；不沿用碰撞点origin约束去排除次级τ/charm轨。
 
 对象评价至少包含：candidate recall、matched track efficiency、fake/duplicate rate、hit purity/completeness、direction residual、primary/secondary vertex residual、质量阈值下 coverage 和全事件成功率。按可见 plane 数、能量、occupancy、材料和粒子类别分层。首次贡献者 truth 的混合/不完整性作为 label-quality mask/soft target 处理，不能宣称为逐 hit 完美 ancestry。
 

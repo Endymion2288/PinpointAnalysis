@@ -53,7 +53,7 @@ condor_q -name bigbird20.cern.ch 1573747.3 -af JobStatus NumJobStarts MemoryUsag
 python -m analysis.flavour.s2.accounting --root "$S2_RESULTS"
 ```
 
-`$S2_RESULTS=/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11`。指标来自 `experiments/part_1mm_projection_s42_e4_v2/history.json` 的 epoch1；正式完整评价入口仍为 [S2 operations](../roadmap/07_s2_operations.md)。
+`$S2_RESULTS=/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s2_2026-11-11`。指标来自 `experiments/part_1mm_projection_s42_e4_v2/history.json` 的 epoch1；正式完整评价入口仍为 [S2 operations](../roadmap/archive/2026-11-14_v1/07_s2_operations.md)。
 
 ## 阶段性结论
 

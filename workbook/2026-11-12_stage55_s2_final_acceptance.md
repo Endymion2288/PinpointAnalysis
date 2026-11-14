@@ -165,7 +165,7 @@ Toy共420行，用真实pitch 0.0208/0.0228 mm和plane z，展示双轨support�
 
 两族native seed42各20页固定错误组/随机参照显示已查看并保留review；全部39模型四分类/ROC/score/学习曲线PDF已生成，新增plane-only页与跨层图的实际审阅见阶段54。Truth图注仅作解释，不进入模型。
 
-Kubeflow已按CERN实际flavor落地：整卡`h100-94gb`为`NVIDIA-H100-NVL`与`nvidia.com/gpu: 1`，CPU/RAM由平台注入46/127G；`h100-47gb`是`nvidia.com/mig-3g.47gb`，不混入本次整卡科学矩阵。GPU Pod server dry-run实际通过；v9始终无node，全部剩余科学任务在Condor运行后主动缩短deadline释放配额，实际0 GPUh。CPU容器EOS/CVMFS/LCG路径已实测，Kubeflow GPU runtime未测量；没有把dry-run或Pending当作GPU运行成功。完整依据与路径见[08_kubeflow](../roadmap/08_kubeflow.md)。
+Kubeflow已按CERN实际flavor落地：整卡`h100-94gb`为`NVIDIA-H100-NVL`与`nvidia.com/gpu: 1`，CPU/RAM由平台注入46/127G；`h100-47gb`是`nvidia.com/mig-3g.47gb`，不混入本次整卡科学矩阵。GPU Pod server dry-run实际通过；v9始终无node，全部剩余科学任务在Condor运行后主动缩短deadline释放配额，实际0 GPUh。CPU容器EOS/CVMFS/LCG路径已实测，Kubeflow GPU runtime未测量；没有把dry-run或Pending当作GPU运行成功。完整依据与路径见[08_kubeflow](../roadmap/archive/2026-11-14_v1/08_kubeflow.md)。
 
 ### 复现命令与产物
 

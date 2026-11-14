@@ -93,7 +93,7 @@ pixel 最大值已高于原先每类 32 事件抽样的上限，支持在模型�
 
 ### 命令、验证和产物
 
-复现命令见 [S0/S1 运行入口](../roadmap/06_s0_s1_operations.md)。主要产物为 `shards/<run>/` 的 observations、targets、provenance、ideal tracker、B0 feature Parquet 与 summary；`b0/` 中有 checkpoint、validation predictions、metrics 与 GPU sampling。没有将大型结果加入 Git。
+复现命令见 [S0/S1 运行入口](../roadmap/archive/2026-11-14_v1/06_s0_s1_operations.md)。主要产物为 `shards/<run>/` 的 observations、targets、provenance、ideal tracker、B0 feature Parquet 与 summary；`b0/` 中有 checkpoint、validation predictions、metrics 与 GPU sampling。没有将大型结果加入 Git。
 
 `python -m unittest discover -s tests -v` 的 10 项检查涵盖像素 joint geometry/逆映射、无效 index、bar 能量/PE/区间/顺序、空事件、tracker 无 truth 合并与顺序、空 pixel join、源签名、分组比例与种子、ragged offsets/dtypes/target isolation。`loader_validation.json` 另记录真实 rows 0、1、12、39 的所有通道属性往返、整数 ID 与 mask shape 检查。
 

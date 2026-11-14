@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0已完成，R1正在执行。**完整Train100k/Tune40k已通过身份、标签、PE与计数验收；四个神经网络通过真实三类/四类学习及集成检查，B0三seed已完成，B1–B4正式screen在Condor/Kubeflow并行推进。冻结合同见[配置](configs/r1_campaign.json)，实际数据与首批基线见[stage241](../../workbook/2026-11-14_stage241_r1_full_data_and_comparison_pipeline.md)。四pass、神经网络三seed、完整paired比较和stress仍待完成。
+**R0已完成，R1正在执行。**完整Train100k/Tune40k已通过身份、标签、PE与计数验收；四个神经网络的八项真实学习及集成检查、B0三seed、全部16项screen已完成。B1–B4四pass训练、同计算控制及必要的seed重复在Condor/Kubeflow执行。冻结合同见[配置](configs/r1_campaign.json)，screen实测见[stage243](../../workbook/2026-11-14_stage243_r1_all_screens_and_full_training.md)。完整排名、paired比较和stress仍待完成。
 
 本文件与 [experiment_plan.json](experiment_plan.json) 记录研究合同及执行状态。W01–W03由`analysis.flavour.v2`实现并完成HTCondor验证，见[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[r0_results.json](r0_results.json)；W04–W06已开始实现与验证，W08待实际完整结果。R1入口位于`analysis.flavour.v2.r1`，本JSON不能直接交给旧训练CLI。已有accepted samples、response参数和路径工具继续复用。阶段编号使用R0–R7，与已完成的旧S0–S6区分。
 
@@ -144,7 +144,9 @@ R0实际：A100 allocation 0.746667 h，H100 allocation 0.162500 h，交互T4含
 
 以本轮reference热态吞吐线性外推，100k×4-pass的训练计算约需A100/eager/native2 **1.60 h**，或H100/compiled/native2 **0.64 h**；这是预算估计，不是100k训练实测，不含首次编译、读入、验证与新架构变化。H100/packed+bucket约0.59 h，再加按事件数线性估算的cache构建约0.15 h。R1的18 h上限需据各族实测速率分批分配，不执行全部候选的完整长训练矩阵。
 
-大样本转换、长训练、统计和重模拟经 HTCondor；交互 GPU 仅用于真实 32-event 拟合和小规模压力测试。提交前查询所有可用 schedd 的 running/idle/held、任务兼容性与写入策略，选择兼容且负载最低者并记录依据。每任务一个 writer，迁移时核对实际进程/终态；复用已有 claims、resume 和资源记账。
+大样本转换、统计和重模拟经 HTCondor；长训练并用 HTCondor 与 Kubeflow，优先能尽快启动的兼容GPU、共享设备和MIG。交互 GPU 用于真实小样本拟合和压力测试。当前固定CVMFS构建最低SM75，低于SM80采用FP32/eager；不以整卡或同型号作为统一准入条件。同计算任务在已获得的同一allocation内配对，跨设备报告实际型号/分区/精度和曝光，不以等待同卡保证比较。操作和恢复见[07](07_resources_and_operations.md)。
+
+提交前查询所有可用 schedd 的 running/idle/held、任务兼容性与写入策略，选择兼容且负载最低者并记录依据。每任务一个 writer，迁移时核对实际进程/终态；复用已有 claims、resume 和资源记账。
 
 输入：`/eos/project-f/fasersim-bonn/public/pinpoint/data`。运行输出：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/`。提交文件：`~/condor/Pinpoint/flavour_v2/<stage>/`。CPU/thread、loader 数和 RAM 在实际 profile 后匹配申请，禁止把大量重复 JSON、per-event 小文件或 xAOD 中间产物作为长期输出。EOS 只保留最终模型、必要预测、小型诊断和可复现配置。
 
@@ -155,13 +157,13 @@ R0实际：A100 allocation 0.746667 h，H100 allocation 0.162500 h，交互T4含
 | W01 | `analysis.flavour.v2.partitions/usage_closure` | 历史 accepted manifests | 使用清单可追溯；Confirm 与历史使用 family 无交叉 | Complete |
 | W02 | `analysis.flavour.v2.metadata` | 实际 transform/model | windows、explicit edges、modalities 与真实实现一致 | Complete |
 | W03 | `analysis.flavour.v2.data/profile/fit/accept/resources/plots` | 固定 Train events | 分段计时、等价输入/输出、真实学习、RAM/GPU memory与终态 | Complete |
-| W04 | T3/T4/T3T loss 与统一 evaluator | 同一 label mapping | known tau coarse labels 不因 decay unknown 丢弃；概率闭合；共同非 τ 评价 | Pending R1 |
-| W05 | B1/B2/B3 tracker late-fusion adapters | 同一 observed hits | 三模态同输入、缺失 mask、真实小样本拟合与分支梯度 | Pending R1 |
-| W06 | R1 campaign runner/config | 冻结 Train/Tune | 公平 HPO、完整学习曲线和所有 raw counts；不访问 Confirm | Pending R1 |
+| W04 | `analysis.flavour.v2.r1.tasks/metrics/evaluate` | 同一 label mapping | T3/T4/T3T/T4D概率与loss已实现并测试；完整实际评价待交付 | Implemented; R1 evaluation pending |
+| W05 | `analysis.flavour.v2.r1.models/data/fit` | 同一 observed hits | adapters和八项真实T3/T4学习门槛通过；各族完整泛化待测 | Learning gates passed |
+| W06 | `analysis.flavour.v2.r1.campaign/extend/train` | 冻结 Train/Tune | 16项screen完成；四pass、同计算和raw counts在执行；不访问Confirm | In progress R1 |
 | W07 | geometry sparse graph prototype | plane/cluster measurements | 候选边 recall、边数尾部、memory；不读取 truth 构图 | Pending R3 |
 | W08 | 三类合作组对照报告 | R1 实测输出 | 统一域/先验/工作点和 τ contamination；未对齐项具体列出 | Pending R1 |
 
-W01–W03的完整执行命令及产物在[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)。其余adapter与runner待实现。独立审查的历史复核命令仍为：
+W01–W03的完整执行命令及产物在[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)。W04–W06的实现、真实拟合与screen分别见stages239–243；W08在最终完整比较后交付。独立审查的历史复核命令为：
 
 ```bash
 which() { command -v "$@"; }
@@ -171,4 +173,4 @@ python roadmap/tools/review_current_results.py \
   --output /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/current_results_review.json
 ```
 
-它只读取历史摘要、validation scores和training histories。R1新模型训练命令将在W04–W06实现并通过真实小样本学习后写入下一阶段报告；R0完成不表示R1的模型质量或收敛已测量。
+它只读取历史摘要、validation scores和training histories。R1模型命令与提交见stages239–243及[资源执行说明](07_resources_and_operations.md)；短screen完成不表示完整模型排名或收敛已测量。

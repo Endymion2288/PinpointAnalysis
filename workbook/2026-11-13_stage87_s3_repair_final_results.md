@@ -21,7 +21,7 @@
 - Head 为 FP32 Linear→LayerNorm→SiLU，另有独立 linear logits 路径；encoder 使用 BF16。修复效果不能归于单独替换 GELU。
 - 全部节点先形成每块至多 32 节点的 local blocks，按占用增长的 regions 产生区域 tokens；64 global latents 跨 region 读取。全部 local blocks 另有独立的各模态 mean/max 读出，减少对固定少量 queries 的依赖。
 
-联网检索及正式链接记录在 [修复路线图](../roadmap/10_s3_repair.md)：Peri-LN（ICML 2025）、LayerScale（ICCV 2021）、QK normalization（ICML 2023）、PTv3（CVPR 2024），结合 FASERCal/Perceiver 的 module-aware 融合。补读 ICML 2021 的 rank 分析、ICML 2023 的 attention entropy collapse、NeurIPS 2021 的 Gradient Starvation 和 CVPR 2022/TPAMI 2024 的 OPM/OGM，用于检查分支同质化与优化竞争。当前矩阵未运行 branch dropout、gradient modulation 或额外预训练；论文提供可检验依据，不直接构成本模型的病因诊断。
+联网检索及正式链接记录在 [修复路线图](../roadmap/archive/2026-11-14_v1/10_s3_repair.md)：Peri-LN（ICML 2025）、LayerScale（ICCV 2021）、QK normalization（ICML 2023）、PTv3（CVPR 2024），结合 FASERCal/Perceiver 的 module-aware 融合。补读 ICML 2021 的 rank 分析、ICML 2023 的 attention entropy collapse、NeurIPS 2021 的 Gradient Starvation 和 CVPR 2022/TPAMI 2024 的 OPM/OGM，用于检查分支同质化与优化竞争。当前矩阵未运行 branch dropout、gradient modulation 或额外预训练；论文提供可检验依据，不直接构成本模型的病因诊断。
 
 ### 输入、冻结训练和实际执行
 

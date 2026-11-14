@@ -1,0 +1,588 @@
+{
+  "status": "passed",
+  "UTC": "2026-11-14T22:10:00.750132+00:00",
+  "scope": "roadmap delivery, archive link migration and GPU recovery; R1 complete comparison remains in progress",
+  "documents_checked": 44,
+  "local_links_checked": 646,
+  "archive_anchor_links_checked": 5,
+  "errors": [],
+  "archive_prose_checks": [
+    {
+      "file": "01_data_and_hardware.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "02_literature.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "03_models_and_experiments.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "04_execution.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "05_local_studies.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "06_s0_s1_operations.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "07_s2_operations.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "08_kubeflow.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "09_s3_operations.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "10_s3_repair.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "11_s4_pretraining.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "12_s5_physics.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "13_s6_final_evaluation.md",
+      "prose_unchanged_except_links": true
+    },
+    {
+      "file": "README.md",
+      "prose_unchanged_except_links": true
+    }
+  ],
+  "historical_workbook_link_migration": [
+    {
+      "path": "workbook/2026-11-11_stage02_flavour_research_roadmap.md",
+      "links_updated": 4
+    },
+    {
+      "path": "workbook/2026-11-11_stage03_local_pdf_review.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-11_stage04_flavour_inventory.md",
+      "links_updated": 2
+    },
+    {
+      "path": "workbook/2026-11-11_stage05_native_channel_pipeline.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-11_stage14_s2_screen_launch.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-11_stage20_s2_first_complete_epoch.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-12_stage48_s2_kubeflow_flavors.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-12_stage55_s2_final_acceptance.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-13_stage77_s3_scientific_analysis.md",
+      "links_updated": 2
+    },
+    {
+      "path": "workbook/2026-11-13_stage80_s3_final_acceptance.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-13_stage81_s3_architecture_reopen.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-13_stage86_s3_incremental_completed_model_checks.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-13_stage87_s3_repair_final_results.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-13_stage88_s4_data_and_protocol.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-14_stage145_s4_empty_repair_final.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-14_stage181_s4_final_results.md",
+      "links_updated": 2
+    },
+    {
+      "path": "workbook/2026-11-14_stage182_s4_scope_completion_audit.md",
+      "links_updated": 3
+    },
+    {
+      "path": "workbook/2026-11-14_stage183_s5_truth_contract.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-14_stage203_s5_final_results.md",
+      "links_updated": 1
+    },
+    {
+      "path": "workbook/2026-11-14_stage236_s6_final_results.md",
+      "links_updated": 5
+    }
+  ],
+  "v2_JSON_files_parsed": 9,
+  "Python_AST": "passed",
+  "unittest": {
+    "command": "python -m unittest discover -s tests -p 'test_flavour_v2*.py'",
+    "tests": 21,
+    "result": "passed",
+    "seconds": 0.848
+  },
+  "CUDA_runtime_probe": {
+    "UTC": "2026-11-14T22:02:55.831609+00:00",
+    "Torch": "2.7.1",
+    "CUDA_build": "12.5",
+    "kernel_architectures": [
+      "sm_75",
+      "sm_80",
+      "sm_86",
+      "sm_89",
+      "sm_90",
+      "compute_90"
+    ],
+    "GPU": "Tesla T4",
+    "capability": [
+      7,
+      5
+    ],
+    "CUDA_sum": 0.0
+  },
+  "retry_submissions": [
+    {
+      "name": "r1_extend_b1_s42_a2",
+      "submitted": true,
+      "schedd": "bigbird20.cern.ch",
+      "minimum_SM75": true,
+      "no_exact_DeviceName": true,
+      "submission_record": "runtime/r1_extend_b1_s42_a2.submission.json"
+    },
+    {
+      "name": "r1_control_b1_s42_without_tracker_a2",
+      "submitted": true,
+      "schedd": "bigbird20.cern.ch",
+      "minimum_SM75": true,
+      "no_exact_DeviceName": true,
+      "submission_record": "runtime/r1_control_b1_s42_without_tracker_a2.submission.json"
+    }
+  ],
+  "recovery": {
+    "terminal_jobs": [
+      1582878,
+      1582879
+    ],
+    "reason": "LCG108 Torch2.7.1 includes no SM70 kernels; FP32 fallback alone cannot run on V100",
+    "preserved_failed_directories": [
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/failed_attempts/final_b1_t4_s42_v100_a1",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/failed_attempts/final_b1_t3_s42_without_tracker_v100_a1"
+    ],
+    "scheduler_fix": "minimum SM75; no exact GPU model requirement"
+  },
+  "R1_cost_snapshot": {
+    "UTC": "2026-11-14T22:08:19.155361+00:00",
+    "device_hours": 5.161286244326168,
+    "allocated_CPU_core_hours": 73.71904944035742,
+    "device_hours_by_model_or_partition": {
+      "NVIDIA A100-PCIE-40GB": 1.763805215822326,
+      "Tesla V100-PCIE-32GB": 0.06333333333333332,
+      "NVIDIA H100 NVL": 1.7774163269334369,
+      "unspecified_failed_or_early_attempt": 0.10222222222222221,
+      "Tesla T4": 0.2411111111111111,
+      "h100-47gb": 0.28861111111111115,
+      "NVIDIA H100 NVL MIG 3g.47gb": 0.9247869237926272
+    },
+    "active_or_unresolved": [
+      "r1_control_b1_s42_without_tracker_a2",
+      "r1_control_b4-mae_s42_a1",
+      "r1_control_b4_s17_a1",
+      "r1_control_b4_s2026_a1",
+      "r1_control_b4_s42_without_tracker_a1",
+      "r1_extend_b1_s42_a2",
+      "r1_extend_b2_s42_a1",
+      "r1_extend_b3_s42_a1",
+      "pinpoint-r1-extend-b4-s42-k12"
+    ]
+  },
+  "R1_final_training_snapshot": [
+    {
+      "name": "final_b0_t3_s17",
+      "status": "complete",
+      "passes_recorded": 0,
+      "exposures": null,
+      "GPU": null
+    },
+    {
+      "name": "final_b0_t3_s2026",
+      "status": "complete",
+      "passes_recorded": 0,
+      "exposures": null,
+      "GPU": null
+    },
+    {
+      "name": "final_b0_t4_s17",
+      "status": "complete",
+      "passes_recorded": 0,
+      "exposures": null,
+      "GPU": null
+    },
+    {
+      "name": "final_b0_t4_s2026",
+      "status": "complete",
+      "passes_recorded": 0,
+      "exposures": null,
+      "GPU": null
+    },
+    {
+      "name": "final_b2_t4_s42",
+      "status": "running",
+      "passes_recorded": 0,
+      "exposures": 0,
+      "GPU": "NVIDIA H100 NVL"
+    },
+    {
+      "name": "final_b3_t4_s42",
+      "status": "running",
+      "passes_recorded": 0,
+      "exposures": 0,
+      "GPU": "NVIDIA A100-PCIE-40GB"
+    },
+    {
+      "name": "final_b4-mae_t4_s42",
+      "status": "running",
+      "passes_recorded": 0,
+      "exposures": 0,
+      "GPU": "NVIDIA A100-PCIE-40GB"
+    },
+    {
+      "name": "final_b4_t3_s42",
+      "status": "running",
+      "passes_recorded": 0,
+      "exposures": 0,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb"
+    },
+    {
+      "name": "final_b4_t3_s42_without_tracker",
+      "status": "running",
+      "passes_recorded": 2,
+      "exposures": 150000,
+      "GPU": "NVIDIA H100 NVL"
+    },
+    {
+      "name": "final_b4_t4_s17",
+      "status": "running",
+      "passes_recorded": 0,
+      "exposures": 0,
+      "GPU": "NVIDIA A100-PCIE-40GB"
+    },
+    {
+      "name": "final_b4_t4_s2026",
+      "status": "running",
+      "passes_recorded": 3,
+      "exposures": 300000,
+      "GPU": "NVIDIA H100 NVL"
+    },
+    {
+      "name": "final_b4_t4_s42",
+      "status": "complete",
+      "passes_recorded": 4,
+      "exposures": 400000,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb"
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "git_diff_check": true,
+  "first_complete_neural_Tune_result": {
+    "status": "complete",
+    "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+    "capability": [
+      9,
+      0
+    ],
+    "counters": {
+      "updates": 50051,
+      "train_seconds": 1760.3289884398691,
+      "training_exposures": 400000,
+      "data_wait_seconds": 246.45025808084756,
+      "validation_seconds": 257.6154118264094,
+      "exposure_by_class": [
+        100000,
+        100000,
+        100000,
+        100000
+      ]
+    },
+    "parameters": 897992,
+    "full_Tune_inference_seconds": 162.24655199819244,
+    "metrics": {
+      "T3": {
+        "BA": 0.5467666666666667,
+        "NLL": 0.902870065212,
+        "macro_AP": 0.6225701029003531,
+        "macro_AUROC": 0.7493863566666668,
+        "per_class": [
+          {
+            "recall": 0.5873,
+            "AP": 0.701716908105949,
+            "AUROC": 0.80590032,
+            "eff_FPR_0.01": 0.2012,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.8738034963607788,
+            "eff_FPR_0.001": 0.0477,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.9738503098487854,
+            "eff_purity_0.8": 0.3854,
+            "coverage_purity_0.8": 0.16053333333333333,
+            "eff_purity_0.9": 0.2214,
+            "coverage_purity_0.9": 0.082
+          },
+          {
+            "recall": 0.5224,
+            "AP": 0.5952317167914012,
+            "AUROC": 0.7259615275,
+            "eff_FPR_0.01": 0.1233,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.7094469666481018,
+            "eff_FPR_0.001": 0.0514,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.8083982467651367,
+            "eff_purity_0.8": 0.1632,
+            "coverage_purity_0.8": 0.0679,
+            "eff_purity_0.9": 0.0858,
+            "coverage_purity_0.9": 0.031766666666666665
+          },
+          {
+            "recall": 0.5306,
+            "AP": 0.570761683803709,
+            "AUROC": 0.7162972225,
+            "eff_FPR_0.01": 0.0917,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.6941415667533875,
+            "eff_FPR_0.001": 0.0189,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.798285961151123,
+            "eff_purity_0.8": 0.1016,
+            "coverage_purity_0.8": 0.042333333333333334,
+            "eff_purity_0.9": 0.0252,
+            "coverage_purity_0.9": 0.009333333333333334
+          }
+        ],
+        "events": 30000,
+        "raw_counts": [
+          10000,
+          10000,
+          10000
+        ],
+        "weighted_prior": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "weighted_counts": [
+          10000.0,
+          10000.0,
+          10000.0
+        ],
+        "confusion_counts": [
+          [
+            5873.0,
+            1985.0,
+            2142.0
+          ],
+          [
+            1808.0,
+            5224.0,
+            2968.0
+          ],
+          [
+            1873.0,
+            2821.0,
+            5306.0
+          ]
+        ],
+        "Neff": 30000.0
+      },
+      "T4": {
+        "BA": 0.42457500000000004,
+        "NLL": 1.2234681809875831,
+        "macro_AP": 0.46161768852733187,
+        "macro_AUROC": 0.6966524245833333,
+        "per_class": [
+          {
+            "recall": 0.5274,
+            "AP": 0.5917920284410424,
+            "AUROC": 0.7804952933333333,
+            "eff_FPR_0.01": 0.1739,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.8005068898200989,
+            "eff_FPR_0.001": 0.0387,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.9436711668968201,
+            "eff_purity_0.8": 0.2415,
+            "coverage_purity_0.8": 0.07545,
+            "eff_purity_0.9": 0.1044,
+            "coverage_purity_0.9": 0.02895
+          },
+          {
+            "recall": 0.4761,
+            "AP": 0.4687388601489345,
+            "AUROC": 0.69856827,
+            "eff_FPR_0.01": 0.0912,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.6373088359832764,
+            "eff_FPR_0.001": 0.0177,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.8143324255943298,
+            "eff_purity_0.8": 0.0633,
+            "coverage_purity_0.8": 0.01975,
+            "eff_purity_0.9": 0.0005,
+            "coverage_purity_0.9": 0.000125
+          },
+          {
+            "recall": 0.2358,
+            "AP": 0.3331788354662419,
+            "AUROC": 0.6173455533333333,
+            "eff_FPR_0.01": 0.0269,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.40293434262275696,
+            "eff_FPR_0.001": 0.0031,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.4683303236961365,
+            "eff_purity_0.8": 0.0008,
+            "coverage_purity_0.8": 0.00025,
+            "eff_purity_0.9": 0.0007,
+            "coverage_purity_0.9": 0.000175
+          },
+          {
+            "recall": 0.459,
+            "AP": 0.4527610300531087,
+            "AUROC": 0.6902005816666666,
+            "eff_FPR_0.01": 0.078,
+            "actual_FPR_0.01": 0.01,
+            "threshold_FPR_0.01": 0.5941834449768066,
+            "eff_FPR_0.001": 0.0144,
+            "actual_FPR_0.001": 0.001,
+            "threshold_FPR_0.001": 0.7098850607872009,
+            "eff_purity_0.8": 0.0341,
+            "coverage_purity_0.8": 0.01065,
+            "eff_purity_0.9": 0.0017,
+            "coverage_purity_0.9": 0.00045
+          }
+        ],
+        "events": 40000,
+        "raw_counts": [
+          10000,
+          10000,
+          10000,
+          10000
+        ],
+        "weighted_prior": [
+          0.25,
+          0.25,
+          0.25,
+          0.25
+        ],
+        "weighted_counts": [
+          10000.0,
+          10000.0,
+          10000.0,
+          10000.0
+        ],
+        "confusion_counts": [
+          [
+            5274.0,
+            1596.0,
+            1566.0,
+            1564.0
+          ],
+          [
+            1307.0,
+            4761.0,
+            1529.0,
+            2403.0
+          ],
+          [
+            2164.0,
+            2826.0,
+            2358.0,
+            2652.0
+          ],
+          [
+            1447.0,
+            2453.0,
+            1510.0,
+            4590.0
+          ]
+        ],
+        "Neff": 40000.0
+      }
+    },
+    "probability_diagnostics": {
+      "mean": [
+        0.25445765256881714,
+        0.2648058235645294,
+        0.22482353448867798,
+        0.2559093236923218
+      ],
+      "std": [
+        0.22663439810276031,
+        0.15758468210697174,
+        0.08066756278276443,
+        0.14014258980751038
+      ],
+      "minimum": [
+        0.002548478078097105,
+        0.0003372458158992231,
+        0.005349261686205864,
+        0.0017991509521380067
+      ],
+      "maximum": [
+        0.9907626509666443,
+        0.9209676384925842,
+        0.5630441904067993,
+        0.8460074663162231
+      ],
+      "distinct_vectors": 38918
+    },
+    "unique_train_events": 100000,
+    "wall_seconds": 2024.1895461310633
+  },
+  "failed_V100_device_costs_verified": [
+    {
+      "name": "r1_control_b1_s42_without_tracker_a1",
+      "status": 4,
+      "GPU": "Tesla V100-PCIE-32GB",
+      "device_hours": 0.03611111111111111
+    },
+    {
+      "name": "r1_extend_b1_s42_a1",
+      "status": 4,
+      "GPU": "Tesla V100-PCIE-32GB",
+      "device_hours": 0.02722222222222222
+    }
+  ]
+}

@@ -1,8 +1,10 @@
 # PINPOINT 下一轮模型优化路线图（v2）
 
-日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。独立审查与新版设计已完成，R0 已执行；新增模型泛化效果尚未测量。
+日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。独立审查与新版设计已完成；R0 完成，R1 短预算筛查完成，完整训练和配对比较正在执行。R2–R7 的效果尚未测量。
 
-**当前执行状态：R0 完成，R1 待启动。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm；排除1,560,122个历史使用family。最终读回73项检查与81项相关测试通过。真实32事件拟合NLL降至0.000418，完整10k profile为后续训练提供了实际资源依据。见 [R0报告](../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[精简结果](v2/r0_results.json)。
+**当前执行状态：R0 完成，R1 正在执行。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm，排除1,560,122个历史使用family。R0 的73项最终读回、81项相关测试及真实32事件拟合通过。R1 完整140k Train/Tune数据验收、八项真实学习门槛及16项screen已完成，B0三seed已完成；首个B4 seed42四pass已完成，其他训练、同计算控制及最终统计仍在执行，详见[stage244](../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md)。短screen结果见[JSON](v2/r1_screen_results.json)，不能代替完整架构排名。Cal-A/Cut-B/Confirm继续封存。
+
+资源安排采用**尽快启动、兼容即可**的原则：HTCondor 与 Kubeflow 并用，接受不同 GPU、平台提供的共享设备和 MIG。当前 LCG108/Torch2.7.1 包含 SM75 起的内核，T4 使用 FP32，A100/H100 可使用 BF16；V100 的 SM70 启动失败属于本构建兼容性问题。具体操作、同计算比较口径和失败恢复见[资源执行说明](v2/07_resources_and_operations.md)。
 
 **结论：已经取得可复核的小幅改进，尚无证据表明现有方法达到最佳效果。下一步先建立可与合作组对齐的三类强基线，并行保留四类主线；优先解决同输入架构比较、跨层几何关系和训练规模问题，再决定扩大预训练或采用更多类别。**
 
@@ -26,7 +28,8 @@
 | [03：模型与物理设计](v2/03_models_and_physics.md) | 跨层稀疏关系、raw/object 双路径、异构融合、τ/charm 与方向任务 |
 | [04：执行路线与实验工单](v2/04_execution_plan.md) | R0–R7 依赖、最小实验矩阵、资源安排、首批具体工作和交付标准 |
 | [05：文献依据](v2/05_literature.md) | 本地资料及本次联网核对的论文、采用理由、适用边界 |
-| [06：完整工作记录索引](v2/06_workbook_index.md) | 236 份既有 workbook 的阶段归类与结果入口 |
+| [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加记录入口 |
+| [07：GPU 与后端执行](v2/07_resources_and_operations.md) | 减少排队、共享/MIG、实际软件兼容性、单任务写入与成本 |
 | [实验规格](v2/experiment_plan.json) | 可解析的设计合同；需实现对应 runner 后才能提交，不能直接传给旧 CLI |
 
 ## 研究路线与决策
@@ -50,7 +53,7 @@ flowchart TD
 | Stage | Main question | Deliverable / decision |
 | --- | --- | --- |
 | R0（已完成） | 哪些事件仍可用于新的独立确认？现有训练瓶颈在哪里？ | 分区冻结、真实结构、同事件缓存等价、32-event fit及10k profile通过 |
-| R1 | 三类任务做到什么程度？四类是否损害共同三类任务？ | 同输入强基线、合作组条件对照、τ 混入矩阵 |
+| R1（执行中） | 三类任务做到什么程度？四类是否损害共同三类任务？ | 16项screen完成；完整同输入强基线、合作组对照、τ 混入矩阵待交付 |
 | R2 | 数据、曝光、容量中哪个限制性能？ | 100k→300k→1M 条件扩展；4→12→收敛的学习曲线 |
 | R3 | 显式跨层关系能否把细粒度转为有效收益？ | 几何稀疏图、边界通信、原生/粗粒度配对和三 seed 确认 |
 | R4 | 能否重建有用对象，而不是引入大量假关联？ | Track/vertex/association 的效率–fake–coverage 与 raw/object 分类对照 |

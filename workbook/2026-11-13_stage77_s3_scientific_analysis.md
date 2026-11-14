@@ -1,6 +1,6 @@
 # S3科学分析与最终结论
 
-**2026-11-13更正：本报告的方法结论已撤回，原结果仅作架构/训练故障诊断。S3已重新打开，须以修复后重训与测试结果重新判断。见[修复合同](../roadmap/10_s3_repair.md)。以下保留当时的数值与执行记录。**
+**2026-11-13更正：本报告的方法结论已撤回，原结果仅作架构/训练故障诊断。S3已重新打开，须以修复后重训与测试结果重新判断。见[修复合同](../roadmap/archive/2026-11-14_v1/10_s3_repair.md)。以下保留当时的数值与执行记录。**
 
 S3已完成。17项screen和8项新增seed确认共25个科学模型全部完成四轮训练、每项80,064 applied optimizer updates、零AMP skips，350/350项CPU checkpoint/optimizer/prediction读回通过。完整四分类评价及19项strict输出门槛通过，8项候选晋级决定均为false。推荐保留S2 ParT native作为reference backbone，同时保留1 mm控制；当前证据没有确立native优于1 mm。Calibration/test继续冻结，S4–S6未执行。
 
@@ -12,7 +12,7 @@ S3已完成。17项screen和8项新增seed确认共25个科学模型全部完成
 
 沿用用户接受的80,000 train、10,000 validation事件及原split、geometry、detector-proxy。Run10081/10082/10083/10084依次对应四类，validation每类2,500。硬件observation白名单构成模型输入，truth只用于标签及诊断分层；proxy使用现有参数。
 
-实现独立的`analysis.flavour.s3`：同plane的16/64-pitch或4 mm窗口处理完整canonical blocks；每个module/type的4/8个learned queries读取局部块；显式module/type/连续z和pair relations形成context；late、joint和24-token latent fusion共享module读出接口。设计参考FASERCal的module attention和Perceiver结构原则；本实现没有执行其预训练，也没有复现其1 cm voxels及31.9M参数模型。ParT/ParticleNet为只读S2基线。参考文献与结构边界见[执行合同](../roadmap/09_s3_operations.md)。
+实现独立的`analysis.flavour.s3`：同plane的16/64-pitch或4 mm窗口处理完整canonical blocks；每个module/type的4/8个learned queries读取局部块；显式module/type/连续z和pair relations形成context；late、joint和24-token latent fusion共享module读出接口。设计参考FASERCal的module attention和Perceiver结构原则；本实现没有执行其预训练，也没有复现其1 cm voxels及31.9M参数模型。ParT/ParticleNet为只读S2基线。参考文献与结构边界见[执行合同](../roadmap/archive/2026-11-14_v1/09_s3_operations.md)。
 
 17项screen覆盖窗口/表示2×2、fusion、module/pair geometry、pixel/bar双向模态、tracker、bar signal和module queries，固定seed42、四轮、batch4。按冻结规则选中task14（tracker候选）及task0（4 mm late），主native task5与1 mm task6也确认，各增加seed17/2026，合计8项。所有seed均计入，以full-validation NLL选checkpoint。四种结构分别形成三个训练seed的比较。
 

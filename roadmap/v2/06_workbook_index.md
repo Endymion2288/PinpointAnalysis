@@ -281,3 +281,18 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 234 | [S6：完整readout覆盖与数值重放效应](../../workbook/2026-11-14_stage234_s6_readout_coverage.md) |
 | 235 | [S6：全部readout效应与完整验收证据](../../workbook/2026-11-14_stage235_s6_readout_effects.md) |
 | 236 | [S6：冻结独立测试、条件效应与最终研究结果](../../workbook/2026-11-14_stage236_s6_final_results.md) |
+
+## v2：审查、执行与后续记录
+
+下表补充原S0–S6的236份历史记录；执行状态以各阶段报告和当前路线入口为准。
+
+| Stage | Report |
+| --- | --- |
+| 237 | [independent review and roadmap v2](../../workbook/2026-11-14_stage237_independent_review_and_roadmap_v2.md) |
+| 238 | [r0 partitions and pipeline](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md) |
+| 239 | [r1 baselines and learning gates](../../workbook/2026-11-14_stage239_r1_baselines_and_learning_gates.md) |
+| 240 | [r1 campaign freeze and integration](../../workbook/2026-11-14_stage240_r1_campaign_freeze_and_integration.md) |
+| 241 | [r1 full data and comparison pipeline](../../workbook/2026-11-14_stage241_r1_full_data_and_comparison_pipeline.md) |
+| 242 | [r1 b4 selection and reference costs](../../workbook/2026-11-14_stage242_r1_b4_selection_and_reference_costs.md) |
+| 243 | [r1 all screens and full training](../../workbook/2026-11-14_stage243_r1_all_screens_and_full_training.md) |
+| 244 | [roadmap delivery and gpu compatibility](../../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md) |

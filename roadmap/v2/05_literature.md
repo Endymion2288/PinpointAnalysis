@@ -1,6 +1,6 @@
 # 文献核对与对 PINPOINT 的采用决定
 
-检索日期：2026-11-14。使用期刊/会议正式页面、arXiv、INSPIRE 文献索引与作者代码；网页/PDF 提取与查询记录位于 `/eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/`。[来源记录](source_review.json)保存本页 27 个外部论文/软件链接的题名与访问结果，全部 HTTP 200（PDG 复用本轮已成功提取的 PDF 记录）。本文把本地资料、已核对方法和待实施实验连接起来，论文 benchmark 的数字只说明原任务。
+检索日期：2026-11-14。使用期刊/会议正式页面、arXiv、INSPIRE 文献索引与作者代码；网页/PDF 提取与查询记录位于 `/eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/`。[初次来源记录](source_review.json)保存原27个外部论文/软件链接的题名与访问结果，全部HTTP200（PDG复用已提取PDF）。[追加核对](source_update_stage244.json)记录核心论文再次访问、tracking文献检索及Exa.TrkX补充。本文把资料与实验决定连接起来，论文benchmark数字只说明原任务。
 
 本轮方法重点：FASERCal Methods/Supplement；NuGraph2 context-aware 的输入、辅助头与结果；Object Condensation 编码/损失；OGM 的分支梯度机制；pAUC 的目标、采样与 mini-batch 误差。其余条目核对摘要/官方页面，用于设计筛选。正式采用代码时固定 revision 并补读相应实现。
 
@@ -57,6 +57,10 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 相关开放软件：[SPINE, DeepLearnPhysics](https://github.com/DeepLearnPhysics/spine)，全称 *Scalable Particle Imaging with Neural Embeddings*。本次核对 README 的 sparse CNN 局部表示→GNN superstructure 链路，用于参考模块划分；它是 LArTPC 重建框架，不是可直接替换本项目的训练环境或性能证据。
 
 <a id="h5"></a>**H5. Particle Data Group, τ listing, 2025 update.** [PDG PDF](https://pdg.lbl.gov/2025/listings/rpp2025-list-tau.pdf)。质量约 1.777 GeV、寿命约 290 fs，对应 cτ≈87 μm。用于估算 τ decay length 与探测器采样尺度；逐事件可分辨性仍需实际 geometry/response。
+
+<a id="h6"></a>**H6. X. Ju et al. (Exa.TrkX), Performance of a geometric deep learning pipeline for HL-LHC particle tracking.** *Eur. Phys. J. C* 81, 876 (2021)；[arXiv:2103.06995](https://arxiv.org/abs/2103.06995)，[DOI](https://doi.org/10.1140/epjc/s10052-021-09675-8)。追加核对arXiv摘要、INSPIRE期刊元数据及摘要。
+
+其候选构造、筛选和GNN关联分开评价的流程，为R4提供比mutual-nearest-only更合适的参考。PINPOINT首先测物理gate的candidate recall与边数尾部，再用learned edge filtering/GNN，最后给完整track efficiency/fake/duplicate/coverage；不以edge accuracy替代轨迹质量。原TrackML性能和近线性规模结论不直接外推到PINPOINT shower，也不能照用围绕束流碰撞点的origin/方向约束。实现时需补读其图构造和评估定义。
 
 ## 4. 优化目标、模态竞争与统计
 

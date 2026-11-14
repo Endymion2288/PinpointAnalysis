@@ -8,7 +8,7 @@
 
 新增`s5/truth.py`、`prepare.py`和`submit.py`。源码确认`FillPythiaTree`的`DecayXYZ`为子轨迹最大z位置；τ衰变点采用forward neutrino共同产生点，同点子粒子定义prong与分道。独立记录原S4分道、未知mask、charm覆盖、hit visibility、visible primary-system proxy和bar semantic fractions。元数据不进入observation。
 
-正式提交保存Git archive，AFS只放小wrapper/job.sub，所有日志和结果写EOS。每次提交检查schedd负载、EOS布局和WRITE权限；Kubeflow使用product+GPU resource flavor及Pod server admission。研究合同见[路线图](../roadmap/12_s5_physics.md)。
+正式提交保存Git archive，AFS只放小wrapper/job.sub，所有日志和结果写EOS。每次提交检查schedd负载、EOS布局和WRITE权限；Kubeflow使用product+GPU resource flavor及Pod server admission。研究合同见[路线图](../roadmap/archive/2026-11-14_v1/12_s5_physics.md)。
 
 ## 详细数据
 

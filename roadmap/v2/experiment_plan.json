@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "design_with_completed_R0_not_runner_config",
+  "status": "design_with_completed_R0_and_R1_full_training_in_progress_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 complete; R1 full140k data and B0 three-seed baselines complete; neural screening active, final comparisons pending",
+  "implementation_status": "R0 complete; R1 full140k data, real learning gates, B0 three-seed baselines and all16 neural screens complete; four-pass paired training in progress; final comparisons pending",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -302,8 +302,8 @@
       ],
       "planned_device_hours": 18,
       "status": "in_progress",
-      "progress_report": "../../workbook/2026-11-14_stage241_r1_full_data_and_comparison_pipeline.md",
-      "measured_progress": "140k identities/labels/PE conserved; eight actual learning gates and full runner smoke passed; B0 T3/T4 complete; B1-B4 screen submitted across Condor and Kubeflow"
+      "progress_report": "../../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md",
+      "measured_progress": "140k identities/labels/PE conserved; eight actual learning gates; B0 three-seed and all16 neural screens complete; four-pass, compute controls, seeds and stress pending full delivery"
     },
     {
       "id": "R2",
@@ -414,7 +414,7 @@
       10
     ],
     "device_types_not_FLOP_equivalent": true,
-    "large_tasks": "HTCondor; inspect all available schedd load and compatibility before submitting",
+    "large_tasks": "HTCondor for bulk conversion, statistics and resimulation; HTCondor and Kubeflow for training; earliest-start compatible full/shared/MIG devices",
     "interactive": "small real-sample fits and microbenchmarks only",
     "expand": "reallocate by measured throughput; do not execute full Cartesian matrix",
     "R0_actual_device_hours_upper_bound": 1.0848546458547934,
@@ -427,6 +427,22 @@
       "bucket_size": 0,
       "shared_local_staging": true,
       "compiled_local_encoder": "reuse accepted runtime repair; new models require fit and timing"
+    },
+    "scheduling_policy": {
+      "prefer": "short estimated completion time from live waiting and measured throughput; no fixed GPU model or whole-card requirement",
+      "current_software": "LCG108 Torch2.7.1/CUDA12.5",
+      "minimum_capability": 7.5,
+      "compiled_architectures": [
+        "sm_75",
+        "sm_80",
+        "sm_86",
+        "sm_89",
+        "sm_90",
+        "compute_90"
+      ],
+      "below_SM80": "FP32/eager fallback after actual CUDA startup probe",
+      "other_architectures": "verify real CUDA forward/backward; capability ordering alone is insufficient",
+      "matched_compute": "same obtained allocation for paired task budgets; heterogeneous hours are separate resource costs"
     }
   },
   "required_learning_evidence": [
@@ -455,15 +471,17 @@
     "history_index": "06_workbook_index.md",
     "measured_review": "current_results_review.json",
     "R0_measured": "r0_results.json",
-    "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md"
+    "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
+    "operations": "07_resources_and_operations.md",
+    "latest_workbook": "../../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md"
   },
   "work_item_status": {
     "W01": "complete",
     "W02": "complete",
     "W03": "complete",
-    "W04": "in_progress",
-    "W05": "in_progress",
-    "W06": "in_progress",
+    "W04": "implemented_and_unit_tested; full_evaluation_pending",
+    "W05": "adapters_implemented_and_real_learning_gates_passed",
+    "W06": "all_screens_complete; full_training_and_evaluation_in_progress",
     "W07": "pending",
     "W08": "in_progress"
   }

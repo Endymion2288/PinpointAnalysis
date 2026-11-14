@@ -68,7 +68,7 @@ JSON并发修复后18项相关测试、0.125s通过；13:16:58 UTC首个fixed na
 
 目标H100只暂停原调度supervisor，原训练child继续；迁移wrapper在新writer结束后恢复supervisor，避免其原任务先完成导致allocation关闭。目标父allocation合并计费，迁移前MIG区间另计，不产生同时writer。证据为`audit/migration_part2026/{plan,source_released,destination_ready,supervisor_paused}.json`及source manifest/health/progress归档；迁移终态和最终读回尚待实测。两次目的端启动准备失败（Python模块调用及进程匹配包含init wrapper）均发生在暂停调度或停止源writer之前，修正后目标ready；它们不改科学模型且处于同一已计费allocation。
 
-针对global弱依赖补读NeurIPS2021 Gradient Starvation正式全文及CVPR2022/TPAMI2024 OPM/OGM，正式链接和后续可检验假设已加入[修复路线图](../roadmap/10_s3_repair.md)。这些论文支持审查分支间优化竞争，不构成本模型已证实gradient starvation的证据。当前冻结矩阵不加入新的分支dropout/gradient modulation。
+针对global弱依赖补读NeurIPS2021 Gradient Starvation正式全文及CVPR2022/TPAMI2024 OPM/OGM，正式链接和后续可检验假设已加入[修复路线图](../roadmap/archive/2026-11-14_v1/10_s3_repair.md)。这些论文支持审查分支间优化竞争，不构成本模型已证实gradient starvation的证据。当前冻结矩阵不加入新的分支dropout/gradient modulation。
 
 ### 迁移后续故障及实际恢复
 

@@ -72,6 +72,9 @@ def run(args):
     config = json.loads(args.config.read_text())
     if bool(config.get('compile_local')) != args.compile_local:
         raise ValueError('compile-local flag and frozen recipe must agree')
+    # FP32 fallback still needs kernels for the allocated CUDA architecture.
+    # Probe before copying the full corpus or creating an experiment writer.
+    torch.zeros(1, device='cuda:0').sum().item()
     root = args.root
     output = root/'experiments'/config['name']
     output.mkdir(parents=True, exist_ok=False)
@@ -92,6 +95,7 @@ def run(args):
     record = {'status': 'running', 'config': config, 'GPU': torch.cuda.get_device_name(),
         'allocation_id': os.environ.get('PINPOINT_JOB_ID'),
         'submitted_config': submitted_config, 'capability': list(torch.cuda.get_device_capability()),
+        'Torch_CUDA_architectures': torch.cuda.get_arch_list(),
         'history': [], 'health': [], 'Cal_A_Cut_B_Confirm_payload_read': False}
     with tempfile.TemporaryDirectory(prefix='r1-train-', dir=scratch_parent) as scratch, MemoryMonitor() as memory:
         paths = sorted(p for p in (data_root/'shards').iterdir() if (p/'observations.parquet').exists())

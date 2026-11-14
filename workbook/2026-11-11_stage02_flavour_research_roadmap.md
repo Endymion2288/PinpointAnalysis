@@ -8,11 +8,11 @@
 
 ## 工作内容
 
-- 阅读可用的 FASERCal arXiv v2 全文源码及 ICHEP 汇报，在线核对 Nature Machine Intelligence 正式发表信息、作者代码与相关方法；比较 ParticleNet、Particle Transformer、Perceiver IO 及 2024–2026 点云方法。LitePT、NOMAE 另抽读 Methods；文献及迁移判断见 [文献依据](../roadmap/02_literature.md)。
+- 阅读可用的 FASERCal arXiv v2 全文源码及 ICHEP 汇报，在线核对 Nature Machine Intelligence 正式发表信息、作者代码与相关方法；比较 ParticleNet、Particle Transformer、Perceiver IO 及 2024–2026 点云方法。LitePT、NOMAE 另抽读 Methods；文献及迁移判断见 [文献依据](../roadmap/archive/2026-11-14_v1/02_literature.md)。
 - 检查 ROOT schema、geometry、事件与 hit 对应、标签一致性、原生占用、Scintillator 通道合并收益；对照 Geant4 响应源码。旧程序仅参考文件和绘图接口，未复用其网络、truth selection 或标签规则。
-- 在 [数据与硬件合同](../roadmap/01_data_and_hardware.md) 中定义 observation/target/provenance 隔离、原生通道表示、digitization、空事件、generator-event family split 与完整性检查。
-- 在 [模型与实验设计](../roadmap/03_models_and_experiments.md) 中规划 ParticleNet/ParT 独立基线、局部/module/latent 主模型、原生与粗网格对照、多模态消融、MAE/自蒸馏/Rel、τ/charm 与对象分支。明确 coarse OR 与 active-pixel count 的区别，避免将信号归约变化混入分辨率结论。
-- 在 [执行工单](../roadmap/04_execution.md) 中安排 S0–S6、建议 12–16 周主线、资源测量与 HTCondor 规则；[study.yaml](../roadmap/configs/study.yaml) 是待实现合同，现有训练器尚不读取该配置。
+- 在 [数据与硬件合同](../roadmap/archive/2026-11-14_v1/01_data_and_hardware.md) 中定义 observation/target/provenance 隔离、原生通道表示、digitization、空事件、generator-event family split 与完整性检查。
+- 在 [模型与实验设计](../roadmap/archive/2026-11-14_v1/03_models_and_experiments.md) 中规划 ParticleNet/ParT 独立基线、局部/module/latent 主模型、原生与粗网格对照、多模态消融、MAE/自蒸馏/Rel、τ/charm 与对象分支。明确 coarse OR 与 active-pixel count 的区别，避免将信号归约变化混入分辨率结论。
+- 在 [执行工单](../roadmap/archive/2026-11-14_v1/04_execution.md) 中安排 S0–S6、建议 12–16 周主线、资源测量与 HTCondor 规则；[study.yaml](../roadmap/configs/study.yaml) 是待实现合同，现有训练器尚不读取该配置。
 
 ## 详细数据
 

@@ -6,7 +6,7 @@
 
 ## 工作内容
 
-新增 [S4 合同](../roadmap/11_s4_pretraining.md)、`analysis.flavour.s4.prepare/submit`。既有 80k train、10k validation 保持原样；每类另选 8 个 disjoint chunks、5k train，新增 20k。只读取已接受 inventory，不重新认证样本或校准 detector-proxy。
+新增 [S4 合同](../roadmap/archive/2026-11-14_v1/11_s4_pretraining.md)、`analysis.flavour.s4.prepare/submit`。既有 80k train、10k validation 保持原样；每类另选 8 个 disjoint chunks、5k train，新增 20k。只读取已接受 inventory，不重新认证样本或校准 detector-proxy。
 
 联网读取 FASERCal 以外的 Sonata/NOMAE CVPR 2025、VICReg ICLR 2022 原文，补读 CERN ML flavor/training 文档。NOMAE 的 visible-neighborhood 查询和 Sonata 的 geometric shortcut 提醒决定本轮的无泄漏和 feature-variance 检查。输出资料存 `results/flavour/s4_2026-11-13/literature`。
 

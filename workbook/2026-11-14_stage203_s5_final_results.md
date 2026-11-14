@@ -14,7 +14,7 @@
 
 完整矩阵为15项四pass screen、2项额外四pass回归head修复、3种结构×3seed的9项八pass确认，共26个神经网络；另有3个固定HGB基线。每个神经网络四/八pass分别2,540/5,080 updates；全部累计88,900 updates及1,291次内部健康采样。十五项screen按预定validation NLL规则选择vertex+kinematics，six-way是预定独立假设，direct4为控制。确认从各seed的MAE3重新初始化，不从四pass终点接续。两项head修复是额外探索对照，没有反向改写此前selection。
 
-论文与适配见[研究合同](../roadmap/12_s5_physics.md)、[head修复](2026-11-14_stage196_s5_component_head_repair.md)及[方向诊断](2026-11-14_stage202_s5_direction_readout_results.md)。FASERCal用于six-way、vertex/semantics/charm/visible-system辅助任务；GradNorm/FAMO只提供任务尺度审查依据，未声称实现完整算法。固定encoder的FP64 ridge诊断使用train内family folds选择正则化，没有把已见过全部train标签的encoder称为独立CV。
+论文与适配见[研究合同](../roadmap/archive/2026-11-14_v1/12_s5_physics.md)、[head修复](2026-11-14_stage196_s5_component_head_repair.md)及[方向诊断](2026-11-14_stage202_s5_direction_readout_results.md)。FASERCal用于six-way、vertex/semantics/charm/visible-system辅助任务；GradNorm/FAMO只提供任务尺度审查依据，未声称实现完整算法。固定encoder的FP64 ridge诊断使用train内family folds选择正则化，没有把已见过全部train标签的encoder称为独立CV。
 
 ## 详细数据
 

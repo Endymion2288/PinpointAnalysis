@@ -14,7 +14,7 @@
 2. 每文件检查 metadata event ID 唯一、tree entry 数相等、全部非空 pixel ID 及全部 bar/FASER ID 对齐。只有空 pixel 允许按 event row 关联。没有将 hit tree 的陈旧 ID 用作 join key。
 3. 核对显式 run→class、CC 入射 flavour/direct lepton/符号与 NC 出射中微子身份，保留 label exceptions。用 generator 元数据的 128-bit 精确签名做保守重复检查，并按签名加固定 seed 分配 `70/10/10/10`。
 4. 追溯本地/共享模拟源、旧 generator 与宏线索。完整扫描已找到的四个旧 gFaser 文件共 4,229,300 条 scalar entries，与当前 4,000 个 pilot 事件做全字段签名匹配；未找到匹配。未将旧文件的 source IDs/exposure 当作当前生产信息。
-5. 冻结开发读出合同和运行说明，完成原生通道 pilot；历史 PDF 的已知条件和缺失配置按 [本地汇报核对](../roadmap/05_local_studies.md)记录。详细 S1 结果见 [阶段 05](2026-11-11_stage05_native_channel_pipeline.md)。
+5. 冻结开发读出合同和运行说明，完成原生通道 pilot；历史 PDF 的已知条件和缺失配置按 [本地汇报核对](../roadmap/archive/2026-11-14_v1/05_local_studies.md)记录。详细 S1 结果见 [阶段 05](2026-11-11_stage05_native_channel_pipeline.md)。
 
 ## 详细数据
 
@@ -105,7 +105,7 @@ pixel 最大 46,154，明显高于最初 32-event 抽样的 6,056；不能据小
 
 ### 命令、调度、资源与产物
 
-复现入口为 [S0/S1 运行文档](../roadmap/06_s0_s1_operations.md)。首轮盘点 cluster `1573712`，全库 `1573714`（24 tasks），汇总 `1573719`；原生转换 `1573713`，最终 diagnostics `1573717`，旧 source 匹配 `1573718`，均使用 bigbird20。每轮 submission JSON 保存当时 schedd 负载、WRITE、EOS 路径策略、submit/wrapper 和 ClusterId。bigbird21 的普通队列拒绝直接 EOS 路径，已按实际策略从兼容集合剔除；没有将低 idle 单独当作兼容证据。
+复现入口为 [S0/S1 运行文档](../roadmap/archive/2026-11-14_v1/06_s0_s1_operations.md)。首轮盘点 cluster `1573712`，全库 `1573714`（24 tasks），汇总 `1573719`；原生转换 `1573713`，最终 diagnostics `1573717`，旧 source 匹配 `1573718`，均使用 bigbird20。每轮 submission JSON 保存当时 schedd 负载、WRITE、EOS 路径策略、submit/wrapper 和 ClusterId。bigbird21 的普通队列拒绝直接 EOS 路径，已按实际策略从兼容集合剔除；没有将低 idle 单独当作兼容证据。
 
 全库 scan 每任务申请 2 CPUs，站点 memory floor 为 6,000 MB；任务 wall-time min/median/max 为 47.961/1079.272/1599.088 s，累计 25,858.598 task-seconds，scan 峰值 RSS 最大 590.24 MiB。累计 task time 不是端到端 elapsed。汇总实际处理阶段 71.994 s，峰值 RSS 6,293.00 MiB，申请 8 CPUs、24,576 MB；全过程没有为盘点使用 GPU。输入 2.386 TB 是文件逻辑总大小，实际选列读取字节数未测量。
 

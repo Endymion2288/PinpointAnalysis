@@ -4,7 +4,7 @@ S4六项执行要求及遮蔽、Rel、故障修复、调度交付均有对应实
 
 ## 阶段目标
 
-逐项回答原S4研究合同是否已完成，区分实验交付、方法收益、失败配方和后续研究。依据为[执行路线图第5节](../roadmap/04_execution.md)和[S4合同第3至5节](../roadmap/11_s4_pretraining.md)。保留原合同，按其“证据不足不扩量、无收益也完成对照”的条件判断完成性。
+逐项回答原S4研究合同是否已完成，区分实验交付、方法收益、失败配方和后续研究。依据为[执行路线图第5节](../roadmap/archive/2026-11-14_v1/04_execution.md)和[S4合同第3至5节](../roadmap/archive/2026-11-14_v1/11_s4_pretraining.md)。保留原合同，按其“证据不足不扩量、无收益也完成对照”的条件判断完成性。
 
 ## 工作内容
 
@@ -26,7 +26,7 @@ S4六项执行要求及遮蔽、Rel、故障修复、调度交付均有对应实
 | 第6项：依据重建、下游和成本决定1M | [终态决定](../roadmap/results/s4_final_closure.json)、[最终结果](2026-11-14_stage181_s4_final_results.md) | 条件判断完成：不扩1M |
 | 遮蔽与重建附加合同：visible-only输入、正负/全几何查询、geometry/permutation控制及coverage | `s4/dataset.py`、对应测试、三套MAE3 `ssl_readback.json`及`ROOT/experiments/s4_geometry_query_baseline_s42/{cache_summary,reconstruction}.json` | 完成；结论只对应声明的混合查询分布 |
 | Rel标签质量与新增成本 | `ROOT/data_summary.json`、`rel_smoke.json`、两种continuation manifests、[语义控制](../roadmap/results/s4_rel_semantics.json)和最终分类表 | 完成；精确bar soft contributions是额外模拟语义监督，未声称纯自监督 |
-| 异常审查、修复重训和失效结果隔离 | [S3修复](../roadmap/10_s3_repair.md)、[LP失效清单](../roadmap/results/s4_transfer_compilation_invalidation.json)、阶段145/167、[概率诊断](2026-11-14_stage177_s4_probability_diagnostic.md)及最后健康记录 | 完成；失活、空响应和LP断梯度结果未进入有效结论 |
+| 异常审查、修复重训和失效结果隔离 | [S3修复](../roadmap/archive/2026-11-14_v1/10_s3_repair.md)、[LP失效清单](../roadmap/results/s4_transfer_compilation_invalidation.json)、阶段145/167、[概率诊断](2026-11-14_stage177_s4_probability_diagnostic.md)及最后健康记录 | 完成；失活、空响应和LP断梯度结果未进入有效结论 |
 | 调度、终态、费用与清理 | `ROOT/campaign_accounting.json`、`audit/fp64_recovery_and_superseded_cpu_stop.json`、feature/AFS清理清单及[收尾摘要](../roadmap/results/s4_final_closure.json) | 完成；114 allocations终止，费用含历史失败、恢复与重复执行 |
 
 ## 详细数据与证据范围

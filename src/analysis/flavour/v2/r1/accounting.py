@@ -28,7 +28,8 @@ def main():
     now = time.time()
     submissions = [json.loads(p.read_text()) for p in sorted((args.root/'runtime').glob('*.submission.json'))]
     observed_devices = {}
-    for pattern in ['experiments/*/manifest.json', 'diagnostics/*/manifest.json']:
+    for pattern in ['experiments/*/manifest.json', 'diagnostics/*/manifest.json',
+                    'failed_attempts/*/manifest.json']:
         for path in args.root.glob(pattern):
             record = json.loads(path.read_text())
             if record.get('allocation_id') and record.get('GPU'):
@@ -92,6 +93,9 @@ def main():
         pods = [p for p in all_pods if p['metadata'].get('labels', {}).get('job-name')==row['name']]
         job = jobs.get(row['name'], {})
         stored = args.root/'audit'/f"{row['name']}.pods.json"
+        terminal_pod = args.root/'audit'/f"{row['name']}.terminal_pod.json"
+        if not pods and terminal_pod.exists():
+            pods = [json.loads(terminal_pod.read_text())]
         if not pods and stored.exists():
             pods = json.loads(stored.read_text())['items']
         if not pods and row['name'] == 'pinpoint-r1-profile-b4-k1':

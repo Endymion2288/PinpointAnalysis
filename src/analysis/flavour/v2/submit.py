@@ -87,7 +87,8 @@ def main():
     parser.add_argument("--disk", default="12GB")
     parser.add_argument("--job-flavour", default="workday")
     parser.add_argument("--deadline-seconds", type=int, default=28800)
-    parser.add_argument("--min-capability", type=float, default=8.0)
+    parser.add_argument("--min-capability", type=float, default=7.5,
+                        help="Minimum CUDA capability; LCG108 Torch kernels require at least SM75")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     root = args.root.resolve()
@@ -123,6 +124,7 @@ def main():
     if args.backend == 'kubeflow':
         if not args.gpu:
             raise ValueError('Kubeflow v2 entry is one explicit GPU operation')
+        script[-1] = script[-1].removeprefix('exec ')+' 2>&1 | tee '+shlex.quote(str(root/'logs'/f'{args.name}.log'))
         submit_kubeflow(args, root, script, archive)
         return
     wrapper = directory / "run.sh"
@@ -138,7 +140,8 @@ def main():
                'requirements = (OpSysAndVer == "AlmaLinux9")', f'+JobFlavour = "{args.job_flavour}"',
                "should_transfer_files = YES", "when_to_transfer_output = ON_EXIT", 'transfer_output_files = ""']
     if args.gpu:
-        requirement = f"(GlobalMemoryMb >= 10000) && (Capability >= {args.min_capability})"
+        effective_capability = max(7.5, args.min_capability)
+        requirement = f"(GlobalMemoryMb >= 10000) && (Capability >= {effective_capability})"
         if args.gpu_model:
             requirement += ' && (DeviceName == ' + json.dumps(args.gpu_model) + ')'
         content += ["request_gpus = 1", "require_gpus = " + requirement]
@@ -152,7 +155,10 @@ def main():
                 "source_base_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
                 "source_archive": str(archive), "source_snapshot": "exact working source at submission; unrelated worktree changes excluded",
                 "command": args.command, "wrapper": wrapper.read_text(), "submit": path.read_text(),
-                "cpus": args.cpus, "gpu": args.gpu, "stdout": response.stdout, "stderr": response.stderr,
+                "cpus": args.cpus, "gpu": args.gpu,
+                "requested_minimum_capability": args.min_capability,
+                "LCG108_Torch_kernel_minimum_capability": 7.5,
+                "stdout": response.stdout, "stderr": response.stderr,
                 "returncode": response.returncode, "submitted": response.returncode == 0}
     record.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"schedd": chosen, "response": response.stdout, "record": str(record)}, ensure_ascii=False))
