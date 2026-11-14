@@ -1,0 +1,668 @@
+{
+  "utc": "2026-11-14T06:46:57.039861+00:00",
+  "scope": "Original S4 research-delivery completion review, including early pilot/control evidence and repaired results; separate from the final cohort technical gate.",
+  "status": "complete",
+  "required_unfinished_items": [],
+  "requirements": [
+    {
+      "id": "execution_1",
+      "requirement": "100k corpus and Rel sidecars; train-only 98k/2k split; nested 1k/10k/100k label budgets",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#4",
+        "roadmap/04_execution.md#5"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/plan.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/data_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/manifest.json",
+        "roadmap/configs/s4_fp64_objectives_evaluation.json"
+      ],
+      "finding": "Existing accepted samples, split and detector-proxy reused. SSL targets and reconstruction probe remain in train; downstream validation has 2500 events per class."
+    },
+    {
+      "id": "execution_2",
+      "requirement": "S3 local/regional/global/summary/full linear and MLP train-only branch probes",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#4"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_s3tracker_branchprobes_s42/manifest.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_s3tracker_branchprobes_s42/metrics.json",
+        "workbook/2026-11-13_stage95_s4_branch_readability_and_ema_spectrum.md"
+      ],
+      "finding": "All ten probes exist, with 8000 fit and 2000 probe events. S3 upstream encoder saw train labels, so this is readable-information diagnosis rather than independent generalization."
+    },
+    {
+      "id": "execution_3",
+      "requirement": "Real-event fit, FP32/BF16 occupancy stress, leakage and resume checks; 0.5/0.75 mask pilots and learned reconstruction",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#3",
+        "roadmap/11_s4_pretraining.md#4",
+        "roadmap/04_execution.md#5"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p2_mae_m50_s42/gate.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p2_mae_m75_s42/gate.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p4_distill_global_b64_s42/gate.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p6_barrel_channels_s42/gate.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4p2_mae_m50_s42/ssl_readback.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4p2_mae_m75_s42/ssl_readback.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_geometry_query_baseline_s42/reconstruction.json",
+        "src/analysis/flavour/s4/dataset.py",
+        "tests/test_flavour_s4.py",
+        "workbook/2026-11-13_stage94_s4_pilot2_and_core_training.md"
+      ],
+      "finding": "Fine native target sparsity was diagnosed and replaced by patch occupancy/count/moments targets; encoder observations remain native. Main mask 0.75 selected with measured speed/learning evidence. Uniform coverage is nonzero, but positive uniform fine-patch queries remain rare."
+    },
+    {
+      "id": "execution_4",
+      "requirement": "Same backbone Scratch/MAE/EMA/MAE+barRel, MAE continuation and matched supervised control; three-seed key confirmations",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#4",
+        "roadmap/04_execution.md#5"
+      ],
+      "status": "complete_with_negative_results",
+      "evidence": [
+        "roadmap/configs/s4_fp64_objectives_evaluation.json",
+        "roadmap/results/s4_empty_repair_summary.json",
+        "roadmap/results/s4_transfer4_low_label_summary.json",
+        "roadmap/results/s4_transfer4_inner_health.json",
+        "roadmap/results/s4_transfer4_selection_1k.json",
+        "roadmap/results/s4_transfer4_selection_10k.json",
+        "roadmap/results/s4_transfer4_10k_candidate_reuse.json",
+        "roadmap/results/s4_empty_matched_summary.json",
+        "roadmap/results/s4_empty_matched_budgets.json"
+      ],
+      "finding": "MAE3 and Scratch confirmed with seeds 17/42/2026. Final five-objective screen is seed42 only. Matched supervised continuation did not reproduce measured MAE3 benefits; matching uses declared matrix-operation proxy rather than equivalent device-hours."
+    },
+    {
+      "id": "execution_5",
+      "requirement": "Frozen linear and full fine-tuning at each label budget; full 10k metrics, classwise tails, tau branches, common support, learning curves, health and fixed-checkpoint branch paths",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#4",
+        "roadmap/11_s4_pretraining.md#5",
+        "roadmap/04_execution.md#5"
+      ],
+      "status": "complete_with_negative_results",
+      "evidence": [
+        "roadmap/results/s4_fp64_objectives_summary.json",
+        "roadmap/results/s4_fp64_objectives_acceptance.json",
+        "roadmap/results/s4_transfer4_functional_paths.json",
+        "roadmap/results/s4_frozen_probability_diagnostic.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_objectives_validation/probe_optimization_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_objectives_validation/training_health_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/label_efficiency_train_full.png",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/classification_internal_health.png"
+      ],
+      "finding": "45 predictions and 66 pairs complete, including 30 stationary full/global readouts with exact saved-model probability replay. Low-label fixed-C full probabilities overfit and remain a failed recipe. Tau low-FPR gain is not established. Readability and fixed-weight path reliance do not measure retrained branch contributions."
+    },
+    {
+      "id": "execution_6",
+      "requirement": "Decide 1M expansion only with reconstruction, downstream and resource evidence; negative-result completion allowed",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#4",
+        "roadmap/04_execution.md#5"
+      ],
+      "status": "conditional_expansion_declined",
+      "evidence": [
+        "roadmap/results/s4_final_closure.json",
+        "workbook/2026-11-14_stage181_s4_final_results.md"
+      ],
+      "finding": "Do not expand this round. Low-label MAE3 benefit is supported, but 100k common-support ranking, tau tails and extra EMA/Rel/continuation gains do not support automatic 1M scaling."
+    },
+    {
+      "id": "mask_reconstruction_contract",
+      "requirement": "Visible-only encoder/masks/summaries and geometry-only candidate queries; negative/uniform queries, geometry and source-permutation controls, coverage and candidate-distribution scope",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#3"
+      ],
+      "status": "complete",
+      "evidence": [
+        "src/analysis/flavour/s4/dataset.py",
+        "tests/test_flavour_s4.py",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_geometry_query_baseline_s42/cache_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_geometry_query_baseline_s42/reconstruction.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s17/ssl_readback.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/ssl_readback.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s2026/ssl_readback.json"
+      ],
+      "finding": "Same mask applies to occupied and empty geometry. Hidden support supplies targets after queries are fixed. Full MAE reconstruction exceeds trained query-only control and degrades under event-source permutation. Measured query mixture is not uniform all-detector risk."
+    },
+    {
+      "id": "rel_quality_and_added_cost",
+      "requirement": "Rel semantic definition, channel matching, extra supervision and added compute/storage costs",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#3",
+        "roadmap/04_execution.md#5"
+      ],
+      "status": "complete_with_negative_results",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/data_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/rel_smoke.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_rel_full_channel_diagnostic_s42/semantics.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_barrel_channels_e2_s42/manifest.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_cont_e2_s42/manifest.json",
+        "roadmap/results/s4_rel_semantics.json",
+        "roadmap/results/s4_fp64_objectives_summary.json"
+      ],
+      "finding": "Exact bar contributions reuse existing per-track ROOT deposits; no additional simulation or rebuild. Pixel flags not treated as exact soft labels. Rel adds simulation semantics beyond event labels and a 12288-update continuation. Different devices and shared workloads prevent elapsed-time speed rankings."
+    },
+    {
+      "id": "fault_repair_and_retraining",
+      "requirement": "Audit abnormal activations/gradients/learning, repair architecture or training, retrain and reevaluate; withdrawn artifacts excluded from conclusions",
+      "contract": [
+        "AGENTS.md",
+        "roadmap/11_s4_pretraining.md#5"
+      ],
+      "status": "complete",
+      "evidence": [
+        "roadmap/10_s3_repair.md",
+        "roadmap/results/s4_transfer_compilation_invalidation.json",
+        "workbook/2026-11-14_stage145_s4_empty_repair_final.md",
+        "workbook/2026-11-14_stage167_s4_valid_low_label_results.md",
+        "workbook/2026-11-14_stage177_s4_probability_diagnostic.md",
+        "roadmap/results/s4_fp64_acceleration_gate.json",
+        "roadmap/results/s4_fp64_objectives_acceptance.json"
+      ],
+      "finding": "Old dead-head, empty-response and LP compiled-gradient failures were diagnosed and excluded, with repaired training and independent backward evidence. Fixed-C statistical overfitting is separately diagnosed; converged readouts are not approved probability models."
+    },
+    {
+      "id": "scheduling_cost_cleanup",
+      "requirement": "Formal HTCondor/Kubeflow workloads, compatible flavors, concurrency, recorded submissions, terminal allocations, cost and compact outputs",
+      "contract": [
+        "roadmap/11_s4_pretraining.md#5",
+        "roadmap/04_execution.md#8",
+        "roadmap/04_execution.md#9",
+        "AGENTS.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/campaign_accounting.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_recovery_and_superseded_cpu_stop.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_feature_cache_cleanup.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/afs_terminal_cleanup_objectives_final.json",
+        "roadmap/results/s4_final_closure.json",
+        "workbook/2026-11-13_stage90_s4_corpus_and_batch_launch.md",
+        "workbook/2026-11-14_stage181_s4_final_results.md"
+      ],
+      "finding": "114 allocations terminal; all readiness/failure/duplicate execution costs retained. MIG profiles separate, no FLOPs-equivalence conversion. Feature caches deleted after replay; future replay requires regenerated features. AFS terminal submit directories cleaned."
+    }
+  ],
+  "reviewed_evidence": {
+    "unique_paths": 55,
+    "all_paths_present": true,
+    "paths": [
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/afs_terminal_cleanup_objectives_final.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_feature_cache_cleanup.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_recovery_and_superseded_cpu_stop.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/campaign_accounting.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/data_summary.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/classification_internal_health.png",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/fp64_objectives/label_efficiency_train_full.png",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_objectives_validation/probe_optimization_summary.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_fp64_objectives_validation/training_health_summary.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_geometry_query_baseline_s42/cache_summary.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_geometry_query_baseline_s42/reconstruction.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_barrel_channels_e2_s42/manifest.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_cont_e2_s42/manifest.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s17/ssl_readback.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s2026/ssl_readback.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/manifest.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/ssl_readback.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_rel_full_channel_diagnostic_s42/semantics.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_s3tracker_branchprobes_s42/manifest.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_s3tracker_branchprobes_s42/metrics.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4p2_mae_m50_s42/ssl_readback.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4p2_mae_m75_s42/ssl_readback.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/plan.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/rel_smoke.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p2_mae_m50_s42/gate.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p2_mae_m75_s42/gate.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p4_distill_global_b64_s42/gate.json",
+      "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/ssl_gate/s4p6_barrel_channels_s42/gate.json",
+      "roadmap/10_s3_repair.md",
+      "roadmap/configs/s4_fp64_objectives_evaluation.json",
+      "roadmap/results/s4_empty_matched_budgets.json",
+      "roadmap/results/s4_empty_matched_summary.json",
+      "roadmap/results/s4_empty_repair_summary.json",
+      "roadmap/results/s4_final_closure.json",
+      "roadmap/results/s4_fp64_acceleration_gate.json",
+      "roadmap/results/s4_fp64_objectives_acceptance.json",
+      "roadmap/results/s4_fp64_objectives_summary.json",
+      "roadmap/results/s4_frozen_probability_diagnostic.json",
+      "roadmap/results/s4_rel_semantics.json",
+      "roadmap/results/s4_transfer4_10k_candidate_reuse.json",
+      "roadmap/results/s4_transfer4_functional_paths.json",
+      "roadmap/results/s4_transfer4_inner_health.json",
+      "roadmap/results/s4_transfer4_low_label_summary.json",
+      "roadmap/results/s4_transfer4_selection_10k.json",
+      "roadmap/results/s4_transfer4_selection_1k.json",
+      "roadmap/results/s4_transfer_compilation_invalidation.json",
+      "src/analysis/flavour/s4/dataset.py",
+      "tests/test_flavour_s4.py",
+      "workbook/2026-11-13_stage90_s4_corpus_and_batch_launch.md",
+      "workbook/2026-11-13_stage94_s4_pilot2_and_core_training.md",
+      "workbook/2026-11-13_stage95_s4_branch_readability_and_ema_spectrum.md",
+      "workbook/2026-11-14_stage145_s4_empty_repair_final.md",
+      "workbook/2026-11-14_stage167_s4_valid_low_label_results.md",
+      "workbook/2026-11-14_stage177_s4_probability_diagnostic.md",
+      "workbook/2026-11-14_stage181_s4_final_results.md"
+    ],
+    "validation_scope": "Read saved summaries and selected primary JSON fields; reused recorded model/backward/replay evidence. No new training, sample certification, checkpoint loading or feature replay in this audit."
+  },
+  "facts": {
+    "corpus_counts": [
+      {
+        "split": "train",
+        "label": 0,
+        "events": 25000
+      },
+      {
+        "split": "train",
+        "label": 1,
+        "events": 25000
+      },
+      {
+        "split": "train",
+        "label": 2,
+        "events": 25000
+      },
+      {
+        "split": "train",
+        "label": 3,
+        "events": 25000
+      },
+      {
+        "split": "validation",
+        "label": 0,
+        "events": 2500
+      },
+      {
+        "split": "validation",
+        "label": 1,
+        "events": 2500
+      },
+      {
+        "split": "validation",
+        "label": 2,
+        "events": 2500
+      },
+      {
+        "split": "validation",
+        "label": 3,
+        "events": 2500
+      }
+    ],
+    "Rel_target_build": {
+      "events": 100000,
+      "sidecar_files": 40,
+      "sidecar_bytes": 1151062225,
+      "channels": 69948793,
+      "matched_channels": 69948793,
+      "mixed_channels": 34294631,
+      "sum_task_elapsed_seconds": 1755.7467772038653,
+      "elapsed_scope": "Sum of per-shard target construction seconds; neither campaign wall time nor allocated CPU core-hours. Actual allocations are charged separately.",
+      "peak_RSS_MiB": 1608.765625,
+      "maximum_relative_energy_error": 0.0,
+      "other_energy_fraction": 1.701062072547424e-05
+    },
+    "branch_probe_macro_AP": {
+      "regional_linear": 0.39243256141954797,
+      "regional_MLP": 0.38032619099133746,
+      "global_linear": 0.3540399579691288,
+      "global_MLP": 0.32722550691754865,
+      "local_linear": 0.3860942473164124,
+      "local_MLP": 0.38771284136946593,
+      "summary_linear": 0.41250102298323266,
+      "summary_MLP": 0.4131714357833835,
+      "full_linear": 0.39332076003507477,
+      "full_MLP": 0.4172329702629719
+    },
+    "pilot_gates": {
+      "s4p2_mae_m50_s42": {
+        "checks": {
+          "reconstruction_loss_reduction_at_least_10pct": true,
+          "positive_and_negative_geometry_queries": true,
+          "all_sampled_internal_health_pass": true,
+          "maximum_occupancy_all_precisions_finite": true
+        },
+        "stress": [
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 18575,
+            "precision": "FP32",
+            "loss": 5.176324367523193,
+            "finite": true,
+            "input_gradient_squared_norm": 3.8475289344787598
+          },
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 18575,
+            "precision": "BF16",
+            "loss": 5.176229953765869,
+            "finite": true,
+            "input_gradient_squared_norm": 3.8314061164855957
+          }
+        ]
+      },
+      "s4p2_mae_m75_s42": {
+        "checks": {
+          "reconstruction_loss_reduction_at_least_10pct": true,
+          "positive_and_negative_geometry_queries": true,
+          "all_sampled_internal_health_pass": true,
+          "maximum_occupancy_all_precisions_finite": true
+        },
+        "stress": [
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 9097,
+            "precision": "FP32",
+            "loss": 6.735159873962402,
+            "finite": true,
+            "input_gradient_squared_norm": 25.07769775390625
+          },
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 9097,
+            "precision": "BF16",
+            "loss": 6.737767219543457,
+            "finite": true,
+            "input_gradient_squared_norm": 24.868770599365234
+          }
+        ]
+      },
+      "s4p4_distill_global_b64_s42": {
+        "checks": {
+          "reconstruction_loss_reduction_at_least_10pct": true,
+          "positive_and_negative_geometry_queries": true,
+          "all_sampled_internal_health_pass": true,
+          "maximum_occupancy_all_precisions_finite": true
+        },
+        "stress": [
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 9097,
+            "precision": "FP32",
+            "loss": 30.905887603759766,
+            "finite": true,
+            "input_gradient_squared_norm": 0.40595167875289917
+          },
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 9097,
+            "precision": "BF16",
+            "loss": 30.90713882446289,
+            "finite": true,
+            "input_gradient_squared_norm": 0.376812219619751
+          }
+        ]
+      },
+      "s4p6_barrel_channels_s42": {
+        "checks": {
+          "reconstruction_loss_reduction_at_least_10pct": true,
+          "positive_and_negative_geometry_queries": true,
+          "all_sampled_internal_health_pass": true,
+          "maximum_occupancy_all_precisions_finite": true
+        },
+        "stress": [
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 9097,
+            "precision": "FP32",
+            "loss": 5.381770133972168,
+            "finite": true,
+            "input_gradient_squared_norm": 2.913768768310547
+          },
+          {
+            "raw_channels": 36549,
+            "visible_nodes": 9097,
+            "precision": "BF16",
+            "loss": 5.380936145782471,
+            "finite": true,
+            "input_gradient_squared_norm": 2.918341636657715
+          }
+        ]
+      }
+    },
+    "full_MAE_three_seeds": [
+      {
+        "seed": 17,
+        "fine_patch_AP": 0.48749462350794787,
+        "global_effective_rank": 8.918626025954115,
+        "event_permutation_delta_BCE": {
+          "0": 0.07784149978682399,
+          "1": 0.4047465881276876,
+          "2": 1.0245908036231994
+        }
+      },
+      {
+        "seed": 42,
+        "fine_patch_AP": 0.4549785069181699,
+        "global_effective_rank": 7.532381534576416,
+        "event_permutation_delta_BCE": {
+          "0": 0.07611044739931822,
+          "1": 0.4082016943097115,
+          "2": 0.998561119556427
+        }
+      },
+      {
+        "seed": 2026,
+        "fine_patch_AP": 0.5169327551312864,
+        "global_effective_rank": 9.236249017415997,
+        "event_permutation_delta_BCE": {
+          "0": 0.08087195358145982,
+          "1": 0.4194930055141449,
+          "2": 1.0641420845985412
+        }
+      }
+    ],
+    "geometry_query_control": {
+      "0": {
+        "query_only_AP": 0.028192560177340963,
+        "MAE3_AP": 0.4549785069181699,
+        "positive_queries": 2257,
+        "uniform_positive_queries": 2
+      },
+      "1": {
+        "query_only_AP": 0.11153190316277468,
+        "MAE3_AP": 0.7808986658834025,
+        "positive_queries": 10144,
+        "uniform_positive_queries": 115
+      },
+      "2": {
+        "query_only_AP": 0.4458071649434767,
+        "MAE3_AP": 0.898600482178763,
+        "positive_queries": 42643,
+        "uniform_positive_queries": 7163
+      }
+    },
+    "Rel_train_inner_semantics": {
+      "probe_events": 512,
+      "valid_channels": 37567,
+      "hardware_channels": 3676,
+      "cross_entropy": {
+        "trained": 0.6427558064460754,
+        "event_permuted": 0.7979105710983276,
+        "oracle_constant": 0.723883330821991,
+        "oracle_channel_geometry": 0.6629191795039376,
+        "target_entropy": 0.1990140676498413
+      },
+      "paired_contrasts": {
+        "event_permuted_minus_trained": {
+          "delta": 0.1551547646522522,
+          "CI95": [
+            0.13984213354209238,
+            0.17272598667818884
+          ]
+        },
+        "oracle_constant_minus_trained": {
+          "delta": 0.08112752437591553,
+          "CI95": [
+            0.07211605007744402,
+            0.09042362308720236
+          ]
+        },
+        "oracle_channel_geometry_minus_trained": {
+          "delta": 0.0201633730578622,
+          "CI95": [
+            0.011855178374961764,
+            0.02956380364208492
+          ]
+        }
+      }
+    },
+    "continuation_execution": {
+      "s4_mae_cont_e2_s42": {
+        "status": "complete",
+        "optimizer_steps": 12288,
+        "train_events": 98000,
+        "inner_reconstruction_probe_events": 2000,
+        "seconds": 2388.688287246041,
+        "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+        "internal_health_samples": 123,
+        "all_internal_health_pass": true
+      },
+      "s4_mae_barrel_channels_e2_s42": {
+        "status": "complete",
+        "optimizer_steps": 12288,
+        "train_events": 98000,
+        "inner_reconstruction_probe_events": 2000,
+        "seconds": 2178.0354513319908,
+        "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+        "internal_health_samples": 123,
+        "all_internal_health_pass": true
+      },
+      "scope": "Actual task elapsed times on different profiles with concurrent workloads; not standalone timings or allocation charges. Both inherit MAE3, use mask epochs 3/4 and 12288 continuation updates; Rel adds semantic loss."
+    },
+    "train_inner": {
+      "fits": 48,
+      "optimizer_steps": 137088,
+      "train_exposures": 2112000,
+      "health_samples": 1732,
+      "all_measured_frontends_have_positive_training_gradients": true
+    },
+    "matched_compute": {
+      "predictions": 12,
+      "pairs": 12,
+      "matching_error_by_budget": {
+        "1000": 0.00030650629509010877,
+        "10000": 0.0006956235281032647,
+        "100000": 8.342455728740934e-05
+      },
+      "scope": "declared eager Linear/attention forward/backward matrix proxy, including eager checkpoint recomputation; excludes elementwise, normalization and compiler fusion"
+    },
+    "fixed_checkpoint_paths": [
+      {
+        "experiment": "s4_transfer4_optimized_scratch_n1000_s42",
+        "events": 10000,
+        "permutation_seeds": [
+          2026,
+          17,
+          42
+        ],
+        "cached_head_logit_maximum_error": 0.0
+      },
+      {
+        "experiment": "s4_transfer4_optimized_mae3_n1000_s42",
+        "events": 10000,
+        "permutation_seeds": [
+          2026,
+          17,
+          42
+        ],
+        "cached_head_logit_maximum_error": 0.0
+      },
+      {
+        "experiment": "s4_optimized_scratch_n10000_s42",
+        "events": 10000,
+        "permutation_seeds": [
+          2026,
+          17,
+          42
+        ],
+        "cached_head_logit_maximum_error": 0.0
+      },
+      {
+        "experiment": "s4_optimized_mae3_n10000_s42",
+        "events": 10000,
+        "permutation_seeds": [
+          2026,
+          17,
+          42
+        ],
+        "cached_head_logit_maximum_error": 0.0
+      }
+    ],
+    "final_cohort": {
+      "trained_models": 15,
+      "predictions": 45,
+      "paired_comparisons": 66,
+      "validation_events_per_prediction": 10000,
+      "class_counts": [
+        2500,
+        2500,
+        2500,
+        2500
+      ],
+      "optimizer_updates": 147130,
+      "health_samples": 1710,
+      "checkpoint_checks": 210,
+      "selected_FP32_backward_models": 15,
+      "frozen_readout_replays": 30,
+      "maximum_replay_probability_error": 0.0,
+      "maximum_every_update_preclip_gradient_norm": 307.56500244140625,
+      "seed": 42
+    },
+    "resources": {
+      "terminal_allocations": 114,
+      "all_terminal": true,
+      "organization_device_hours": 35.3990293525,
+      "cap_device_hours": 60,
+      "CPU_allocation_core_hours": 423.0439235327778,
+      "device_hours_by_backend_device": {
+        "condor:NVIDIA H100L-2-24C MIG 2g.24gb": 18.66444444444444,
+        "kubeflow:h100-47gb": 10.740418241388888,
+        "condor:NVIDIA H100L-1-12C MIG 1g.12gb": 5.922222222222222,
+        "condor:Tesla V100-PCIE-32GB": 0.07194444444444445
+      },
+      "scope": "actual durations by allocation; MIG and full GPUs kept distinct, no equivalent-FLOPs conversion; all readiness/failure time included"
+    },
+    "cleanup": {
+      "feature_files": 36,
+      "feature_bytes_removed": 3643405382,
+      "feature_cleanup_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/fp64_feature_cache_cleanup.json",
+      "AFS_directories_removed_this_closure": 9,
+      "AFS_bytes_removed_this_closure": 16627,
+      "AFS_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/afs_terminal_cleanup_objectives_final.json"
+    }
+  },
+  "technical_completion_is_not_method_promotion": true,
+  "open_followup_questions": [
+    {
+      "topic": "Low-label full readout regularization",
+      "state": "Future improvement; fixed-C diagnostic completed and not approved as a probability model",
+      "next": "Select C using physical-group train-inner folds within each original label budget, then refit and compare with fixed C=1."
+    },
+    {
+      "topic": "Tau high-purity, electron and muon decay modes",
+      "state": "No confirmed improvement in measured S4 conditions",
+      "next": "S5 reconstruction/visibility, charm and auxiliary-task controls with explicit efficiencies and coverage."
+    },
+    {
+      "topic": "Global branch net retrained contribution",
+      "state": "Not measured by readability or fixed-checkpoint permutation",
+      "next": "If investigated, retrain matched branch ablations; preserve protocol and resource comparisons."
+    },
+    {
+      "topic": "Calibration, frozen test, detector/generator systematics and yields",
+      "state": "Not measured; S6 scope",
+      "next": "Freeze method, thresholds and calibration before formal test; use accepted detector-proxy without reopening certification."
+    }
+  ],
+  "one_million_expansion": false,
+  "new_GPU_allocations_in_this_audit": 0,
+  "base_commit": "16ab0f4"
+}

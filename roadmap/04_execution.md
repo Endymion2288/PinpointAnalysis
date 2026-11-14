@@ -2,7 +2,9 @@
 
 **S3 revision 2已完成20模型修复重训及完整validation评价，18项严格检查通过；[最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)与[修复合同](10_s3_repair.md)为当前依据。旧批次方法结论撤回。**
 
-S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global路径独立收益仍待解决。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test冻结，S4–S6未执行。
+**S4本轮已完成，原合同逐项证据见[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)，最终五初始化比较见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。MAE3保留为有限标签基线，τ高纯度收益未确认；本轮不扩1M。114条allocation全部终止，35.399029/60 device-hours。S5–S6未执行。**
+
+S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global重训净收益仍未测量。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test冻结。
 
 以下 S0/S1 工单保留原始研究设计；其中来源追溯和硬件标定条款已由上述用户决定覆盖，不再执行。S2–S6 沿用接受的 detector-proxy 和冻结 manifest，后续模型评价按其独立实验计划执行。
 
@@ -65,6 +67,8 @@ Tracker增量同时报各类相同purity/background acceptance下的效率、完
 Rel 需要的 soft contribution truth 若不完整，先做少量匹配模拟，仅保存紧凑 accumulators。新增 output/响应逻辑时才重编译对应源码，复用现成工具链；不为 whole sample 输出 step-level 巨量文件。区分弱 pixel flags、精确 soft labels 和纯自监督目标。
 
 交付：learning curves、matched-compute 表、linear probe 和 full fine-tuning、Rel 标签质量与新增成本。验收：在 τ 工作点、低标签适应或总资源上有证据支持的收益；证据不足时不扩大至 FASERCal 约千 GPU-hour 的预训练规模。
+
+执行结果：100k语料、0.5/0.75 pilot、几何查询控制、Rel channel标签和成本、三seed Scratch/MAE3与有效低标签重选均已完成。最终seed42矩阵交付15项分类训练、30个full/global frozen读出、45套完整10k validation预测和66项配对；监督matched-compute另有12预测/12配对。MAE3低标签收益支持保留，τ低FPR效率增量未确认，EMA/Rel未建立跨预算一致的额外总体收益，决定不扩1M。[要求与证据映射](results/s4_scope_completion_audit.json)区分已完成对照、负结果和S5/S6待研究问题。固定C=1的1k高维读出过拟合，不作为可用概率模型；后续正则化在原标签预算内选择。
 
 ## 6. S5：τ、charm 与可重建对象
 
@@ -137,4 +141,6 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-S3 revision 2 已完成 20 个修复模型和最终评价；旧 25 模型的晋级判断撤回。当前依据为 [修复最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)和 [S3 修复结果](results/s3_repair_summary.json)。Tracker 的 νμ/NC 增益得到支持，ντ 增益尚未证实，global latent 利用仍弱。S4 按 [预训练合同](11_s4_pretraining.md)实现与验证，保持相同 backbone 的 Scratch 对照及 calibration/test 冻结。
+S4已完成，入口为[最终结果](../workbook/2026-11-14_stage181_s4_final_results.md)、[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)和[预训练合同](11_s4_pretraining.md)。保留revision 3多尺度backbone、修正后MAE3与同配方Scratch；三seed低标签结果与seed42五初始化筛查分别报告。MAE3已有可读global类别信息和固定checkpoint路径依赖证据，global重训净收益仍未测量。
+
+下一项readout优化在原1k/10k/100k预算内按物理family分组选择C，保留固定C=1失败对照；随后S5优先研究τ轻子子道、charm混淆与可重建拓扑的coverage。方法、阈值与校准按S6冻结后才打开test。全7.24M训练、真实响应/generator系统包络和物理产额均未测量。

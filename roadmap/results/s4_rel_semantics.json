@@ -1,5 +1,6 @@
 {
-  "status": "completed train-inner diagnostic; downstream classification pending",
+  "status": "completed train-inner semantic diagnostic; downstream classification completed separately",
+  "downstream_classification_source": "roadmap/results/s4_fp64_objectives_summary.json",
   "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_rel_geometry_event_diagnostic_s42/semantics.json",
   "scope": "geometry priors fitted on the same probe; fixed checkpoint paired connected-chunk bootstrap; calibration/test unused",
   "models": [

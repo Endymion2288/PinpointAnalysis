@@ -8,6 +8,8 @@
 
 后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；S5–S6未执行。
 
+[全范围完成性审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)已将原S4六项执行要求与早期pilot、几何/语义控制、三seed、matched-compute和最后矩阵逐项对应，[证据映射](results/s4_scope_completion_audit.json)保留直接产物路径和结论范围。研究完成包含明确的负结果；最终20项检查只覆盖最后矩阵的技术交付。
+
 建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
 
 ## 阅读与执行入口

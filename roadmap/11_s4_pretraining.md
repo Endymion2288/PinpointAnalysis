@@ -2,6 +2,8 @@
 
 **最终状态：S4本轮已完成，见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。15项seed42分类训练、30个驻点full/global读出、45套完整10k预测和66项配对完成，20项检查通过；[精简数值](results/s4_fp64_objectives_summary.json)及[终态清理](results/s4_final_closure.json)已保存。114条allocation全部终止，35.399029/60 device-hours、423.043924 CPU allocation core-hours。MAE3保留为后续基线；低标签固定C=1的概率失败另列诊断，本轮不扩1M。**
 
+原六项执行要求、遮蔽/重建/Rel合同及资源交付已逐项审查，见[阶段182](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)和[证据映射](results/s4_scope_completion_audit.json)。该审查包含早期pilot、train-only分支probe、几何控制、三seed与matched-compute，覆盖最后20项技术检查以外的研究交付。
+
 **2026-11-14 纠错与有效结果：阶段155发现LP解冻后input/local编译断梯度，旧12项LP inner及旧1k优化模型作废，见[失效清单](results/s4_transfer_compilation_invalidation.json)。修复后真实CUDA gate通过，48项有效inner完成并重做两预算选择：1k LP-FT/8 pass、10k early/6 pass。新的三seed完整10k评价和实际参数更新均通过，见[阶段167](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)：1k MAE3 NLL 1.447382→1.358905、macro AP 0.345980→0.330614；10k MAE3 NLL 1.252464→1.238574、macro AP 0.440384→0.448223。概率与排序权衡分开解释，旧故障模型未进入以上结果。100k frozen full读出达到5,000次L-BFGS上限，旧完整readability评价已因上游需审查而停止；同目标Newton-CG、真实驻点验收及GPU/CPU拆分恢复见[阶段166](../workbook/2026-11-14_stage166_s4_convex_readout_recovery.md)，同目标v2真实回归四项通过；最终100k设备接续已完成，见第7节，中间执行见[阶段174](../workbook/2026-11-14_stage174_s4_stationary_gate_passed.md)。阶段145有效基线不受LP故障影响。**
 
 阶段145结果：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；阶段145时原61个allocation已终止，后续修复与对照继续累计同一账本。03:49:08 UTC历史快照为30.386366/60 device-hours，当时仍有训练与评价运行；最终费用见页首。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
@@ -100,7 +102,7 @@ Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k
 
 本轮不扩至1M。目标对照、驻点readout、完整条件统计、真实allocation终态和总成本已完成。最终100k采用真实8项CPU/GPU gate通过的FP64设备Hessian products，五组full/global独立CPU梯度均≤1e-6，保持原C/scaler/凸目标。原耗时CPU任务在替代产物通过后正式终止，费用保留，旧配置不改写。
 
-完整v2评价还会重新加载30个full/global磁盘readouts，在同一10k validation特征上按事件键回放概率，最大绝对差要求≤1e-10，见[阶段173](../workbook/2026-11-14_stage173_s4_saved_readout_replay.md)。该回放与真实梯度驻点分开保存，通过后才清理临时feature数组；本步骤不重新拟合或调整模型。
+完整评价已重新加载30个full/global磁盘readouts，在同一10k validation特征上按事件键回放概率，最大绝对差为0，满足≤1e-10的要求；回放合同见[阶段173](../workbook/2026-11-14_stage173_s4_saved_readout_replay.md)，实际结果见阶段181。回放与真实梯度驻点分别保存，临时feature数组已在通过后清理；重新执行回放需按冻结配置重建缓存。本步骤没有重新拟合或调整模型。
 
 固定C=1的1k MAE3 full已确认概率泛化失败：fit NLL0.174783、validation NLL3.246709，10k中2,606个错误预测confidence>0.9；top1%事件仅贡献5.08%总损失，不能归为少数离群点。见[概率诊断](../workbook/2026-11-14_stage177_s4_probability_diagnostic.md)和[精简数值](results/s4_frozen_probability_diagnostic.json)。这是数值收敛后的固定读出设置问题，不能作为encoder无信息的结论。该配方保留作诊断，后续readout优化只在各原标签预算内按物理分组train-inner选择C，并独立记录与固定配方的差别；本轮不在观察validation后静默修改目标。
 
