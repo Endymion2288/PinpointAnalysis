@@ -122,12 +122,162 @@ def smoke(args):
         raise RuntimeError('resimulation geometry must match the supplied observation geometry')
 
 
+def prepare(args):
+    """Reconstruct status-one primaries from accepted ROOT records, at fixed z."""
+    import pandas as pd
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    import uproot
+    from analysis.flavour.s6.prepare import require_freeze
+    from analysis.flavour.s6.gfaser import nominal_record
+    from analysis.flavour.s5.truth import group_flat
+    from analysis.flavour.inventory import COMPRESSION
+    require_freeze(args.root, 'test')
+    plan = json.loads((args.root/'plan.json').read_text())
+    manifest = pd.read_parquet(args.root/'transport_manifest.parquet').reset_index(drop=True)
+    records = [None]*len(manifest)
+    for (run, chunk), group in manifest.groupby(['run', 'chunk'], sort=True):
+        path = Path(plan['input_root'])/str(run)/f'{run}_{chunk:03d}.root'
+        with uproot.open(path) as source:
+            metadata = source['event'].arrays(library='np')
+            primary = group_flat(source['primaries'], ['evtID', 'PDG', 'Px', 'Py', 'Pz', 'E'])
+            for index, row in group.iterrows():
+                event = {k: v[int(row.row)] for k, v in metadata.items()}
+                records[index] = nominal_record(event, primary[int(event['evtID'])])
+    manifest['transport_chunk'] = np.arange(len(manifest))//args.events_per_task
+    destination = args.root/'transport'
+    destination.mkdir(exist_ok=True)
+    manifest.to_parquet(destination/'manifest.parquet', index=False, compression=COMPRESSION)
+    pq.write_table(pa.Table.from_pylist(records), destination/'particles.parquet', compression=COMPRESSION)
+    write_json(destination/'inputs.json', {'status': 'complete', 'events': len(manifest),
+        'chunks': manifest.transport_chunk.nunique(), 'source': 'accepted ROOT primaries and event metadata',
+        'four_vector_precision': 'original primaries tree float32; no generator re-generation', 'vertex': 'original event double mm converted to GFaser metres',
+        'events_per_task': args.events_per_task, 'test_used': True})
+
+
+def transport_variants(config):
+    t = config['transport']
+    return [{'name': 'nominal', 'field_T': t['nominal_field_T'], 'density': 1., 'helicity': None}]+[
+        {'name': f'field_{s:g}', 'field_T': t['nominal_field_T']*s, 'density': 1., 'helicity': None}
+        for s in t['field_scales']]+[
+        {'name': f'density_{s:g}', 'field_T': t['nominal_field_T'], 'density': s, 'helicity': None}
+        for s in t['tungsten_density_scales']]+[
+        {'name': f'tau_helicity_{s:g}', 'field_T': t['nominal_field_T'], 'density': 1., 'helicity': s}
+        for s in t['tau_helicity_proxies']]
+
+
+def convert_response(output, destination, metadata, geometry):
+    import awkward as ak
+    import numpy as np
+    import pandas as pd
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    import uproot
+    from analysis.flavour.create_data import BRANCHES, ROOT_TREES, lists
+    from analysis.flavour.inventory import COMPRESSION
+    from analysis.flavour.readout import pixel_channels, bar_channels, tracker_measurements, modality_state
+    with uproot.open(output) as source:
+        if source['event'].num_entries != len(metadata):
+            raise ValueError('transport event coverage differs')
+        event = source['event'].arrays(['evtID', 'initX', 'initY', 'initZ'], library='np')
+        expected = metadata[['initX', 'initY', 'initZ']].to_numpy()
+        actual = np.column_stack([event['init'+a] for a in 'XYZ'])
+        if not np.allclose(actual, expected, atol=2e-4, rtol=0):
+            raise ValueError('transport changed fixed input vertices')
+        data = {n: source[ROOT_TREES[n]].arrays(k, library='ak') for n, k in BRANCHES.items()}
+        observations, ideals, rows = [], [], []
+        for i, meta in enumerate(metadata.to_dict('records')):
+            h = {n: {k: ak.to_numpy(v[k][i]) for k in v.fields} for n, v in data.items()}
+            pixel = pixel_channels(h['pixel'], geometry)
+            bars, _ = bar_channels(h['bar'], geometry)
+            seed = int(meta['family_hi']) ^ int(meta['family_lo']) ^ 20261111
+            ideal, tracker = tracker_measurements(h['tracker'], seed)
+            state = modality_state(pixel, bars, tracker)
+            observations.append({'pixel': lists(pixel), 'bar': lists(bars), 'tracker_hypothesis': lists(tracker),
+                'has_response': state['has_response'].tolist(), 'outside_acceptance': [-1, -1, -1],
+                'fit_attempted': False, 'momentum_censored': -1})
+            ideals.append(lists(ideal))
+            rows.append({**meta, 'pixel_channels': len(pixel['channel_id']), 'bar_channels': len(bars['channel_id']),
+                'tracker_channels': len(tracker['station']), 'all_empty': not state['has_response'].any()})
+    destination.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist(observations), destination/'observations.parquet', compression=COMPRESSION)
+    pq.write_table(pa.Table.from_pylist([{'label': int(m['label'])} for m in rows]), destination/'targets.parquet', compression=COMPRESSION)
+    pq.write_table(pa.Table.from_pylist(ideals), destination/'ideal_tracker.parquet', compression=COMPRESSION)
+    pd.DataFrame(rows).to_parquet(destination/'provenance.parquet', index=False, compression=COMPRESSION)
+
+
+def run(args):
+    import numpy as np
+    import pandas as pd
+    import pyarrow.parquet as pq
+    from analysis.flavour.s6.gfaser import write_gfaser
+    from analysis.flavour.s6.prepare import require_freeze
+    require_freeze(args.root, 'test')
+    config = json.loads((args.root/'conditions.json').read_text())
+    plan = json.loads((args.root/'plan.json').read_text())
+    geometry = json.loads(Path(plan['geometry']).read_text())
+    base = args.root/args.scope
+    manifest = pd.read_parquet(base/'manifest.parquet')
+    if args.scope == 'transport':
+        chosen = manifest.transport_chunk.eq(args.task)
+    else:
+        groups = manifest[['run', 'chunk']].drop_duplicates().reset_index(drop=True)
+        spec = groups.iloc[args.task]
+        chosen = manifest.run.eq(spec.run) & manifest.chunk.eq(spec.chunk)
+    metadata = manifest[chosen].copy()
+    records = pq.read_table(base/'particles.parquet').take(np.flatnonzero(chosen)).to_pylist()
+    if args.scope == 'generator':
+        import hashlib
+        family = [int.from_bytes(hashlib.blake2b((p+':'+str(r)).encode(), digest_size=8).digest(), 'little')
+                  for p, r in zip(metadata.source_path, metadata.source_row)]
+        metadata['family_hi'], metadata['family_lo'] = np.asarray(family, dtype='uint64'), np.uint64(20261114)
+    scratch = Path(os.environ.get('PINPOINT_S6_SCRATCH', '/tmp'))/f'{args.scope}_{args.task:04d}'
+    scratch.mkdir(parents=True, exist_ok=True)
+    # Write ROOT vectors using matching LCG107 PyROOT in a separate process.
+    particles = scratch/'particles.json'
+    particles.write_text(json.dumps(records))
+    input_file = scratch/'input.root'
+    lcg107(['python3', '-c', 'import json,sys; from analysis.flavour.s6.gfaser import write_gfaser; '
+        'write_gfaser(json.load(open(sys.argv[1])),sys.argv[2])', particles, input_file])
+    variants = transport_variants(config) if args.scope == 'transport' else [transport_variants(config)[0]]
+    for variant in variants:
+        if variant['helicity'] is not None and not metadata.label.eq(2).any():
+            continue
+        destination = base/'shards'/variant['name']/f'{args.task:04d}'
+        if (destination/'summary.json').exists():
+            continue
+        tick = time.monotonic()
+        output = scratch/(variant['name']+'.root')
+        macro = scratch/(variant['name']+'.mac')
+        macro.write_text(macro_text(input_file, output, args.root/'g4/macros/geom.mac', len(metadata),
+            field=variant['field_T'], seed=20261114+args.task*31))
+        env = dict(os.environ, PINPOINT_USE_INPUT_Z='1', PINPOINT_W_DENSITY_SCALE=str(variant['density']))
+        if variant['helicity'] is not None:
+            env['PINPOINT_TAU_HELICITY'] = str(variant['helicity'])
+        log_path = args.root/'logs'/f'{args.scope}_{args.task:04d}_{variant["name"]}.g4.log'
+        with log_path.open('w') as log:
+            lcg107([args.root/'g4/pinpoint_s6', macro], cwd=scratch, env=env, stdout=log, stderr=subprocess.STDOUT)
+        convert_response(output, destination, metadata, geometry)
+        output_bytes = output.stat().st_size
+        output.unlink()
+        write_json(destination/'summary.json', {'status': 'complete', 'task': args.task, 'events': len(metadata),
+            'variant': variant, 'seconds': time.monotonic()-tick, 'transient_ROOT_bytes': output_bytes,
+            'ROOT_retained': False, 'fixed_input_vertices': True})
+        print(json.dumps({'scope': args.scope, 'task': args.task, 'variant': variant['name'],
+            'events': len(metadata), 'seconds': time.monotonic()-tick}), flush=True)
+    shutil.rmtree(scratch)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['build', 'smoke'])
+    parser.add_argument('command', choices=['build', 'smoke', 'prepare', 'run'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--g4-source', type=Path, default=G4_SOURCE)
     parser.add_argument('--cpus', type=int, default=4)
+    parser.add_argument('--events-per-task', type=int, default=16)
+    parser.add_argument('--task', type=int, default=0)
+    parser.add_argument('--scope', choices=['transport', 'generator'], default='transport')
     args = parser.parse_args()
     globals()[args.command](args)
 

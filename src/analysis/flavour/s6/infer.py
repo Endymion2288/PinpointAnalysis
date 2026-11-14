@@ -170,6 +170,9 @@ def predict(dataset, candidates, models, membership, args, health=False):
         'probability_std': {k: p.std(0).tolist() for k, p in output.items()}}
     del loader
     dataset.native.close()
+    if any(not v['healthy'] for v in samples.values()):
+        write_json(args.root/'audit'/f'unhealthy_{socket.gethostname()}_{os.getpid()}.json', report)
+        raise RuntimeError('inference activation health requires architecture/runtime review')
     return output, auxiliary, report
 
 

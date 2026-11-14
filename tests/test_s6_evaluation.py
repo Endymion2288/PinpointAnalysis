@@ -1,0 +1,47 @@
+"""Independent statistical and generator-bridge edge cases for final evaluation."""
+import unittest
+
+import numpy as np
+
+from analysis.flavour.s6.bootstrap import weights
+from analysis.flavour.s6.evaluate import FixedCache, exact_interval, reliability
+from analysis.flavour.s6.gfaser import legacy_record
+
+
+class FinalEvaluationTest(unittest.TestCase):
+    def test_prior_preserved_in_each_resample(self):
+        y = np.array([0, 0, 1, 2, 3, 3])
+        prior = np.array([.1, .6, .01, .29])
+        w = weights(y, prior, [1, 3, 2, 4, 0, 2])
+        np.testing.assert_allclose(np.bincount(y, weights=w), prior)
+
+    def test_frozen_selection_counts_and_exact_zero(self):
+        y = np.arange(4)
+        p = np.array([[.7, .1, .1, .1], [.1, .7, .1, .1], [.1, .1, .7, .1], [.25]*4])
+        point = [{'target_FPR': .01, 'classes': [{'threshold': .5}]*4}]
+        cache = FixedCache(y, p, point)
+        self.assertEqual(cache.final[0].tolist(), [0, 1, 2, 4])
+        self.assertEqual(cache.counts(np.ones(4))[0]['classes'][0]['background_passed'], 0)
+        interval = exact_interval(0, 100)
+        self.assertEqual(interval[0], 0.)
+        self.assertAlmostEqual(interval[1], 1-.025**.01)
+
+    def test_reliability_perfect_uniform_counts(self):
+        p = np.eye(4)
+        result = reliability(np.arange(4), p, np.ones(4), 20)
+        self.assertEqual(result['top_label']['ECE'], 0.)
+        self.assertEqual(sum(result['top_label']['counts']), 4)
+
+    def test_legacy_ancestry_and_units(self):
+        event = {'pdgc': [16, 1000741840, 15, 211], 'status': [0, 0, 1, 1],
+            'firstMother': [-1, -1, 0, 1], 'px': [0., 0., 1., -1.], 'py': [0.]*4,
+            'pz': [500., 0., 300., 200.], 'E': [500., 170., 301., 201.]}
+        record = legacy_record(event, [10., -20., -2200.])
+        self.assertEqual((record['intType'], record['neu'], record['fspl']), (2, 16, 15))
+        self.assertEqual((record['vx'], record['vy'], record['vz']), (.01, -.02, -2.2))
+        self.assertEqual(record['scatteringType'], -1)
+        self.assertTrue(np.isnan(record['XSec']))
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -147,10 +147,12 @@ def freeze(args):
     calibrators = {name: json.loads((args.root/'calibration'/f'{name}.json').read_text()) for name in model_names(campaign)}
     conditions = json.loads(args.conditions.read_text())
     policy = json.loads((args.root/'inference_policy.json').read_text())
+    evaluation = json.loads(args.evaluation.read_text())
     plan = json.loads((args.root/'plan.json').read_text())
     result = {'stage': 'S6', 'status': 'frozen', 'UTC': datetime.now(timezone.utc).isoformat(),
         'calibration_and_validation_rules_frozen': True, 'test_response_opened_before_freeze': False,
         'candidates': campaign, 'calibrators': calibrators, 'inference_policy': policy, 'conditions': conditions,
+        'evaluation': evaluation,
         'sample_scope': {'selection': plan['selection'], 'counts': plan['counts'], 'tasks': plan['tasks']},
         'statistics': campaign['bootstrap'], 'selection': campaign['selection'],
         'interval_scope': 'pointwise family-connected chunk bootstrap conditional on frozen checkpoints, calibration and thresholds; seed spread separate',
@@ -168,6 +170,7 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--conditions', type=Path)
+    parser.add_argument('--evaluation', type=Path)
     parser.add_argument('--task', type=int, default=0)
     args = parser.parse_args()
     globals()[args.command](args)
