@@ -161,9 +161,70 @@ def migration(args):
     save(fig, root, 'energy_score_response')
 
 
+def physical(args):
+    root = args.root
+    primary = root/'evaluation/models/mae3_100k_ensemble'
+    results = [json.loads((p/'result.json').read_text()) for p in primary.iterdir() if (p/'result.json').exists()]
+    results.sort(key=lambda v: v['prior'][2])
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+    for target, label in [('0.01', 'Validation 1% background cut'), ('0.001', 'Validation 0.1% background cut')]:
+        for ax, metric, ylabel in zip(axes, ['efficiency', 'purity'], ['Tau efficiency', 'Tau purity']):
+            names = f'class_2_{metric}@{target}'
+            x = [v['prior'][2] for v in results]
+            y = [v['fixed'][names] for v in results]
+            lo, hi = np.array([v['intervals'][names]['CI95'] for v in results]).T
+            ax.vlines(x, lo, hi)
+            ax.plot(x, y, 'o-', label=label)
+            ax.set(xscale='log', xlabel='Assumed tau prior', ylabel=ylabel, ylim=(0, 1))
+            ax.grid(alpha=.25)
+    axes[0].legend(fontsize=8)
+    fig.suptitle('Frozen independent test: fixed prior scenarios and block intervals')
+    save(fig, root, 'tau_prior_scenarios')
+    balanced = json.loads((primary/'balanced/result.json').read_text())
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    for ax, prefix, title in zip(axes, ['energy_GeV_', 'vertex_z_mm_', 'pixel_occupancy_'],
+        ['Incoming energy [GeV]', 'Interaction vertex z [mm]', 'Pixel channel occupancy']):
+        rows = [v for v in balanced['conditional'] if v['stratum'].startswith(prefix)]
+        y = [v['fixed']['class_2_efficiency@0.01'] for v in rows]
+        intervals = [v['fixed_block_intervals']['class_2_efficiency@0.01']['CI95'] for v in rows]
+        lo, hi = np.array(intervals, dtype=float).T
+        ax.vlines(np.arange(len(rows)), lo, hi)
+        ax.plot(np.arange(len(rows)), y, 'o')
+        labels = [v['stratum'][len(prefix):].replace('1000000000', 'inf') for v in rows]
+        ax.set(xticks=np.arange(len(rows)), xticklabels=labels, ylim=(0, 1), xlabel=title,
+            ylabel='Tau efficiency' if ax is axes[0] else None)
+        ax.tick_params(axis='x', labelrotation=40)
+        ax.grid(alpha=.25)
+    fig.suptitle('Fixed validation 1% background cut; conditional block intervals')
+    save(fig, root, 'tau_physical_conditions')
+    paths = sorted((root/'evaluation/conditions/transport').glob('*.json'))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    rows = [json.loads(p.read_text()) for p in paths if p.stem != 'nominal']
+    for ax, name, label in zip(axes, ['balanced_accuracy', 'class_2_efficiency@0.01'],
+        ['Balanced-accuracy change', 'Tau-efficiency change']):
+        values = [r['scenarios']['balanced']['metrics'][name] for r in rows]
+        if values:
+            ax.hlines(np.arange(len(rows)), [v['CI95'][0] for v in values], [v['CI95'][1] for v in values])
+            ax.plot([v['delta'] for v in values], np.arange(len(rows)), 'o')
+        ax.set(yticks=np.arange(len(rows)), yticklabels=[r['condition'] for r in rows], xlabel=label)
+        ax.axvline(0, color='gray', ls='--')
+    fig.suptitle('Actual G4 transport proxies; nominal calibration and cuts fixed')
+    save(fig, root, 'transport_conditions')
+    generator = json.loads((root/'evaluation/conditions/generator_comparison.json').read_text())
+    delta = generator['scenarios']['balanced']['NUX_minus_Standard']
+    names = ['balanced_accuracy', 'NLL', 'class_2_efficiency@0.01']
+    fig, ax = plt.subplots(figsize=(7, 3.5))
+    ax.hlines(range(3), [delta[n]['CI95'][0] for n in names], [delta[n]['CI95'][1] for n in names])
+    ax.plot([delta[n]['delta'] for n in names], range(3), 'o')
+    ax.axvline(0, color='gray', ls='--')
+    ax.set(yticks=range(3), yticklabels=['Balanced accuracy', 'NLL', 'Tau efficiency at frozen 1% cut'],
+        xlabel='NUX minus Standard (absolute)', title='Matched benchmark, independent generator source-file intervals')
+    save(fig, root, 'generator_comparison')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['render', 'migration'])
+    parser.add_argument('command', choices=['render', 'migration', 'physical'])
     parser.add_argument('--root', type=Path, required=True)
     args = parser.parse_args()
     globals()[args.command](args)
