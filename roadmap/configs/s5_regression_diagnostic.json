@@ -1,0 +1,11 @@
+{
+  "stage": "S5",
+  "scope": "train-only regularization of a converged transverse readout, diagnostic only",
+  "experiments": [
+    {
+      "name": "s5_regression_diagnostic_mlp",
+      "source": "s5_kinematics_standard_mlp_n10000_s42",
+      "ridge_penalties": [0.001, 0.01, 0.1, 1.0, 10.0]
+    }
+  ]
+}

@@ -5,9 +5,16 @@ import numpy as np
 import pandas as pd
 
 from analysis.flavour.s5.evaluate import auxiliary_quality
+from analysis.flavour.s5.regression_diagnostic import ridge_fit, ridge_predict
 
 
 class ComponentIntervalTest(unittest.TestCase):
+    def test_converged_readout_recovers_signed_direction_with_constant_feature(self):
+        feature = np.array([[-2., 1.], [-1., 1.], [1., 1.], [2., 1.]])
+        target = np.column_stack([2*feature[:, 0]+1, -feature[:, 0]-.5])
+        fitted = ridge_fit(feature, target, [1e-8, 1e-8])
+        np.testing.assert_allclose(ridge_predict(fitted, np.array([[3., 1.]])), [[7., -3.5]], atol=1e-7)
+
     def test_masked_rows_do_not_enter_paired_block_denominator(self):
         frame = pd.DataFrame({
             'vertex_mm': [[0., 0., 0.], [999., 0., 0.], [420., 0., 0.]],

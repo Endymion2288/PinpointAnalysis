@@ -347,7 +347,10 @@ def run(args):
             continue
         pairs.append((group, index[(group, 'direct4', seed)], index[(group, variant, seed)]))
     for a, b in [('vertex', 'relative'), ('relative', 'relative_objects'), ('vertex_kinematics', 'kinematics_relative'),
-                 ('absolute_coordinates', 'relative'), ('kinematics_absolute', 'kinematics_relative')]:
+                 ('absolute_coordinates', 'relative'), ('kinematics_absolute', 'kinematics_relative'),
+                 ('vertex_kinematics', 'kinematics_standard_linear'),
+                 ('vertex_kinematics', 'kinematics_standard_mlp'),
+                 ('kinematics_standard_linear', 'kinematics_standard_mlp')]:
         for group in sorted({g for g, v, s in index}):
             for seed in [17, 42, 2026]:
                 if (group, a, seed) in index and (group, b, seed) in index:
