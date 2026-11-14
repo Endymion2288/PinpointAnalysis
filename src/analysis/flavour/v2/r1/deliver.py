@@ -77,7 +77,11 @@ def evaluation_config(root):
         name = f'final_{family.lower()}_t3_s42_without_tracker'
         model(name, family, 'T3', 42, 'without_tracker')
         pair(name, f'final_{family.lower()}_t3_s42', 'retrained tracker incremental value', geometry=True)
-    best = ranks['ranking'][0]['family'].lower()
+    for task in ['t3', 't4']:
+        name = f'control_b1_cnn_{task}_s42'
+        model(name, 'B1-CNN', task.upper(), 42, 'cnn_cost_control')
+        pair(name, f'final_b1_{task}_s42', 'plain CNN versus ResNet with the B1-selected recipe', geometry=True)
+    best = next(row['family'].lower() for row in ranks['ranking'] if row['family'] in ['B2', 'B3', 'B4'])
     pair(f'final_{best}_t3_s42', 'final_b1_t3_s42', 'native versus projection homologous baseline', geometry=True)
     write_json(root/'evaluation_config.json', {'models': models, 'pairs': pairs,
         'Cal_A_Cut_B_Confirm_payload_read': False})

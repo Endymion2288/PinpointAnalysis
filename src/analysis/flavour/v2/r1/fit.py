@@ -55,6 +55,8 @@ def run(args):
             torch.manual_seed(42)
             np.random.seed(42)
             config = recipe(args.r0, family, task, compile_local=args.compile_local)
+            if family == 'B1':
+                config['cnn_variant'] = args.cnn_variant
             config['precision'] = 'BF16_encoder_FP32_head' if args.bf16 else 'FP32'
             with tempfile.TemporaryDirectory(prefix='pinpoint-r1-fit-') as scratch:
                 data = R1Dataset(args.r0/'micro_data', 'train', config, cache_dir=scratch)
@@ -157,6 +159,7 @@ def main():
     parser.add_argument('--max-steps', type=int, default=256)
     parser.add_argument('--compile-local', action='store_true')
     parser.add_argument('--bf16', action='store_true')
+    parser.add_argument('--cnn-variant', choices=['resnet', 'base'], default='resnet')
     run(parser.parse_args())
 
 

@@ -33,16 +33,27 @@ class ResidualBlock(nn.Module):
 
 
 class ProjectionEncoder(nn.Module):
-    def __init__(self, image, width=16):
+    def __init__(self, image, width=16, variant='resnet'):
         super().__init__()
         self.image = image
-        self.stem = nn.Sequential(nn.Conv2d(4, width, 7, 4, 3, bias=False), nn.GroupNorm(8, width), nn.SiLU())
-        layers = []
-        cin = width
-        for stage in range(4):
-            cout = width*2**stage
-            layers.extend([ResidualBlock(cin, cout, 1 if stage == 0 else 2), ResidualBlock(cout, cout)])
-            cin = cout
+        if variant == 'resnet':
+            self.stem = nn.Sequential(nn.Conv2d(4, width, 7, 4, 3, bias=False), nn.GroupNorm(8, width), nn.SiLU())
+            layers = []
+            cin = width
+            for stage in range(4):
+                cout = width*2**stage
+                layers.extend([ResidualBlock(cin, cout, 1 if stage == 0 else 2), ResidualBlock(cout, cout)])
+                cin = cout
+        elif variant == 'base':
+            self.stem = nn.Identity()
+            layers = []
+            cin = 4
+            for cout in [24, 48, 72, 96]:
+                layers.extend([nn.Conv2d(cin, cout, 3, 2, 1, bias=False),
+                               nn.GroupNorm(8, cout), nn.SiLU()])
+                cin = cout
+        else:
+            raise ValueError(f'unknown projection CNN variant: {variant}')
         self.layers = nn.Sequential(*layers)
         self.norm = nn.LayerNorm(4*cin+8)
         self.output_dim = 4*cin+8
@@ -70,7 +81,8 @@ class LateFusion(nn.Module):
         super().__init__()
         self.family = config['family']
         if self.family == 'B1':
-            self.backbone = ProjectionEncoder(config['image'], config.get('cnn_width', 16))
+            self.backbone = ProjectionEncoder(config['image'], config.get('cnn_width', 16),
+                                              config.get('cnn_variant', 'resnet'))
             size = self.backbone.output_dim
         else:
             dim = config.get('dim', 64)

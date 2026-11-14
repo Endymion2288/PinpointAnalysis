@@ -40,6 +40,8 @@ H100整卡和MIG使用相同`nvidia.com/gpu.product`，但resource分别为`nvid
 
 CLI保留显式`--flavor`，因为平台资源键不同。选择flavor时检查当前可观察到的等待原因及已有吞吐，必要时迁移尚未开始的任务；不把CLI默认`h100-47gb`解释为必须等待该设备。集群node列表不可访问时，使用本namespace的Pod、配额和事件，不推断全平台空闲卡。
 
+2026-11-14 22:17 UTC，第二个MIG Pod的真实server dry-run被`namespace-gpu-quota/check-total-gpu-units`拒绝：`Total GPU units in namespace xcheng cannot exceed the quota of 1 units.`当前有效限制是所有GPU资源合计1单位，MIG也计入。标准ResourceQuota中的`nvidia.com/gpu` used=0不能据此推断还能增加MIG；证据为`R1/audit/k13_quota_rejection_stage245.json`。该次Job未创建、allocation为0。现有MIG任务完成后才迁移合适的排队任务，其余训练继续用Condor。
+
 以下是已实现的提交形式，name必须对应新的唯一尝试；同一family/seed仅允许一个writer。示例用于展示接口，不应为已经运行的配置另建副本：
 
 ```bash
@@ -56,7 +58,7 @@ Condor提交使用相同入口，替换backend并按profile指定CPU/RAM/deadlin
 
 ## 4. 已执行的恢复与资源记录
 
-R1原CNN任务1582878及无tracker控制1582879在V100启动失败，均已到终态；失败目录和日志保留，新增重试1582881、1582882使用SM75下限且不限定型号。记录为`R1/audit/v100_kernel_recovery_a1.json`，不得将这两次失败计作模型学习或性能证据。
+R1原CNN任务1582878及无tracker控制1582879在V100启动失败，均已到终态；失败目录和日志保留，恢复记录为`R1/audit/v100_kernel_recovery_a1.json`。重试1582881、1582882在Idle且零次启动时移除，尝试Kubeflow迁移；上述实时quota阻止迁移后，重新提交1582883、1582884。均使用SM75下限且不限定型号；Idle移除与quota拒绝均为零allocation。迁移证据为`R1/audit/cnn_queue_migration_stage245.json`。22:33 UTC读回1582883已在T4执行，1582884仍在排队。不得将启动失败或未分配作业计作模型学习或性能证据。
 
 主运行目录：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1`。提交快照在`runtime/*.submission.json`，各族配置在`configs/`，训练记录在`experiments/*/manifest.json`。Kubeflow日志同步到EOS；已清理Pod使用已保存的真实终态快照记账。失败attempt也用于关联runtime GPU名称，避免其成本丢失。
 

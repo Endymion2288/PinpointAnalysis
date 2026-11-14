@@ -109,17 +109,19 @@ class ObservationTests(unittest.TestCase):
         torch.testing.assert_close(model(batch), torch.zeros_like(initial))
 
     def test_absent_projection_has_finite_bounded_backward(self):
-        torch.manual_seed(42)
         torch.set_num_threads(1)
-        model = ProjectionEncoder({'height': 64, 'width': 64}, width=16)
         # One measured view, three missing views, including an empty event.
         batch = {'label': torch.tensor([0, 1]), 'projection_values': torch.tensor([1.]),
             'projection_event': torch.tensor([0]), 'projection_indices': torch.tensor([32*64+32])}
-        result = model(batch)
-        result[:, 0].sum().backward()
-        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True)
-        self.assertTrue(torch.isfinite(norm))
-        self.assertLess(norm.item(), 10000.)
+        for variant in ['resnet', 'base']:
+            with self.subTest(variant=variant):
+                torch.manual_seed(42)
+                model = ProjectionEncoder({'height': 64, 'width': 64}, width=16, variant=variant)
+                result = model(batch)
+                result[:, 0].sum().backward()
+                norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True)
+                self.assertTrue(torch.isfinite(norm))
+                self.assertLess(norm.item(), 10000.)
 
 
 class MetricTests(unittest.TestCase):

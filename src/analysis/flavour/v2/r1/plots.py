@@ -16,7 +16,7 @@ from analysis.flavour.v2.r1.metrics import three_from_four, three_targets
 
 
 LABELS = ['Electron CC', 'Muon CC', 'Tau CC', 'NC']
-COLORS = dict(zip(['B0', 'B1', 'B2', 'B3', 'B4', 'B4-MAE'], plt.get_cmap('tab10').colors[:6]))
+COLORS = dict(zip(['B0', 'B1', 'B2', 'B3', 'B4', 'B4-MAE', 'B1-CNN'], plt.get_cmap('tab10').colors[:7]))
 
 
 def save(figure, root, name):
@@ -58,7 +58,7 @@ def results(root):
     entries = [e for e in config['models'] if e.get('kind', 'main') == 'main' and e['seed'] == 42]
     frames = {e['name']: pd.read_parquet(root/e['predictions']) for e in entries}
     figure, axes = plt.subplots(1, 3, figsize=(14, 4), constrained_layout=True)
-    families = list(COLORS)
+    families = list(COLORS)[:6]
     for axis, domain, title in zip(axes, ['all', 'pixel_centered', 'large_scintillator'],
                                    ['All accepted events', 'Pixel-centered domain', 'Large scintillator domain']):
         for task, marker, shift in [('T3', 'o', -.12), ('T4', 's', .12)]:
@@ -101,6 +101,54 @@ def results(root):
         figure.suptitle(f'{task} training: common non-tau ROC and PR, seed 42, uniform three-class prior')
         save(figure, root, f'r1_{task.lower()}_roc_pr')
 
+    figure, axes = plt.subplots(2, 4, figsize=(15, 7), constrained_layout=True)
+    for entry in [e for e in entries if e['task']=='T4']:
+        frame = frames[entry['name']]
+        p = frame[probability_columns(frame)].to_numpy()
+        for c, label in enumerate(LABELS):
+            fpr, tpr, _ = roc_curve(frame.label.eq(c), p[:, c])
+            precision, recall, _ = precision_recall_curve(frame.label.eq(c), p[:, c])
+            axes[0, c].plot(fpr, tpr, color=COLORS[entry['family']], label=entry['family'])
+            axes[1, c].plot(recall, precision, color=COLORS[entry['family']])
+            axes[0, c].set(title=label, xscale='log', xlim=(1e-4, 1), ylim=(0, 1),
+                           xlabel='Background acceptance', ylabel='Signal efficiency')
+            axes[1, c].set(xlim=(0, 1), ylim=(0, 1), xlabel='Recall', ylabel='Benchmark precision')
+    axes[0, 0].legend(fontsize=8)
+    for axis in axes.flat:
+        axis.grid(alpha=.2)
+    figure.suptitle('Full four-class one-versus-rest ROC and PR; seed 42, uniform four-class prior')
+    save(figure, root, 'r1_four_class_roc_pr')
+
+    figure, axes = plt.subplots(2, len(families), figsize=(16, 6), constrained_layout=True)
+    for column, family in enumerate(families):
+        for row, task in enumerate(['T3', 'T4']):
+            axis = axes[row, column]
+            entry = next((e for e in entries if e['family']==family and e['task']==task), None)
+            if entry is None:
+                axis.set_visible(False)
+                continue
+            frame = frames[entry['name']]
+            p = frame[probability_columns(frame)].to_numpy()
+            y = frame.label.to_numpy()
+            labels = ['e CC', 'mu CC', 'tau CC', 'NC']
+            if task=='T3':
+                keep = y!=2
+                y, p = three_targets(y[keep]), p[keep]
+                labels = ['e CC', 'mu CC', 'NC']
+            k = p.shape[1]
+            matrix = np.bincount(y*k+p.argmax(1), minlength=k*k).reshape(k, k)
+            normalized = matrix/np.maximum(matrix.sum(1, keepdims=True), 1)
+            axis.imshow(normalized, vmin=0., vmax=1., cmap='Blues')
+            for i in range(k):
+                for j in range(k):
+                    axis.text(j, i, f'{normalized[i,j]:.2f}', ha='center', va='center',
+                              color='white' if normalized[i,j]>.55 else 'black', fontsize=7)
+            axis.set(title=f'{family} {task}', xticks=range(k), yticks=range(k),
+                     xticklabels=labels, yticklabels=labels, xlabel='Predicted class', ylabel='True class')
+            axis.tick_params(axis='both', labelsize=7)
+    figure.suptitle('Row-normalized argmax confusion; T3 excludes true tau, T4 includes all events; seed 42')
+    save(figure, root, 'r1_confusion')
+
     figure, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
     for entry in [e for e in entries if e['task'] == 'T4']:
         frame = frames[entry['name']]
@@ -140,7 +188,7 @@ def results(root):
 
     costs = []
     figure, axis = plt.subplots(figsize=(12, 5), constrained_layout=True)
-    for entry in entries:
+    for entry in [e for e in config['models'] if e['seed']==42 and e.get('kind', 'main') in ['main', 'cnn_cost_control']]:
         manifest = json.loads((root/'experiments'/entry['name']/'manifest.json').read_text())
         wall = manifest['wall_seconds']
         ba = manifest['metrics']['T3']['BA']

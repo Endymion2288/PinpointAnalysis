@@ -1,6 +1,7 @@
 """Matched-domain R1 development tables, paired block intervals and tau contamination."""
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import time
@@ -124,6 +125,7 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--replicates', type=int, default=400)
+    parser.add_argument('--workers', type=int, default=1)
     args = parser.parse_args()
     started = time.perf_counter()
     output = args.root/'evaluation'
@@ -162,14 +164,18 @@ def main():
     cache = {}
     groups = {}
     entries = {e['name']: e for e in config['models']}
+    needed = sorted({(pair[side], pair.get('domain', 'all'))
+                     for pair in config.get('pairs', []) for side in ['a', 'b']})
+    def resample(key):
+        name, domain = key
+        mask = np.ones(len(catalog), dtype=bool) if domain == 'all' else catalog[domain].to_numpy(dtype=bool)
+        compute = scalar_summary(frames[name].loc[mask].reset_index(drop=True))
+        return key, (compute(), np.asarray([compute(w[mask]) for w in weights]))
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        for key, value in executor.map(resample, needed):
+            cache[key] = value
     for pair in config.get('pairs', []):
         domain = pair.get('domain', 'all')
-        mask = np.ones(len(catalog), dtype=bool) if domain == 'all' else catalog[domain].to_numpy(dtype=bool)
-        for name in [pair['a'], pair['b']]:
-            key = (name, domain)
-            if key not in cache:
-                compute = scalar_summary(frames[name].loc[mask].reset_index(drop=True))
-                cache[key] = (compute(), np.asarray([compute(w[mask]) for w in weights]))
         left, right = cache[(pair['a'], domain)], cache[(pair['b'], domain)]
         comparisons.append({**pair, 'domain': domain, 'metrics': interval(left[0]-right[0], left[1]-right[1])})
         a, b = entries[pair['a']], entries[pair['b']]
@@ -202,6 +208,7 @@ def main():
         'mean_seed_pairs': mean_seed_pairs,
         'seed_spread': spread, 'bootstrap': design, 'replicates': args.replicates,
         'benchmark_prior': {'T3': [1/3]*3, 'T4': [.25]*4},
+        'bootstrap_workers': args.workers,
         'scope': 'development Tune; raw uncalibrated probabilities; descriptive score-selected operating points',
         'Cal_A_Cut_B_Confirm_payload_read': False, 'seconds': time.perf_counter()-started})
     print(json.dumps({'models': len(frames), 'comparisons': len(comparisons), 'status': 'complete'}), flush=True)

@@ -24,6 +24,8 @@ def main():
           and preparation['all_event_family_keys_exact'] and preparation['PE_conserved'])
     health = json.loads((root/'fit/all_health_k10/summary.json').read_text())
     check('all_eight_real_learning_gates', health['status']=='complete' and len(health['cases'])==8)
+    cnn_health = json.loads((root/'fit/cnn_cost_control/summary.json').read_text())
+    check('plain_CNN_real_learning_gates', cnn_health['status']=='complete' and len(cnn_health['cases'])==2)
     contract = json.loads((root/'campaign.json').read_text())
     for family in contract['families']:
         for task in contract['tasks']:
@@ -33,6 +35,8 @@ def main():
                 seconds = record['counters']['train_seconds']
                 check(f'{name}_complete', record['status']=='complete' and seconds>=300., train_seconds=seconds)
     config = json.loads((root/'evaluation_config.json').read_text())
+    check('plain_CNN_T3_T4_cost_references', {e['task'] for e in config['models']
+          if e.get('kind')=='cnn_cost_control'}=={'T3', 'T4'})
     catalog = pd.read_parquet(root/'data/catalog.parquet')
     tune = catalog[catalog.split.eq('validation')]
     exposure_rows = []
@@ -57,6 +61,13 @@ def main():
             target = record['config']['total_compute_seconds']
             difference = record['wall_seconds']/target-1.
             check(entry['name']+'_compute_alignment', abs(difference)<=.05, relative_difference=difference)
+            reference_name = record['config']['compute_reference']
+            reference = json.loads((root/'experiments'/reference_name/'manifest.json').read_text())
+            check(entry['name']+'_same_allocation', bool(record.get('allocation_id'))
+                  and record['allocation_id']==reference.get('allocation_id')
+                  and record['GPU']==reference['GPU'],
+                  allocation_id=record.get('allocation_id'), reference=reference_name)
+            check(entry['name']+'_reference_budget', np.isclose(target, reference['wall_seconds']))
         check(entry['name']+'_finite_activations', all(v['finite'] for h in record['health'] for v in h['activations'].values()))
         groups = record['health'][0]['gradient_squared_norms']
         active = [g for g in groups if not (g=='tracker' and entry.get('kind')=='without_tracker')]
@@ -75,6 +86,13 @@ def main():
     evaluation = json.loads((root/'evaluation/results.json').read_text())
     check('400_paired_physical_block_bootstraps', evaluation['status']=='complete' and evaluation['replicates']==400)
     ranking = json.loads((root/'architecture_ranking.json').read_text())
+    check('Scratch_ranking_and_expansion', set(ranking['expanded_families'])==
+          {r['family'] for r in ranking['ranking'][:2]}|{'B4'})
+    model_keys = {(e['family'], e['task'], e['seed'], e.get('kind', 'main')) for e in config['models']}
+    for family in contract['families']:
+        for seed in ([17,42,2026] if family in ranking['expanded_families'] else [42]):
+            check(f'{family}_s{seed}_complete_tasks', all((family, task, seed, kind) in model_keys
+                  for task, kind in [('T3', 'main'), ('T4', 'main'), ('T3', 'matched_compute')]))
     spread = {(row['family'], row['task']): row for row in evaluation['seed_spread']}
     for family in ranking['expanded_families']+['B0']:
         for task in ['T3', 'T4']:
@@ -87,6 +105,7 @@ def main():
         check(entry['name']+'_all_stress_conditions', set(report.get('conditions', {}))==
               {'nominal', 'noise', 'combined', 'remove_pixel', 'remove_tracker'})
     figures = ['r1_common_three', 'r1_t3_roc_pr', 'r1_t4_roc_pr', 'r1_tau_roc_pr',
+               'r1_four_class_roc_pr', 'r1_confusion',
                'r1_raw_scores', 'r1_resource_pareto', 'r1_learning_curves', 'r1_stress']
     for name in figures:
         check(name+'_figures', all((root/'figures'/f'{name}.{ext}').is_file() for ext in ['pdf', 'png']))

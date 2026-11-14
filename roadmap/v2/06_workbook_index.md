@@ -296,3 +296,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 242 | [r1 b4 selection and reference costs](../../workbook/2026-11-14_stage242_r1_b4_selection_and_reference_costs.md) |
 | 243 | [r1 all screens and full training](../../workbook/2026-11-14_stage243_r1_all_screens_and_full_training.md) |
 | 244 | [roadmap delivery and gpu compatibility](../../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md) |
+| 245 | [r1 cost control and delivery dependencies](../../workbook/2026-11-14_stage245_r1_cost_control_and_delivery_dependencies.md) |
