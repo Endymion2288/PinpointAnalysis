@@ -97,7 +97,11 @@ def run(args):
     if options['num_workers']:
         options.update(multiprocessing_context='spawn', worker_init_fn=init_worker, prefetch_factor=1, persistent_workers=True)
     loader = DataLoader(train, batch_sampler=sampler, **options)
-    val_loader = DataLoader(validation, batch_sampler=validation_sampler, **options)
+    validation_options = {**options, 'num_workers': config.get('validation_workers', options['num_workers'])}
+    if not validation_options['num_workers']:
+        for key in ['multiprocessing_context', 'worker_init_fn', 'prefetch_factor', 'persistent_workers']:
+            validation_options.pop(key, None)
+    val_loader = DataLoader(validation, batch_sampler=validation_sampler, **validation_options)
     model = build_model(config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config.get('weight_decay', .01))
     total_steps = len(sampler)*config['epochs']

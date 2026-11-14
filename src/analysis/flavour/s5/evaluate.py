@@ -280,30 +280,36 @@ def run(args):
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         computed = list(executor.map(lambda entry: calculate(entry, common, weights, reference), entries))
     results = {row[0]: row for row in computed}
-    index = {(row[2]['config'].get('variant'), row[2]['config'].get('seed')): row[0] for row in entries}
+    # Four-pass screening and longer confirmation must never share a control.
+    def cohort(config):
+        return config.get('analysis_cohort', f"passes{config['epochs']}_labels{config['label_budget']}")
+    index = {(cohort(row[2]['config']), row[2]['config'].get('variant'), row[2]['config'].get('seed')): row[0] for row in entries}
+    if len(index) != len(entries):
+        raise ValueError('ambiguous cohort/variant/seed in evaluation matrix')
     pairs = []
-    for variant, seed in index:
-        if variant == 'direct4' or ('direct4', seed) not in index:
+    for group, variant, seed in index:
+        if variant == 'direct4' or (group, 'direct4', seed) not in index:
             continue
-        pairs.append((index[('direct4', seed)], index[(variant, seed)]))
+        pairs.append((group, index[(group, 'direct4', seed)], index[(group, variant, seed)]))
     for a, b in [('vertex', 'relative'), ('relative', 'relative_objects'), ('vertex_kinematics', 'kinematics_relative'),
                  ('absolute_coordinates', 'relative'), ('kinematics_absolute', 'kinematics_relative')]:
-        for seed in [17, 42, 2026]:
-            if (a, seed) in index and (b, seed) in index:
-                pairs.append((index[(a, seed)], index[(b, seed)]))
+        for group in sorted({g for g, v, s in index}):
+            for seed in [17, 42, 2026]:
+                if (group, a, seed) in index and (group, b, seed) in index:
+                    pairs.append((group, index[(group, a, seed)], index[(group, b, seed)]))
     comparisons = []
-    for a, b in pairs:
+    for group, a, b in pairs:
         ra, rb = results[a], results[b]
-        comparisons.append({'a': a, 'b': b,
+        comparisons.append({'cohort': group, 'a': a, 'b': b,
             'metrics': {d: interval_report(rb[2][d]-ra[2][d], rb[3][d]-ra[3][d]) for d in ['raw', 'common_support']},
             'tau_domains': {d: tau_interval(rb[4][d]-ra[4][d], rb[5][d]-ra[5][d]) for d in ra[4]}})
     seed_means = []
-    for variant in sorted({v for v, s in index if v != 'direct4'}):
-        seeds = [s for s in [17, 42, 2026] if (variant, s) in index and ('direct4', s) in index]
+    for group, variant in sorted({(g, v) for g, v, s in index if v != 'direct4'}):
+        seeds = [s for s in [17, 42, 2026] if (group, variant, s) in index and (group, 'direct4', s) in index]
         if len(seeds) != 3:
             continue
-        rows = [(results[index[('direct4', s)]], results[index[(variant, s)]]) for s in seeds]
-        seed_means.append({'variant': variant, 'seeds': seeds, 'metrics': {d: interval_report(
+        rows = [(results[index[(group, 'direct4', s)]], results[index[(group, variant, s)]]) for s in seeds]
+        seed_means.append({'cohort': group, 'variant': variant, 'seeds': seeds, 'metrics': {d: interval_report(
             np.mean([b[2][d]-a[2][d] for a, b in rows], axis=0), np.mean([b[3][d]-a[3][d] for a, b in rows], axis=0),
             np.stack([b[2][d]-a[2][d] for a, b in rows])) for d in ['raw', 'common_support']}})
     output = args.root/'evaluation'/args.tag
