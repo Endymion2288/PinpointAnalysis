@@ -1,0 +1,80 @@
+{
+  "status": "passed",
+  "checked_UTC": "2026-11-14T17:39:34.507196+00:00",
+  "review_base_commit": "37dd763",
+  "documents_checked": 37,
+  "local_links_checked": 540,
+  "local_link_errors": [],
+  "historical_incoming_links_checked": 34,
+  "historical_anchor_errors": [],
+  "archive_checks": [
+    {
+      "file": "01_data_and_hardware.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "02_literature.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "03_models_and_experiments.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "04_execution.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "05_local_studies.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "06_s0_s1_operations.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "07_s2_operations.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "08_kubeflow.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "09_s3_operations.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "10_s3_repair.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "11_s4_pretraining.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "12_s5_physics.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "13_s6_final_evaluation.md",
+      "prose_equal_except_link_destinations": true
+    },
+    {
+      "file": "README.md",
+      "prose_equal_except_link_destinations": true
+    }
+  ],
+  "workbook_index_reports": 236,
+  "JSON_parse": "passed",
+  "AST_parse_review_script": "passed",
+  "confusion_metric_readbacks": 48,
+  "six_training_records_last_epoch_best": "passed",
+  "copied_review_JSON_equal": "passed",
+  "planned_budget_device_hours": 80,
+  "planned_reserved_partition_events": 440000,
+  "stage_dependencies": "passed",
+  "external_links_HTTP_200": 27,
+  "git_diff_check": "passed",
+  "scope": "Document/data readback checks; new training, model gains and new partition counts unmeasured"
+}

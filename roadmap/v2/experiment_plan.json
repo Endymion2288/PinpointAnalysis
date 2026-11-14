@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "document_version": "v2_2026-11-14",
+  "status": "proposed_design_not_runner_config",
+  "review_base_commit": "37dd763",
+  "review_through_workbook_stage": 236,
+  "implementation_status": "W01-W08 not implemented by this review; no new model trained or batch job submitted",
+  "accepted_foundation": {
+    "samples": "reuse existing accepted samples",
+    "source_family": "reuse accepted family keys; ledger checks research use",
+    "detector_proxy": "reuse accepted values; no new calibration prerequisite"
+  },
+  "paths": {
+    "input": "/eos/project-f/fasersim-bonn/public/pinpoint/data",
+    "g4_source": "/eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4",
+    "output": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14",
+    "condor": "~/condor/Pinpoint/flavour_v2/<stage>/",
+    "workbook": "workbook/"
+  },
+  "tasks": {
+    "T3": {
+      "outputs": [
+        "e_CC",
+        "mu_CC",
+        "NC"
+      ],
+      "training": "true non-tau only; actual retraining",
+      "open_input": "report tau forced assignments and contamination"
+    },
+    "T4": {
+      "outputs": [
+        "e_CC",
+        "mu_CC",
+        "tau_CC",
+        "NC"
+      ],
+      "training": "all four coarse classes"
+    },
+    "T3T": {
+      "outputs": [
+        "tau_gate",
+        "conditional_e_mu_NC"
+      ],
+      "training": "BCE tau on all rows plus non-tau CE; common row normalization",
+      "four_class_probability": "[(1-t)*r_e,(1-t)*r_mu,t,(1-t)*r_NC]"
+    },
+    "T4D": {
+      "outputs": [
+        "e_CC",
+        "mu_CC",
+        "tau_CC",
+        "NC",
+        "conditional_tau_e_mu_had"
+      ],
+      "training": "four-class coarse loss on all rows; conditional decay loss on valid tau labels only",
+      "unknown_decay": "retain coarse tau supervision",
+      "inference": "observation-only routing; no truth branch input"
+    }
+  },
+  "partitions": {
+    "state": "proposed_counts_availability_unmeasured",
+    "family_key": [
+      "family_hi",
+      "family_lo"
+    ],
+    "family_groups_never_split": true,
+    "train_pool": {
+      "unique_total_events": [
+        100000,
+        300000,
+        1000000
+      ],
+      "nested": true,
+      "supervised_label_budget": "count supervised unique rows only; SSL exposure separate"
+    },
+    "tune": {
+      "events": 40000,
+      "per_class": 10000,
+      "role": "development HPO and checkpoint selection; descriptive FPR metrics or internal cross-fitting"
+    },
+    "cal_a": {
+      "events": 40000,
+      "per_class": 10000,
+      "role": "temperature after candidates frozen"
+    },
+    "cut_b": {
+      "events": 160000,
+      "per_class": 40000,
+      "role": "threshold selection after freeze; never model ranking"
+    },
+    "confirm": {
+      "events": 200000,
+      "per_class": 50000,
+      "role": "new final independent confirmation",
+      "exclude_all_prior_fit_SSL_tuning_probe_manual_design_families": true
+    },
+    "total_non_train_reserved": 440000,
+    "historical_weight_reuse": "all evaluation partitions disjoint from all reused initializations training and SSL families",
+    "old_s6_test": "public historical reference; never new independent confirmation",
+    "fallback": "if unused families insufficient, independently generate hard scatters with accepted response; development continues"
+  },
+  "fairness": {
+    "architectures": "same accepted observations including tracker, same events and HPO allowance; architecture-specific LR tuning",
+    "task_comparisons": [
+      "matched non-tau event exposure, extra tau cost reported",
+      "matched total device compute, unique data and exposures reported"
+    ],
+    "initialization": "Scratch for main architecture ranking; MAE reference with incremental pretraining cost",
+    "report_costs": [
+      "device model and allocation",
+      "CPU core-hours",
+      "compilation and failures",
+      "peak memory",
+      "events/s",
+      "label and SSL unique events",
+      "actual optimizer updates and exposures"
+    ]
+  },
+  "baselines": [
+    {
+      "id": "B0",
+      "model": "summary HistGradientBoosting or MLP",
+      "tasks": [
+        "T3",
+        "T4"
+      ]
+    },
+    {
+      "id": "B1",
+      "model": "dual-projection CNN/ResNet plus tracker late fusion",
+      "tasks": [
+        "T3",
+        "T4"
+      ]
+    },
+    {
+      "id": "B2",
+      "model": "fixed-geometry ParticleNet adaptation plus tracker late fusion",
+      "tasks": [
+        "T3",
+        "T4"
+      ]
+    },
+    {
+      "id": "B3",
+      "model": "geometry ParT adaptation plus tracker late fusion",
+      "tasks": [
+        "T3",
+        "T4"
+      ]
+    },
+    {
+      "id": "B4",
+      "model": "multiscale revision3 Scratch",
+      "tasks": [
+        "T3",
+        "T4"
+      ]
+    },
+    {
+      "id": "B4_MAE",
+      "model": "multiscale revision3 MAE3 reference",
+      "tasks": [
+        "T4"
+      ],
+      "incremental_SSL_cost_required": true
+    }
+  ],
+  "seeds": {
+    "screen": 42,
+    "confirmation": [
+      17,
+      42,
+      2026
+    ],
+    "expand": "best two candidates and common baseline; retain seed-wise differences and SD"
+  },
+  "metrics": {
+    "common_non_tau": [
+      "BA3",
+      "NLL3",
+      "macro_AP3",
+      "macro_AUROC3",
+      "per-class recall and ROC/PR",
+      "tau contamination"
+    ],
+    "four_class": [
+      "BA4",
+      "NLL4",
+      "macro_AP4",
+      "macro_AUROC4"
+    ],
+    "tau_primary": "inclusive efficiency at validation-selected 1% background acceptance",
+    "tau_secondary": "0.1% background acceptance",
+    "fixed_cut_required": [
+      "actual FPR",
+      "raw counts",
+      "weighted purity",
+      "branch efficiencies",
+      "inclusive efficiency",
+      "coverage"
+    ],
+    "prior_scenarios": "explicit four-class vectors; nominal sampling is not physical flux",
+    "domains": [
+      "all",
+      "active",
+      "empty",
+      "target_envelope",
+      "pixel_centered",
+      "large_scintillator",
+      "tracker_presence",
+      "occupancy",
+      "energy",
+      "vertex_xyz",
+      "target_isotope",
+      "nu_sign",
+      "tau_branch",
+      "decay_geometry",
+      "charm",
+      "object_quality"
+    ]
+  },
+  "statistics": {
+    "bootstrap_unit": "accepted-family-connected physical blocks",
+    "development_resamples": 400,
+    "final_resamples": 2000,
+    "paired_same_resamples": true,
+    "training_seed_uncertainty": "separate from event bootstrap",
+    "calibration_cut_uncertainty": "group resample Cal-A and Cut-B and refit; also report frozen-cut conditional intervals",
+    "primary_comparisons": 2,
+    "multiple_testing": "Holm across best T3 versus common T3 and best tau versus common T4; remaining intervals pointwise/descriptive"
+  },
+  "promotion_gates": {
+    "T3": {
+      "delta_BA3_point_min": 0.02,
+      "primary_difference_95_lower_min_exclusive": 0,
+      "delta_NLL3_95_upper_max": 0.01,
+      "per_class_recall_loss_95_upper_max": 0.01
+    },
+    "tau": {
+      "delta_efficiency_at_1pct_point_min": 0.01,
+      "primary_difference_95_lower_min_exclusive": 0,
+      "BA3_loss_95_upper_max": 0.005,
+      "delta_NLL4_95_upper_max": 0.01,
+      "actual_FPR_required": true
+    },
+    "native": "matched native/coarse three-seed practical task gain or equivalent quality at significantly lower cost",
+    "objects": "improved fake-efficiency-coverage and all-event classification, including failures",
+    "subclasses": "improved merged four-class/tau performance and non-inferior common three-class quality",
+    "scope": "proposed resource allocation criteria; freeze before new Tune access, not measured gains"
+  },
+  "stages": [
+    {
+      "id": "R0",
+      "depends_on": [],
+      "work": "usage ledger, split manifests, actual representation metadata, loader profile",
+      "work_items": [
+        "W01",
+        "W02",
+        "W03"
+      ],
+      "planned_device_hours": 2
+    },
+    {
+      "id": "R1",
+      "depends_on": [
+        "R0"
+      ],
+      "work": "B0-B4 T3/T4 and MAE reference; matched collaboration domains; fixed development proxy stress",
+      "work_items": [
+        "W04",
+        "W05",
+        "W06",
+        "W08"
+      ],
+      "planned_device_hours": 18
+    },
+    {
+      "id": "R2",
+      "depends_on": [
+        "R1"
+      ],
+      "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
+      "planned_device_hours": 18
+    },
+    {
+      "id": "R3",
+      "depends_on": [
+        "R2"
+      ],
+      "work": "G1a sparse cross-window/cross-plane, G1b geometry anchors, G1c retrained late fusion; winner native/100um/1mm",
+      "work_items": [
+        "W07"
+      ],
+      "planned_device_hours": 20
+    },
+    {
+      "id": "R4",
+      "depends_on": [
+        "R2"
+      ],
+      "work": "candidate/fit quality then learned association; raw/object all-event fusion",
+      "planned_device_hours": 8
+    },
+    {
+      "id": "R5",
+      "depends_on": [
+        "R2"
+      ],
+      "work": "T4/T3T/T4D; tau-had specialist first; branch and charm diagnostics; optional train-only pAUC/negative replay",
+      "conditional_inputs": [
+        "R3 winner when available",
+        "R4 objects only if quality supports use"
+      ],
+      "planned_device_hours": 8
+    },
+    {
+      "id": "R6",
+      "depends_on": [
+        "R2"
+      ],
+      "work": "one targeted pretraining or local supervision target; matched-compute continued supervision; held-out response robustness",
+      "conditional_inputs": [
+        "best observed encoder from R3-R5"
+      ],
+      "planned_device_hours": 4
+    },
+    {
+      "id": "R7",
+      "depends_on": [
+        "R1",
+        "R2"
+      ],
+      "work": "freeze selected candidates, fit Cal-A, select Cut-B, open Confirm, full physical and resource report",
+      "conditional_inputs": [
+        "only promoted optional R3-R6 candidates"
+      ],
+      "planned_device_hours": 2
+    }
+  ],
+  "scaling_screen": [
+    {
+      "id": "D0",
+      "unique_labels": 100000,
+      "passes": 4,
+      "execute_if": "R1 reusable reference"
+    },
+    {
+      "id": "D1",
+      "unique_labels": 100000,
+      "passes": 12,
+      "execute_if": "R2 reference"
+    },
+    {
+      "id": "D2",
+      "unique_labels": 300000,
+      "passes": 4,
+      "execute_if": "available labels and R0 profile budget"
+    },
+    {
+      "id": "D3",
+      "unique_labels": 300000,
+      "passes": 12,
+      "execute_if": "D1/D2 still improve and budget supports"
+    },
+    {
+      "id": "D4",
+      "unique_labels": 1000000,
+      "passes": 4,
+      "execute_if": "300k practical gain and independent resource plan"
+    }
+  ],
+  "resources": {
+    "planned_total_device_hours": 80,
+    "status": "planning envelope, not an allocation or completed measurement",
+    "estimated_calendar_weeks": [
+      6,
+      10
+    ],
+    "device_types_not_FLOP_equivalent": true,
+    "large_tasks": "HTCondor; inspect all available schedd load and compatibility before submitting",
+    "interactive": "small real-sample fits and microbenchmarks only",
+    "expand": "reallocate by measured throughput; do not execute full Cartesian matrix"
+  },
+  "required_learning_evidence": [
+    "real small-sample fitting",
+    "branch activations, gradients and updates",
+    "probability variance",
+    "loss relative to constant",
+    "validation curve and saturation",
+    "fix learning failures and retrain before physics conclusions"
+  ],
+  "unmeasured": [
+    "actual retrained T3 gain",
+    "new architectures gain",
+    "unused family counts",
+    "new split availability",
+    "training saturation at 300k/1M",
+    "new device/CPU costs",
+    "real calibrated hardware systematic envelope",
+    "physical flux and tau yield"
+  ],
+  "references": {
+    "evidence": "01_evidence_review.md",
+    "evaluation": "02_tasks_and_evaluation.md",
+    "models": "03_models_and_physics.md",
+    "execution": "04_execution_plan.md",
+    "literature": "05_literature.md",
+    "history_index": "06_workbook_index.md",
+    "measured_review": "current_results_review.json"
+  }
+}

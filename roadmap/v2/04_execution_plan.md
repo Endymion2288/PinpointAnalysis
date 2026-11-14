@@ -1,0 +1,160 @@
+# 下一轮执行路线、实验矩阵与工单
+
+**首批工作是 R0 的使用记录/数据效率核对，以及 R1 的实际三类与四类强基线。先完成这两个交付，再由收敛和错误结构决定后续计算投入。**
+
+本文件与 [experiment_plan.json](experiment_plan.json) 是研究设计，尚未实现新的 runner 或提交任务。已有 accepted samples、response 参数和路径工具直接复用。阶段编号使用 R0–R7，与已完成的旧 S0–S6 区分；新的 workbook 从 stage238 起连续记录。
+
+## 1. 分阶段依赖与交付
+
+| Stage | Estimated window | Main experiment | Required deliverable / gate |
+| --- | --- | --- | --- |
+| R0 | Week 1 | 使用记录、v2 manifests、loader/transform/profile、实际架构元数据 | 新确认 family 与所有历史使用清单不交叉；完整输入白名单；profile 可复核 |
+| R1 | Week 1–2 | B0–B4 的 T3/T4 同输入 screen；合作组表示与域对齐 | 共同三类性能、τ contamination、同计算/曝光表；前两名确定 |
+| R2 | Week 2–3 | unique data / passes / capacity 小矩阵 | 明确仍在改善、过拟合或资源受限；选择收敛参考配方 |
+| R3 | Week 3–5 | G1a/G1b/G1c，最佳结构的 native/coarse | 几何关系/压缩单因素收益；三 seed 前两名确认；梯度及内部健康 |
+| R4 | Week 4–6 | Tracking/vertex/association，raw/object 融合 | 对象 fake–efficiency–coverage 与全事件分类净增益 |
+| R5 | Week 5–7 | T4 / T3T / T4D，τ specialists / charm negatives | 固定 FPR 的 inclusive/branch 结果、三类非劣及四类投入决策 |
+| R6 | Week 6–8 | 定向预训练、同总计算监督控制、条件鲁棒训练 | 胜过强监督的实际效果或数据效率/鲁棒性优势 |
+| R7 | Week 8–10 | 候选冻结、Cal-A、Cut-B、新 Confirm 与系统对照 | 新独立确认、统计/物理结果、资源与可复现交付 |
+
+周数为单人研究排期估计，尚未测量；数据准备与训练可按依赖分批推进。R1 的三类交付单独完成，R4/R5 无需阻塞合作组三类比较。没有收益的结构在确认学习有效后记录其负结果，不必把全部候选扩成完整大矩阵。
+
+## 2. R0：使后续比较具体可执行
+
+### R0.1 使用记录与 manifests
+
+复用 accepted inventory、原 train/validation 子集、SSL/Rel、probe、方向与对象训练、calibration/test manifests；汇总已被模型开发使用的 family。生成[数据合同](02_tasks_and_evaluation.md)的 Train/Tune/Cal-A/Cut-B/Confirm，新 Confirm 只写身份与盲化标签访问路径。先排除历史用过的 family，再确定嵌套 train 预算；实际可用数量未测量。
+
+产物为 `manifests/usage_ledger.parquet`、`partitions.json`、每个 split 的 compact row/family manifest 与 counts。原始 detector responses 按需转换，避免把 7.24M 事件全部展开后再决定训练规模。具体 source-family 认证继续沿用用户接受状态。
+
+### R0.2 实际模型元数据
+
+从实际 transform/config/model 生成：plane window 的 pixel 数与 mm 尺寸、blocks/region 规则、显式 cross-plane layers、latent/query 数、是否包含 tracker、参数量和输入列。修正未来 manifests 的过时 `4mm`/`cross_plane_message_passing` 文本，不改写旧科学结果。
+
+### R0.3 数据效率
+
+取 Train 内低/中/高 occupancy 的固定 256 个真实事件和一份 10k 流水样本；前者做交互 microbenchmark，后者通过 HTCondor 做完整 loader profile。复用已验证的局部缓存/等价前端方案，分别测 EOS staging、decode、tokenization、collate、transfer、compute、validation。
+
+默认比较 2/4 loader workers、bounded scratch cache、packed/bucketed batch 和观测 transform cache；CPU 线程与作业申请一致。减少同一 ROOT/Parquet 多次解码和每 epoch 重复排序；cache key 含 geometry/readout/representation revision。缓存是临时执行资产，最终仅保留能恢复的配置与小型核对结果。
+
+进入训练前，新表示与原观察量在事件键、总响应、mask 和通道映射上通过同事件检查。旧窗口和新边界消息表示的差异是模型实验因素，不要求它们 logits 相同。性能门槛以可重复 profile 为准；建议把记录的 data-wait/总时间降到 20% 以下，达不到时指出具体瓶颈，仍可在剩余预算内推进必要训练。
+
+## 3. R1：最小强基线矩阵
+
+| Experiment group | Task | Input | Initial comparison |
+| --- | --- | --- | --- |
+| B0 | T3 / T4 | 同一 accepted observations 的 summary/profile | HGB 为主，小 MLP 可替代 |
+| B1 | T3 / T4 | bar/pixel 双投影 + tracker set branch | 合作组式 ResNet；CNN 作为成本参照 |
+| B2 | T3 / T4 | native pixel/bar + tracker set branch | Fixed-graph ParticleNet |
+| B3 | T3 / T4 | native pixel/bar + tracker set branch | Geometry ParT |
+| B4 | T3 / T4 | native pixel/bar/tracker | Revision 3 Scratch |
+| B4-MAE reference | T4 | 与 B4 相同 | 既有 MAE3 初始化，单列 SSL 成本 |
+
+神经网络架构排名首先比较 Scratch；B4-MAE 是初始化控制，不能把它对 Scratch B3 的差异直接称为架构优势。初始 seed42，使用相同 100k 四类 Train pool 及其非 τ 子集、同一 Tune。每族相同 HPO 计算额度，先两个学习率候选、短预算筛查后延长最优候选；AdamW、weight decay、有效 batch 和 schedule 均记录。
+
+训练阶段不以固定四轮作为所有模型的终点。短 screen 给每族相同设备上限和 validation 频率；延长训练到 R2 的收敛合同。HGB 的 boosting 预算按 CPU 时间和复杂度单列。
+
+只对最强两个神经网络与共同基线扩 seeds17/42/2026。合作组配置缺少 run/完整 score/权重时，先在本批数据实现描述清楚的同构基线；相同事件列表和 exact cuts 可用后补做严格复现，不阻塞自身模型改进。报告“同构对照”与“原研究复现”的完成状态。
+
+R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条件三类配对、τ 污染、calibration 前 raw score 分布和资源 Pareto；原生/图像的贡献与是否有 tracker 分开评价。Tune 内固定小型 noise/combined 开发对照随名义结果一起给出，沿用已接受的 proxy 幅度；它们用于研究已知弱点，R6/R7 另保留未见 pattern。不得以简单去除孤立 hits 的方式牺牲短轨而不报告其效率。
+
+## 4. R2：用小矩阵确定训练规模
+
+先选 R1 最强原生模型与 B4 共同参考，若两者相同则只训练一族。优先在 seed42 做：
+
+| ID | Unique labels | Passes | Contrast |
+| --- | ---: | ---: | --- |
+| D0 | 100k | 4 | R1 可复用的基准 |
+| D1 | 100k | 12 | 同数据更长曝光；重新定义完整 schedule，不从已退火到最低 LR 的尾部机械续跑 |
+| D2 | 300k | 4 | 与 D1 约相同总曝光，更多 unique events |
+| D3 | 300k | 12 | D1/D2 仍改善且预算支持时执行 |
+| D4 | 1M | 4 起 | 300k 有实际收益后，仅对最强配方扩展 |
+
+固定 updates 的比较对齐 sampler、batch、warm-up/update schedule，分别保留 actual exposures；固定 passes 的比较回答增加数据后训练成本与质量。两种比较各自说明改变因素，不能只报一条随 N 同时改变曝光的曲线。
+
+收敛参考：每隔固定 label exposures 评价 Tune，连续三个 evaluation windows 的 NLL 变化小于 0.001 且主指标没有实际改善时，进入 plateau 检查；记录 train/Tune gap。这个规则是停止计算的工程启发式，不是物理信息饱和证明。出现过拟合先调整正则化/augmentation，在相同 HPO 额度下比较。
+
+当前约 0.9M 参数模型与约 3–4M 的单一加宽版本作容量对照；准确参数数由实现生成。只有学习曲线显示容量限制且收益足够，才考虑 10M 量级。先选择数据/训练，再扩大 SSL，避免继续围绕 1k-label 的复杂 probe 争取小收益。
+
+## 5. R3–R6：按证据逐步增加结构
+
+### R3：几何关系与压缩
+
+以 R2 配方固定训练和输入，先执行 G1a（跨窗口/跨层边）、G1b（显式几何 anchors）、G1c（重训去除 latent、late fusion）与共同 baseline，seed42。若 G1a/G1b 有独立收益，再组合；否则保留更简单模型。对最佳两者做三 seed，随后仅对最佳结构进行 native/100μm/1mm 三点配对。
+
+必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
+
+### R4：重建对象
+
+候选图与 robust fit 先在 Train/Tune 的 10k 子样本上评价完整 fake–efficiency 曲线，比较旧 nearest-neighbor baseline。再选择一种 learned association/instance 方法。只有候选边 recall 和对象覆盖支持后续任务，才扩展全样本；未达标时保留 raw 分类，继续定位拥挤、散射、缺层或 label-quality 原因。
+
+分类最小矩阵为 raw-only、object-summary HGB、raw+object tokens、训练诊断 oracle-association；oracle 只用于问题定位，不参与正式模型排名。Tracking、vertex 和 momentum 的准确目标分别定义，fit 失败事件保留。
+
+### R5：τ 与类别数
+
+使用最佳共同 backbone，先比较 flat T4、T3T、T4D；条件头 λ 从 `{0, 0.1, 0.3}` 的 train-inner 小扫描选择。τhad specialist 优先，τe/τmu 随局部可见性和混淆证据推进。对 specialist 做共同三类非劣和全非 τ 的背景评价；hard-negative replay 和 pAUC 最多各一项独立对照。
+
+量化每种拓扑的 eligible/observed/reconstructed/selected 分母，单列 charm 背景；计算几何/占用共同支持后的 paired 效应。当前 S6 的高 occupancy 诊断只用作提出假设，新开发集验证后才据此改变采样/模型。
+
+R5 阶段报告明确选择：近期三类交付、四类保留并继续、或条件六类继续；按[任务合同](02_tasks_and_evaluation.md)的实际效果与非劣界决定，不以训练完成或某个 AUC 点值决定。
+
+### R6：定向预训练与条件鲁棒性
+
+只在胜出的 encoder 上做 topology MAE、局部语义/continuity supervision 和同总计算监督 continuation。先选择一个目标；没有下游实际收益时，不扩成所有目标组合。比较 train-only SSL corpus 的 100k 与较大规模，成本与 label availability 清楚区分。
+
+Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时评价。Standard/NUX 与已有 transport 接口复用，增加统计量前由目标效应和所需区间宽度决定。NuWro/真实 calibration 等新输入可取得后补充，现有研究继续推进。
+
+## 6. R7：最终确认
+
+锁定最佳 T3 与最佳 T4/τ 候选及各自共同基线，冻结 architecture、权重、calibrator、prior、cuts、主比较、条件与 bootstrap 定义，然后开放 Confirm。先拟合 Cal-A 温度，再用 Cut-B 选阈值；确认集不用于模型或 cut selection。
+
+评价完整 raw counts/weighted metrics、四/三类 confusion、ROC/PR、fixed-cut efficiency/FPR/purity、reliability、分支/接受度/occupancy、对象 coverage、detector/generator 条件与资源。对两个主要假设控制多重比较，其他分层注明描述性。S6 旧 test 仍作为历史 reference，不改变其冻结结论。
+
+若最终确认未达到晋级值，报告精确差值、区间、训练波动和资源；实际模型选择服从共同任务质量和已测收益。对每个阶段先写中文 workbook，再提交代码、配置、小型表格和报告。长期 checkpoint、英文 PDF/PNG、完整预测与日志留 results。
+
+## 7. 资源与运行规则
+
+建议首轮 80 device-hours 分配如下，是规划值，不是已经申请或消耗的成本：
+
+| Stage | Planned device-hours ceiling |
+| --- | ---: |
+| R0 microbench / fit gates | 2 |
+| R1 baselines / selection | 18 |
+| R2 scaling | 18 |
+| R3 geometry | 20 |
+| R4 objects | 8 |
+| R5 tau | 8 |
+| R6 targeted pretraining / robustness | 4 |
+| R7 inference / confirmation | 2 |
+| Total | 80 |
+
+预算包括编译、失败和无效尝试；阶段没有效果时将剩余额度用于下一条独立假设或提前收尾。1M 扩展或大规模新模拟超出首轮范围时，先由已测吞吐生成独立资源计划。不同 MIG/整卡型号分别计 allocation；模型计算效率尽量在相同设备和并发条件下比较，不把 MIG 小时当整卡等效 FLOPs。
+
+大样本转换、长训练、统计和重模拟经 HTCondor；交互 GPU 仅用于真实 32-event 拟合和小规模压力测试。提交前查询所有可用 schedd 的 running/idle/held、任务兼容性与写入策略，选择兼容且负载最低者并记录依据。每任务一个 writer，迁移时核对实际进程/终态；复用已有 claims、resume 和资源记账。
+
+输入：`/eos/project-f/fasersim-bonn/public/pinpoint/data`。运行输出：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/`。提交文件：`~/condor/Pinpoint/flavour_v2/<stage>/`。CPU/thread、loader 数和 RAM 在实际 profile 后匹配申请，禁止把大量重复 JSON、per-event 小文件或 xAOD 中间产物作为长期输出。EOS 只保留最终模型、必要预测、小型诊断和可复现配置。
+
+## 8. 首批实现工单与验收
+
+| Work item | Proposed code/config | Input | Acceptance |
+| --- | --- | --- | --- |
+| W01 | `analysis.flavour` 新 partition/usage utility | 历史 accepted manifests | 使用清单可追溯；Confirm 与历史使用 family 无交叉 |
+| W02 | 新 representation metadata exporter | 实际 transform/model | windows、explicit edges、modalities 与真实实现一致 |
+| W03 | 复用现有 loader/cache profiler | 固定 Train events | 分段计时、等价输入/输出、峰值 RAM/GPU memory；定位 data-wait |
+| W04 | T3/T4/T3T loss 与统一 evaluator | 同一 label mapping | known tau coarse labels 不因 decay unknown 丢弃；概率闭合；共同非 τ 评价 |
+| W05 | B1/B2/B3 tracker late-fusion adapters | 同一 observed hits | 三模态同输入、缺失 mask、真实小样本拟合与分支梯度 |
+| W06 | R1 campaign runner/config | 冻结 Train/Tune | 公平 HPO、完整学习曲线和所有 raw counts；不访问 Confirm |
+| W07 | geometry sparse graph prototype | plane/cluster measurements | 候选边 recall、边数尾部、memory；不读取 truth 构图 |
+| W08 | 三类合作组对照报告 | R1 实测输出 | 统一域/先验/工作点和 τ contamination；未对齐项具体列出 |
+
+这些新模块/adapter 当前待实现。现有可立即复核本次结论的命令为：
+
+```bash
+which() { command -v "$@"; }
+source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+python roadmap/tools/review_current_results.py \
+  --output /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/current_results_review.json
+```
+
+它只读取历史摘要、validation scores 和 training histories，生成本次描述性复核。新模型训练命令将在 W01–W06 实现并通过真实小样本学习后写入各阶段报告。

@@ -1,142 +1,65 @@
-# PINPOINT 中微子反应分类研究路线图
+# PINPOINT 下一轮模型优化路线图（v2）
 
-**当前状态：S6已完成。**全部722,272 calibration与724,441独立test完成15模型/ensemble × 四个prior的冻结评价；主MAE3 ensemble的balanced accuracy为**43.5226%**，CI95[43.3705%,43.6685%]。相对同预算Scratch增量为+0.3354个百分点，CI[+0.2508,+0.4166]；τ在冻结validation 1%背景阈值下效率为**3.5556%**，test实际weighted FPR为1.2080%。方法有小幅收益，当前低背景τ选择仍不足。旧故障S3结果只作诊断，不参与结论。
+日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。本版是下一轮研究设计，新增模型效果尚未测量。
 
-入口：[最终中文报告](../workbook/2026-11-14_stage236_s6_final_results.md)、[S6合同与结果](13_s6_final_evaluation.md)、[精简JSON](results/s6_summary.json)、[60项指标CSV](results/s6_metrics.csv)、[原范围证据映射](results/s6_scope_completion_audit.json)。14个paired读出条件、5,888个真实transport响应、3,512个独立generator hard scatters及τ/charm compact truth均已完成。条件幅度沿用用户接受的detector-proxy；真实硬件误差、NuWro、物理flux/exposure及产额未测量。所有S6后端已关闭，临时缓存与过时AFS脚本已清理。
+**结论：已经取得可复核的小幅改进，尚无证据表明现有方法达到最佳效果。下一步先建立可与合作组对齐的三类强基线，并行保留四类主线；优先解决同输入架构比较、跨层几何关系和训练规模问题，再决定扩大预训练或采用更多类别。**
 
-S5已完成，见[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)、[原始范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[数值JSON](results/s5_summary.json)及[CSV](results/s5_metrics.csv)。26个神经网络、3个HGB、33项配对及完整10k validation全部完成；1,291次内部健康采样和checkpoint复算通过。三seed vertex+kinematics的NLL差−0.001956、CI95[−0.003363,−0.000725]，macro AP/τ AP净收益未建立；six-way的τ AP差−0.004764、CI[−0.008558,−0.001192]。修复后px/pz/E及收敛py读出有小幅至中等收益，方位角仍弱。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU core-hours；EOS释放1.134 GB、AFS提交脚本已清理。
+独立 test 上，MAE3 ensemble 的四类 balanced accuracy 为 **43.5226%**，相对同为 100k 监督标签的 Scratch 增加 **0.3354 个百分点**；τ 在冻结 validation 1% 背景阈值下效率 **3.5556%**，实际 test FPR **1.2080%**。这些结果支持预训练收益，绝对性能仍不足以支持高纯 τ 分析。两者监督协议匹配，MAE 另有预训练成本。当前所有 accepted samples、split 和 detector-proxy 继续作为有效研究基础。
 
-[18项原要求与57条直接证据](results/s5_scope_completion_audit.json)已逐项对应。补充exact-target联合支持保留3,179事件、Neff2,886.875；该域six-way τ AP差的区间跨零，不能把完整域下降外推为所有条件域结论。全部2,500个τ已有材料/间隙、pixel面投影及pitch/response诊断；当前seed42高纯度选择的首面投影域0/655，经独立score-key读回确认，HGB控制4/655。占用/位置关联与细拓扑利用仍待分离。总计13份主图和1份补充英文PDF。
+本次重新读取六个最终 revision 3 模型的训练记录和已有 validation 预测，发现：
 
-S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results.md)。修复后的五初始化×三个标签预算共15项seed42分类训练、30个驻点frozen读出、45套完整10k预测和66项配对完成；MAE3相对Scratch的raw macro AP增量为+0.033039/+0.025899/+0.005324。其114条allocation已终止，35.399029/60 device-hours，与上述S5资源分开统计。
+- 六模型均以第 4/4 轮为 best，末轮 NLL 继续下降 **0.00203–0.00779**，训练饱和未建立。
+- 100k 监督标签、100k SSL 语料和约 0.898M 参数构成当前主模型规模；没有完成 300k/1M 监督训练的饱和研究。
+- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是条件诊断，三类实际重训效果**未测量**。
+- 记录中的 data-wait/总耗时为 **31.16%–46.64%**。先提升数据供给，可把更多计算用于长训练和有效模型比较。
 
-日期：2026-11-14。目标输出顺序为 `CC νe / CC νμ / CC ντ / NC`，包含相应反中微子。S0、S1、S2已完成并验收；S2证据见[阶段55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)及[数值表](results/s2_summary.json)。S3 revision 2的20模型及历史比较见[阶段87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)；本次S4分类同时采用revision 3的`empty_response_bypass=true`，重新初始化Scratch，并从三套既有MAE3 encoder重新fine-tune，SSL encoder本身没有重训。
+数值、统计口径和代码证据见[独立评估](v2/01_evidence_review.md)及[复核 JSON](v2/current_results_review.json)。
 
-阶段145基线矩阵为Scratch/MAE3 × 1k/10k/100k标签 × seeds 17/42/2026。在相同完整validation上，三seed平均macro AP分别为0.288856→0.345980、0.425891→0.440384、0.469263→0.473555；配对物理块区间均支持正增量。1k MAE3的NLL仍为1.447382，高于ln4；1k/10k的τ argmax F1差值为负，三个预算的τ低FPR效率收益均未确认。100k common-support总体macro AP及τ AP增量区间跨零。区间条件于已训练seeds和checkpoint选择，validation被重复使用；calibration/test继续冻结。
+## 阅读顺序
 
-后续[有效低标签优化](../workbook/2026-11-14_stage167_s4_valid_low_label_results.md)完成1k/10k共同重选和三seed比较：MAE3 NLL为1.358905/1.238574，macro AP为0.330614/0.448223；其相对原MAE配方的概率与排序取舍分开记录。监督matched-compute控制也已完成。最终单seed五初始化矩阵及条件区间见[精简数值](results/s4_fp64_objectives_summary.json)，[资源和清理](results/s4_final_closure.json)记录423.043924 CPU allocation core-hours及3.64GB缓存清理。固定C=1的1k full读出有明确过拟合，保留诊断并在原标签预算内安排train-inner正则化选择；后续S5/S6结果见各自入口。
-
-[全范围完成性审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)已将原S4六项执行要求与早期pilot、几何/语义控制、三seed、matched-compute和最后矩阵逐项对应，[证据映射](results/s4_scope_completion_audit.json)保留直接产物路径和结论范围。研究完成包含明确的负结果；最终20项检查只覆盖最后矩阵的技术交付。
-
-建议主线是：**原生 pixel 与 Scintillator bar 读出 → 保留细节的局部编码 → 按探测器结构组织的全局注意力 → 多探测器融合 → 四类概率与物理辅助任务**。先建立直接监督的 ParticleNet、Particle Transformer 和轻量分层模型，再在同一个编码器上比较 FASERCal 式 masked pretraining 与 relational supervision。这样可以分别回答“信息是否丢失”“模型是否适合”“预训练是否有效”，而不是把三种变化混在一次实验里。
-
-## 阅读与执行入口
-
-| Document | Content |
+| Document | Purpose |
 | --- | --- |
-| [01_data_and_hardware.md](01_data_and_hardware.md) | 实测文件规模、ROOT schema、事件对应问题、硬件可观测量、digitization 与数据合同 |
-| [02_literature.md](02_literature.md) | FASERCal 论文与汇报的具体方法、2025–2026 顶会检索、迁移判断及引用 |
-| [03_models_and_experiments.md](03_models_and_experiments.md) | 输入表示、模型结构、预训练、τ/charm 任务、实验矩阵与统计评价 |
-| [04_execution.md](04_execution.md) | 分阶段工单、资源预算、HTCondor、产物与验收标准 |
-| [05_local_studies.md](05_local_studies.md) | 更新后四份 PDF 的逐项证据；fiducial、投影损失、FASER 工作点与重建覆盖率 |
-| [06_s0_s1_operations.md](06_s0_s1_operations.md) | 新原生通道管线、实际运行命令、事件签名 split 与 detector-proxy 的适用状态 |
-| [07_s2_operations.md](07_s2_operations.md) | S2 冻结子集、完整矩阵、运行命令与最终验收 |
-| [08_kubeflow.md](08_kubeflow.md) | CERN GPU flavor、自动CPU/RAM、Pod准入、队列与单writer迁移 |
-| [09_s3_operations.md](09_s3_operations.md) | S3完整四分类合同、细粒度局部编码/module/融合对照、Pareto与三seed确认 |
-| [10_s3_repair.md](10_s3_repair.md) | S3故障诊断、论文依据、尺度与多尺度架构修复、最终重训结论及global弱分支后续对照 |
-| [11_s4_pretraining.md](11_s4_pretraining.md) | S4预训练合同、有效低标签三seed结果、五初始化完整评价、失败诊断与后续选择 |
-| [12_s5_physics.md](12_s5_physics.md) | S5六类/物理任务、观测对象、三seed确认、回归修复与完整验证结果 |
-| [13_s6_final_evaluation.md](13_s6_final_evaluation.md) | 概率校准、冻结独立test、paired读出/transport、generator、物理分层和最终资源证据 |
-| [configs/study.yaml](configs/study.yaml) | 待实现的研究配置合同；尚不是现有训练脚本可直接读取的配置 |
-| [tools/inspect_inputs.py](tools/inspect_inputs.py) | 本次数据抽样的可复现只读工具 |
+| [01：结果、资料与系统性不足](v2/01_evidence_review.md) | 回答改进是否成立、哪些比较尚不公平、哪些故障已修复、哪些瓶颈仍是假设 |
+| [02：类别选择与评价合同](v2/02_tasks_and_evaluation.md) | 三类、四类、条件六类的并行方式；新独立确认集、尾部统计与晋级规则 |
+| [03：模型与物理设计](v2/03_models_and_physics.md) | 跨层稀疏关系、raw/object 双路径、异构融合、τ/charm 与方向任务 |
+| [04：执行路线与实验工单](v2/04_execution_plan.md) | R0–R7 依赖、最小实验矩阵、资源安排、首批具体工作和交付标准 |
+| [05：文献依据](v2/05_literature.md) | 本地资料及本次联网核对的论文、采用理由、适用边界 |
+| [06：完整工作记录索引](v2/06_workbook_index.md) | 236 份既有 workbook 的阶段归类与结果入口 |
+| [实验规格](v2/experiment_plan.json) | 可解析的设计合同；需实现对应 runner 后才能提交，不能直接传给旧 CLI |
 
-**S0/S1 已完成并验收。**全库 7,240 文件、7,237,572 个事件完成盘点，原生通道 pipeline、4,000-event proxy pilot、16 张事件图、B0 GPU 验证、多 worker scratch 缓存和 15 项测试已完成。用户确认 samples 满足要求，并接受现有 detector-proxy 参数；缺少的生产认证由用户确认覆盖，不再追查来源或要求真实硬件标定。沿用现有冻结 split 进入 S2。验收依据见[阶段 07](../workbook/2026-11-11_stage07_s0_s1_acceptance.md)，实测保留在 [S0](../workbook/2026-11-11_stage04_flavour_inventory.md)、[S1](../workbook/2026-11-11_stage05_native_channel_pipeline.md)和[缓存报告](../workbook/2026-11-11_stage06_native_cache_validation.md)。
-
-**S2已完成。**固定80k train/10k validation，正式35项全部通过14项读回；最终39结果（4 references+35科学模型）、1051行条件诊断、117张历史三类表、273个target条件组，模型集合同步。严格评价未使用`--allow-incomplete`，`output_inventory --require-complete`真实exit0。[最终报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)说明数据、统计口径、成本和方法晋级结论。以下保留先导执行的历史记录，当前状态以上述验收为准。
-
-两项V100任务在Startd关闭后均从checkpoint恢复，现已作为辅助结果完成。H100/LCG108同事件batch1的training compute快约1.69–2.33倍，见[阶段24](../workbook/2026-11-11_stage24_s2_alternative_gpu_profile.md)；两族[完整首轮门槛](../workbook/2026-11-11_stage25_s2_h100_epoch_gate.md)通过后统一正式环境。用户授权排队时使用Kubeflow，[容器LCG/EOS/CVMFS路径已成功](../workbook/2026-11-11_stage26_s2_kubeflow.md)；v5/v6均到deadline未获GPU；v7/v8在按flavor修正配置时主动结束，v9已按H100 94GB flavor创建Pod，始终未获node；12:03 UTC因全部剩余科学任务已在Condor运行而主动结束以释放配额，GPU runtime仍未实测。已按用户提供的[CERN命令行文档](https://ml.docs.cern.ch/getting-started/#command-line_1)核对整卡H100的Job资源与selector，详见[S2操作入口](07_s2_operations.md#cern-kubeflow-文档核对)。两后端、旧尝试和候选均计入200 GPU-hours总组织上限。
-
-[首个四轮科学结果](../workbook/2026-11-11_stage27_s2_first_scientific_model.md)：ParticleNet native-joint τ AP=0.35784，相对B0 ΔAP=+0.01313，95%配对区间=[−0.00097,+0.02446]；固定common-support条件下ΔAP=+0.01862，区间=[+0.00686,+0.02971]。四类balanced accuracy/NLL没有同时改善。首次评价完成1项配对、44项pending，当时尚不能归因于空间粒度或架构差异；原生错误显示已生成并检查。
-
-[空间矩阵部分结果](../workbook/2026-11-11_stage28_s2_spatial_results.md)：V100先导/辅助评价目前有4个references和4个四轮科学模型，3项预定配对完成、42项pending。ParT在1mm下joint相对projection的τ AP增量=+0.00634，pointwise CI=[+0.00101,+0.01250]；projection中native相对1mm为−0.00221，CI=[−0.00935,+0.00544]。结论限于当前seed42、模型表示和四轮预算；工作点收益与跨种子稳定性仍待结果。
-
-2026-11-12 00:01 UTC，两族H100完整首轮执行门槛均通过：ParT 2,223.38 s（V100的45.76%）、ParticleNet 1,604.22 s（54.60%），均0 AMP skips。已按冻结规则选择H100/LCG108/BF16并提交完整35项，正式结果读取父目录下 `h100/`；原V100的26个idle任务已移除，5个running继续作为辅助。00:05 UTC累计27.34940 GPU-hours，其中H100 1.15893，missing=0。H100矩阵尚无四轮完成模型，S2仍进行中；Kubeflow v6继续等待可用GPU。
-
-## 1. 首先要回答的物理问题
-
-分类对象是反应的 CC flavour/NC 类别。`ν/anti-ν`、DIS/QE/RES 等作为分层诊断，不混成新的主类别。NC 内不同入射 flavour 合并；若现有 NC 样本未覆盖 `ντ NC`，需要单列覆盖范围并补样或限定适用域。
-
-主要难点是 `ντ→e` 与 `νe CC`、`ντ→μ` 与 `νμ CC`、`ντ→had` 与 NC 的相似性。τ 衰变中不可见中微子、次级顶点和 kink、末态轻子的隔离度、喷注与轻子的相对方向都可能提供信息，但必须先证明这些特征在当前层间距、材料、视场和读出响应下可分辨。不能把完整模拟中存在的顶点或动量直接视为测量量。
-
-| Hypothesis | Controlled comparison | Evidence required |
-| --- | --- | --- |
-| H1: 原生 pixel 几何包含粗 rebin 丢失的分类信息 | 同一 split、相同模型族和读出，原生/100 μm/200 μm/1 mm 表示比较 | `ντ` PR-AUC、固定背景接受率下效率、各衰变道、资源曲线；配对置信区间 |
-| H2: Scintillator 和 FASER 提供互补信息 | pixel、bar、pixel+bar、再加 digitized FASER；timing 单独消融 | 增益在能谱匹配和响应扰动后仍存在；给出各子系统的边际贡献 |
-| H3: 局部与全局信息共同决定分类 | ParticleNet、几何版 ParT、分层局部编码+latent fusion | 与 token 数、参数、训练预算相关的精度/资源 Pareto 比较 |
-| H4: FASERCal 式预训练改善困难通道 | 同编码器 Scratch / MAE / MAE+Rel；固定标签预算与总算力对照 | 除平均 AUROC 外，提高 `ντ` 工作点或减少所需标签/算力 |
-| H5: 可分辨的衰变拓扑优于仅学习类别能谱 | 四类头与 τ 六子类方案、顶点/局部语义辅助任务对照 | 总体、能谱匹配、位置匹配三种评价；charm 背景的假 τ 率 |
-
-## 2. 本次核对改变了哪些优先级
-
-指定四类目录共 **7,240 个 ROOT 文件、2,386,015,012,744 bytes（约 2.386 TB）、7,237,572 个实际事件**。尾文件不足 1,000 事件，NC 的 chunk 编号还有 38 个缺口，事件数已由全库 metadata 核对。[数据证据](01_data_and_hardware.md)分别给出原始抽样边界与后续全库结果。
-
-直接开始训练前有三个实际问题要解决：
-
-1. 每类 chunk 000 的前 32 个事件中，pixel 空事件的 `event_id` 与 `event/evtID` 分别有 6、7、11、8 条不一致；源码显示 pixel 的事件 ID 在 hit 循环内才更新。先验证逐行关系，再处理空事件关联，不能按错误 ID 合并。
-2. `10081_000.root` 的 1,000 条反应元数据中有 3 条与名义类别不一致；旧代码的 `run % 4` 标签规则也不适用于本次四个 run。需要显式标签映射和独立元数据核查。
-3. Scintillator 记录按模拟 track 拆分。此次 32 事件抽样中，合并为真实 bar 通道可减少约 9.3–34.4 倍记录；记录条数和 per-track timing 不能作为硬件信息直接喂给网络。
-
-原生 pixel 抽样最大为 6,056 hits/event，Scintillator 原始记录最大为 174,535 records/event；这只是每类首 32 事件的结果，尚不能代表高占用尾部。先压缩不具有物理独立性的 bar 记录，再测量全样本占用分位数，是确定模型容量的首要依据。
-
-实际模拟源码位于同级 `/eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4`，已检查 HEAD 为 `dbbdb5155a66f5329fd27ea5285d037bf8fb2f03`。几何使用每个 ROOT 自带的 `geometry`；生产版本和 macro 的独立追溯要求已由用户覆盖。
-
-## 3. 文献综合后的技术选择
-
-更新的本地资料显示：2026-09-16 的三类研究在 pixel-centered volume 中加入 pixel，νe/νμ/NC AUC 分别增加 0.026/0.064/0.075；2026-10-21 的 1 mm 双投影 CNN/ResNet 研究未见 pixel 明确增益。两者的 fiducial、样本、表示和评价条件尚未统一。S2 因而增加“原生/1 mm × 联合位置/双投影”的对照，并分别评价中心区域和全目标域；FASER 增量按相同 purity 或背景接受率比较。[本地汇报核对](05_local_studies.md)
-
-FASERCal 的关键贡献是 **稀疏局部 token、module-aware attention、Perceiver 融合、MAE→Rel→joint fine-tuning**，以及对标签效率和 generator 变化的检验；其 1 cm scintillator voxel patch 不能直接搬到 20 μm pixel 与一维 bar 上。其方法已发表于 *Nature Machine Intelligence*，正式版在线日期为 2026-09-30；本地 arXiv v2 和 ICHEP 汇报均已阅读。[F1–F3](02_literature.md#f1)
-
-2025-11-14 FASERCal workshop 补充了从 readout 到 voxel/track reconstruction 的链路和 τhad 初步工作点；它与 2026 论文分开引用。2026-10-07 的 PINPOINT/FORTVNE 运动学汇报则提示优先保留局部分量方向、检查泛化与 reconstruction coverage。vertex-centred 输入只用重建/预测 vertex，极角 θ 与方位角 φ 分开评价，质量选择同时报告保留效率。
-
-2026 年 CVPR 的 LitePT 支持“高分辨率阶段用廉价局部编码，降采样后使用注意力”的设计原则；PTv3/Flash3D 提供高占用事件的稀疏邻域与 GPU 效率参考。对 PINPOINT，局部编码应尊重 sensor plane 和非均匀纵向间隔，压缩前保留精细位置残差，不复制自然场景的均匀三维体素化。[C2–C4](02_literature.md#c2)
-
-Particle Transformer 提供 pairwise interaction attention 的思路；这里的 pair 变量来自测量几何、读出和跨层关联，不使用 jet tagging 中依赖真四动量的量。ParticleNet 是独立的局部关系基线。Sonata、NOMAE、Concerto、Point-PQAE 和 2026 PointINS 提供预训练目标候选；优先验证 occupancy/charge 重建和物理合理的跨模态预测，再考虑更复杂的语义与 instance 目标。[P1–P2、C5–C10](02_literature.md)
-
-## 4. 主线结构
+## 研究路线与决策
 
 ```mermaid
 flowchart TD
-    A[ROOT audit and event manifest] --> B[Hardware channel reconstruction]
-    B --> P[Native pixel sets]
-    B --> S[Scintillator bar signals]
-    B --> F[Digitized tracker measurements]
-    P --> L[Plane-aware local encoder]
-    S --> R[Bar and panel encoder]
-    F --> T[Hit or fitted-track encoder]
-    L --> M[Module context and latent fusion]
-    R --> M
-    T --> M
-    M --> C[Four-class probabilities]
-    M --> U[Optional physical auxiliary heads]
-    V[Train partition only] --> W[Masked pretraining]
-    W --> M
-    C --> E[Calibration, systematics and physics evaluation]
+    A[Reuse accepted readout and data] --> B[New development and confirmation manifests]
+    B --> C[Three-class and four-class matched baselines]
+    C --> D[Training and data scaling]
+    D --> E[Cross-plane geometry and sparse local relations]
+    E --> F[Raw and reconstructed object fusion]
+    F --> G[Tau specialists and conditional decay heads]
+    G --> H[Targeted pretraining and robustness]
+    H --> I[Locked independent confirmation]
+    C --> J[Three-class collaboration result]
+    G --> K[Keep four classes if useful tau gain is confirmed]
 ```
 
-保留两条可比较的路线：第一条直接从硬件读出到事件分类；第二条增加可独立检验的 track/vertex/shower object 表示。对象路线只有在重建效率、错配率和分类收益都有证据时继续。两条路线都输出相同四类概率，并保留 all-event 的分母。
+三类输出为 `CC νe / CC νμ / NC`；四类输出为 `CC νe / CC νμ / CC ντ / NC`。三类模型训练时排除 τ，部署时仍须评价 τ 污染。四类模型必须在同一非 τ 样本上给出条件三类结果；两者由同样的输入、样本和计算预算比较。τ 子通道优先作为条件辅助头或 specialist，不直接把全部训练改成六类均衡 softmax。
 
-## 5. 阶段顺序与决策门槛
+| Stage | Main question | Deliverable / decision |
+| --- | --- | --- |
+| R0 | 哪些事件仍可用于新的独立确认？现有训练瓶颈在哪里？ | 使用记录清单、新 manifests、实际 token/geometry 元数据和 loader profile |
+| R1 | 三类任务做到什么程度？四类是否损害共同三类任务？ | 同输入强基线、合作组条件对照、τ 混入矩阵 |
+| R2 | 数据、曝光、容量中哪个限制性能？ | 100k→300k→1M 条件扩展；4→12→收敛的学习曲线 |
+| R3 | 显式跨层关系能否把细粒度转为有效收益？ | 几何稀疏图、边界通信、原生/粗粒度配对和三 seed 确认 |
+| R4 | 能否重建有用对象，而不是引入大量假关联？ | Track/vertex/association 的效率–fake–coverage 与 raw/object 分类对照 |
+| R5 | τ 是否值得保留为主类别，细分是否有用？ | Flat4、3+τ、条件 τ decay 头；固定 FPR、分支及 charm 对照 |
+| R6 | 预训练和鲁棒训练能否超过强监督基线？ | 定向 MAE/局部监督、同总计算监督控制、held-out 条件 |
+| R7 | 候选是否在新事件和系统变化下保持收益？ | 冻结独立确认、概率与工作点、物理条件和完整报告 |
 
-以下 12–16 周是单人主线、有可用单 GPU 的排期建议，不是实测耗时。大样本准备和长训练通过 HTCondor，另留排队、硬件校准与补模拟的时间。
+R1 和 R2 是首要交付；R3 是优先架构改进；R4–R6 由前序证据触发。预计主线 6–10 周，属排期建议，实际 GPU/CPU 时间由 R0 微基准确定。首轮建议分阶段预算 80 device-hours，具体分配与停止条件见[执行计划](v2/04_execution_plan.md)；本次只完成研究设计和轻量复核。
 
-| Stage | Proposed window | Question and deliverable | Gate |
-| --- | --- | --- | --- |
-| S0 | Week 1 | 冻结 label/readout/split 合同，完成 manifest 与异常说明 | 空事件关联、标签冲突、版本差异可复核；输入不含 truth 特征 |
-| S1 | Week 2–3 | 硬件通道转换、数据流与可解释基线 | 守恒检查、真实空事件、mask、单位、占用与吞吐报告通过 |
-| S2 | Week 4–5 | 原生 ParticleNet、ParT；分开量化粒度与投影损失 | 同预算、fiducial 分层；原生输入和截断策略的偏差有测量 |
-| S3 | Week 6–7 | 轻量分层模型、多探测器融合 | 相对最强简单基线有统计支持的收益，或具有可量化资源优势 |
-| S4 | Week 8–10 | MAE、自蒸馏、可行时 MAE+Rel | 同编码器、同标签与算力对照；无 test 参与 pretraining |
-| S5 | Week 11–12 | τ 子通道、charm、对象重建与混淆解释 | 改善来自可测拓扑；各通道分母、重建覆盖率、校准与迁移稳定性可说明 |
-| S6 | Week 13–16 | detector/generator 系统效应、加权物理评价 | 冻结测试；给出含 MC/系统不确定度的最终结论与产物 |
+## 历史计划与结果
 
-每阶段结束写中文 `workbook/YYYY-MM-DD_stageNN_*.md`，提交代码、配置、报告和小型表格；checkpoint、运行日志和图写入 `results`。每次只推进下一阶段需要的少量候选，具体工单见 [04_execution.md](04_execution.md)。
+旧路线的 **14 份完整文档**归入 [archive/2026-11-14_v1](archive/2026-11-14_v1/README.md)，归档说明见[archive 索引](archive/README.md)。根目录原 01–13 页面保留历史链接入口；原 `configs/`、`results/`、`tools/` 路径继续服务已有脚本和报告。旧路线中“下一阶段”“尚未测量”等文字反映各记录形成时点，S0–S6 的最终状态以 stage236 及各阶段最终报告为准。
 
-## 6. 成功的定义与分支规则
-
-首先要交付可复现、仅使用硬件可观测量的四分类基线，报告 all-event 效率和 detector-active 条件效率。随后用冻结 split 上的配对比较说明每一项信息或训练方法的净贡献。最终成果是有系统效应说明的分类概率与选择效率，而不只是最大 overall accuracy。
-
-S3方法晋级使用[完整四分类冻结合同](09_s3_operations.md)：三seed平均macro AP、macro F1或balanced accuracy至少增加0.01且对应配对95%物理事件区间支持正收益，NLL增加区间上界不超过0.01，逐类AP退化超过0.01须解释且不称全面晋级；或实际训练成本至少下降50%，且四类质量区间处于预定近等效界限。τ AP+0.01/固定背景效率相对+10%保留为附加物理指标，不能单独决定S3 backbone。研究完成可以得到“继续简单基线”的结论。S4门槛在启动前结合S3结果独立冻结。
-
-若收益来自能谱/顶点先验，保留它作为 nominal 条件性能，并明确独立报告 topology 对照；若原生与粗表示等效，则报告在已验证分辨率和统计精度下的等效区间。若 τ 困难通道仍混淆，先分析衰变位置、可见长度、缺失横动量的可测代理、charm 和接受度，再决定补模拟或改模型；少量离群事件不作为终止分支的依据。
-
-全量事件数、原生loader与基线在S0/S1测量，S2完成粒度/投影对照，S3 revision 2完成修复重训与多探测器validation评价。S4完成空响应修复、低标签共同重选、matched-compute、五初始化分类与frozen readability。有效优化MAE3 seed42在10k的global置换ΔNLL为0.060310，区间为正；100k frozen global相对Scratch的macro AP增量为0.063814，[0.056307,0.072226]。固定权重路径诊断和线性读出分别说明路径依赖与可读信息。S6完成2026-11-14 13:50:23Z冻结后的独立test、proxy条件效应与GENIE/Pythia6 Standard–NUX对照。尚未测量：global重训净收益、全7.24M事件训练、真实硬件约束的系统误差、NuWro及物理产额。后续高occupancy/细拓扑研究须建立新的train/validation合同与独立确认数据；本轮test保持为已公开的冻结评价。
+关键证据：[S2 stage55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[修复 S3 stage87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)、[S4 stage181](../workbook/2026-11-14_stage181_s4_final_results.md)、[S5 stage203](../workbook/2026-11-14_stage203_s5_final_results.md)、[S5 补充 stage205](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[S6 stage236](../workbook/2026-11-14_stage236_s6_final_results.md)、[本次 stage237](../workbook/2026-11-14_stage237_independent_review_and_roadmap_v2.md)。

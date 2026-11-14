@@ -1,0 +1,58 @@
+# S5：τ、charm、辅助任务与可重建对象
+
+**已完成。**[最终报告](../../../workbook/2026-11-14_stage203_s5_final_results.md)与[精简JSON](../../results/s5_summary.json)记录26个神经网络、3个HGB和33项完整配对。八pass三seed中，vertex+kinematics的NLL小幅改善，但macro AP和τ AP净收益未建立；six-way的τ AP下降。1,291次内部健康采样、真实六类fit及完整方向读出审查通过；方位角仍弱，明确保留。全部后端终止，重复产物和AFS提交脚本清理完成。下文保留执行合同及方法依据。
+
+本阶段沿用已接受的110k事件、split和detector-proxy；100k train、10k validation。Calibration/test留给S6。输出根：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14`。S4 revision 3是原生响应backbone，MAE3为起点。既有故障结果不进入科学对照。
+
+## 标签与输入边界
+
+`truth.parquet`单独按`run/chunk/row`连接。模型只接收原生pixel/bar/tracker observation或其可测量派生对象；event ID、分道、生成能量、真实顶点/动量、trackID不进入输入。Truth用于loss、matching和分层评价。未知标签保留mask，six-way缺失τ分道不填成hadronic。
+
+G4的`FillPythiaTree`只存primary τ/charm的直接子粒子，其中也包含非衰变次级粒子。`ProdXYZ/DecayXYZ`按子轨迹最小/最大z定义；不能把`DecayXYZ`当母粒子的衰变顶点。τ使用forward neutrino共同`ProdXYZ`定位，要求0.01 mm一致性，只保留同点直接子粒子；backward或缺失锚点保留无效mask。记录与S4分道的全部差异。Primary τ track ID从PDG和primaries连接，不假定为1。
+
+`tau_direct_prongs`是该衰变点的带电子粒子数，`tau_direct_prongs_hit`要求对应trackID在存储响应出现；pixel第一贡献者标签有已知偏差，bar为逐track沉积，tracker使用存储crossing。任何fromTau响应与直接prong命中分别报告，不能等同于可分辨kink。
+
+Charm presence从primary PDG的charm content定义；decay tree只覆盖源码列出的9种parent，覆盖mask单列。多charm分道按μ→e→had优先级保存，同时保留e/μ multi-label flags。
+
+Visible target为非核G4初始primary system：排除neutrinos，以可定义的直接τ衰变替换τ，不重复相加τ与daughter；charm暂保留初始parent，故此target明确命名为`primary_system_proxy`，不是所有稳定末态或接受度内能量。分别报告ΣE、Σp、|Σp|。回归仅作simulation-supervised辅助及诊断。
+
+## 对象与训练对照
+
+先从原生测量构造同plane邻接簇、跨plane细轨段与back-projected vertex candidates，tracker独立按测量相容度关联。所有事件保留raw fallback；对象失败产生quality mask。评价在分类前输出cluster purity、track efficiency/purity/fake、vertex efficiency/resolution与all→reconstructable→quality cutflow。Pixel truth matching继承第一贡献者限制。磁区关联不以直线拟合冒充动量测量。
+
+首轮固定seed42与同标签预算：direct4、six-way sum、+vertex、+bar semantics、+charm、combined、object-only、raw+object，以及absolute/raw+predicted-vertex-relative。每组λ=0.1起步、有效mask归一；combined另比较FASERCal式homoscedastic uncertainty weighting。辅助任务引入的标签成本明确单列。保留候选与no-aux对照用17/42/2026；若负迁移则记录而不挑选有利单指标。
+
+完整十五项4-pass screen完成后，以validation NLL最低者为数据选择候选，six-way另作为预定FASERCal假设保留；与direct4去重后最多三种结构。三seed确认使用新的8完整passes配置，从各seed的MAE3 encoder重新初始化，不从4-pass cosine终点接续。评价按cohort隔离，同seed/同passes控制；主指标NLL、macro AP和τ工作点同时报告。全部selection仍使用既有validation，独立test仅在S6打开。
+
+Direct4/six-way两组是预先固定的控制，不依赖剩余screen结果，可先由HTCondor候补执行`configs/s5_confirmation_controls.json`。最后selection使用相同experiment names和配置，跨后端claims防止重复；只有数据选择的第三候选需要等待十五项screen全部完成。
+
+训练记录输入/局部/融合/head激活RMS和梯度、概率方差、有效aux样本数、实际参数更新及selected-checkpoint readback。新增路径做真实小样本拟合；出现整层失活或未学习则审查和修复。分支归一化、FP32 LayerNorm/SiLU head、LayerScale、QK normalization和空响应bypass继续使用。
+
+坐标revision 2显式保留bar的逐轴measurement mask；未测量轴在居中之后归零，tracker的ordinal z不进入这一路径。`s5_coordinates.json`包含五项重训，并以同一10维输入、相同模块和参数量比较absolute/relative；旧三项relative在启动前标为superseded。相对于raw基线增加分支的收益单独报告，不能全部归因于坐标居中。revision 2全路径16个真实train事件256步拟合达到NLL0.000301073、accuracy1.0；正式validation已计入最终矩阵，结论见阶段203。
+
+## 方法依据与适配
+
+- [FASERCal论文及本地汇报](02_literature.md)：六类、共享encoder、vertex/visible momentum/charm、多任务uncertainty weighting；当前pixel语义不具备精确soft mixture，先用逐track bar沉积构造event semantic fractions。
+- [Kendall et al., CVPR 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Kendall_Multi-Task_Learning_Using_CVPR_2018_paper.html)：不同回归/分类尺度的homoscedastic权重；显式mask和物理尺度先处理，learned weight不能弥补错误标签。
+- [CAGrad, NeurIPS 2021](https://arxiv.org/abs/2110.14048)、[FAMO, NeurIPS 2023](https://arxiv.org/abs/2306.03792)：冲突梯度/任务收敛速率。先测shared梯度cosine和主任务负迁移，当前少任务起点用固定小权重及uncertainty；有冲突证据再增加复杂优化器。
+- [Point Transformer V3, CVPR 2024](https://openaccess.thecvf.com/content/CVPR2024/html/Wu_Point_Transformer_V3_Simpler_Faster_Stronger_CVPR_2024_paper.html)、[PointINS, CVPR 2026](https://openaccess.thecvf.com/content/CVPR2026/html/Yang_Towards_Foundation_Models_for_3D_Scene_Understanding_Instance-Aware_Self-Supervised_Learning_CVPR_2026_paper.html)：保留分层局部结构和实例线索。先量化观测对象的错聚/效率，再评价融合净贡献；不把shower硬分成完美粒子。
+
+本轮网络获取页面和状态记录于EOS的`literature/sources.json`；未实现的方法不声称已测量。
+
+## 交付与统计
+
+四分类与六类合并使用同事件paired block bootstrap，400次；训练seed spread另报。τ分道、衰变材料/位置、prong、可见性、charm和containment给分母、通过数、CI95；1%/0.1% background acceptance工作点与efficiency–purity同时报告。能量/真实vertex common-support是条件诊断，不能输入或用于真实推理选择。
+
+预测/重建px、py、pT、θ、wrapped Δφ分别给偏差和68/95% quantiles，近零pT mask明确；quality-cut扫描必须同时给coverage。absolute/raw与预测vertex-relative并存，真实vertex-centred只作oracle。可见/不可见secondary、正确/错误/随机组画原生响应，score与观测量关系以总体计数支撑。结论至少包括一个有区间的困难通道解释，并列待查原因。
+
+Containment采用观测端边缘/末端signal fraction作为leakage proxy，保留有效mask，不称作真实shower containment。辅助回归同时报告预测/目标方差及相对于仅10k所选train标签均值的误差，避免把近常数输出当成功重建。正式评价入口为`analysis.flavour.s5.evaluate`，原生响应诊断由CPU批作业`analysis.flavour.s5.diagnostics`生成。
+
+旧kinematic Linear+Huber在px/py上未优于train均值，不能作为方向重建成功的证据。额外revision2采用train-only逐分量std预条件的MSE、均值初始化、非负pZ/E link，并比较Linear与normalized residual MLP。依据[GradNorm, ICML2018](https://proceedings.mlr.press/v80/chen18a.html)、[ReZero, UAI2021](https://proceedings.mlr.press/v161/bachlechner21a.html)和FAMO的损失平衡/残差初始化思想，先处理目标与尺度，未实现完整动态梯度算法。16-event gate同时要求四分量误差下降，已通过；泛化由两项额外4-pass对照测量，探索范围与预定候选确认分开记录。
+
+修复的四pass完整validation见[阶段201](../../../workbook/2026-11-14_stage201_s5_component_results_and_direction_audit.md)：MLP的encoded px MSE比train常数低1.18%，pz/E低约36.4%，py差值区间仍跨零。后续[固定encoder诊断](../../../workbook/2026-11-14_stage202_s5_direction_readout_results.md)完成完整10k train与10k validation读回及FP64 ridge求解，正则化仅在train family folds选择；py MSE差−0.000098174、block CI95[−0.000178426,−0.000018241]，只有约0.34%改善。保留少量signed方向信息的事实与仍弱的方位角重建，未把低预测幅度当作硬件信息缺失。
+
+最终评价矩阵固定为26个神经网络+3个HGB，完整10k相同validation；三seed确认比较8-pass各自direct4控制，额外head修复比较4-pass控制。`analysis.flavour.s5.finalize`读取配置、实际健康采样、参数变化、checkpoint复算、真实六类fit与方向审查；`accounting`保存allocation终态，`cleanup`合并重复输出并保留selected模型和证据，`summarize`导出仓库小型JSON。独立test不在本阶段使用。
+
+[原范围审查](../../../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact `tgtPDG`与原E/x/y/z bins联合匹配，共3,179事件、Neff2,886.875，仅四个W同位素有支持；29模型、33配对、400次block bootstrap均完成。Vertex+kinematics的matched NLL差−0.002353、CI95[−0.004963,−0.000034]，τ AP差+0.004099的区间跨零；six-way τ AP差+0.002858的区间也跨零。该共同域与完整域不同，没有将差值变化归因为靶核本身。
+
+同次补充完成全部2,500个τ的材料/间隙、相邻pixel面、charged-daughter投影和pitch诊断，并连接存储response。首面投影有daughter入接受度655个，parent/daughter位移可定义651个，其中601个大于一个pitch；这只证明几何尺度。既有seed42模型在1%背景阈值下该域0/655，计数CI95上限0.562%；独立score-key回放差0，HGB为4/655。高占用/位置关联与细拓扑利用仍待分离，未把零通过解释成整层失活或硬件信息上界。总计13份主图及1份补充英文PDF，25条后端记录全部终止；CPU allocation增至61.355000 core-hours，GPU成本不变。完整[要求与证据映射](../../results/s5_scope_completion_audit.json)及原始scope结果已纳入最终验收。

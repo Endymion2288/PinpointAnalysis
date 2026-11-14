@@ -1,0 +1,167 @@
+{
+  "checked_UTC": "2026-11-14T17:36:22.311641+00:00",
+  "scope": "References cited in v2; reading depth and adoption decisions are in 05_literature.md",
+  "sources": [
+    {
+      "url": "https://www.nature.com/articles/s42256-026-01309-6",
+      "status": 200,
+      "resolved_url": "https://www.nature.com/articles/s42256-026-01309-6",
+      "title": "Towards foundation-style models for energy-frontier heterogeneous neutrino detectors via self-supervised pretraining"
+    },
+    {
+      "url": "https://arxiv.org/html/2604.07037v2",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/html/2604.07037v2",
+      "title": "Towards foundation-style models for energy-frontier heterogeneousneutrino detectors via self-supervised pre-training"
+    },
+    {
+      "url": "https://arxiv.org/abs/1902.08570",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/abs/1902.08570",
+      "title": "ParticleNet: Jet Tagging via Particle Clouds"
+    },
+    {
+      "url": "https://doi.org/10.1103/PhysRevD.101.056019",
+      "status": 200,
+      "resolved_url": "https://journals.aps.org/prd/abstract/10.1103/PhysRevD.101.056019",
+      "title": "Jet tagging via particle clouds"
+    },
+    {
+      "url": "https://proceedings.mlr.press/v162/qu22b.html",
+      "status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v162/qu22b.html",
+      "title": "Particle Transformer for Jet Tagging"
+    },
+    {
+      "url": "https://github.com/jet-universe/particle_transformer",
+      "status": 200,
+      "resolved_url": "https://github.com/jet-universe/particle_transformer",
+      "title": "GitHub - jet-universe/particle_transformer: Official implementation of \"Particle Transformer for Jet Tagging\"."
+    },
+    {
+      "url": "https://openaccess.thecvf.com/content/CVPR2024/html/Wu_Point_Transformer_V3_Simpler_Faster_Stronger_CVPR_2024_paper.html",
+      "status": 200,
+      "resolved_url": "https://openaccess.thecvf.com/content/CVPR2024/html/Wu_Point_Transformer_V3_Simpler_Faster_Stronger_CVPR_2024_paper.html",
+      "title": "Point Transformer V3: Simpler Faster Stronger"
+    },
+    {
+      "url": "https://openaccess.thecvf.com/content/CVPR2026/html/Yue_LitePT_Lighter_Yet_Stronger_Point_Transformer_CVPR_2026_paper.html",
+      "status": 200,
+      "resolved_url": "https://openaccess.thecvf.com/content/CVPR2026/html/Yue_LitePT_Lighter_Yet_Stronger_Point_Transformer_CVPR_2026_paper.html",
+      "title": "LitePT: Lighter Yet Stronger Point Transformer"
+    },
+    {
+      "url": "https://arxiv.org/abs/2512.13689",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/abs/2512.13689",
+      "title": "LitePT: Lighter Yet Stronger Point Transformer"
+    },
+    {
+      "url": "https://arxiv.org/abs/2403.11872",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/abs/2403.11872",
+      "title": "Graph Neural Network for Neutrino Physics Event Reconstruction"
+    },
+    {
+      "url": "https://doi.org/10.1103/PhysRevD.110.032008",
+      "status": 200,
+      "resolved_url": "https://journals.aps.org/prd/abstract/10.1103/PhysRevD.110.032008",
+      "title": "Graph neural network for neutrino physics event reconstruction"
+    },
+    {
+      "url": "https://arxiv.org/html/2509.10684v2",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/html/2509.10684v2",
+      "title": "NuGraph2 with Context–Aware Inputs: Physics–Inspired Improvements in Semantic Segmentation"
+    },
+    {
+      "url": "https://doi.org/10.1007/JHEP03(2026)149",
+      "status": 200,
+      "resolved_url": "https://link.springer.com/article/10.1007/JHEP03(2026)149",
+      "title": "NuGraph2 with context-aware inputs: physics-inspired improvements in semantic segmentation"
+    },
+    {
+      "url": "https://arxiv.org/abs/2002.03605",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/abs/2002.03605",
+      "title": "Object condensation: one-stage grid-free multi-object reconstruction in physics detectors, graph and image data"
+    },
+    {
+      "url": "https://doi.org/10.1140/epjc/s10052-020-08461-2",
+      "status": 200,
+      "resolved_url": "https://link.springer.com/article/10.1140/epjc/s10052-020-08461-2",
+      "title": "Object condensation: one-stage grid-free multi-object reconstruction in physics detectors, graph, and image data"
+    },
+    {
+      "url": "https://arxiv.org/abs/1902.07987",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/abs/1902.07987",
+      "title": "Learning representations of irregular particle-detector geometry with distance-weighted graph networks"
+    },
+    {
+      "url": "https://doi.org/10.1140/epjc/s10052-019-7113-9",
+      "status": 200,
+      "resolved_url": "https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9",
+      "title": "Learning representations of irregular particle-detector geometry with distance-weighted graph networks"
+    },
+    {
+      "url": "https://github.com/DeepLearnPhysics/spine",
+      "status": 200,
+      "resolved_url": "https://github.com/DeepLearnPhysics/spine",
+      "title": "GitHub - DeepLearnPhysics/spine: Modular deep learning framework for particle imaging detector reconstruction"
+    },
+    {
+      "url": "https://pdg.lbl.gov/2025/listings/rpp2025-list-tau.pdf",
+      "status": 200,
+      "evidence": "previous successful PDF extraction in this review"
+    },
+    {
+      "url": "https://openaccess.thecvf.com/content/CVPR2022/html/Peng_Balanced_Multimodal_Learning_via_On-the-Fly_Gradient_Modulation_CVPR_2022_paper.html",
+      "status": 200,
+      "resolved_url": "https://openaccess.thecvf.com/content/CVPR2022/html/Peng_Balanced_Multimodal_Learning_via_On-the-Fly_Gradient_Modulation_CVPR_2022_paper.html",
+      "title": "Balanced Multimodal Learning via On-the-Fly Gradient Modulation"
+    },
+    {
+      "url": "https://proceedings.mlr.press/v162/zhu22g.html",
+      "status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v162/zhu22g.html",
+      "title": "When AUC meets DRO: Optimizing Partial AUC for Deep Learning with Non-Convex Convergence Guarantee"
+    },
+    {
+      "url": "https://proceedings.mlr.press/v162/zhu22g/zhu22g.pdf",
+      "status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v162/zhu22g/zhu22g.pdf",
+      "title": ""
+    },
+    {
+      "url": "https://arxiv.org/abs/1911.08731",
+      "status": 200,
+      "resolved_url": "https://arxiv.org/abs/1911.08731",
+      "title": "Distributionally Robust Neural Networks for Group Shifts: On the Importance of Regularization for Worst-Case Generalization"
+    },
+    {
+      "url": "https://proceedings.mlr.press/v70/guo17a.html",
+      "status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v70/guo17a.html",
+      "title": "On Calibration of Modern Neural Networks"
+    },
+    {
+      "url": "https://proceedings.mlr.press/v80/lipton18a.html",
+      "status": 200,
+      "resolved_url": "https://proceedings.mlr.press/v80/lipton18a.html",
+      "title": "Detecting and Correcting for Label Shift with Black Box Predictors"
+    },
+    {
+      "url": "https://openaccess.thecvf.com/content/CVPR2025/html/Abdelsamad_Multi-Scale_Neighborhood_Occupancy_Masked_Autoencoder_for_Self-Supervised_Learning_in_LiDAR_CVPR_2025_paper.html",
+      "status": 200,
+      "resolved_url": "https://openaccess.thecvf.com/content/CVPR2025/html/Abdelsamad_Multi-Scale_Neighborhood_Occupancy_Masked_Autoencoder_for_Self-Supervised_Learning_in_LiDAR_CVPR_2025_paper.html",
+      "title": "Multi-Scale Neighborhood Occupancy Masked Autoencoder for Self-Supervised Learning in LiDAR Point Clouds"
+    },
+    {
+      "url": "https://openaccess.thecvf.com/content/CVPR2025/html/Wu_Sonata_Self-Supervised_Learning_of_Reliable_Point_Representations_CVPR_2025_paper.html",
+      "status": 200,
+      "resolved_url": "https://openaccess.thecvf.com/content/CVPR2025/html/Wu_Sonata_Self-Supervised_Learning_of_Reliable_Point_Representations_CVPR_2025_paper.html",
+      "title": "Sonata: Self-Supervised Learning of Reliable Point Representations"
+    }
+  ]
+}
