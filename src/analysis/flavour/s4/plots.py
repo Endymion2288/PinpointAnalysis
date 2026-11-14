@@ -166,14 +166,63 @@ def classification_plots(root, evaluation_path, output):
     fig.savefig(output/'classification_internal_health.pdf');fig.savefig(output/'classification_internal_health.png',dpi=160);plt.close(fig)
 
 
+def readout_probability_plots(root, output):
+    """Diagnose fixed-C readout confidence without fitting a calibration model."""
+    output.mkdir(parents=True, exist_ok=True)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
+    rows = []
+    bins = np.linspace(.25, 1., 11)
+    for i, (budget, branch) in enumerate([(1000, 'full'), (1000, 'global'),
+            (10000, 'full'), (10000, 'global')]):
+        path = root/'experiments'/f's4_newton_frozen_mae3_n{budget}_s42'/f'{branch}_linear_predictions.parquet'
+        frame = pd.read_parquet(path)
+        probability = frame[[f'p{c}' for c in range(4)]].to_numpy()
+        truth = frame.label.to_numpy()
+        loss = -np.log(np.clip(probability[np.arange(len(frame)), truth], np.finfo(float).eps, 1.))
+        label = f'{budget:,} labels / {branch}'
+        axes[0].step(np.sort(loss), np.arange(1, len(loss)+1)/len(loss),
+            where='post', color=f'C{i}', label=label)
+        confidence = probability.max(1)
+        correct = probability.argmax(1) == truth
+        assignment = np.clip(np.searchsorted(bins, confidence, side='right')-1, 0, len(bins)-2)
+        series = []
+        for b in range(len(bins)-1):
+            mask = assignment == b
+            if not mask.any():
+                continue
+            row = {'labels': budget, 'branch': branch, 'bin_low': bins[b], 'bin_high': bins[b+1],
+                'events': int(mask.sum()), 'mean_confidence': float(confidence[mask].mean()),
+                'accuracy': float(correct[mask].mean())}
+            rows.append(row);series.append(row)
+        axes[1].plot([r['mean_confidence'] for r in series], [r['accuracy'] for r in series],
+            marker='.', color=f'C{i}', label=label)
+    axes[0].axvline(np.log(4), color='.5', linewidth=.8, linestyle='--', label='Uniform prior NLL')
+    axes[0].set(xlabel='Per-event negative log-likelihood', ylabel='Cumulative fraction of validation events',
+        ylim=(0, 1.01), title='Distribution of classification loss')
+    axes[0].legend(fontsize=7)
+    axes[1].plot([.25, 1.], [.25, 1.], color='.5', linewidth=.8, linestyle='--')
+    axes[1].set(xlabel='Mean predicted confidence', ylabel='Accuracy within confidence bin',
+        xlim=(.25, 1.), ylim=(0, 1.), title='Empirical reliability before calibration')
+    axes[1].legend(fontsize=7)
+    fig.suptitle('Frozen MAE3 linear readouts: fixed C=1; complete 10k validation\n'
+        'Diagnostic only; no calibration fitting or operating-point selection', fontsize=10)
+    fig.savefig(output/'frozen_readout_probabilities.pdf')
+    fig.savefig(output/'frozen_readout_probabilities.png', dpi=180)
+    plt.close(fig)
+    pd.DataFrame(rows).to_csv(output/'frozen_readout_reliability_bins.csv', index=False)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path);parser.add_argument('--campaign',type=Path)
     parser.add_argument('--functional-report', type=Path)
     parser.add_argument('--evaluation', type=Path)
+    parser.add_argument('--frozen-readout-diagnostic', action='store_true')
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
-    if args.evaluation and args.root:
+    if args.frozen_readout_diagnostic and args.root:
+        readout_probability_plots(args.root, args.output)
+    elif args.evaluation and args.root:
         classification_plots(args.root,args.evaluation,args.output)
     elif args.functional_report:
         functional_plots(args.functional_report,args.output)

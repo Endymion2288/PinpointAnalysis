@@ -100,6 +100,8 @@ Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k
 
 完整v2评价还会重新加载30个full/global磁盘readouts，在同一10k validation特征上按事件键回放概率，最大绝对差要求≤1e-10，见[阶段173](../workbook/2026-11-14_stage173_s4_saved_readout_replay.md)。该回放与真实梯度驻点分开保存，通过后才清理临时feature数组；本步骤不重新拟合或调整模型。
 
+固定C=1的1k MAE3 full已确认概率泛化失败：fit NLL0.174783、validation NLL3.246709，10k中2,606个错误预测confidence>0.9；top1%事件仅贡献5.08%总损失，不能归为少数离群点。见[概率诊断](../workbook/2026-11-14_stage177_s4_probability_diagnostic.md)和[精简数值](results/s4_frozen_probability_diagnostic.json)。这是数值收敛后的固定读出设置问题，不能作为encoder无信息的结论。该配方保留作诊断，后续readout优化只在各原标签预算内按物理分组train-inner选择C，并独立记录与固定配方的差别；本轮不在观察validation后静默修改目标。
+
 优化设计已观察前期S4 validation，后续区间条件于该设计、同一validation与既定权重；不能描述成新的独立泛化证据。Calibration/test及最终class bias、温度与工作点选择继续冻结。
 
 2026-11-13 23:18 UTC重新联网读取[Kumar等，ICLR 2022 LP-FT](https://arxiv.org/abs/2202.10054)及[Wortsman等，CVPR 2022 WiSE-FT](https://openaccess.thecvf.com/content/CVPR2022/html/Wortsman_Robust_Fine-Tuning_of_Zero-Shot_Models_CVPR_2022_paper.html)，源文件与URL记录位于输出根`literature/low_label_transfer_sources.json`。LP-FT给出随机Head与encoder同时更新可能扰动预训练特征的可检验假设；其论文主要研究OOD，当前数据尚未证明这种病因。WiSE-FT依赖可用的zero-shot分类模型，当前没有对应分类Head，暂不直接采用权重插值。前述CVPR 2025 Sonata/NOMAE和FASERCal仍为主要预训练依据。

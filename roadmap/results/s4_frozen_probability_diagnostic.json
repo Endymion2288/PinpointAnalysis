@@ -1,0 +1,96 @@
+{
+  "utc": "2026-11-14T05:44:37.033978+00:00",
+  "rows": [
+    {
+      "labels": 1000,
+      "branch": "full",
+      "events": 10000,
+      "mean_NLL": 3.246708572787805,
+      "NLL_quantiles_25_50_75_90_99": [
+        0.45383297154005775,
+        2.224456504683836,
+        5.049170029899791,
+        7.9537057047189474,
+        13.936249777293416
+      ],
+      "top_one_percent_loss_fraction": 0.050780822693046956,
+      "true_class_probability_below_1e_minus3": 1402,
+      "wrong_with_confidence_above_0_9": 2606,
+      "probability_std": [
+        0.34564510743190807,
+        0.33947030103352027,
+        0.3223049823667576,
+        0.3448708717412948
+      ]
+    },
+    {
+      "labels": 1000,
+      "branch": "global",
+      "events": 10000,
+      "mean_NLL": 1.5793250505045762,
+      "NLL_quantiles_25_50_75_90_99": [
+        0.9048423365168554,
+        1.3917156676067919,
+        2.079808565172609,
+        2.848257157314371,
+        4.604640428968351
+      ],
+      "top_one_percent_loss_fraction": 0.03526516433240339,
+      "true_class_probability_below_1e_minus3": 8,
+      "wrong_with_confidence_above_0_9": 81,
+      "probability_std": [
+        0.21302241018694262,
+        0.20070950290895245,
+        0.1711704055749193,
+        0.1919394723903258
+      ]
+    },
+    {
+      "labels": 10000,
+      "branch": "full",
+      "events": 10000,
+      "mean_NLL": 1.3817958634330667,
+      "NLL_quantiles_25_50_75_90_99": [
+        0.7632352947584213,
+        1.2809468446150623,
+        1.8627545354172352,
+        2.5274171083997365,
+        3.8485753721830305
+      ],
+      "top_one_percent_loss_fraction": 0.032360107063759615,
+      "true_class_probability_below_1e_minus3": 0,
+      "wrong_with_confidence_above_0_9": 45,
+      "probability_std": [
+        0.23657481994158433,
+        0.19443109589974886,
+        0.16531579020257292,
+        0.19192019268037014
+      ]
+    },
+    {
+      "labels": 10000,
+      "branch": "global",
+      "events": 10000,
+      "mean_NLL": 1.3160414710751558,
+      "NLL_quantiles_25_50_75_90_99": [
+        1.0254507484196724,
+        1.3065995629034706,
+        1.5891082773808036,
+        1.8987570026812324,
+        2.548341353951686
+      ],
+      "top_one_percent_loss_fraction": 0.022167024874675898,
+      "true_class_probability_below_1e_minus3": 0,
+      "wrong_with_confidence_above_0_9": 4,
+      "probability_std": [
+        0.15602357312661932,
+        0.1132482840914274,
+        0.09204435102847858,
+        0.10945099225924647
+      ]
+    }
+  ],
+  "scope": "fixed validation probability diagnostics, no fitting or selection; labels refer to original train budget",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/audit/frozen_readout_probability_tail_diagnostic.json",
+  "figure": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/evaluation/frozen_readout_diagnostic/frozen_readout_probabilities.pdf"
+}
