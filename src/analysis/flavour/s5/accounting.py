@@ -113,10 +113,16 @@ def record_kubeflow(root, submission):
 def run(root):
     (root/'runtime/backends').mkdir(exist_ok=True)
     submissions = [json.loads(p.read_text()) for p in sorted((root/'runtime').glob('*.submission.json'))]
+    previous_path = root/'campaign_accounting.json'
+    previous = json.loads(previous_path.read_text())['allocations'] if previous_path.exists() else []
+    closed = {row['name']: row for row in previous if row['terminal']}
+    # Submission names are immutable. A recorded terminal allocation does not
+    # need another backend request when accounting for a later CPU diagnostic.
     condor = [s for s in submissions if s['backend'] == 'condor' and s['submitted']]
     with ThreadPoolExecutor(max_workers=4) as executor:
-        records = list(executor.map(record_condor, [(root, s) for s in condor]))
-    records += [record_kubeflow(root, s) for s in submissions if s['backend'] == 'kubeflow' and s['submitted']]
+        records = list(executor.map(lambda s: closed[s['name']] if s['name'] in closed else record_condor((root, s)), condor))
+    records += [closed[s['name']] if s['name'] in closed else record_kubeflow(root, s)
+                for s in submissions if s['backend'] == 'kubeflow' and s['submitted']]
     records += [{'name': s['name'], 'backend': s['backend'], 'terminal': True, 'device_hours': 0., 'CPU_allocation_hours': 0.,
                  'reason': 'admission or submission rejected before allocation'} for s in submissions if not s['submitted']]
     pilot_seconds = sum(json.loads(p.read_text())['seconds'] for p in (root/'pilot').glob('gate*.json'))

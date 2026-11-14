@@ -2,7 +2,9 @@
 
 **S3 revision 2已完成20模型修复重训及完整validation评价，18项严格检查通过；[最终报告](../workbook/2026-11-13_stage87_s3_repair_final_results.md)与[修复合同](10_s3_repair.md)为当前依据。旧批次方法结论撤回。**
 
-**S4本轮已完成，原合同逐项证据见[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)，最终五初始化比较见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。MAE3保留为有限标签基线，τ高纯度收益未确认；本轮不扩1M。114条allocation全部终止，35.399029/60 device-hours。S5–S6未执行。**
+**S4本轮已完成，原合同逐项证据见[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)，最终五初始化比较见[阶段181](../workbook/2026-11-14_stage181_s4_final_results.md)。MAE3保留为有限标签基线，τ高纯度收益未确认；本轮不扩1M。114条allocation全部终止，35.399029/60 device-hours。**
+
+**S5已完成，26个神经网络、3个HGB及33项同事件比较见[最终结果](../workbook/2026-11-14_stage203_s5_final_results.md)。[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact-target联合匹配及2,500个τ的几何投影/响应读回；完整证据见[要求映射](results/s5_scope_completion_audit.json)。Vertex+kinematics仅有小幅NLL收益；完整域six-way的τ AP下降，而较小exact-target共同域区间跨零。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU allocation core-hours。S6未执行。**
 
 S0/S1/S2均已完成。用户已确认samples满足要求并接受现有detector-proxy；来源认证和真实硬件标定不再作为前置条件。S2完整35项科学配置、490项读回、41单seed配对和4三seed均值通过严格评价，实际组织成本92.73055556 GPUh。[S2报告](../workbook/2026-11-12_stage55_s2_final_acceptance.md)与[运行入口](07_s2_operations.md)保留依据。S3 revision 2完成20模型、280项CPU读回、8,020健康采样、14单seed/9三seed和7条件域；multiscale+tracker通过本轮质量门槛，global重训净收益仍未测量。修复成本上界10.845833333，累计S3上界42.084102011/120 device-hours（含旧批次31.238268678），全部allocation结束。旧25模型及原晋级判断仅作[故障历史](../workbook/2026-11-13_stage80_s3_final_acceptance.md)。Calibration/test冻结。
 
@@ -82,6 +84,8 @@ Rel 需要的 soft contribution truth 若不完整，先做少量匹配模拟，
 
 交付：τ efficiency/purity 与 decay-visibility 图、charm 假 τ 分析、辅助任务/objects 净贡献。验收：至少形成一个有计数、区间和物理解释的困难通道结论，并明确仍待查的混淆。
 
+执行结果：[阶段203](../workbook/2026-11-14_stage203_s5_final_results.md)给出完整矩阵、三seed、内部健康、回归修复与方向诊断。[阶段205](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)逐项对应本节合同，并补充原能量/顶点诊断未覆盖的exact-target匹配：保留3,179事件、Neff2,886.875、四个W同位素；支持外不外推。τ几何诊断连接材料/间隙、首下游pixel投影、pitch与存储response。在当前seed42高纯度阈值下，首面投影域0/655，描述计数CI95上限0.562%；独立事件键回放差0，HGB控制4/655，模型对细拓扑的利用与占用/位置关联仍待分离。当前tracker交付为观测三站association/fake/coverage；其ordinal z没有提供物理站间距离，拟合q/p和covariance未测量，未冒充已完成的动量重建。
+
 ## 7. S6：系统效应与最终物理结果
 
 **要回答的问题：在什么 detector/generator 条件下，四类概率和选择效率可信？**
@@ -141,6 +145,6 @@ S0/S1 已按此合同运行 HTCondor；每次提交的负载与兼容性记录�
 
 ## 10. 下一次开发的最小起点
 
-S4已完成，入口为[最终结果](../workbook/2026-11-14_stage181_s4_final_results.md)、[全范围审查](../workbook/2026-11-14_stage182_s4_scope_completion_audit.md)和[预训练合同](11_s4_pretraining.md)。保留revision 3多尺度backbone、修正后MAE3与同配方Scratch；三seed低标签结果与seed42五初始化筛查分别报告。MAE3已有可读global类别信息和固定checkpoint路径依赖证据，global重训净收益仍未测量。
+S5已完成，入口为[研究合同与结果](12_s5_physics.md)、[最终矩阵](../workbook/2026-11-14_stage203_s5_final_results.md)和[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)。保留revision 3多尺度backbone、MAE3起点、direct4控制及vertex+kinematics候选；完整域six-way与当前对象构造没有建立分类净收益。S5已在10k标签预算内完成train-family选择的方向ridge读出，方位角仍弱。
 
-下一项readout优化在原1k/10k/100k预算内按物理family分组选择C，保留固定C=1失败对照；随后S5优先研究τ轻子子道、charm混淆与可重建拓扑的coverage。方法、阈值与校准按S6冻结后才打开test。全7.24M训练、真实响应/generator系统包络和物理产额均未测量。
+下一阶段为S6：先冻结候选、概率校准、阈值和selection，再打开既有独立test；沿用用户接受的detector-proxy基值。Proxy条件扰动与真实硬件系统误差分别表述。更强的轨迹实例关联、物理站点/磁场下的q/p拟合和新的vector/probabilistic head需独立实验合同。全7.24M训练、真实响应/generator系统包络和物理产额均未测量。

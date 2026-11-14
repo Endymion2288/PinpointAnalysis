@@ -1,0 +1,350 @@
+{
+  "utc": "2026-11-14T11:40:30.535499+00:00",
+  "stage": "S5",
+  "status": "complete",
+  "scope": "Original S5 research-delivery review, including matrix, failure repairs, exact-target overlap and native-pitch tau geometry; method gains judged separately.",
+  "required_unfinished_items": [],
+  "requirements": [
+    {
+      "id": "samples_and_truth",
+      "requirement": "Accepted 110k cache, frozen 10k supervised labels, independent truth definitions and unknown masks",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/s5_plan.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/truth_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/truth_disagreements.json",
+        "src/analysis/flavour/s5/dataset.py",
+        "src/analysis/flavour/s5/truth.py",
+        "tests/test_flavour_s5_truth.py"
+      ],
+      "finding": "Accepted samples/split/detector-proxy unchanged; 100k train cache and 10k validation, 10k supervised labels. Tau parent decay uses forward-neutrino ProdXYZ rather than child DecayXYZ. All 11 catalog disagreements recorded."
+    },
+    {
+      "id": "four_and_six",
+      "requirement": "Direct four-way versus six-subclass sum at matched label/pass budget, with three-seed confirmation",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "roadmap/configs/s5_final_matrix.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/pilot/gate.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/selection.json"
+      ],
+      "finding": "15 four-pass screens, 2 exploratory component repairs, 9 eight-pass confirmations, 3 HGB references; 29 results, 33 comparisons. Six probabilities explicitly summed; 24 balanced real six-class events fit to 24/24."
+    },
+    {
+      "id": "tau_strata",
+      "requirement": "Tau electron/muon/hadronic, decay location, prongs, visibility, charm and containment counts/intervals",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/measurement_diagnostics.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/tau_decay_visibility.pdf"
+      ],
+      "finding": "Full validation tau denominator 2500: e444, mu395, had1660, unknown1. Inclusive and branch-vs-background denominators separated. Stored response and measurement leakage proxy are explicitly defined."
+    },
+    {
+      "id": "auxiliary_tasks",
+      "requirement": "Single vertex/semantic/charm/kinematics tasks, combinations, uncertainty weighting, masks and negative transfer",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/03_models_and_experiments.md#4"
+      ],
+      "status": "complete",
+      "evidence": [
+        "roadmap/configs/s5_analysis_matrix.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/auxiliary_objective_audit.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/experiments/s5_combined_n10000_s42_mem1/manifest.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/experiments/s5_combined_n10000_s42_mem1/training_health.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json"
+      ],
+      "finding": "Single-task and combined/uncertainty controls complete. Effective masks vertex9756, semantics9492, charm10000, kinematics9971 on the same frozen 10k labels; representation-gradient cosines measured, not claimed to span all encoder parameters."
+    },
+    {
+      "id": "objects_before_classification",
+      "requirement": "Report object cluster/track matching, fake rate, vertex efficiency/resolution and coverage before classification",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/03_models_and_experiments.md#3.4"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/objects_summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/objects.parquet",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/object_vertex_resolution_coverage.pdf",
+        "src/analysis/flavour/s5/objects.py"
+      ],
+      "finding": "Observation-defined pixel clusters/segments and three-station tracker association precede matching/classification. Primary eligible806/matched29; two-direct-prong tau eligible31/matched2. Segment fake is high. HGB object-only/moments+objects and neural raw+object controls complete."
+    },
+    {
+      "id": "native_examples",
+      "requirement": "Visible/invisible, correct/incorrect and random raw detector-response examples",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/native_event_examples.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/native_examples.csv",
+        "src/analysis/flavour/s5/plots.py"
+      ],
+      "finding": "Native examples include fixed-random references and group denominators; no event examples alone are used as population evidence."
+    },
+    {
+      "id": "target_matching",
+      "requirement": "Joint incoming-energy, true-vertex and exact-target common-support control",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/03_models_and_experiments.md#7"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/target_matched_metrics.csv",
+        "src/analysis/flavour/s5/scope_diagnostics.py",
+        "tests/test_flavour_s5_scope.py"
+      ],
+      "finding": "Original E/vertex domain retained8559. Added exact isotope joint domain:82 cells,3179 events,Neff2886.875109,class weight sums562 each. W182/183/184/186 only; non-supported targets excluded.29 results/33 comparisons/400 block resamples complete. Domain changes do not isolate target causality."
+    },
+    {
+      "id": "score_observables",
+      "requirement": "Score associations with reconstructed observables, measured within true class",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/tau_score_observables.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/geometry_crosscheck.json"
+      ],
+      "finding": "Occupancy, object counts, leakage proxy and centroid-slope-change correlations measured. New projected-pixel domain has variable scores and low high-score acceptance; no causal interpretation of the correlations."
+    },
+    {
+      "id": "program_and_physics",
+      "requirement": "Separate ID/label/truth/truncation or coordinate defects from acceptance/overlap/visibility limitations",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "src/analysis/flavour/s5/dataset.py",
+        "src/analysis/flavour/s5/model.py",
+        "workbook/2026-11-14_stage190_s5_masked_coordinates.md",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/truth_disagreements.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/geometry_crosscheck.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/acceptance.json"
+      ],
+      "finding": "Event keys and independent truth joins, unknown masks, explicit bar-axis masks and all native-shard paths are checked. No truth/event identifiers enter observation. Low topology efficiency is retained with acceptance/occupancy ambiguity, not labelled an information limit."
+    },
+    {
+      "id": "coordinates",
+      "requirement": "Absolute/raw path and predicted-vertex-relative path with matched input size/capacity",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "roadmap/configs/s5_coordinates.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "tests/test_flavour_s5_model_objects.py",
+        "src/analysis/flavour/s5/model.py"
+      ],
+      "finding": "Five revision2 coordinate trainings complete, with like-capacity absolute/relative comparisons. Unmeasured bar axes zeroed after centering; ordinal tracker z excluded. Raw path retained."
+    },
+    {
+      "id": "component_and_angle",
+      "requirement": "px, py, pT and separate theta/phi reconstruction, inverse transforms and near-zero masks",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/03_models_and_experiments.md#4"
+      ],
+      "status": "complete",
+      "evidence": [
+        "roadmap/configs/s5_kinematics_repair.json",
+        "roadmap/configs/s5_regression_diagnostic.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/regression_diagnostic/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/regression_diagnostic/ridge_readout.npz",
+        "workbook/2026-11-14_stage202_s5_direction_readout_results.md"
+      ],
+      "finding": "Failed Linear+Huber transverse errors triggered target-scale/head review, two new four-pass trainings and real fit. Complete fixed-encoder10k train/10k validation readout with train-family-selected ridge shows small signed py information; azimuth remains weak."
+    },
+    {
+      "id": "resolution_coverage",
+      "requirement": "Resolution versus score/quality coverage with energy and position strata",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/03_models_and_experiments.md#7"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/kinematic_resolution_coverage.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/kinematic_energy_position.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/object_vertex_resolution_coverage.pdf"
+      ],
+      "finding": "Separate class/confidence and object-quality coverage, residual quantiles and energy/vertex strata complete. Resolution quantiles are not presented as calibrated predictive intervals."
+    },
+    {
+      "id": "decay_geometry",
+      "requirement": "Tau material/gap and adjacent measurement-plane decay location, visible daughters and projected separation relative to pitch",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/03_models_and_experiments.md#1"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/tau_geometry.parquet",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/target_and_tau_geometry.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/geometry_crosscheck.json"
+      ],
+      "finding": "2500 validation tau,32 ROOT chunks;2486 decay between first/last pixel centers,655 have forward daughter projection in first downstream pixel acceptance.651 parent/daughter displacements defined,601 exceed one pitch;100 accepted multi-daughter projections,95 closest pairs exceed one pitch. Straight truth-ray scale only, not fitted kink efficiency."
+    },
+    {
+      "id": "charm_fake_and_net_gain",
+      "requirement": "Charm fake-tau rates, light tau channels and inclusive/hadronic denominators; auxiliary/object net contribution",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/summary.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/tau_efficiency_purity_passes4.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/tau_efficiency_purity_passes8.pdf",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/final/three_seed_comparisons.pdf"
+      ],
+      "finding": "Charm and charm-branch fake rates have explicit background class counts. Main single/three-seed and coordinate/object comparisons preserve negative transfer and shared validation operating points."
+    },
+    {
+      "id": "difficult_channel_conclusion",
+      "requirement": "At least one difficult-channel conclusion with counts, intervals, physical interpretation and unresolved confounding",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "workbook/2026-11-14_stage203_s5_final_results.md",
+        "workbook/2026-11-14_stage205_s5_scope_completion_audit.md",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/evaluation/scope/geometry_crosscheck.json"
+      ],
+      "finding": "Aux seed42 at1% background:invisible1/873 versus visible65/1627; projected-pixel domain0/655,descriptive binomial upper0.005616.Independent score-key replay0; direct4 control0/655,HGB4/655. Occupancy/position and learned fine-topology extraction remain unresolved; no hardware upper-bound claim."
+    },
+    {
+      "id": "learned_architecture",
+      "requirement": "Repaired architecture, internal activation/gradient learning, real fit and checkpoint readback; failed results excluded",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/10_s3_repair.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/acceptance.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/pilot/gate.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/auxiliary_objective_audit.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/regression_diagnostic/summary.json",
+        "workbook/2026-11-14_stage203_s5_final_results.md"
+      ],
+      "finding": "26 checkpoints pass actual encoder update and replay,88900 optimizer steps,1291 health samples. Local and normalized-head RMS near1; nonempty SiLU zero fraction maximum0. Prior S3 dead-head results used only as fault history."
+    },
+    {
+      "id": "resource_closure",
+      "requirement": "Live compatible-schedd selection, GPU flavor concurrency, actual backend terminal costs and EOS/AFS consolidation",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md",
+        "roadmap/04_execution.md#8"
+      ],
+      "status": "complete",
+      "evidence": [
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/campaign_accounting.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/cleanup.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/runtime/s5_scope_closure.submission.json",
+        "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s5_2026-11-14/runtime/backends/s5_scope_closure.condor.json"
+      ],
+      "finding": "25 backend records all terminal. Remote2.673888889 device-hours and CPU61.355000 core-hours; interactive T4 fit232.280006s separately.13 main plus1 supplemental PDF;26 best checkpoints retained. EOS released1134394836 bytes;40 AFS scripts/33756 bytes removed. GPU utilization interface N/A preserved as unmeasured."
+    },
+    {
+      "id": "publication_and_boundary",
+      "requirement": "Chinese stage reports, versioned code/config/results and S6 calibration/test boundary",
+      "contract": [
+        "roadmap/04_execution.md#6",
+        "roadmap/12_s5_physics.md"
+      ],
+      "status": "complete",
+      "evidence": [
+        "workbook/2026-11-14_stage203_s5_final_results.md",
+        "workbook/2026-11-14_stage204_s5_scope_diagnostic_completion.md",
+        "workbook/2026-11-14_stage205_s5_scope_completion_audit.md",
+        "roadmap/README.md",
+        "roadmap/04_execution.md",
+        "roadmap/12_s5_physics.md",
+        "roadmap/results/s5_summary.json"
+      ],
+      "finding": "Matrix and supplemental results published separately. Calibration/test unopened; proposed vector heads, learned instance decoder and physically transported tracker fits remain separate extensions."
+    }
+  ],
+  "verified_direct_evidence_paths": 57,
+  "completion_criterion": "Required comparisons and difficult-channel evidence delivered; positive gains are not a prerequisite for scientific completion.",
+  "observational_limits": [
+    {
+      "item": "tracker fitted q/p and covariance",
+      "status": "unmeasured",
+      "reason": "Frozen accepted representation uses station ordinal z; implemented S5 contract covers position association/fake/coverage. Physical-plane/field transport fit is a separate reconstruction extension."
+    },
+    {
+      "item": "resolved single-prong kink efficiency",
+      "status": "unmeasured",
+      "reason": "Truth-ray/pitch and stored-response flags do not establish reconstructed parent/daughter tracks."
+    },
+    {
+      "item": "azimuth reconstruction",
+      "status": "measured_weak",
+      "reason": "Head repair and converged frozen readout completed; reliable direction precision is not established."
+    }
+  ],
+  "remaining_research_questions": [
+    "Separate transverse acceptance and occupancy correlations from learned fine-topology extraction in the projected-pixel tau domain.",
+    "Improve observation-only track/cluster association to reduce combinatorial fake.",
+    "Compare future vector/probabilistic heads with the current normalized regression and fixed-encoder signed readout."
+  ],
+  "outside_S5": [
+    "S6 calibration and final frozen test",
+    "Generator/real-hardware systematic envelopes and physical yields",
+    "Optional learned object decoder or new physical tracker transport fit"
+  ],
+  "measured_resources": {
+    "all_terminal": true,
+    "remote_device_hours": 2.673888888888889,
+    "CPU_allocation_hours": 61.35500000000001,
+    "interactive_pilot_fit_device_seconds": 232.28000569250435
+  },
+  "calibration_test_used": false
+}

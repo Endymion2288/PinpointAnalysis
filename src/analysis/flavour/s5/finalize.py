@@ -61,6 +61,24 @@ def audit(root, campaign, tag, require_closure=False):
     direction = json.loads((root/'regression_diagnostic/summary.json').read_text())
     if direction['status'] != 'complete' or direction['selected_checkpoint_component_replay_difference'] > .003:
         raise ValueError('transverse train/readout review is incomplete')
+    scope_path = root/'evaluation/scope/summary.json'
+    scope = json.loads(scope_path.read_text())
+    if (scope['status'] != 'complete' or scope['calibration_test_used'] or scope['validation_events'] != 10000
+            or {row['name'] for row in scope['experiments']} != expected
+            or len(scope['comparisons']) != len(report['comparisons'])
+            or scope['tau_geometry']['events'] != 2500 or scope['bootstrap']['replicates'] < 400):
+        raise ValueError('original S5 target matching or tau geometry evidence is incomplete')
+    support = scope['target_common_support']
+    if support['retained_events'] <= 0 or max(support['class_weight_sums'])-min(support['class_weight_sums']) > 1e-8:
+        raise ValueError('target matching has no balanced joint support')
+    if any(max(row['class_weight_sums'])-min(row['class_weight_sums']) > 1e-8 for row in support['targets']):
+        raise ValueError('target distributions differ between matched classes')
+    supplementary_figure = root/'evaluation/scope/target_and_tau_geometry.pdf'
+    if not supplementary_figure.exists():
+        raise ValueError('S5 target and tau geometry figure is missing')
+    geometry_readback = json.loads((root/'evaluation/scope/geometry_crosscheck.json').read_text())
+    if geometry_readback['status'] != 'complete' or geometry_readback['maximum_score_key_replay_difference'] != 0.:
+        raise ValueError('independent geometry/score-key readback failed')
     figures = sorted(p.name for p in (root/'evaluation'/tag).glob('*.pdf'))
     if len(figures) < 9:
         raise ValueError('declared physics figures are incomplete')
@@ -76,6 +94,7 @@ def audit(root, campaign, tag, require_closure=False):
         'calibration_test_used': False, 'next_stage': 'S6 calibration, frozen final test and systematic variants',
         'scope': 'complete S5 validation study; shared validation used for candidate selection, no independent test claim',
         'transverse_regression_review': str(root/'regression_diagnostic/summary.json'),
+        'scope_diagnostics': str(scope_path), 'supplementary_figures': [str(supplementary_figure)],
         'remote_device_hours': accounting['remote_device_hours'], 'CPU_allocation_hours': accounting['CPU_allocation_hours'],
         'interactive_pilot_fit_device_seconds': accounting['interactive_pilot_fit_device_seconds']}
     (root/'acceptance.json').write_text(json.dumps(result, indent=2)+'\n')

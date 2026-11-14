@@ -1,6 +1,8 @@
 # PINPOINT 中微子反应分类研究路线图
 
-**当前状态：S5已完成，见[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)、[数值JSON](results/s5_summary.json)及[CSV](results/s5_metrics.csv)。26个神经网络、3个HGB、33项配对及完整10k validation全部完成；1,291次内部健康采样和checkpoint复算通过。三seed vertex+kinematics的NLL差−0.001956、CI95[−0.003363,−0.000725]，macro AP/τ AP净收益未建立；six-way的τ AP差−0.004764、CI[−0.008558,−0.001192]。修复后px/pz/E及收敛py读出有小幅至中等收益，方位角仍弱。全部后端终止，2.673889 device-hours、61.256111 CPU core-hours；EOS释放1.134 GB、AFS提交脚本已清理。旧故障结果继续只作诊断，独立test和概率校准留给S6。**
+**当前状态：S5已完成，见[最终报告](../workbook/2026-11-14_stage203_s5_final_results.md)、[原始范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[数值JSON](results/s5_summary.json)及[CSV](results/s5_metrics.csv)。26个神经网络、3个HGB、33项配对及完整10k validation全部完成；1,291次内部健康采样和checkpoint复算通过。三seed vertex+kinematics的NLL差−0.001956、CI95[−0.003363,−0.000725]，macro AP/τ AP净收益未建立；six-way的τ AP差−0.004764、CI[−0.008558,−0.001192]。修复后px/pz/E及收敛py读出有小幅至中等收益，方位角仍弱。25条后端记录全部终止，2.673889 device-hours、61.355000 CPU core-hours；EOS释放1.134 GB、AFS提交脚本已清理。旧故障结果继续只作诊断，独立test和概率校准留给S6。**
+
+[18项原要求与57条直接证据](results/s5_scope_completion_audit.json)已逐项对应。补充exact-target联合支持保留3,179事件、Neff2,886.875；该域six-way τ AP差的区间跨零，不能把完整域下降外推为所有条件域结论。全部2,500个τ已有材料/间隙、pixel面投影及pitch/response诊断；当前seed42高纯度选择的首面投影域0/655，经独立score-key读回确认，HGB控制4/655。占用/位置关联与细拓扑利用仍待分离。总计13份主图和1份补充英文PDF。
 
 S4已完成，见[最终报告](../workbook/2026-11-14_stage181_s4_final_results.md)。修复后的五初始化×三个标签预算共15项seed42分类训练、30个驻点frozen读出、45套完整10k预测和66项配对完成；MAE3相对Scratch的raw macro AP增量为+0.033039/+0.025899/+0.005324。其114条allocation已终止，35.399029/60 device-hours，与上述S5资源分开统计。
 

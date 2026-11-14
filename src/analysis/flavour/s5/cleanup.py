@@ -63,7 +63,7 @@ def run(root):
     intermediate = []
     final = root/'evaluation/final'
     for directory in sorted((root/'evaluation').iterdir()):
-        if directory == final or not directory.is_dir():
+        if directory == final or directory.name == 'scope' or not directory.is_dir():
             continue
         summary_path = directory/'summary.json'
         if summary_path.exists():

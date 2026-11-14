@@ -116,7 +116,10 @@ def extract_geometry(arguments):
     input_root, geometry, frame = arguments
     run, chunk = int(frame.run.iloc[0]), int(frame.chunk.iloc[0])
     path = Path(input_root)/str(run)/f'{run}_{chunk:03d}.root'
-    with uproot.open(path) as source:
+    # Four outer readers share the four requested CPUs; avoid nested default
+    # decompression/interpretation pools for each ROOT file.
+    with uproot.open(path, decompression_executor=uproot.source.futures.TrivialExecutor(),
+                     interpretation_executor=uproot.source.futures.TrivialExecutor()) as source:
         primaries = group_flat(source['primaries'], ['evtID', 'PDG', 'trackID', 'Px', 'Py', 'Pz'])
         daughters = group_flat(source['tau'], ['evtID', 'PID', 'PDG', 'TID', 'Px', 'Py', 'Pz', 'ProdX', 'ProdY', 'ProdZ'])
     rows = []
@@ -171,6 +174,7 @@ def geometry_summary(frame, selected, block_weights):
 
 def plot(output, frame, seed_means):
     from analysis.flavour.s5.plots import plt, save
+    from matplotlib.ticker import MaxNLocator, FormatStrFormatter
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.8), constrained_layout=True)
     colors = {'electron': 'C0', 'muon': 'C1', 'hadronic': 'C2'}
     for branch, color in colors.items():
@@ -190,8 +194,51 @@ def plot(output, frame, seed_means):
     axes[2].axvline(0., color='black', linestyle='--', linewidth=.8)
     axes[2].set(yticks=range(len(seed_means)), yticklabels=[r['variant'] for r in seed_means],
                 xlabel='Tau AP delta relative to direct4', title='Exact-target overlap; three-seed mean')
+    axes[2].xaxis.set_major_locator(MaxNLocator(4))
+    axes[2].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
     fig.suptitle('S5 validation: straight truth-ray geometry and E / vertex / isotope matching')
     save(fig, output, 'target_and_tau_geometry')
+
+
+def saved_output_readback(root):
+    """Independently join saved scores and geometry, then inspect the zero tail."""
+    output = root/'evaluation/scope'
+    report = json.loads((output/'summary.json').read_text())
+    main = json.loads((root/'evaluation/final/summary.json').read_text())
+    frame = pd.read_parquet(output/'tau_geometry.parquet')
+    model = report['tau_geometry']['model']
+    prediction = pd.read_parquet(root/'experiments'/model/'validation_predictions.parquet')
+    joined = frame[KEY+['p2']].merge(prediction[KEY+['p2']], on=KEY, validate='one_to_one')
+    difference = float(np.max(np.abs(joined.p2_x-joined.p2_y)))
+    if len(joined) != 2500 or difference != 0.:
+        raise ValueError('independent geometry/score readback differs')
+    catalog = pd.read_parquet(root/'catalog.parquet', columns=KEY+['initE', 'initX', 'initY', 'pixel_channels'])
+    frame = frame.merge(catalog, on=KEY, how='left', validate='one_to_one')
+    groups = []
+    for inside in [False, True]:
+        group = frame[frame.projected_charged_in_pixel.ge(1).eq(inside)]
+        groups.append({'forward_daughter_in_first_pixel': inside, 'events': len(group),
+            'tau_score_q0_50_90_99_100': group.p2.quantile([0, .5, .9, .99, 1]).tolist(),
+            'energy_GeV_q10_50_90': (group.initE/1000).quantile([.1, .5, .9]).tolist(),
+            'pixel_channels_q10_50_90': group.pixel_channels.quantile([.1, .5, .9]).tolist(),
+            'mean_initial_xy_mm': group[['initX', 'initY']].mean().tolist()})
+    controls = []
+    for name in ['s5_confirm8_direct4_n10000_s42', model, 's5_hgb_moments_n10000_s42']:
+        scores = pd.read_parquet(root/'experiments'/name/'validation_predictions.parquet')
+        scores = scores[scores.label.eq(2)].merge(frame[KEY+['projected_charged_in_pixel']], on=KEY, validate='one_to_one')
+        entry = next(r for r in main['experiments'] if r['name'] == name)
+        threshold = entry['operating_points']['inclusive']['FPR_0.01']['threshold']
+        selected = scores.p2.ge(threshold)
+        inside = scores.projected_charged_in_pixel.ge(1)
+        controls.append({'name': name, 'threshold': threshold, 'all_tau_selected': int(selected.sum()),
+                         'first_pixel_domain': binomial(int((selected & inside).sum()), int(inside.sum()))})
+    readback = {'status': 'complete', 'events': len(joined), 'maximum_score_key_replay_difference': difference,
+        'groups': groups, 'controls': controls, 'calibration_test_used': False,
+        'finding': 'zero high-score tail in projected pixel domain persists after independent key join; scores vary and HGB selects some events',
+        'unresolved': 'transverse-acceptance/occupancy associations and learned fine-topology extraction are not separated; no detector information-limit claim'}
+    write_json(output/'geometry_crosscheck.json', readback)
+    plot(output, frame, report['three_seed_comparisons'])
+    return readback
 
 
 def run(args):
@@ -263,7 +310,7 @@ def run(args):
         'calibration_test_used': False, 'elapsed_seconds': time.monotonic()-started}
     write_json(output/'summary.json', result)
     pd.DataFrame([{'name': r[0], **r[1]} for r in results.values()]).to_csv(output/'target_matched_metrics.csv', index=False)
-    plot(output, tau_frame, seed_means)
+    saved_output_readback(args.root)
     print(json.dumps({'status': result['status'], 'models': len(results), 'pairs': len(comparisons),
                       'target_retained_events': support['retained_events'], 'tau_geometry_events': len(tau_frame),
                       'seconds': time.monotonic()-started}), flush=True)
@@ -274,7 +321,14 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--bootstrap', type=int, default=400)
-    run(parser.parse_args())
+    parser.add_argument('--readback-only', action='store_true')
+    args = parser.parse_args()
+    if args.readback_only:
+        result = saved_output_readback(args.root)
+        print(json.dumps({'status': result['status'], 'events': result['events'],
+                          'maximum_score_key_replay_difference': result['maximum_score_key_replay_difference']}), flush=True)
+    else:
+        run(args)
 
 
 if __name__ == '__main__':

@@ -9,6 +9,7 @@ def run(root, output):
     if not acceptance['stage_complete']:
         raise ValueError('complete scientific and allocation closure required')
     report = json.loads((root/'evaluation/final/summary.json').read_text())
+    scope = json.loads((root/'evaluation/scope/summary.json').read_text())
     accounting = json.loads((root/'campaign_accounting.json').read_text())
     cleanup = json.loads((root/'cleanup.json').read_text())
     evidence = {row['name']: row for row in acceptance['models']}
@@ -36,10 +37,13 @@ def run(root, output):
         'selection': json.loads((root/'selection.json').read_text()),
         'measurements': measurements, 'three_seed_comparisons': report['seed_means'],
         'direction_diagnostic': json.loads((root/'regression_diagnostic/summary.json').read_text()),
+        'scope_diagnostics': {key: scope[key] for key in ['target_common_support', 'three_seed_comparisons', 'tau_geometry', 'bootstrap']},
+        'geometry_crosscheck': json.loads((root/'evaluation/scope/geometry_crosscheck.json').read_text()),
         'resources': {key: accounting[key] for key in ['all_terminal', 'remote_device_hours', 'CPU_allocation_hours',
             'interactive_pilot_fit_device_seconds', 'interactive_pilot_fit_intervals']},
         'cleanup': {key: cleanup[key] for key in ['complete', 'AFS_cleanup_complete', 'bytes_released', 'best_checkpoints_retained']},
-        'figures': acceptance['figures'], 'next_stage': acceptance['next_stage']}
+        'figures': acceptance['figures'], 'supplementary_figures': acceptance['supplementary_figures'],
+        'next_stage': acceptance['next_stage']}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps({'output': str(output), 'models': len(measurements), 'pairs': acceptance['pairs']}), flush=True)

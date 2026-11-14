@@ -28,7 +28,7 @@ Direct4/six-way两组是预先固定的控制，不依赖剩余screen结果，�
 
 训练记录输入/局部/融合/head激活RMS和梯度、概率方差、有效aux样本数、实际参数更新及selected-checkpoint readback。新增路径做真实小样本拟合；出现整层失活或未学习则审查和修复。分支归一化、FP32 LayerNorm/SiLU head、LayerScale、QK normalization和空响应bypass继续使用。
 
-坐标revision 2显式保留bar的逐轴measurement mask；未测量轴在居中之后归零，tracker的ordinal z不进入这一路径。`s5_coordinates.json`包含五项重训，并以同一10维输入、相同模块和参数量比较absolute/relative；旧三项relative在启动前标为superseded。相对于raw基线增加分支的收益单独报告，不能全部归因于坐标居中。revision 2全路径16个真实train事件256步拟合达到NLL0.000301073、accuracy1.0；正式validation结论等待全矩阵。
+坐标revision 2显式保留bar的逐轴measurement mask；未测量轴在居中之后归零，tracker的ordinal z不进入这一路径。`s5_coordinates.json`包含五项重训，并以同一10维输入、相同模块和参数量比较absolute/relative；旧三项relative在启动前标为superseded。相对于raw基线增加分支的收益单独报告，不能全部归因于坐标居中。revision 2全路径16个真实train事件256步拟合达到NLL0.000301073、accuracy1.0；正式validation已计入最终矩阵，结论见阶段203。
 
 ## 方法依据与适配
 
@@ -52,3 +52,7 @@ Containment采用观测端边缘/末端signal fraction作为leakage proxy，保�
 修复的四pass完整validation见[阶段201](../workbook/2026-11-14_stage201_s5_component_results_and_direction_audit.md)：MLP的encoded px MSE比train常数低1.18%，pz/E低约36.4%，py差值区间仍跨零。后续[固定encoder诊断](../workbook/2026-11-14_stage202_s5_direction_readout_results.md)完成完整10k train与10k validation读回及FP64 ridge求解，正则化仅在train family folds选择；py MSE差−0.000098174、block CI95[−0.000178426,−0.000018241]，只有约0.34%改善。保留少量signed方向信息的事实与仍弱的方位角重建，未把低预测幅度当作硬件信息缺失。
 
 最终评价矩阵固定为26个神经网络+3个HGB，完整10k相同validation；三seed确认比较8-pass各自direct4控制，额外head修复比较4-pass控制。`analysis.flavour.s5.finalize`读取配置、实际健康采样、参数变化、checkpoint复算、真实六类fit与方向审查；`accounting`保存allocation终态，`cleanup`合并重复输出并保留selected模型和证据，`summarize`导出仓库小型JSON。独立test不在本阶段使用。
+
+[原范围审查](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)补齐exact `tgtPDG`与原E/x/y/z bins联合匹配，共3,179事件、Neff2,886.875，仅四个W同位素有支持；29模型、33配对、400次block bootstrap均完成。Vertex+kinematics的matched NLL差−0.002353、CI95[−0.004963,−0.000034]，τ AP差+0.004099的区间跨零；six-way τ AP差+0.002858的区间也跨零。该共同域与完整域不同，没有将差值变化归因为靶核本身。
+
+同次补充完成全部2,500个τ的材料/间隙、相邻pixel面、charged-daughter投影和pitch诊断，并连接存储response。首面投影有daughter入接受度655个，parent/daughter位移可定义651个，其中601个大于一个pitch；这只证明几何尺度。既有seed42模型在1%背景阈值下该域0/655，计数CI95上限0.562%；独立score-key回放差0，HGB为4/655。高占用/位置关联与细拓扑利用仍待分离，未把零通过解释成整层失活或硬件信息上界。总计13份主图及1份补充英文PDF，25条后端记录全部终止；CPU allocation增至61.355000 core-hours，GPU成本不变。完整[要求与证据映射](results/s5_scope_completion_audit.json)及原始scope结果已纳入最终验收。
