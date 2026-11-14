@@ -1,0 +1,76 @@
+{
+  "matches": [
+    {
+      "label_budget": 1000,
+      "pretraining_matrix_operations": 1804323309279552,
+      "shape_table_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_matched_supervised_plan_s42/shapes_n1000.npy",
+      "baseline_supervised_matrix_operations": 1063127917200384,
+      "additional_supervised_matrix_operations": 1804876345732224,
+      "relative_matching_error": 0.00030650629509010877,
+      "MAE3_plus_finetuning_matrix_operations": 2867451226479936,
+      "supervised_total_matrix_operations": 2868004262932608,
+      "baseline_train_exposures": 57043,
+      "epochs": 8,
+      "steps_per_epoch": 873,
+      "sampler_epoch_offset": 8,
+      "additional_train_exposures": 97065,
+      "per_epoch_matrix_operations": [
+        225870637017216,
+        225613893387264,
+        226654680258816,
+        225891497421696,
+        226454779154688,
+        223785566731776,
+        225557492398848,
+        225047799361920
+      ]
+    },
+    {
+      "label_budget": 10000,
+      "pretraining_matrix_operations": 1804323309279552,
+      "shape_table_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_matched_supervised_plan_s42/shapes_n10000.npy",
+      "baseline_supervised_matrix_operations": 3062367117949056,
+      "additional_supervised_matrix_operations": 1805578439025792,
+      "relative_matching_error": 0.0006956235281032647,
+      "MAE3_plus_finetuning_matrix_operations": 4866690427228608,
+      "supervised_total_matrix_operations": 4867945556974848,
+      "baseline_train_exposures": 158245,
+      "epochs": 8,
+      "steps_per_epoch": 742,
+      "sampler_epoch_offset": 8,
+      "additional_train_exposures": 93613,
+      "per_epoch_matrix_operations": [
+        226783307020800,
+        223338131866752,
+        224845535637120,
+        224152862304768,
+        227116309159296,
+        226755010773888,
+        223955711102208,
+        228631571160960
+      ]
+    },
+    {
+      "label_budget": 100000,
+      "pretraining_matrix_operations": 1804323309279552,
+      "shape_table_source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_matched_supervised_plan_s42/shapes_n100000.npy",
+      "baseline_supervised_matrix_operations": 7830141694555776,
+      "additional_supervised_matrix_operations": 1804473834152832,
+      "relative_matching_error": 8.342455728740934e-05,
+      "MAE3_plus_finetuning_matrix_operations": 9634465003835328,
+      "supervised_total_matrix_operations": 9634615528708608,
+      "baseline_train_exposures": 399696,
+      "epochs": 4,
+      "steps_per_epoch": 1424,
+      "sampler_epoch_offset": 4,
+      "additional_train_exposures": 90984,
+      "per_epoch_matrix_operations": [
+        435974788431744,
+        448135574587008,
+        464306658955008,
+        456056812179072
+      ]
+    }
+  ],
+  "scope": "declared eager Linear/attention forward/backward matrix proxy, including eager checkpoint recomputation; excludes elementwise, normalization and compiler fusion"
+}

@@ -8,6 +8,7 @@ import subprocess
 import time
 import warnings
 
+import joblib
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -16,6 +17,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import log_loss
 import torch
 from torch.utils.data import DataLoader
 
@@ -47,10 +49,15 @@ def fit_probe(features, labels, mode, config):
         estimator.coefs_+estimator.intercepts_)
     finite=all(np.isfinite(value).all() for value in coefficients)
     iterations=np.asarray(estimator.n_iter_).reshape(-1).tolist()
+    probability=pipeline.predict_proba(features)
     audit={'solver':estimator.solver,'iterations':iterations,'maximum_iterations':estimator.max_iter,
         'tolerance':estimator.tol,'convergence_warnings':messages,'finite_coefficients':bool(finite),
         'passed':not messages and bool(finite),'fit_events':len(labels),
-        'input_features':features.shape[1],'standardization':'fit on fitted-label events only'}
+        'input_features':features.shape[1],'standardization':'fit on fitted-label events only',
+        'fit_NLL':float(log_loss(labels,probability,labels=estimator.classes_)),
+        'fit_accuracy':float(np.mean(estimator.classes_[probability.argmax(1)]==labels)),
+        'coefficient_L2_norm':float(np.sqrt(sum(np.square(value).sum() for value in coefficients))),
+        'C':estimator.C if mode=='linear' else None}
     return pipeline,audit
 
 
@@ -117,6 +124,8 @@ def main():
             optimization[branch+'_'+mode]=audit
             probability=pipeline.predict_proba(xhold[branch])
             measured[branch+'_'+mode]=metrics(yhold,probability)
+            audit['heldout_NLL']=measured[branch+'_'+mode]['NLL']
+            joblib.dump(pipeline,output/f'{branch}_{mode}_readout.joblib',compress=3)
             prediction=holdmeta.copy()
             for c in range(4):prediction[f'p{c}']=probability[:,c]
             save_parquet(prediction,output/f'{branch}_{mode}_predictions.parquet')

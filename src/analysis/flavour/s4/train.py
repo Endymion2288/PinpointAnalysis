@@ -72,7 +72,9 @@ def main():
     extra={'stage':'S4','label_budget':config.get('label_budget'),
             'initialization':config.get('initialization','scratch'),
             'same_backbone':'S3 revision3 multiscale native pixel/bar/tracker' if config.get('empty_response_bypass') else 'S3 revision2 multiscale native pixel/bar/tracker',
-            'random_downstream_heads':'head,linear_readout,head_input_norm,branch_norms,summary',
+            'random_downstream_heads':None if config.get('supervised_initial_checkpoint') else
+                'head,linear_readout,head_input_norm,branch_norms,summary',
+            'supervised_parent_head_reused':bool(config.get('supervised_initial_checkpoint')),
             'calibration_test_used':False}
     options={}
     if config.get('transfer_recipe'):

@@ -1,0 +1,107 @@
+{
+  "pairs": [
+    {
+      "name": "mae3_minus_scratch_n1000",
+      "a": "s4_empty_scratch_n1000_s42",
+      "b": "s4_empty_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "continued_minus_scratch_n1000",
+      "a": "s4_empty_scratch_n1000_s42",
+      "b": "s4_empty_supervised_matched_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "continued_minus_mae3_n1000",
+      "a": "s4_empty_mae3_n1000_s42",
+      "b": "s4_empty_supervised_matched_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "supervised_envelope_minus_mae3_n1000",
+      "a": "s4_empty_mae3_n1000_s42",
+      "b": "s4_empty_supervised_matched_n1000_s42__selection",
+      "label_budget": 1000,
+      "seed": 42
+    },
+    {
+      "name": "mae3_minus_scratch_n10000",
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_empty_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "continued_minus_scratch_n10000",
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_empty_supervised_matched_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "continued_minus_mae3_n10000",
+      "a": "s4_empty_mae3_n10000_s42",
+      "b": "s4_empty_supervised_matched_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "supervised_envelope_minus_mae3_n10000",
+      "a": "s4_empty_mae3_n10000_s42",
+      "b": "s4_empty_supervised_matched_n10000_s42__selection",
+      "label_budget": 10000,
+      "seed": 42
+    },
+    {
+      "name": "mae3_minus_scratch_n100000",
+      "a": "s4_empty_scratch_n100000_s42",
+      "b": "s4_empty_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "continued_minus_scratch_n100000",
+      "a": "s4_empty_scratch_n100000_s42",
+      "b": "s4_empty_supervised_matched_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "continued_minus_mae3_n100000",
+      "a": "s4_empty_mae3_n100000_s42",
+      "b": "s4_empty_supervised_matched_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42
+    },
+    {
+      "name": "supervised_envelope_minus_mae3_n100000",
+      "a": "s4_empty_mae3_n100000_s42",
+      "b": "s4_empty_supervised_matched_n100000_s42__selection",
+      "label_budget": 100000,
+      "seed": 42
+    }
+  ],
+  "seed_mean_comparisons": [],
+  "include_supervised_selection_envelope": true,
+  "paired_tau_branches": true,
+  "comparison_groups": {
+    "s4_empty_scratch_n1000_s42": "Scratch",
+    "s4_empty_mae3_n1000_s42": "MAE3",
+    "s4_empty_scratch_n10000_s42": "Scratch",
+    "s4_empty_mae3_n10000_s42": "MAE3",
+    "s4_empty_scratch_n100000_s42": "Scratch",
+    "s4_empty_mae3_n100000_s42": "MAE3",
+    "s4_empty_supervised_matched_n1000_s42": "Supervised continuation",
+    "s4_empty_supervised_matched_n1000_s42__selection": "Supervised selected envelope",
+    "s4_empty_supervised_matched_n10000_s42": "Supervised continuation",
+    "s4_empty_supervised_matched_n10000_s42__selection": "Supervised selected envelope",
+    "s4_empty_supervised_matched_n100000_s42": "Supervised continuation",
+    "s4_empty_supervised_matched_n100000_s42__selection": "Supervised selected envelope"
+  },
+  "evaluation_scope": "S4 complete 10k validation reused for repaired matched-compute control; calibration/test frozen",
+  "design_scope": "Repaired stage145 baseline recipes. Full parent and continuation compute is charged; supervised selection envelope chooses lower validation NLL of complete parent and continuation. Fixed seed42 comparison with conditional physical-block intervals, not an independent training-seed claim."
+}

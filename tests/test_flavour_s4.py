@@ -583,6 +583,18 @@ class S4Tests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'dimensions differ'):
                 cached_shape_table(root,case,3)
 
+    def test_validation_wait_stops_for_unconverged_probe_before_reading_predictions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);case={'name':'probe','program':'probes'}
+            campaign=root/'probe.json';campaign.write_text(json.dumps({'experiments':[case]}))
+            directory=root/'experiments/probe';directory.mkdir(parents=True)
+            (directory/'manifest.json').write_text(json.dumps({'status':'optimization_review_required'}))
+            job=root/'validation.json';job.write_text(json.dumps({'experiments':[{'name':'validation',
+                'campaigns':[str(campaign)],'wait_for_completion_seconds':1}]}))
+            with patch('sys.argv',['validation','--root',str(root),'--campaign',str(job),'--task','0']),\
+                    self.assertRaisesRegex(RuntimeError,'upstream fit requires review'):
+                validate_completed_campaign()
+
     def test_tau_branch_weighted_statistics_keep_ties_and_exclude_other_branches(self):
         from sklearn.metrics import average_precision_score,roc_auc_score,roc_curve
         labels=np.array([2,2,0,1,3,2,0,1])
