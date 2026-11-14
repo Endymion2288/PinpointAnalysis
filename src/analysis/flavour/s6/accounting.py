@@ -108,6 +108,21 @@ def collect(args):
             'allocation_finished_at_upper_bound': max(ends), 'scheduled_start_observed': True,
             'allocation_estimate_kind': 'conservative upper bound to terminal Job time; Pod termination not retained',
             'failure_reason': 'unmeasured; extra exec exit137 alone does not identify the main container kill reason'})
+    kube_submissions = []
+    for s in submissions:
+        if s['backend'] != 'kubeflow':
+            continue
+        job_terminal = args.root/'runtime'/f'{s["name"]}.job_terminal.json'
+        cancellation = args.root/'runtime'/f'{s["name"]}.cancellation.json'
+        if s['uid'] in observed_jobs:
+            state = 'observed terminal Pod allocation'
+        elif job_terminal.exists() and any(p['pod'].startswith(s['name']+'-') for p in pod_costs):
+            state = 'terminal Job upper bound; Pod termination unavailable'
+        elif cancellation.exists() and json.loads(cancellation.read_text()).get('state_before_removal', '').startswith('Pending; unschedulable'):
+            state = 'unscheduled canceled request; zero allocation'
+        else:
+            state = 'unresolved'
+        kube_submissions.append({'job': s['name'], 'uid': s['uid'], 'status': state})
     cancellation_names = {p.name.removesuffix('.cancellation.json') for p in (args.root/'runtime').glob('*.cancellation.json')}
     factories = []
     for schedd, entries in groups.items():
@@ -126,6 +141,7 @@ def collect(args):
         'kubeflow_GPU_allocation_device_hours': sum(p['device_hours'] for p in pod_costs),
         'kubeflow_CPU_allocation_core_hours': sum(p['CPU_allocation_core_hours'] for p in pod_costs),
         'kubeflow_cost_contains_upper_bound': any('allocation_estimate_kind' in p for p in pod_costs),
+        'kubeflow_submissions': kube_submissions,
         'unmeasured': ['monetary price', 'GPU utilization fraction when MIG metrics/RBAC unavailable'],
         'device_convention': 'one requested MIG instance counts as one allocated device, not an entire physical H100; flavors listed separately',
         'scope': 'backend allocation runtime including failed attempts; Kubeflow includes time from observed PodScheduled through main termination, including initialization/image pull; requested flavor CPU only; queue wait excluded from allocation hours',

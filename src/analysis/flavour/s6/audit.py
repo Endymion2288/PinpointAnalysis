@@ -72,6 +72,9 @@ def run(args):
         'complete' if variants and variants['events'] == 32000 and variants['variants'] == 14 and len(variation_results) == 14 else 'open',
         ['predictions/variants_completion.json', 'evaluation/conditions/variants/*.json'],
         {'coverage': variants, 'result_files': len(variation_results), 'amplitudes': 'accepted detector-proxy stress values'})
+    replay = read('audit/replay_numerical_effects.json')
+    record('nominal replay effects on frozen work points', 'complete' if replay and replay['events'] == 32000 else 'open',
+        ['predictions/variants_completion.json', 'audit/replay_numerical_effects.json'], replay)
     transport = read('predictions/transport_completion.json')
     transports = list((root/'evaluation/conditions/transport').glob('*.json'))
     record('actual fixed-primary/vertex field, W-density and tau-helicity transport',
@@ -94,10 +97,17 @@ def run(args):
     migration = read('evaluation/migration/summary.json')
     record('score/energy migration and auxiliary-output validity', 'complete' if migration else 'open',
         ['evaluation/migration/summary.json', 'evaluation/migration/*.npz'], migration)
+    expected_figures = ['test_confusion', 'test_roc_pr', 'test_reliability', 'test_controls', 'readout_conditions',
+        'energy_score_response', 'tau_prior_scenarios', 'tau_physical_conditions', 'transport_conditions', 'generator_comparison']
+    figures = {name: all((root/'evaluation/figures'/f'{name}.{extension}').exists() for extension in ['pdf', 'png'])
+               for name in expected_figures}
+    record('English physics and calibration figures', 'complete' if all(figures.values()) else 'open',
+        ['evaluation/figures/*.pdf', 'evaluation/figures/*.png'], figures)
     cost = read('evaluation/resource_accounting.json')
     record('resource allocation evidence, backend closure and compact outputs',
         'complete' if cost and cost.get('backend_queries_complete') and not cost['active_jobs'] and
         not any(f['unresolved_rows'] for f in cost['submitted_condor_factories']) and
+        not any(s['status'] == 'unresolved' for s in cost.get('kubeflow_submissions', [])) and
         (root/'evaluation/cleanup.json').exists() and (root/'evaluation/backend_closure.json').exists() else 'open',
         ['evaluation/resource_accounting.json', 'evaluation/cleanup.json', 'evaluation/backend_closure.json'],
         {'accounting_present': cost is not None, 'active_jobs': len(cost['active_jobs']) if cost else None,

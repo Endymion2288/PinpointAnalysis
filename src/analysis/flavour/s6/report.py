@@ -50,6 +50,7 @@ def collect(args):
         'generator': read('evaluation/conditions/generator_comparison.json'),
         'transport_decay': read('evaluation/conditions/transport_decay.json'),
         'generator_decay': read('evaluation/conditions/generator_decay.json'),
+        'replay_numerical_effects': read('audit/replay_numerical_effects.json'),
         'migration': read('evaluation/migration/summary.json'),
         'resources': {k: v for k, v in read('evaluation/resource_accounting.json').items()
             if k not in ['condor_records', 'queries']},
