@@ -123,7 +123,9 @@ def run(root):
     result = {'utc': datetime.now(timezone.utc).isoformat(), 'allocations': records, 'all_terminal': all(r['terminal'] for r in records),
               'remote_device_hours': sum(r['device_hours'] for r in records),
               'CPU_allocation_hours': sum(r['CPU_allocation_hours'] for r in records),
-              'interactive_pilot_fit_device_seconds': pilot_seconds, 'interactive_scope': 'two measured T4 fit intervals; interactive allocation boundary was not recorded',
+              'interactive_pilot_fit_device_seconds': pilot_seconds,
+              'interactive_pilot_fit_intervals': len(list((root/'pilot').glob('gate*.json'))),
+              'interactive_scope': 'sum of recorded T4 real-fit intervals; interactive allocation boundary was not recorded',
               'budget_device_hours': 60, 'scope': 'remote actual allocations including readiness/failure; MIG and full GPU hours are separate device types, not equal throughput; reused supervisors count once'}
     (root/'campaign_accounting.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps({k: v for k, v in result.items() if k != 'allocations'}), flush=True)

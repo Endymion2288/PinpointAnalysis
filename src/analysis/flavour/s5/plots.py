@@ -150,9 +150,11 @@ def plot_results(output, entries, report, root):
         axis.set(xticks=range(4), yticks=range(4), xticklabels=['e', 'mu', 'tau', 'NC'], yticklabels=['e', 'mu', 'tau', 'NC'],
                  xlabel='Predicted class', ylabel='True class', title=f'Minimum validation NLL at seed 42; {epochs} passes\n{selected[2]["config"]["variant"]}; counts per true class = 2,500')
         save(fig, output, f'class_confusion_passes{epochs}')
+    kinematic_variants = ['kinematics_absolute', 'kinematics_relative',
+                          'kinematics_standard_linear', 'kinematics_standard_mlp']
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
     for experiment in report['experiments']:
-        if experiment['variant'] not in ['kinematics_absolute', 'kinematics_relative'] or experiment['seed'] != 42:
+        if experiment['variant'] not in kinematic_variants or experiment['seed'] != 42:
             continue
         rows = [r for r in experiment['kinematics']['groups'] if r['class'] == 'all']
         for axis, component in zip(axes, ['pT_relative', 'delta_theta_rad', 'wrapped_delta_phi_rad']):
@@ -163,7 +165,7 @@ def plot_results(output, entries, report, root):
     save(fig, output, 'kinematic_resolution_coverage')
     fig, axes = plt.subplots(3, 2, figsize=(12, 10), constrained_layout=True)
     for experiment in report['experiments']:
-        if experiment['variant'] not in ['kinematics_absolute', 'kinematics_relative'] or experiment['seed'] != 42:
+        if experiment['variant'] not in kinematic_variants or experiment['seed'] != 42:
             continue
         for column, field in enumerate(['initE', 'initZ']):
             strata = [r for r in experiment['kinematics'].get('strata', []) if r['field'] == field]
@@ -179,5 +181,36 @@ def plot_results(output, entries, report, root):
     axes[0, 0].legend(fontsize=7)
     fig.suptitle('Simulation-conditional component errors; all valid targets, no confidence cut')
     save(fig, output, 'kinematic_energy_position')
+    fig, axes = plt.subplots(1, 4, figsize=(14, 4), constrained_layout=True)
+    component_rows = []
+    for experiment in report['experiments']:
+        if experiment['variant'] not in ['vertex_kinematics', *kinematic_variants] or experiment['seed'] != 42:
+            continue
+        config = next(e[2]['config'] for e in entries if e[0] == experiment['name'])
+        if config['epochs'] != 4:
+            continue
+        quality = experiment['auxiliary_quality']['kinematics']
+        for i, component in enumerate(['px', 'py', 'pz', 'E']):
+            interval = quality['component_MSE_minus_constant'][i]
+            reference = quality['constant_train_mean_MSE'][i]
+            estimate = interval['estimate']/reference
+            low, high = np.asarray(interval['block_CI95'])/reference
+            component_rows.append({'name': experiment['name'], 'component': component,
+                'events': quality['events'], 'MSE': quality['component_MSE'][i], 'constant_MSE': reference,
+                'fractional_delta': estimate, 'block_CI95_low': low, 'block_CI95_high': high})
+    for axis, component in zip(axes, ['px', 'py', 'pz', 'E']):
+        rows = [r for r in component_rows if r['component'] == component]
+        for index, row in enumerate(rows):
+            # Draw the interval directly: a percentile interval need not contain its point estimate.
+            axis.plot([row['block_CI95_low'], row['block_CI95_high']], [index, index], color='C0')
+            axis.plot(row['fractional_delta'], index, 'o', color='C0')
+        labels = [next(e['variant'].replace('_', ' ') for e in report['experiments'] if e['name'] == r['name']) for r in rows]
+        axis.axvline(0., color='black', linestyle='--', linewidth=.8)
+        axis.set(yticks=range(len(rows)), yticklabels=labels if component == 'px' else [],
+                 xlabel='(MSE - constant MSE) / constant MSE', title=component+'; encoded target')
+        axis.invert_yaxis()
+    fig.suptitle('Four-pass regression: paired event-block CI95; selected train-mean reference')
+    save(fig, output, 'kinematic_component_vs_constant')
+    pd.DataFrame(component_rows).to_csv(output/'kinematic_components.csv', index=False)
     display = next((e for e in entries if e[2]['config'].get('variant') == 'vertex_kinematics' and e[2]['config'].get('seed') == 42), baseline)
     native_examples(root, output, display)

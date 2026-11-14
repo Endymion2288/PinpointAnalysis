@@ -150,7 +150,7 @@ def kinematics(frame, config):
     return result
 
 
-def auxiliary_quality(frame, config, reference):
+def auxiliary_quality(frame, config, reference, weights=None):
     result = {}
     for task in config.get('auxiliaries', []):
         count = {'vertex': 3, 'kinematics': 4, 'semantics': 3, 'charm': 1}[task]
@@ -172,10 +172,22 @@ def auxiliary_quality(frame, config, reference):
         mean = np.asarray(reference[task])
         row = {'events': int(valid.sum()), 'prediction_std': prediction.std(0).tolist(), 'target_std': target.std(0).tolist(), 'reference': 'constant mean fitted only to selected 10k train labels'}
         if task in ['vertex', 'kinematics']:
-            row.update(component_MSE=np.mean((prediction-target)**2, axis=0).tolist(),
-                       constant_train_mean_MSE=np.mean((mean-target)**2, axis=0).tolist(),
+            squared_error = (prediction-target)**2
+            constant_error = (mean-target)**2
+            row.update(component_MSE=squared_error.mean(0).tolist(),
+                       constant_train_mean_MSE=constant_error.mean(0).tolist(),
                        component_bias=np.mean(prediction-target, axis=0).tolist(),
                        component_correlation=[float(np.corrcoef(prediction[:, i], target[:, i])[0, 1]) if prediction[:, i].std() > 0 else None for i in range(count)])
+            if weights is not None:
+                eligible_weights = weights[:, valid]
+                denominator = eligible_weights.sum(1)
+                samples = np.divide(eligible_weights@(squared_error-constant_error), denominator[:, None],
+                                    out=np.full((len(weights), count), np.nan), where=denominator[:, None] > 0)
+                row['component_MSE_minus_constant'] = [
+                    {'estimate': float(delta),
+                     'block_CI95': np.nanquantile(samples[:, i], [.025, .975]).tolist(),
+                     'valid_replicates': int(np.isfinite(samples[:, i]).sum())}
+                    for i, delta in enumerate((squared_error-constant_error).mean(0))]
             if task == 'kinematics':
                 row['negative_encoded_pz_E_counts'] = (prediction[:, 2:] < 0).sum(0).tolist()
         elif task == 'semantics':
@@ -210,7 +222,7 @@ def calculate(entry, common, weights, reference):
               'probabilities': prediction_diagnostics(cache.p), 'operating_points': operating_tables(frame, common),
               'score_observable_correlations': conditional_correlations(frame), 'kinematics': kinematics(frame, config) if 'pred_vertex_0' in frame else None,
               'all_empty': cache.report(frame.all_empty.to_numpy(dtype=float))}
-    report['auxiliary_quality'] = auxiliary_quality(frame, config, reference)
+    report['auxiliary_quality'] = auxiliary_quality(frame, config, reference, weights)
     report['tau_domain_block_intervals'] = {}
     for domain in paired_tau:
         intervals = tau_interval(tau_point[domain], tau_samples[domain])
@@ -227,6 +239,8 @@ def calculate(entry, common, weights, reference):
             'NLL': float(log_loss(y, q[mask], labels=range(6))), 'confusion_counts': confusion_matrix(y, q[mask].argmax(1), labels=range(6)).tolist(),
             'class_AP': [float(average_precision_score(y == i, q[mask, i])) if (y == i).any() else None for i in range(6)],
             'class_probability_std': q[mask].std(0).tolist(),
+            'class_true_counts': np.bincount(y, minlength=6).tolist(),
+            'class_prevalence': (np.bincount(y, minlength=6)/len(y)).tolist(),
             'class_predicted_counts': np.bincount(q[mask].argmax(1), minlength=6).tolist(),
             'maximum_tau_sum_difference': float(np.max(np.abs(q[:, 2:5].sum(1)-frame.p2.to_numpy())))}
         if report['six_way']['maximum_tau_sum_difference'] > 2e-6:
