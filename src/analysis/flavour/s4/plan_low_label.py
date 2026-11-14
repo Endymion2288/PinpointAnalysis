@@ -76,6 +76,11 @@ def resolve(root, campaign, budgets=(1000, 10000)):
             r['train_exposures'] != manifest['train_events'] or
             r['optimizer_steps_cumulative'] != r['epoch'] * c['complete_pass_steps'] for r in history):
             raise ValueError('complete once-per-pass training history required')
+        health=json.loads((directory/'training_health.json').read_text())['records']
+        encoder=[r for r in health if not r.get('intentional_encoder_freeze',False) and r.get('informative_nodes',0)>0]
+        if not health or not all(r['healthy'] for r in health) or not encoder or any(
+            r['gradient_squared_norms'].get(key,0)<=0 for r in encoder for key in ['input','local']):
+            raise ValueError(c['name']+': measured input/local training gradients required before recipe selection')
         for row in history:
             rows.append({'budget': c['label_budget'], 'recipe': c['transfer_recipe'], 'fold': c['selection_fold'],
                 'initialization': c['initialization'], 'epoch': row['epoch'],
@@ -109,7 +114,7 @@ def resolve(root, campaign, budgets=(1000, 10000)):
             data.native.close()
             for seed in specification['refit_seeds']:
                 c = {**base, 'seed': seed, 'epochs': selected['epochs'], 'complete_pass_steps': steps,
-                    'name': f's4_optimized_{initialization}_n{budget}_s{seed}', 'select_final_epoch': True,
+                    'name': f'{specification.get("refit_name_prefix","s4_optimized")}_{initialization}_n{budget}_s{seed}', 'select_final_epoch': True,
                     'selection_scope': 'recipe and epoch frozen by original train-inner OOF NLL; evaluate final epoch only for selection',
                     'inner_selection_source': str(campaign.resolve()), 'inner_selected_recipe': selected}
                 if initialization == 'mae3':

@@ -174,6 +174,8 @@ class LowLabelTests(unittest.TestCase):
                                 'train_exposures': manifest['train_events'], 'optimizer_steps_cumulative': epoch * 2})
                         (directory / 'manifest.json').write_text(json.dumps(manifest))
                         (directory / 'history.json').write_text(json.dumps(history))
+                        (directory/'training_health.json').write_text(json.dumps({'records':[{'healthy':True,
+                            'informative_nodes':10,'gradient_squared_norms':{'input':1.,'local':1.}}]}))
             # A different budget is genuinely unfinished; it must not hold up
             # the independent 1k decision, or enter the 1k objective.
             configurations.append({'name': 'not_started', 'label_budget': 10000})
@@ -192,6 +194,11 @@ class LowLabelTests(unittest.TestCase):
             self.assertTrue(all(c['select_final_epoch'] and c['epochs'] == 4 for c in refit['experiments']))
             self.assertEqual({c['seed'] for c in refit['experiments']}, {17, 42, 2026})
             self.assertTrue(all(c['complete_pass_steps'] == 63 for c in refit['experiments']))
+            bad=root/'experiments'/configurations[0]['name']/'training_health.json'
+            bad.write_text(json.dumps({'records':[{'healthy':True,'informative_nodes':10,
+                'gradient_squared_norms':{'local_pool':1.}}]}))
+            with self.assertRaisesRegex(ValueError,'input/local training gradients'):
+                resolve(root,campaign,budgets=[1000])
 
     def test_health_accepts_explicit_LP_and_still_rejects_disconnection(self):
         model = TinyClassifier()
@@ -211,6 +218,22 @@ class LowLabelTests(unittest.TestCase):
             logits = model(torch.randn(8, 3)); logits.square().mean().backward()
             report = health.finish(logits, step)
         self.assertFalse(report['healthy'])
+        health.close()
+
+    def test_health_rejects_disconnected_input_even_with_trainable_local_pool(self):
+        class Partial(TinyClassifier):
+            def __init__(self):
+                super().__init__();self.local_pool=torch.nn.Linear(8,8)
+            def forward(self,x):
+                value=self.local_pool(self.input(x).detach())
+                return self.head(value)+self.linear_readout(value)
+        model=Partial();model.intentional_encoder_freeze=False;health=TransferHealth(model)
+        health.start();health.informative_nodes=10
+        logits=model(torch.randn(8,3));logits.square().mean().backward()
+        report=health.finish(logits,1)
+        self.assertGreater(report['gradient_squared_norms']['local_pool'],0)
+        self.assertFalse(report['healthy'])
+        self.assertIn('full fine-tuning has no gradient to input',report['failure_reasons'])
         health.close()
 
 

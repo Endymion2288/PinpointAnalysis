@@ -1,5 +1,7 @@
 # S4：可验证的预训练与标签效率
 
+**2026-11-14 纠错：阶段155发现LP解冻后input/local编译层无训练梯度，local_pool有梯度使旧健康规则误通过。12项LP inner及其选择失效，1k优化重拟合结果不作结论；两预算须修复LP竞争者后重选。36项non-LP控制具有对应真实训练梯度可复用。修复与真实CUDA gate见[阶段155](../workbook/2026-11-14_stage155_s4_frozen_compile_gradient_failure.md)及[失效清单](results/s4_transfer_compilation_invalidation.json)，新GPU修复效果尚未测量。阶段145的18项空响应修复基线没有LP阶段，不受此项冻结/解冻故障影响。**
+
 状态更新（2026-11-14）：空响应修复矩阵已完成18项分类重训、完整10k validation及4模型分支诊断，21项技术检查全部通过。235,008次逐步梯度检查、2,916次激活采样、252项checkpoint检查和18次独立best FP32 backward通过；最大preclip norm为188.390472，未重现旧空占位约10¹²的异常。两组同时使用`empty_response_bypass=true`；新配置为[configs/s4_empty_repair.json](configs/s4_empty_repair.json)。MAE3复用此前已读回的3套encoder重新fine-tune，本轮没有重训SSL encoder本身。旧故障结果保留作诊断，不作为新结论。完整结果见[阶段145](../workbook/2026-11-14_stage145_s4_empty_repair_final.md)、[精简数值](results/s4_empty_repair_summary.json)和[分支诊断](results/s4_empty_functional_paths_seed42.json)。输出根为 `/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13`；61个allocation均终止，累计账本24.325865/60 device-hours。本轮不扩1M，优先解决低标签过拟合和τ决策问题。
 
 ## 1. 研究问题与固定条件

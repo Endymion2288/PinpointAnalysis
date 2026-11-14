@@ -1,0 +1,47 @@
+{
+  "utc": "2026-11-14T03:14:55.091622+00:00",
+  "status": "invalid_for_scientific_comparison",
+  "reason": "input/local gradients absent after LP unfreezing with frozen-first compiled local graph; local_pool gradients hid partial disconnection in broad health check",
+  "experiments": [
+    "s4_inner_lpft_scratch_n1000_f0_s42",
+    "s4_inner_lpft_scratch_n1000_f1_s42",
+    "s4_inner_lpft_scratch_n1000_f2_s42",
+    "s4_inner_lpft_mae3_n1000_f0_s42",
+    "s4_inner_lpft_mae3_n1000_f1_s42",
+    "s4_inner_lpft_mae3_n1000_f2_s42",
+    "s4_inner_lpft_scratch_n10000_f0_s42",
+    "s4_inner_lpft_scratch_n10000_f1_s42",
+    "s4_inner_lpft_scratch_n10000_f2_s42",
+    "s4_inner_lpft_mae3_n10000_f0_s42",
+    "s4_inner_lpft_mae3_n10000_f1_s42",
+    "s4_inner_lpft_mae3_n10000_f2_s42",
+    "s4_optimized_scratch_n1000_s17",
+    "s4_optimized_scratch_n1000_s42",
+    "s4_optimized_scratch_n1000_s2026",
+    "s4_optimized_mae3_n1000_s17",
+    "s4_optimized_mae3_n1000_s42",
+    "s4_optimized_mae3_n1000_s2026",
+    "s4_repaired_ema3_n1000_s42",
+    "s4_repaired_mae5_n1000_s42",
+    "s4_repaired_rel_channel5_n1000_s42"
+  ],
+  "invalidated_selections": [
+    "roadmap/results/s4_low_label_selection_1k.json",
+    "roadmap/results/s4_low_label_selection_10k.json"
+  ],
+  "non_LP_controls": "36 inner fits have positive input/local gradients on every informative sample and can be reused; 10k current early refits have observed positive gradients but common selection is provisional until corrected LP competitor is rerun",
+  "checkpoint_FP32_scope": "independent eager FP32 backward can connect parameters missing during the actual compiled fit; cannot certify training provenance",
+  "recovery": "eager local path while frozen; first compiled local forward after unfreezing; strict input/local group health; real CUDA FP32/BF16 regression then rerun 12 LP candidates and reselect from all 4 recipes",
+  "stopped_allocations": [
+    {
+      "schedd": "bigbird21.cern.ch",
+      "cluster": 2204965
+    },
+    {
+      "schedd": "bigbird20.cern.ch",
+      "cluster": 1578796
+    }
+  ],
+  "sources_preserved": true,
+  "calibration_test_used": false
+}

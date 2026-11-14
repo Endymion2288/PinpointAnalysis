@@ -68,6 +68,10 @@ def main():
     if not pilot['gate_passed']:raise RuntimeError('same-backbone real-event health gate required')
     if config.get('empty_response_bypass') and not pilot['config'].get('empty_response_bypass'):
         raise RuntimeError('empty-response repair requires a matching real-event optimization gate')
+    if config.get('required_transfer_probe'):
+        probe=json.loads((args.root/'experiments'/config['required_transfer_probe']/'transfer_compilation.json').read_text())
+        if not probe['passed']:
+            raise RuntimeError('LP-FT requires a passing real CUDA frozen/unfrozen compilation probe')
     validate_pretraining(config)
     extra={'stage':'S4','label_budget':config.get('label_budget'),
             'initialization':config.get('initialization','scratch'),

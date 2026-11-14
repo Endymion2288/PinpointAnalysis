@@ -130,4 +130,11 @@ class TransferHealth(TrainingHealth):
             if readout <= 0 or encoder_grads:
                 report['failure_reasons'].append('LP phase requires nonzero readout gradient and absent encoder gradients')
             report['healthy'] = not report['failure_reasons']
+        elif report.get('informative_nodes',0):
+            # local_pool gradients cannot certify the compiled input/local
+            # encoder: a frozen AOT graph can disconnect just those parameters.
+            for name in ['input','local']:
+                if hasattr(self.model,name) and report['gradient_squared_norms'].get(name,0)<=0:
+                    report['failure_reasons'].append('full fine-tuning has no gradient to '+name)
+            report['healthy'] = not report['failure_reasons']
         return report

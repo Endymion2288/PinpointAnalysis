@@ -164,7 +164,12 @@ class PlaneModuleClassifierV2(nn.Module):
         return torch.cat([masked_pool(x, mask), summary], -1)
 
     def encode_local(self, nodes, mask):
-        features = (self.compiled_features(nodes, mask) if self.compiled_features is not None and nodes.is_cuda
+        # AOTAutograd can capture a frozen first invocation without parameter
+        # backward edges. Keep LP eager so the compiled encoder first sees its
+        # trainable parameters after unfreezing, including after LP validation.
+        compile_ready = (not self.config.get('linear_probe_passes',0)
+            or (self.input[0].weight.requires_grad and self.local[0].q.weight.requires_grad))
+        features = (self.compiled_features(nodes, mask) if self.compiled_features is not None and nodes.is_cuda and compile_ready
                     else self.encode_features(nodes, mask))
         # The observation hook is outside the compiled encoder. A health
         # sample must never switch the numerical implementation used to fit.
