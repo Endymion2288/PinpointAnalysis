@@ -1,0 +1,622 @@
+{
+  "stage": "R1_interim_controls_seed42",
+  "status": "complete_interim_comparison_full_R1_in_progress",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/controls_seed42/evaluation/results.json",
+  "replicates": 400,
+  "bootstrap": {
+    "chunks": 6845,
+    "resampling_blocks": 6845,
+    "accepted_family_links_used": true,
+    "multi_chunk_blocks": 0,
+    "blocks_by_class_signature": {
+      "(0,)": 866,
+      "(1,)": 3796,
+      "(2,)": 648,
+      "(3,)": 1535
+    }
+  },
+  "seconds": 52.45231278380379,
+  "pairs": [
+    {
+      "a": "compute_b4_t3_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "all",
+      "reason": "same-allocation total operation wall budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0003666666666666263,
+          "95pct": [
+            -0.004014306324950834,
+            0.003902335558613423
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.005208148556079206,
+          "95pct": [
+            -0.0073584994926949145,
+            -0.0028867625469085885
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b4_t3_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "pixel_centered",
+      "reason": "same-allocation total operation wall budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.002649938934613072,
+          "95pct": [
+            -0.007178052641348856,
+            0.010992981228380858
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.012150918555175916,
+          "95pct": [
+            -0.017789580458225547,
+            -0.006445856437725779
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b4_t3_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "large_scintillator",
+      "reason": "same-allocation total operation wall budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.002514433288169471,
+          "95pct": [
+            -0.0021450734449213276,
+            0.006673771342149319
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.006007124930798913,
+          "95pct": [
+            -0.008686303956612901,
+            -0.002590180082400673
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b4_t3_s42",
+      "b": "final_b4_t3_s42",
+      "domain": "all",
+      "reason": "extra non-tau exposures under T4 resource budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0036333333333332662,
+          "95pct": [
+            0.00017238556380214657,
+            0.0069002645087125804
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.003578942908888272,
+          "95pct": [
+            -0.005244137099464313,
+            -0.0020193354615732216
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b4_t3_s42",
+      "b": "final_b4_t3_s42",
+      "domain": "pixel_centered",
+      "reason": "extra non-tau exposures under T4 resource budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0031394382781351204,
+          "95pct": [
+            -0.005320810179325849,
+            0.010790053024525922
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.00983411284729585,
+          "95pct": [
+            -0.01463379260618474,
+            -0.004820551469358166
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b4_t3_s42",
+      "b": "final_b4_t3_s42",
+      "domain": "large_scintillator",
+      "reason": "extra non-tau exposures under T4 resource budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.006874014631315206,
+          "95pct": [
+            0.0030683340122344277,
+            0.010828145321769329
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.004567220291173069,
+          "95pct": [
+            -0.007076768008863463,
+            -0.001701223631891122
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "a": "final_b4-mae_t4_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "all",
+      "reason": "MAE initialization control; SSL cost separate",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0004333333333331746,
+          "95pct": [
+            -0.0037627200989788444,
+            0.003881211478396319
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.012053136464175052,
+          "95pct": [
+            -0.014204551215373427,
+            -0.009471233905971242
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.005749999999999644,
+          "95pct": [
+            0.0019993508694413228,
+            0.008891500018438693
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.010947816875129135,
+          "95pct": [
+            -0.012785928094078386,
+            -0.008804998688474909
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": -0.002800000000000108,
+          "95pct": [
+            -0.00568957491655449,
+            0.001520176018207496
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": 0.00010000000000000417,
+          "95pct": [
+            -0.0012832346005393713,
+            0.0015787774849656444
+          ]
+        }
+      }
+    },
+    {
+      "a": "final_b4-mae_t4_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "pixel_centered",
+      "reason": "MAE initialization control; SSL cost separate",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.007778654409757668,
+          "95pct": [
+            -0.0005107939320091509,
+            0.017330396193698333
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.024711871491489235,
+          "95pct": [
+            -0.03125644115117172,
+            -0.017913260192949056
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.00545010920092559,
+          "95pct": [
+            -0.001867363900186475,
+            0.013293148547586921
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.018767321558633476,
+          "95pct": [
+            -0.025283277672529154,
+            -0.011780301605677355
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": 0.006605019815059475,
+          "95pct": [
+            -0.010941367749171604,
+            0.020728087219343657
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": -0.001321003963011894,
+          "95pct": [
+            -0.0067125430799927525,
+            0.0052786300819738525
+          ]
+        }
+      }
+    },
+    {
+      "a": "final_b4-mae_t4_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "large_scintillator",
+      "reason": "MAE initialization control; SSL cost separate",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0032738941530158217,
+          "95pct": [
+            -0.0013373968862262745,
+            0.00795596000888021
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.01875005587871481,
+          "95pct": [
+            -0.022104025323613295,
+            -0.015200560375721615
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.008507271964954266,
+          "95pct": [
+            0.0038924414868301504,
+            0.012702143376035308
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.01627547924065076,
+          "95pct": [
+            -0.01898452083670914,
+            -0.012945867516758504
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": -0.0016924564796905323,
+          "95pct": [
+            -0.007255743108338772,
+            0.006550589744670997
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": -0.0007253384912959482,
+          "95pct": [
+            -0.0028281562620686615,
+            0.003042950111551953
+          ]
+        }
+      }
+    },
+    {
+      "a": "final_b2_t4_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "all",
+      "reason": "Scratch T4 architecture comparison; T3 ranking pending",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.009933333333332794,
+          "95pct": [
+            0.005222523311288288,
+            0.014184365424234588
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.01107827080515178,
+          "95pct": [
+            -0.014439470286287498,
+            -0.007485237647277705
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.009899999999999909,
+          "95pct": [
+            0.0057707110434985194,
+            0.013603734619765478
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.008282751315883186,
+          "95pct": [
+            -0.011301368353879798,
+            -0.005550519798859274
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": 0.0013000000000000511,
+          "95pct": [
+            -0.003079779010587326,
+            0.005276708102508485
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": 0.00070000000000003,
+          "95pct": [
+            -0.000999114856270604,
+            0.0022981786984205806
+          ]
+        }
+      }
+    },
+    {
+      "a": "final_b2_t4_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "pixel_centered",
+      "reason": "Scratch T4 architecture comparison; T3 ranking pending",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.0008614104610090711,
+          "95pct": [
+            -0.010270006622336191,
+            0.00895773176539777
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.013284439110635371,
+          "95pct": [
+            -0.025104086713989025,
+            -0.0003135721635935745
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.006773608773954276,
+          "95pct": [
+            -0.0023570965236418963,
+            0.016285109512534344
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.014729619883989242,
+          "95pct": [
+            -0.024236516743998508,
+            -0.003824232731890623
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": 0.007926023778071348,
+          "95pct": [
+            -0.009043242050599906,
+            0.020278665028665037
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": 0.0013210039630118919,
+          "95pct": [
+            -0.006671867873145345,
+            0.0056008292519433645
+          ]
+        }
+      }
+    },
+    {
+      "a": "final_b2_t4_s42",
+      "b": "final_b4_t4_s42",
+      "domain": "large_scintillator",
+      "reason": "Scratch T4 architecture comparison; T3 ranking pending",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.00958510293937842,
+          "95pct": [
+            0.004053544532080517,
+            0.014190781821163992
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.015493268020162265,
+          "95pct": [
+            -0.021054228296631273,
+            -0.009533642316383017
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.012067611773373788,
+          "95pct": [
+            0.006964174335725218,
+            0.016602217694554153
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.012514262321676295,
+          "95pct": [
+            -0.017586225389530245,
+            -0.007520550411700562
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": -0.0007253384912959404,
+          "95pct": [
+            -0.007649726724693825,
+            0.007181350528503276
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": -0.00024177949709864883,
+          "95pct": [
+            -0.0024325277752634557,
+            0.003968160893370735
+          ]
+        }
+      }
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

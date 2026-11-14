@@ -21,6 +21,17 @@ def timestamp(value):
     return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
 
 
+def condor_event_device(root, submission):
+    """Recover the assigned device even when Python failed before its manifest."""
+    path = root/'logs'/f"{submission['name']}.{submission['cluster']}.log"
+    if not path.exists():
+        return None
+    names = set(re.findall(r'DeviceName\s*=\s*"([^"]+)"', path.read_text()))
+    if len(names)==1:
+        return {'GPU': names.pop(), 'source': str(path)}
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
@@ -51,6 +62,12 @@ def main():
                 devices = {v.get('GPU') for v in cases}
                 if len(devices)==1:
                     submission['observed_profile_GPU'] = devices.pop()
+        if command and command[0].endswith('.r1.fit') and '--attempt' in command:
+            attempt = command[command.index('--attempt')+1]
+            devices = {json.loads(p.read_text()).get('GPU')
+                       for p in (args.root/'fit'/attempt).glob('B*_T*.json')}
+            if len(devices)==1:
+                submission['observed_profile_GPU'] = devices.pop()
     condor = [s for s in submissions if s.get('submitted') and s.get('backend', 'condor') == 'condor']
     groups = defaultdict(list)
     for row in condor:
@@ -78,12 +95,16 @@ def main():
             seconds = float(ad.get('RemoteWallClockTime', 0.))
             if status == 2 and ad.get('JobCurrentStartDate'):
                 seconds += max(0., now-ad['JobCurrentStartDate'])
+            event_device = condor_event_device(args.root, row) if row['gpu'] else None
+            runtime_device = observed_devices.get(str(row['cluster'])+'.0') or row.get('observed_profile_GPU')
+            device = runtime_device or ad.get('GPUs_DeviceName') or (event_device or {}).get('GPU')
+            provenance = ('CUDA runtime' if runtime_device else 'job ad' if ad.get('GPUs_DeviceName')
+                          else (event_device or {}).get('source'))
             allocations.append({'name': row['name'], 'backend': 'condor', 'cluster': row['cluster'],
                 'status': status, 'ad': ad, 'allocation_seconds': seconds,
                 'device_hours': seconds/3600 if row['gpu'] else 0.,
                 'allocated_CPU_core_hours': seconds*ad.get('RequestCpus', row['cpus'])/3600,
-                'GPU': observed_devices.get(str(row['cluster'])+'.0') or row.get('observed_profile_GPU') or ad.get('GPUs_DeviceName'),
-                'GPU_model_provenance': 'CUDA runtime linked by allocation id, otherwise job ad'})
+                'GPU': device, 'GPU_model_provenance': provenance})
     kube = [s for s in submissions if s.get('submitted') and s.get('backend')=='kubeflow']
     all_pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-o', 'json'])['items'] if kube else []
     all_jobs = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'jobs', '-o', 'json'])['items'] if kube else []
@@ -135,7 +156,7 @@ def main():
             cpu = float(cpus[:-1])/1000 if cpus.endswith('m') else float(cpus)
             allocations.append({'name': row['name'], 'backend': 'kubeflow', 'pod': pod['metadata']['name'],
                 'status': phase, 'flavor': row['flavor'], 'node': pod['spec'].get('nodeName'),
-                'GPU': observed_devices.get(row['name']),
+                'GPU': observed_devices.get(row['name']) or row.get('observed_profile_GPU'),
                 'allocation_seconds': seconds, 'device_hours': seconds/3600,
                 'allocated_CPU_core_hours': seconds*cpu/3600,
                 'accounting': ('cached PodScheduled through terminal Job transition: conservative allocation upper bound'
