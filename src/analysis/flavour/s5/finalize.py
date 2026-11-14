@@ -47,6 +47,9 @@ def audit(root, campaign, tag, require_closure=False):
     gate = json.loads((root/'pilot/gate.json').read_text())
     if not gate['gate_passed'] or gate.get('final_six_accuracy') != 1.:
         raise ValueError('balanced real six-class fit evidence missing')
+    direction = json.loads((root/'regression_diagnostic/summary.json').read_text())
+    if direction['status'] != 'complete' or direction['selected_checkpoint_component_replay_difference'] > .003:
+        raise ValueError('transverse train/readout review is incomplete')
     figures = sorted(p.name for p in (root/'evaluation'/tag).glob('*.pdf'))
     if len(figures) < 9:
         raise ValueError('declared physics figures are incomplete')
@@ -61,6 +64,7 @@ def audit(root, campaign, tag, require_closure=False):
         'bootstrap': report['bootstrap'], 'sample_strata': report['sample_strata'], 'figures': figures,
         'calibration_test_used': False, 'next_stage': 'S6 calibration, frozen final test and systematic variants',
         'scope': 'complete S5 validation study; shared validation used for candidate selection, no independent test claim',
+        'transverse_regression_review': str(root/'regression_diagnostic/summary.json'),
         'remote_device_hours': accounting['remote_device_hours'], 'CPU_allocation_hours': accounting['CPU_allocation_hours'],
         'interactive_pilot_fit_device_seconds': accounting['interactive_pilot_fit_device_seconds']}
     (root/'acceptance.json').write_text(json.dumps(result, indent=2)+'\n')

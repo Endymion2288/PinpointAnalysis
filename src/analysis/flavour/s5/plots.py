@@ -95,6 +95,24 @@ def native_examples(root, output, entry):
 
 
 def plot_results(output, entries, report, root):
+    confirmed = [r for r in report['seed_means'] if r['cohort'] == 'confirmation8']
+    if confirmed:
+        fig, axes = plt.subplots(1, 3, figsize=(13, 4), constrained_layout=True)
+        for axis, metric in zip(axes, ['NLL', 'macro_AP', 'class_2_AP']):
+            for index, row in enumerate(confirmed):
+                item = row['metrics']['raw'][metric]
+                axis.plot(item['CI95'], [index, index], color='C0', linewidth=2)
+                axis.plot(item['delta'], index, 'o', color='C0')
+                deltas = item['per_seed_deltas']
+                axis.scatter(deltas, index+np.linspace(-.12, .12, len(deltas)),
+                             color='gray', s=15, alpha=.8)
+            axis.axvline(0., color='black', linestyle='--', linewidth=.8)
+            axis.set(yticks=range(len(confirmed)),
+                     yticklabels=[r['variant'].replace('_', ' ') for r in confirmed] if metric == 'NLL' else [],
+                     xlabel='Variant minus direct four-class control', title=metric.replace('_', ' '))
+            axis.invert_yaxis()
+        fig.suptitle('Eight-pass confirmation: mean of three seeds; event-block CI95; gray points are individual seeds')
+        save(fig, output, 'three_seed_comparisons')
     passes = sorted({e[2]['config']['epochs'] for e in entries})
     for epochs in passes:
         fig, axis = plt.subplots(figsize=(7, 5))
@@ -108,7 +126,7 @@ def plot_results(output, entries, report, root):
             precision, recall, _ = precision_recall_curve(frame.label.eq(2), frame.p2)
             axis.plot(recall, precision, label=variant.replace('_', ' '))
         axis.set(xlabel='Inclusive tau efficiency', ylabel='Tau purity; balanced four-class prior',
-                 title=f'S5 validation; {epochs} passes: 2,500 tau + 7,500 backgrounds')
+                 title=f'S5 validation; neural models: {epochs} passes\n2,500 tau + 7,500 backgrounds; HGB references fitted separately')
         axis.legend(fontsize=8)
         save(fig, output, f'tau_efficiency_purity_passes{epochs}')
     frame = entries[0][1]
@@ -212,5 +230,29 @@ def plot_results(output, entries, report, root):
     fig.suptitle('Four-pass regression: paired event-block CI95; selected train-mean reference')
     save(fig, output, 'kinematic_component_vs_constant')
     pd.DataFrame(component_rows).to_csv(output/'kinematic_components.csv', index=False)
+    diagnostic_path = root/'regression_diagnostic/summary.json'
+    if diagnostic_path.exists():
+        import json
+        diagnostic = json.loads(diagnostic_path.read_text())
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
+        cases = [('checkpoint_train', 'MLP: train'), ('checkpoint_validation', 'MLP: validation'),
+                 ('ridge_train', 'Frozen ridge: train'), ('ridge_validation', 'Frozen ridge: validation')]
+        checkpoint = next((e for e in report['experiments'] if e['name'] == diagnostic['source']), None)
+        for i, axis in enumerate(axes):
+            for index, (key, label) in enumerate(cases):
+                row = diagnostic[key]
+                baseline_mse = row['constant_MSE'][i]
+                delta = row['MSE'][i]/baseline_mse-1
+                axis.plot(delta, index, 'o', color='C0')
+                if key.endswith('validation') and (key.startswith('ridge') or checkpoint is not None):
+                    interval = (diagnostic['ridge_component_MSE_minus_constant'][i]['block_CI95']
+                        if key.startswith('ridge') else checkpoint['auxiliary_quality']['kinematics']['component_MSE_minus_constant'][i]['block_CI95'])
+                    axis.plot(np.asarray(interval)/baseline_mse, [index, index], color='C0')
+            axis.axvline(0., color='black', linestyle='--', linewidth=.8)
+            axis.set(yticks=range(len(cases)), yticklabels=[label for key, label in cases] if i == 0 else [],
+                     xlabel='(MSE - constant MSE) / constant MSE', title=['px', 'py'][i]+'; encoded target')
+            axis.invert_yaxis()
+        fig.suptitle('Fixed encoder: train error and regularized readout; validation intervals use event blocks')
+        save(fig, output, 'transverse_train_and_readout')
     display = next((e for e in entries if e[2]['config'].get('variant') == 'vertex_kinematics' and e[2]['config'].get('seed') == 42), baseline)
     native_examples(root, output, display)

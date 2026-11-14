@@ -57,7 +57,7 @@ def run(root):
         elif status in ['interrupted', 'failed', 'superseded']:
             for path in directory.glob('*.pt'):
                 remove(path, 'interrupted fit excluded; retain manifest, learning history, health and retry provenance')
-    for pattern in ['truth_smoke_*.parquet', 'object_smoke_*.parquet']:
+    for pattern in ['truth_smoke.parquet', 'truth_smoke_*.parquet', 'object_smoke_*.parquet', 'objects_smoke_*.parquet']:
         for path in root.glob(pattern):
             remove(path, 'complete validated sidecar supersedes small preparation output')
     intermediate = []
