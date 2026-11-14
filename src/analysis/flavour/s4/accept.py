@@ -21,15 +21,19 @@ def same_configuration(expected, actual):
 
 
 def training_health(records, total_steps, every, initial_steps=0, maximum_preclip_norm=10000.,
-        linear_probe_passes=0):
+        linear_probe_passes=0, complete_pass_steps=None):
     frozen = [r for r in records if r.get('intentional_encoder_freeze', False)]
     informative = [r for r in records if r.get('informative_nodes', 0) > 0
         and not r.get('intentional_encoder_freeze', False)]
     activations = [v for r in records for rows in r.get('activations', {}).values() for v in rows]
     silu = [v for r in records for v in r.get('activations', {}).get('head.2', [])]
+    scheduled = set(range(1, min(initial_steps, total_steps) + 1)) | set(range(1, total_steps + 1, every))
+    unfreeze_step = linear_probe_passes * complete_pass_steps + 1 if complete_pass_steps is not None else None
+    if linear_probe_passes > 0 and unfreeze_step is not None and unfreeze_step <= total_steps:
+        # TransferAdamW requests an additional sample at the first unfrozen update.
+        scheduled.add(unfreeze_step)
     return {
-        'scheduled_samples_present': total_steps > 0 and [r['step'] for r in records] == sorted(
-            set(range(1, min(initial_steps, total_steps) + 1)) | set(range(1, total_steps + 1, every))),
+        'scheduled_samples_present': total_steps > 0 and [r['step'] for r in records] == sorted(scheduled),
         'health_decisions_pass': bool(records) and all(r.get('healthy') is True for r in records),
         'finite_sampled_activations': bool(activations) and all(r['all_finite'] == 1 for r in activations),
         'informative_input_gradients': bool(informative) and all(
@@ -39,6 +43,8 @@ def training_health(records, total_steps, every, initial_steps=0, maximum_precli
             r['gradient_squared_norms'].get('linear_readout', 0.) > 0 and all(
                 value == 0 for key, value in r['gradient_squared_norms'].items() if key != 'linear_readout')
             for r in frozen)),
+        'LP_phase_matches_frozen_recipe': not linear_probe_passes or unfreeze_step is None or all(
+            bool(r.get('intentional_encoder_freeze', False)) == (r['step'] < unfreeze_step) for r in records),
         'SiLU_never_entirely_zero': len(silu) >= len(records) > 0 and all(v['zero_fraction'] < 1. for v in silu),
         'preclip_gradients_within_review_limit': bool(records) and all(
             math.isfinite(sum(r.get('gradient_squared_norms', {}).values()))
@@ -67,7 +73,7 @@ def fit_record(root, config, evaluated):
         records = load(directory / 'training_health.json').get('records', [])
         checks.update(training_health(records, manifest.get('optimizer_steps', 0), config.get('health_every_steps', 100),
             config.get('health_initial_steps', 0), config.get('maximum_preclip_gradient_norm', 10000.),
-            linear_probe_passes=config.get('linear_probe_passes', 0)))
+            linear_probe_passes=config.get('linear_probe_passes', 0), complete_pass_steps=config.get('complete_pass_steps')))
         if config.get('empty_response_bypass'):
             every_step=manifest.get('gradient_health',{})
             norm=every_step.get('maximum_preclip_gradient_norm',float('inf'))

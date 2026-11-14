@@ -83,6 +83,18 @@ class S4AcceptanceTests(unittest.TestCase):
         self.assertFalse(terminal_allocations({'allocations': []}))
         self.assertFalse(terminal_allocations({}))
 
+    def test_frozen_recipe_requires_the_additional_unfreeze_sample(self):
+        frozen = self.health(); frozen['intentional_encoder_freeze'] = True
+        frozen['gradient_squared_norms'] = {'input': 0., 'linear_readout': 1.}
+        unfrozen = self.health(); unfrozen['step'] = 3
+        settings = {'initial_steps': 1, 'linear_probe_passes': 1, 'complete_pass_steps': 2}
+        self.assertTrue(all(training_health([frozen, unfrozen], 5, 100, **settings).values()))
+        self.assertFalse(all(training_health([frozen], 5, 100, **settings).values()))
+        extra = self.health(); extra['step'] = 4
+        self.assertFalse(all(training_health([frozen, unfrozen, extra], 5, 100, **settings).values()))
+        unfrozen['intentional_encoder_freeze'] = True
+        self.assertFalse(training_health([frozen, unfrozen], 5, 100, **settings)['LP_phase_matches_frozen_recipe'])
+
     def test_repaired_fits_require_every_update_gradient_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary);directory = root / 'experiments/a';directory.mkdir(parents=True)
