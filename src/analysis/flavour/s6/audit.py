@@ -79,6 +79,13 @@ def run(args):
         ['generator/inventory.json', 'generator/matching_diagnostics.json', 'evaluation/conditions/generator_comparison.json'],
         {'measured': 'GENIE3.04 Pythia6 Standard/NUX on W, 3512 independent hard scatters',
          'NuWro': 'unmeasured; no readable compatible input found', 'comparison_present': generator is not None})
+    decay = {scope: read(f'{scope}/truth_completion.json') for scope in ['transport', 'generator']}
+    decay_valid = all(decay[s] and decay[s]['all_observations_exactly_equal'] and
+        decay[s]['rows'] == n and read(f'evaluation/conditions/{s}_decay.json') for s, n in [('transport', 5888), ('generator', 3512)])
+    record('resimulated tau/charm truth and polarization/secondary implementation evidence',
+        'complete' if decay_valid else 'open',
+        ['transport/truth_completion.json', 'generator/truth_completion.json', 'evaluation/conditions/*_decay.json'],
+        {'replays': decay, 'charm_children_are_not_branching_fractions': True})
     migration = read('evaluation/migration/summary.json')
     record('score/energy migration and auxiliary-output validity', 'complete' if migration else 'open',
         ['evaluation/migration/summary.json', 'evaluation/migration/*.npz'], migration)
