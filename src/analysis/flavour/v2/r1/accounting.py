@@ -2,6 +2,7 @@
 
 import argparse
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -37,6 +38,12 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     args = parser.parse_args()
     now = time.time()
+    previous_path = args.root/'resources.json'
+    previous = json.loads(previous_path.read_text()) if previous_path.exists() else {}
+    terminal_ads = {(r['name'], r['cluster']): r['ad']
+                    for r in previous.get('allocations', [])
+                    if r.get('backend')=='condor' and r.get('ad', {}).get('JobStatus') in [3, 4]
+                    and (r['ad'].get('CompletionDate', 0)>0 or r['ad'].get('NumJobStarts')==0)}
     submissions = [json.loads(p.read_text()) for p in sorted((args.root/'runtime').glob('*.submission.json'))]
     observed_devices = {}
     for pattern in ['experiments/*/manifest.json', 'diagnostics/*/manifest.json',
@@ -84,12 +91,24 @@ def main():
         constraint = ' || '.join(f'ClusterId == {c}' for c in ids)
         common = ['-name', schedd, '-constraint', constraint, '-json', '-attributes', ','.join(attributes)]
         live = read_json(['condor_q', *common])
-        history = read_json(['condor_history', *common, '-limit', str(len(ids)*2)])
-        lookup = {r['ClusterId']: r for r in history+live}
+        lookup = {row['cluster']: terminal_ads[(row['name'], row['cluster'])] for row in rows
+                  if (row['name'], row['cluster']) in terminal_ads}
+        lookup.update({r['ClusterId']: r for r in live})
+        # A compound history constraint with a limit larger than its matches
+        # scans the schedd's entire history. Query only newly terminal IDs;
+        # keep the already observed immutable terminal ads for final accounting.
+        missing = sorted(set(ids)-lookup.keys())
+        def history_for(cluster):
+            return read_json(['condor_history', '-name', schedd, str(cluster), '-limit', '1',
+                              '-json', '-attributes', ','.join(attributes)])
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            for history in executor.map(history_for, missing):
+                lookup.update({r['ClusterId']: r for r in history})
         for row in rows:
             ad = lookup.get(row['cluster'])
             if ad is None:
-                allocations.append({'name': row['name'], 'backend': 'condor', 'cluster': row['cluster'], 'status': 'unresolved'})
+                allocations.append({'name': row['name'], 'backend': 'condor', 'schedd': schedd,
+                                    'cluster': row['cluster'], 'status': 'unresolved'})
                 continue
             status = ad['JobStatus']
             seconds = float(ad.get('RemoteWallClockTime', 0.))
@@ -101,6 +120,7 @@ def main():
             provenance = ('CUDA runtime' if runtime_device else 'job ad' if ad.get('GPUs_DeviceName')
                           else (event_device or {}).get('source'))
             allocations.append({'name': row['name'], 'backend': 'condor', 'cluster': row['cluster'],
+                'schedd': schedd,
                 'status': status, 'ad': ad, 'allocation_seconds': seconds,
                 'device_hours': seconds/3600 if row['gpu'] else 0.,
                 'allocated_CPU_core_hours': seconds*ad.get('RequestCpus', row['cpus'])/3600,

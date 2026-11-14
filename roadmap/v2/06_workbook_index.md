@@ -300,3 +300,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 246 | [r1 B4 paired task and tracker results](../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md) |
 | 247 | [r1 compute, initialization and architecture controls](../../workbook/2026-11-15_stage247_r1_compute_initialization_and_architecture_controls.md) |
 | 248 | [r1 projection cost and precision alignment](../../workbook/2026-11-15_stage248_r1_projection_cost_and_precision_alignment.md) |
+| 249 | [r1 auxiliary controls and allocation reuse](../../workbook/2026-11-15_stage249_r1_auxiliary_controls_and_allocation_reuse.md) |

@@ -1,0 +1,848 @@
+{
+  "status": "measured_auxiliary_controls",
+  "UTC": "2026-11-14T23:45:35.849088+00:00",
+  "models": [
+    {
+      "GPU": "NVIDIA H100 NVL",
+      "allocation_id": "1582885.0",
+      "parameters": 179241,
+      "unique_train_events": 75000,
+      "wall_seconds": 481.59000078914687,
+      "GPU_peak_MiB": 1228.2578125,
+      "metrics": {
+        "T3": {
+          "BA": 0.5475,
+          "NLL": 0.9107781587442206,
+          "macro_AP": 0.6196292961977482,
+          "macro_AUROC": 0.7480770025,
+          "per_class": [
+            {
+              "recall": 0.6196,
+              "AP": 0.7011384430839683,
+              "AUROC": 0.803874625,
+              "eff_FPR_0.01": 0.1969,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.9078629016876221,
+              "purity_FPR_0.01": 0.9077916090364223,
+              "coverage_FPR_0.01": 0.0723,
+              "eff_FPR_0.001": 0.0607,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9806647300720215,
+              "purity_FPR_0.001": 0.9681020733652312,
+              "coverage_FPR_0.001": 0.0209,
+              "eff_purity_0.8": 0.3826,
+              "coverage_purity_0.8": 0.1594,
+              "eff_purity_0.9": 0.212,
+              "coverage_purity_0.9": 0.07846666666666667
+            },
+            {
+              "recall": 0.4791,
+              "AP": 0.6001729570312853,
+              "AUROC": 0.7265009725,
+              "eff_FPR_0.01": 0.1324,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.7431545257568359,
+              "purity_FPR_0.01": 0.868766404199475,
+              "coverage_FPR_0.01": 0.0508,
+              "eff_FPR_0.001": 0.0571,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9200183749198914,
+              "purity_FPR_0.001": 0.9661590524534687,
+              "coverage_FPR_0.001": 0.0197,
+              "eff_purity_0.8": 0.1857,
+              "coverage_purity_0.8": 0.07723333333333333,
+              "eff_purity_0.9": 0.1134,
+              "coverage_purity_0.9": 0.041966666666666666
+            },
+            {
+              "recall": 0.5438,
+              "AP": 0.557576488477991,
+              "AUROC": 0.71385541,
+              "eff_FPR_0.01": 0.0752,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.7608128786087036,
+              "purity_FPR_0.01": 0.7899159663865546,
+              "coverage_FPR_0.01": 0.031733333333333336,
+              "eff_FPR_0.001": 0.009,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.8994956016540527,
+              "purity_FPR_0.001": 0.8181818181818182,
+              "coverage_FPR_0.001": 0.0036666666666666666,
+              "eff_purity_0.8": 0.0712,
+              "coverage_purity_0.8": 0.029666666666666668,
+              "eff_purity_0.9": 0.0054,
+              "coverage_purity_0.9": 0.002
+            }
+          ],
+          "events": 30000,
+          "raw_counts": [
+            10000,
+            10000,
+            10000
+          ],
+          "weighted_prior": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "weighted_counts": [
+            10000.0,
+            10000.0,
+            10000.0
+          ],
+          "confusion_counts": [
+            [
+              6196.0,
+              1544.0,
+              2260.0
+            ],
+            [
+              2088.0,
+              4791.0,
+              3121.0
+            ],
+            [
+              2098.0,
+              2464.0,
+              5438.0
+            ]
+          ],
+          "Neff": 30000.0
+        }
+      },
+      "probability_diagnostics": {
+        "mean": [
+          0.3120860755443573,
+          0.3370027244091034,
+          0.35091808438301086
+        ],
+        "std": [
+          0.2692624628543854,
+          0.1967344582080841,
+          0.18182817101478577
+        ],
+        "minimum": [
+          0.00019537149637471884,
+          0.0003662928647827357,
+          0.0027030198834836483
+        ],
+        "maximum": [
+          0.9968361854553223,
+          0.9941030144691467,
+          0.9771881103515625
+        ],
+        "distinct_vectors": 38917
+      },
+      "memory": {
+        "parent_RSS_MiB": 2201.20703125,
+        "children_RSS_MiB": 10807.390625,
+        "aggregate_RSS_MiB": 13008.5859375
+      },
+      "name": "control_b1_cnn_t3_s42",
+      "precision": "BF16_encoder_FP32_head",
+      "bf16": true,
+      "exposures": 300000,
+      "health_samples": 39,
+      "health": {
+        "image": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        },
+        "tracker": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        },
+        "head": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        }
+      },
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/experiments/control_b1_cnn_t3_s42/manifest.json"
+    },
+    {
+      "GPU": "NVIDIA H100 NVL",
+      "allocation_id": "1582885.0",
+      "parameters": 179370,
+      "unique_train_events": 100000,
+      "wall_seconds": 640.7476478449535,
+      "GPU_peak_MiB": 1228.123046875,
+      "metrics": {
+        "T3": {
+          "BA": 0.5441333333333334,
+          "NLL": 0.9065720764739796,
+          "macro_AP": 0.6184083608409287,
+          "macro_AUROC": 0.7475799683333334,
+          "per_class": [
+            {
+              "recall": 0.6116,
+              "AP": 0.7014970138637323,
+              "AUROC": 0.8045899825,
+              "eff_FPR_0.01": 0.2033,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.9001865386962891,
+              "purity_FPR_0.01": 0.9104343931930139,
+              "coverage_FPR_0.01": 0.07443333333333334,
+              "eff_FPR_0.001": 0.0569,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9826854467391968,
+              "purity_FPR_0.001": 0.966044142614601,
+              "coverage_FPR_0.001": 0.019633333333333332,
+              "eff_purity_0.8": 0.3836,
+              "coverage_purity_0.8": 0.15966666666666668,
+              "eff_purity_0.9": 0.2176,
+              "coverage_purity_0.9": 0.08056666666666666
+            },
+            {
+              "recall": 0.4647,
+              "AP": 0.5969713940470592,
+              "AUROC": 0.7245627625,
+              "eff_FPR_0.01": 0.1322,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.7461709380149841,
+              "purity_FPR_0.01": 0.8685939553219448,
+              "coverage_FPR_0.01": 0.05073333333333333,
+              "eff_FPR_0.001": 0.0461,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9342610239982605,
+              "purity_FPR_0.001": 0.9584199584199584,
+              "coverage_FPR_0.001": 0.016033333333333333,
+              "eff_purity_0.8": 0.1792,
+              "coverage_purity_0.8": 0.07466666666666667,
+              "eff_purity_0.9": 0.1145,
+              "coverage_purity_0.9": 0.0424
+            },
+            {
+              "recall": 0.5561,
+              "AP": 0.5567566746119943,
+              "AUROC": 0.71358716,
+              "eff_FPR_0.01": 0.0779,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.7575244903564453,
+              "purity_FPR_0.01": 0.7957099080694586,
+              "coverage_FPR_0.01": 0.032633333333333334,
+              "eff_FPR_0.001": 0.0115,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.8774935007095337,
+              "purity_FPR_0.001": 0.8518518518518519,
+              "coverage_FPR_0.001": 0.0045,
+              "eff_purity_0.8": 0.0668,
+              "coverage_purity_0.8": 0.027833333333333335,
+              "eff_purity_0.9": 0.0057,
+              "coverage_purity_0.9": 0.0021
+            }
+          ],
+          "events": 30000,
+          "raw_counts": [
+            10000,
+            10000,
+            10000
+          ],
+          "weighted_prior": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "weighted_counts": [
+            10000.0,
+            10000.0,
+            10000.0
+          ],
+          "confusion_counts": [
+            [
+              6116.0,
+              1516.0,
+              2368.0
+            ],
+            [
+              2035.0,
+              4647.0,
+              3318.0
+            ],
+            [
+              2036.0,
+              2403.0,
+              5561.0
+            ]
+          ],
+          "Neff": 30000.0
+        },
+        "T4": {
+          "BA": 0.426925,
+          "NLL": 1.2254115718645961,
+          "macro_AP": 0.462006511189264,
+          "macro_AUROC": 0.69641817,
+          "per_class": [
+            {
+              "recall": 0.5163,
+              "AP": 0.5928623733952174,
+              "AUROC": 0.7795545233333333,
+              "eff_FPR_0.01": 0.1727,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.8511313199996948,
+              "purity_FPR_0.01": 0.8519980266403552,
+              "coverage_FPR_0.01": 0.050675,
+              "eff_FPR_0.001": 0.0466,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.968040943145752,
+              "purity_FPR_0.001": 0.9395161290322581,
+              "coverage_FPR_0.001": 0.0124,
+              "eff_purity_0.8": 0.2482,
+              "coverage_purity_0.8": 0.077475,
+              "eff_purity_0.9": 0.1218,
+              "coverage_purity_0.9": 0.033825
+            },
+            {
+              "recall": 0.3982,
+              "AP": 0.47195962809930514,
+              "AUROC": 0.6976838366666667,
+              "eff_FPR_0.01": 0.101,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.6898095011711121,
+              "purity_FPR_0.01": 0.7709923664122137,
+              "coverage_FPR_0.01": 0.03275,
+              "eff_FPR_0.001": 0.0214,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9049211144447327,
+              "purity_FPR_0.001": 0.8770491803278688,
+              "coverage_FPR_0.001": 0.0061,
+              "eff_purity_0.8": 0.0768,
+              "coverage_purity_0.8": 0.023975,
+              "eff_purity_0.9": 0.0117,
+              "coverage_purity_0.9": 0.00325
+            },
+            {
+              "recall": 0.3537,
+              "AP": 0.33941664467893823,
+              "AUROC": 0.6181129766666666,
+              "eff_FPR_0.01": 0.0266,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.46667778491973877,
+              "purity_FPR_0.01": 0.46996466431095407,
+              "coverage_FPR_0.01": 0.01415,
+              "eff_FPR_0.001": 0.0038,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.5215795636177063,
+              "purity_FPR_0.001": 0.5588235294117647,
+              "coverage_FPR_0.001": 0.0017,
+              "eff_purity_0.8": 0.0,
+              "coverage_purity_0.8": 0.0,
+              "eff_purity_0.9": 0.0,
+              "coverage_purity_0.9": 0.0
+            },
+            {
+              "recall": 0.4395,
+              "AP": 0.4437873985835951,
+              "AUROC": 0.6903213433333333,
+              "eff_FPR_0.01": 0.0699,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.6647999882698059,
+              "purity_FPR_0.01": 0.6996996996996997,
+              "coverage_FPR_0.01": 0.024975,
+              "eff_FPR_0.001": 0.0105,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.8137065768241882,
+              "purity_FPR_0.001": 0.7777777777777778,
+              "coverage_FPR_0.001": 0.003375,
+              "eff_purity_0.8": 0.0082,
+              "coverage_purity_0.8": 0.00255,
+              "eff_purity_0.9": 0.0016,
+              "coverage_purity_0.9": 0.000425
+            }
+          ],
+          "events": 40000,
+          "raw_counts": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "weighted_prior": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ],
+          "weighted_counts": [
+            10000.0,
+            10000.0,
+            10000.0,
+            10000.0
+          ],
+          "confusion_counts": [
+            [
+              5163.0,
+              1100.0,
+              2263.0,
+              1474.0
+            ],
+            [
+              1344.0,
+              3982.0,
+              2298.0,
+              2376.0
+            ],
+            [
+              2057.0,
+              1981.0,
+              3537.0,
+              2425.0
+            ],
+            [
+              1378.0,
+              1860.0,
+              2367.0,
+              4395.0
+            ]
+          ],
+          "Neff": 40000.0
+        }
+      },
+      "probability_diagnostics": {
+        "mean": [
+          0.25003582239151,
+          0.2490662783384323,
+          0.24180471897125244,
+          0.2590896785259247
+        ],
+        "std": [
+          0.2378511130809784,
+          0.16553331911563873,
+          0.10053762793540955,
+          0.1501610279083252
+        ],
+        "minimum": [
+          0.00021463587472680956,
+          0.0002789680438581854,
+          0.001431393320672214,
+          0.0014247528742998838
+        ],
+        "maximum": [
+          0.9967329502105713,
+          0.9714411497116089,
+          0.5833427906036377,
+          0.9291618466377258
+        ],
+        "distinct_vectors": 38917
+      },
+      "memory": {
+        "parent_RSS_MiB": 2194.51953125,
+        "children_RSS_MiB": 10890.7265625,
+        "aggregate_RSS_MiB": 13085.21875
+      },
+      "name": "control_b1_cnn_t4_s42",
+      "precision": "BF16_encoder_FP32_head",
+      "bf16": true,
+      "exposures": 400000,
+      "health_samples": 52,
+      "health": {
+        "image": {
+          "positive_gradient_samples": 52,
+          "positive_update_samples": 52
+        },
+        "tracker": {
+          "positive_gradient_samples": 52,
+          "positive_update_samples": 52
+        },
+        "head": {
+          "positive_gradient_samples": 52,
+          "positive_update_samples": 52
+        }
+      },
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/experiments/control_b1_cnn_t4_s42/manifest.json"
+    },
+    {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "allocation_id": "pinpoint-r1-b1-without-tracker-k14",
+      "parameters": 793545,
+      "unique_train_events": 75000,
+      "wall_seconds": 872.7864076998085,
+      "GPU_peak_MiB": 1085.66650390625,
+      "metrics": {
+        "T3": {
+          "BA": 0.5318666666666666,
+          "NLL": 0.8989374251607081,
+          "macro_AP": 0.6245022934667848,
+          "macro_AUROC": 0.7472618458333332,
+          "per_class": [
+            {
+              "recall": 0.7242,
+              "AP": 0.7034093552561995,
+              "AUROC": 0.8090771025,
+              "eff_FPR_0.01": 0.2034,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.8650900721549988,
+              "purity_FPR_0.01": 0.9104744852282901,
+              "coverage_FPR_0.01": 0.07446666666666667,
+              "eff_FPR_0.001": 0.0584,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9744139909744263,
+              "purity_FPR_0.001": 0.9668874172185431,
+              "coverage_FPR_0.001": 0.020133333333333333,
+              "eff_purity_0.8": 0.3896,
+              "coverage_purity_0.8": 0.16233333333333333,
+              "eff_purity_0.9": 0.2272,
+              "coverage_purity_0.9": 0.08413333333333334
+            },
+            {
+              "recall": 0.4881,
+              "AP": 0.6050272564021191,
+              "AUROC": 0.7315256975,
+              "eff_FPR_0.01": 0.1432,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.8594844937324524,
+              "purity_FPR_0.01": 0.8774509803921569,
+              "coverage_FPR_0.01": 0.0544,
+              "eff_FPR_0.001": 0.0653,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9771841764450073,
+              "purity_FPR_0.001": 0.9702823179791976,
+              "coverage_FPR_0.001": 0.022433333333333333,
+              "eff_purity_0.8": 0.1876,
+              "coverage_purity_0.8": 0.07816666666666666,
+              "eff_purity_0.9": 0.1314,
+              "coverage_purity_0.9": 0.048666666666666664
+            },
+            {
+              "recall": 0.3833,
+              "AP": 0.5650702687420357,
+              "AUROC": 0.7011827375,
+              "eff_FPR_0.01": 0.1208,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.7531940340995789,
+              "purity_FPR_0.01": 0.8579545454545454,
+              "coverage_FPR_0.01": 0.046933333333333334,
+              "eff_FPR_0.001": 0.043,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9547635316848755,
+              "purity_FPR_0.001": 0.9555555555555556,
+              "coverage_FPR_0.001": 0.015,
+              "eff_purity_0.8": 0.15,
+              "coverage_purity_0.8": 0.062433333333333334,
+              "eff_purity_0.9": 0.0934,
+              "coverage_purity_0.9": 0.03456666666666667
+            }
+          ],
+          "events": 30000,
+          "raw_counts": [
+            10000,
+            10000,
+            10000
+          ],
+          "weighted_prior": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "weighted_counts": [
+            10000.0,
+            10000.0,
+            10000.0
+          ],
+          "confusion_counts": [
+            [
+              7242.0,
+              1200.0,
+              1558.0
+            ],
+            [
+              2973.0,
+              4881.0,
+              2146.0
+            ],
+            [
+              3274.0,
+              2893.0,
+              3833.0
+            ]
+          ],
+          "Neff": 30000.0
+        }
+      },
+      "probability_diagnostics": {
+        "mean": [
+          0.2986864149570465,
+          0.3573310673236847,
+          0.34398001432418823
+        ],
+        "std": [
+          0.25890466570854187,
+          0.21694692969322205,
+          0.18327759206295013
+        ],
+        "minimum": [
+          3.230844595236704e-05,
+          0.0002894349454436451,
+          0.00115734722930938
+        ],
+        "maximum": [
+          0.9966260194778442,
+          0.9987748265266418,
+          0.9900538921356201
+        ],
+        "distinct_vectors": 38285
+      },
+      "memory": {
+        "parent_RSS_MiB": 2059.125,
+        "children_RSS_MiB": 10936.1328125,
+        "aggregate_RSS_MiB": 12974.6015625
+      },
+      "name": "final_b1_t3_s42_without_tracker",
+      "precision": "BF16_encoder_FP32_head",
+      "bf16": true,
+      "exposures": 300000,
+      "health_samples": 39,
+      "health": {
+        "image": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        },
+        "tracker": {
+          "positive_gradient_samples": 0,
+          "positive_update_samples": 39
+        },
+        "head": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        }
+      },
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/experiments/final_b1_t3_s42_without_tracker/manifest.json"
+    },
+    {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "allocation_id": "pinpoint-r1-b1-no-tracker-fp32-k15",
+      "parameters": 793545,
+      "unique_train_events": 75000,
+      "wall_seconds": 821.9803681480698,
+      "GPU_peak_MiB": 1123.46533203125,
+      "metrics": {
+        "T3": {
+          "BA": 0.5269333333333334,
+          "NLL": 0.8985941743012091,
+          "macro_AP": 0.6231184936386786,
+          "macro_AUROC": 0.7465998475000001,
+          "per_class": [
+            {
+              "recall": 0.7094,
+              "AP": 0.7010152566746205,
+              "AUROC": 0.80699203,
+              "eff_FPR_0.01": 0.2007,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.8630660176277161,
+              "purity_FPR_0.01": 0.9093792478477571,
+              "coverage_FPR_0.01": 0.07356666666666667,
+              "eff_FPR_0.001": 0.0502,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9742367267608643,
+              "purity_FPR_0.001": 0.9616858237547893,
+              "coverage_FPR_0.001": 0.0174,
+              "eff_purity_0.8": 0.3882,
+              "coverage_purity_0.8": 0.16166666666666665,
+              "eff_purity_0.9": 0.2298,
+              "coverage_purity_0.9": 0.08506666666666667
+            },
+            {
+              "recall": 0.4898,
+              "AP": 0.6039128870420509,
+              "AUROC": 0.731084815,
+              "eff_FPR_0.01": 0.1421,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.8233763575553894,
+              "purity_FPR_0.01": 0.8766193707587908,
+              "coverage_FPR_0.01": 0.054033333333333336,
+              "eff_FPR_0.001": 0.0613,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9772557616233826,
+              "purity_FPR_0.001": 0.9684044233807267,
+              "coverage_FPR_0.001": 0.0211,
+              "eff_purity_0.8": 0.19,
+              "coverage_purity_0.8": 0.07896666666666667,
+              "eff_purity_0.9": 0.1266,
+              "coverage_purity_0.9": 0.04686666666666667
+            },
+            {
+              "recall": 0.3816,
+              "AP": 0.5644273371993641,
+              "AUROC": 0.7017226975,
+              "eff_FPR_0.01": 0.1197,
+              "actual_FPR_0.01": 0.01,
+              "threshold_FPR_0.01": 0.7459216713905334,
+              "purity_FPR_0.01": 0.8568360773085183,
+              "coverage_FPR_0.01": 0.046566666666666666,
+              "eff_FPR_0.001": 0.0463,
+              "actual_FPR_0.001": 0.001,
+              "threshold_FPR_0.001": 0.9533425569534302,
+              "purity_FPR_0.001": 0.9585921325051759,
+              "coverage_FPR_0.001": 0.0161,
+              "eff_purity_0.8": 0.1477,
+              "coverage_purity_0.8": 0.0615,
+              "eff_purity_0.9": 0.0956,
+              "coverage_purity_0.9": 0.0354
+            }
+          ],
+          "events": 30000,
+          "raw_counts": [
+            10000,
+            10000,
+            10000
+          ],
+          "weighted_prior": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "weighted_counts": [
+            10000.0,
+            10000.0,
+            10000.0
+          ],
+          "confusion_counts": [
+            [
+              7094.0,
+              1196.0,
+              1710.0
+            ],
+            [
+              2911.0,
+              4898.0,
+              2191.0
+            ],
+            [
+              3164.0,
+              3020.0,
+              3816.0
+            ]
+          ],
+          "Neff": 30000.0
+        }
+      },
+      "probability_diagnostics": {
+        "mean": [
+          0.2994344234466553,
+          0.3516904413700104,
+          0.34887441992759705
+        ],
+        "std": [
+          0.25762858986854553,
+          0.2111503779888153,
+          0.181582510471344
+        ],
+        "minimum": [
+          2.0221776139806025e-05,
+          0.0004764548793900758,
+          0.001198980608023703
+        ],
+        "maximum": [
+          0.9944340586662292,
+          0.9987775683403015,
+          0.9918400049209595
+        ],
+        "distinct_vectors": 38285
+      },
+      "memory": {
+        "parent_RSS_MiB": 1882.87109375,
+        "children_RSS_MiB": 10767.73046875,
+        "aggregate_RSS_MiB": 12647.21484375
+      },
+      "name": "final_b1_t3_s42_without_tracker_fp32",
+      "precision": "FP32",
+      "bf16": false,
+      "exposures": 300000,
+      "health_samples": 39,
+      "health": {
+        "image": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        },
+        "tracker": {
+          "positive_gradient_samples": 0,
+          "positive_update_samples": 39
+        },
+        "head": {
+          "positive_gradient_samples": 39,
+          "positive_update_samples": 39
+        }
+      },
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/experiments/final_b1_t3_s42_without_tracker_fp32/manifest.json"
+    }
+  ],
+  "initialization_audit": {
+    "status": "complete",
+    "seed": 42,
+    "models": [
+      {
+        "family": "B1",
+        "common_shape_tensors": 68,
+        "equal_common_shape_tensors": 68,
+        "mismatched_common_tensors": [],
+        "different_output_shapes": [
+          "head.4.weight",
+          "head.4.bias"
+        ],
+        "T3_fresh_rebuild_mismatches": []
+      },
+      {
+        "family": "B2",
+        "common_shape_tensors": 68,
+        "equal_common_shape_tensors": 68,
+        "mismatched_common_tensors": [],
+        "different_output_shapes": [
+          "head.4.weight",
+          "head.4.bias"
+        ],
+        "T3_fresh_rebuild_mismatches": []
+      },
+      {
+        "family": "B3",
+        "common_shape_tensors": 116,
+        "equal_common_shape_tensors": 116,
+        "mismatched_common_tensors": [],
+        "different_output_shapes": [
+          "head.4.weight",
+          "head.4.bias"
+        ],
+        "T3_fresh_rebuild_mismatches": []
+      },
+      {
+        "family": "B4",
+        "common_shape_tensors": 181,
+        "equal_common_shape_tensors": 181,
+        "mismatched_common_tensors": [],
+        "different_output_shapes": [
+          "head.4.weight",
+          "head.4.bias",
+          "linear_readout.weight",
+          "linear_readout.bias"
+        ],
+        "T3_fresh_rebuild_mismatches": []
+      }
+    ],
+    "scope": "fresh CPU model construction; common T3/T4 tensors and exact repeated T3 initialization; no datasets or trained checkpoints read",
+    "seconds": 0.5677707204595208,
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "MAE_diagnostics_migration": {
+    "UTC": "2026-11-14T23:45:05.241848+00:00",
+    "cluster": 1582888,
+    "before": {
+      "ClusterId": 1582888,
+      "JobStatus": 1,
+      "NumJobStarts": 0,
+      "RemoteWallClockTime": 0.0
+    },
+    "removal": "All jobs matching constraint (ClusterId == 1582888 && JobStatus == 1 && NumJobStarts == 0) have been marked for removal\n",
+    "after_live": [],
+    "history": [
+      {
+        "ClusterId": 1582888,
+        "JobStatus": 3,
+        "NumJobStarts": 0,
+        "RemoteWallClockTime": 0.0
+      }
+    ],
+    "reason": "K15 FP32 control succeeded and released the one Kubeflow GPU unit; move still-unstarted MAE diagnostics into this available slot",
+    "original_allocation_seconds": 0,
+    "replacement": "pinpoint-r1-diagnostics-mae-k16"
+  },
+  "scope": "full frozen Tune40k; four-pass controls; no final architecture ranking or paired control comparison yet",
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}
