@@ -53,6 +53,14 @@ def submit(args):
     prototype_pool=args.gpu_pool=='fp32-prototype'
     compact_pool=args.gpu_pool=='native-bf16-compact'
     small_pool=args.gpu_pool=='native-bf16-small'
+    diagnostic_pool=args.gpu_pool=='cuda-fp32-diagnostic'
+    if diagnostic_pool:
+        if args.backend!='condor' or args.stage!='campaign' or args.concurrency!=1:
+            raise ValueError('FP32 diagnostic pool requires a single Condor campaign worker')
+        selected=json.loads(args.campaign.read_text())['experiments']
+        if not args.tasks or any(selected[task].get('program')!='functional_probe'
+            or selected[task].get('device')!='cuda' for task in args.tasks):
+            raise ValueError('FP32 diagnostic pool accepts only CUDA functional probes, never BF16 fits')
     if small_pool and (args.backend!='condor' or args.concurrency!=1):
         raise ValueError('12GB native BF16 pool requires one fit per allocation')
     if compact_pool and (args.backend!='condor' or args.concurrency>2):
@@ -180,6 +188,13 @@ transfer_output_files = ""
                 # This LCG108 torch build has sm75+ kernels; V100/sm70 fails
                 # even in FP32 before the first optimizer step.
                 requirement='(DeviceName == "Tesla T4") && (GlobalMemoryMb >= 15000)'
+            elif diagnostic_pool:
+                # These probes disable autocast and TF32. T4/sm75 is supported
+                # by LCG108; V100/sm70 is not in this torch build. Keep BF16
+                # fitting out of this lane through the explicit guard above.
+                products=['Tesla T4','NVIDIA A100-PCIE-40GB','NVIDIA H100 NVL','NVIDIA H200',
+                    'NVIDIA H100L-1-12C MIG 1g.12gb','NVIDIA H100L-2-24C MIG 2g.24gb']
+                requirement='('+' || '.join(f'(DeviceName == "{product}")' for product in products)+') && (GlobalMemoryMb >= 10000)'
             elif small_pool:
                 requirement='(DeviceName == "NVIDIA H100L-1-12C MIG 1g.12gb") && (GlobalMemoryMb >= 10000)'
             elif compact_pool:
@@ -248,7 +263,7 @@ def main():
     parser.add_argument('--tasks',type=int,nargs='+',required=True)
     parser.add_argument('--concurrency',type=int,default=6)
     parser.add_argument('--flavor',choices=GPU_FLAVORS,default='h100-47gb')
-    parser.add_argument('--gpu-pool',choices=['native-bf16','native-bf16-compact','native-bf16-small','fp32-prototype'],default='native-bf16')
+    parser.add_argument('--gpu-pool',choices=['native-bf16','native-bf16-compact','native-bf16-small','fp32-prototype','cuda-fp32-diagnostic'],default='native-bf16')
     parser.add_argument('--deadline',type=int,default=21600)
     parser.add_argument('--apply',action='store_true')
     submit(parser.parse_args())
