@@ -1,0 +1,58 @@
+{
+  "experiments": [
+    {
+      "architecture": "plane_module_v2",
+      "dim": 96,
+      "compression": "multiscale",
+      "latents": 64,
+      "region_queries": 2,
+      "region_blocks": 32,
+      "readout_skip": true,
+      "local_chunk_blocks": 2048,
+      "compile_local": false,
+      "local_execution_version": 2,
+      "residual_scale": 0.1,
+      "modalities": [
+        "pixel",
+        "bar",
+        "tracker"
+      ],
+      "pitch_mm": 0.0,
+      "window_pixels": 16,
+      "signal": true,
+      "local_residual": true,
+      "batch_size": 16,
+      "cache_shards": 2,
+      "bucket_size": 256,
+      "weight_decay": 0.01,
+      "clip_grad_norm": 1.0,
+      "empty_response_bypass": true,
+      "architecture_revision": 3,
+      "maximum_preclip_gradient_norm": 10000.0,
+      "seed": 42,
+      "workers": 1,
+      "learning_rate": 0.0003,
+      "minimum_learning_rate": 1e-05,
+      "warmup_steps": 100,
+      "health_initial_steps": 16,
+      "health_every_steps": 100,
+      "progress_every_steps": 100,
+      "epochs": 4,
+      "label_budget": 10000,
+      "label_subset_seed": 20261113,
+      "auxiliary_weight": 0.1,
+      "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
+      "name": "s5_all_paths_fit_gate",
+      "six_way": true,
+      "auxiliaries": [
+        "vertex",
+        "semantics",
+        "charm",
+        "kinematics"
+      ],
+      "relative_path": true,
+      "use_objects": true,
+      "pilot_steps": 256
+    }
+  ]
+}

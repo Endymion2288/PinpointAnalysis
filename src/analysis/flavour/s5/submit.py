@@ -35,6 +35,7 @@ def submit(args):
               'mkdir -p "$PINPOINT_S5_SCRATCH/code"',
               'tar -xf '+shlex.quote(str(archive))+' -C "$PINPOINT_S5_SCRATCH/code"',
               'export PYTHONPATH="$PINPOINT_S5_SCRATCH/code/src:${PYTHONPATH:-}"',
+              'export PINPOINT_CODE_COMMIT='+commit,
               'cd "$PINPOINT_S5_SCRATCH"']
     if args.gpu:
         script += ['source "$PINPOINT_S5_SCRATCH/code/src/analysis/flavour/s3/runtime_repair.sh" '+shlex.quote(str(root))]

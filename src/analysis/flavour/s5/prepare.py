@@ -94,7 +94,7 @@ def finalize(root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('stage', choices=['initialize', 'create', 'finalize', 'objects'])
+    parser.add_argument('stage', choices=['initialize', 'create', 'finalize', 'objects', 'finalize_objects'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--source', type=Path)
     parser.add_argument('--task', type=int, default=0)
@@ -106,6 +106,9 @@ def main():
         create(args.root, args.task, args.limit)
     elif args.stage == 'finalize':
         finalize(args.root)
+    elif args.stage == 'finalize_objects':
+        from analysis.flavour.s5.objects import finalize_objects
+        finalize_objects(args.root)
     else:
         from analysis.flavour.s5.objects import create_shard
         create_shard(args.root, args.task, args.limit)
