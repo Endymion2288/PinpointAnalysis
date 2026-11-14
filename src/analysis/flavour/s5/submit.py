@@ -53,7 +53,7 @@ def submit(args):
         wrapper.write_text('\n'.join([script[0], redirect, *script[1:], 'exec python -m "$@"'])+'\n')
         wrapper.chmod(0o755)
         text = '\n'.join(['universe = vanilla', f'executable = {wrapper}',
-            'arguments = '+shlex.join(command+(['--task', '$(task)'] if args.tasks else [])),
+            'arguments = '+' '.join(a if a == '$(task)' else shlex.quote(a) for a in command+(['--task', '$(task)'] if args.tasks else [])),
             f'initialdir = {directory}', 'environment = "PINPOINT_JOB_ID=$(ClusterId).$(Process)"',
             'output = /dev/null', 'error = /dev/null', f'request_cpus = {args.cpus}',
             f'request_memory = {args.memory}', 'request_disk = 12GB',

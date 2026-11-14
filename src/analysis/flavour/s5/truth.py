@@ -109,6 +109,9 @@ def event_truth(meta, primary, tau, charm, trajectories, pixel, bars, tracker, g
                tau_decay_valid=bool(label == 2 and decay_valid))
     vertex = np.array([meta['init' + c] for c in 'XYZ'])
     out.update(vertex_mm=vertex.tolist(), vertex_valid=bool(np.isfinite(vertex).all()))
+    original_ids = set(trajectories['trackTID'][trajectories['trackPID'] == 0].tolist()) if trajectories else set()
+    out.update(interaction_track_ids=sorted(original_ids), tau_direct_track_ids=charged_ids,
+               vertex_supervision_valid=bool(np.isfinite(vertex).all() and not meta['all_empty']))
     if label == 2 and decay_valid:
         x, y, z = decay
         in_pixel = geometry['pixel_Xpos'][0] <= x <= geometry['pixel_Xpos'][-1] and geometry['pixel_Ypos'][0] <= y <= geometry['pixel_Ypos'][-1]
@@ -142,7 +145,6 @@ def event_truth(meta, primary, tau, charm, trajectories, pixel, bars, tracker, g
     # Visible primary-system proxy: G4 parentID=0, excluding nuclei/neutrinos;
     # replace tau with decay daughters where defined. It is not accepted energy.
     vis_p, vis_e, valid = np.zeros(3), 0., bool(primary and trajectories)
-    original_ids = set(trajectories['trackTID'][trajectories['trackPID'] == 0].tolist()) if trajectories else set()
     if 'Px' in primary:
         for i, (pdg, tid) in enumerate(zip(primary['PDG'], primary['trackID'])):
             if int(tid) not in original_ids or abs(int(pdg)) in NEUTRINOS or abs(int(pdg)) >= 10**9:
