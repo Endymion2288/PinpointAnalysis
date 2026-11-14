@@ -163,6 +163,42 @@ def finalize(args):
         'variants': len(config['variants']), 'nominal_maximum_probability_differences': differences})
 
 
+def replay_metrics(args):
+    from analysis.flavour.s3.metrics import MetricCache
+    from analysis.flavour.s6.calibration import extract, transform
+    from analysis.flavour.s6.evaluate import FixedCache, METRIC_NAMES, METRIC_INDEX
+    from analysis.flavour.s6.bootstrap import weights
+    frame = pd.read_parquet(args.root/'predictions/variants_raw.parquet', filters=[('variant', '=', 'nominal')])
+    original = pd.read_parquet(args.root/'predictions/test_raw.parquet')
+    original = frame[KEY].merge(original, on=KEY, how='left', validate='one_to_one', sort=False)
+    if len(original) != 32000 or original.label.isna().any():
+        raise ValueError('nominal replay metric event coverage differs')
+    freeze = json.loads((args.root/'analysis_freeze.json').read_text())
+    names = freeze['conditions']['models']+['mae3_100k_ensemble']
+    output = {}
+    y = frame.label.to_numpy()
+    for name in names:
+        cal = freeze['calibrators'][name]
+        rows = {}
+        for scenario in cal['priors']:
+            points = [p for p in cal['thresholds'] if p['scenario'] == scenario['name']]
+            prior = scenario['prior']
+            a = transform(extract(frame, name, freeze['candidates']), cal['temperature'], prior)
+            b = transform(extract(original, name, freeze['candidates']), cal['temperature'], prior)
+            w = weights(y, prior)
+            fixed, fixed0 = FixedCache(y, a, points), FixedCache(y, b, points)
+            metric_names = METRIC_NAMES+fixed.names
+            values = np.r_[MetricCache(y, a).compute(w)[0][METRIC_INDEX], fixed.vector(w)]
+            before = np.r_[MetricCache(y, b).compute(w)[0][METRIC_INDEX], fixed0.vector(w)]
+            rows[scenario['name']] = {'replay_minus_original': dict(zip(metric_names, (values-before).tolist())),
+                'argmax_changed_events': int((a.argmax(1) != b.argmax(1)).sum()),
+                'tau_cut_membership_changed_events': [int((x[:, 2] != y0[:, 2]).sum()) for x, y0 in zip(fixed.passed, fixed0.passed)]}
+        output[name] = rows
+    write_json(args.root/'audit/replay_numerical_effects.json', {'events': len(frame), 'models': output,
+        'definition': 'identical nominal observations under frozen BF16/compiled/batch64 inference; different batch composition/backend concurrency; fixed cuts unchanged',
+        'thresholds_retuned': False})
+
+
 def pool(args):
     processes, logs = [], []
     for lane in range(args.lanes):
@@ -185,7 +221,7 @@ def pool(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['worker', 'pool', 'finalize'])
+    parser.add_argument('command', choices=['worker', 'pool', 'finalize', 'replay_metrics'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--models', nargs='+')
