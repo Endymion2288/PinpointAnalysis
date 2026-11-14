@@ -42,6 +42,8 @@ python -m analysis.flavour.s4.plan_low_label resolve \
 
 `resolve`真实运行成功，9项针对性测试全部通过；覆盖原train隔离、完整遍历、线性LP、冻结/解冻及resume、预算独立选择、排除未解冻epoch，以及完整预算步数重算。CERN/Condor的精确启动状态和累计预算继续以EOS submission记录及账本为准。
 
+六项重拟合已用提交`f2aa8cc`的源码快照正式提交：`pinpoint-s4-optimized-1k`，Condor `bigbird21.cern.ch` cluster 2204899，两进程、native BF16 compact GPU池；精确脚本、schedd选择和claims保存在`logs/submission_pinpoint-s4-optimized-1k.json`。训练尚在等待获配，同时Kubeflow六进程及Condor 2204846两进程继续推进10k inner训练。02:30 UTC的Condor better-analyze显示待排的compact/12GB候选均无愿意立即运行的匹配slot，继续由已获配的两个后端推进工作。
+
 ## 阶段性结论
 
 事实：1k的固定选择规则选中LP-FT八次完整遍历，inner NLL低于其他三种配方，但仍未优于均匀先验。此次选择未使用独立validation，训练数值健康。
