@@ -33,7 +33,7 @@ def lcg107(command, **kwargs):
 
 def build(args):
     started = time.monotonic()
-    destination = args.root/'g4'
+    destination = args.root/('g4_truth' if args.compact_truth else 'g4')
     destination.mkdir(exist_ok=True)
     scratch = Path(os.environ.get('PINPOINT_S6_SCRATCH', '/tmp'))/'g4_build'
     source = scratch/'source'
@@ -68,6 +68,39 @@ def build(args):
         '  fDecayer->event.back().pol(s6Polarization);')
     xml = Path(LCG107)/'share/Pythia8/xmldoc'
     replace_once(decayer, 'new Pythia("../share/Pythia8/xmldoc", false)', f'new Pythia("{xml}", false)')
+    if args.compact_truth:
+        # AnalysisManager's tau/charm trees require G4Trajectory objects. Only
+        # initial positions/momenta of parents and their direct children are
+        # needed; retaining shower steps would waste memory and disk space.
+        tracking = source/'src/TrackingAction.cc'
+        replace_once(tracking, '#include "G4Track.hh"',
+            '#include "G4Track.hh"\n#include "G4Trajectory.hh"\n#include "G4EventManager.hh"\n'
+            '#include "G4Event.hh"\n#include <unordered_set>\n'
+            'namespace {\n'
+            'class S6OriginTrajectory : public G4Trajectory {\n'
+            'public:\n'
+            '  explicit S6OriginTrajectory(const G4Track* track) : G4Trajectory(track) {}\n'
+            '  void AppendStep(const G4Step*) override {}\n'
+            '  void MergeTrajectory(G4VTrajectory*) override {}\n'
+            '};\n}\n')
+        replace_once(source/'include/TrackingAction.hh', '#include "G4UserTrackingAction.hh"',
+            '#include "G4UserTrackingAction.hh"\n#include <unordered_set>')
+        replace_once(source/'include/TrackingAction.hh', 'class TrackingAction : public G4UserTrackingAction\n{',
+            'class TrackingAction : public G4UserTrackingAction\n{\n'
+            '  private:\n    int s6Event = -1;\n    std::unordered_set<int> s6Parents;')
+        replace_once(tracking, 'void TrackingAction::PreUserTrackingAction(const G4Track* aTrack)\n{\n}',
+            'void TrackingAction::PreUserTrackingAction(const G4Track* aTrack)\n{\n'
+            '  const int event = G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID();\n'
+            '  if (event != s6Event) { s6Parents.clear(); s6Event = event; }\n'
+            '  const int pdg = std::abs(aTrack->GetParticleDefinition()->GetPDGEncoding());\n'
+            '  const bool charm = pdg == 411 || pdg == 421 || pdg == 431 || pdg == 4122 ||\n'
+            '    pdg == 4112 || pdg == 4212 || pdg == 4222 || pdg == 4132 || pdg == 4232;\n'
+            '  const bool parent = aTrack->GetParentID() == 0 && (pdg == 15 || charm);\n'
+            '  if (parent) s6Parents.insert(aTrack->GetTrackID());\n'
+            '  const bool keep = parent || s6Parents.count(aTrack->GetParentID());\n'
+            '  fpTrackingManager->SetStoreTrajectory(keep ? 1 : 0);\n'
+            '  if (keep) fpTrackingManager->SetTrajectory(new S6OriginTrajectory(aTrack));\n'
+            '}')
     archive = destination/'source.tar.gz'
     with tarfile.open(archive, 'w:gz') as stream:
         stream.add(source, arcname='source')
@@ -81,7 +114,9 @@ def build(args):
     write_json(destination/'build.json', {'status': 'complete', 'source': str(args.g4_source), 'source_commit': commit,
         'LCG': LCG107, 'seconds': time.monotonic()-started, 'cpus': args.cpus,
         'patches': ['optional fixed input z; original default preserved', 'optional W material density; geometry unchanged',
-                    'optional charge-conjugate tau helicity, no charm override', 'absolute matching Pythia XML directory'],
+                    'optional charge-conjugate tau helicity, no charm override', 'absolute matching Pythia XML directory']+
+                    (['compact primary tau/charm and direct-child trajectory origins; no physics/RNG changes'] if args.compact_truth else []),
+        'compact_truth': args.compact_truth,
         'tau_helicity_convention': 'parameter is tau-minus helicity; tau-plus gets opposite helicity',
         'original_source_modified': False, 'UTC': datetime.now(timezone.utc).isoformat()})
     print(json.dumps({'build': 'complete', 'seconds': time.monotonic()-started}), flush=True)
@@ -232,6 +267,8 @@ def convert_response(output, destination, metadata, geometry):
                     'unknown' if meta['label'] == 2 else 'not_tau', 'resim_tau_decay_valid': bool(valid),
                 'resim_tau_decay_vertex_mm': vertex.tolist() if valid else None,
                 'resim_charm_primary': any(charmed(p) for p in prim['PDG']),
+                'resim_charm_tree_rows': len(children),
+                'resim_tau_tree_rows': len(tau.get(int(event['evtID'][i]), {}).get('PDG', [])),
                 'resim_charm_e': bool((np.abs(children) == 11).any()), 'resim_charm_mu': bool((np.abs(children) == 13).any())})
     destination.mkdir(parents=True, exist_ok=True)
     pq.write_table(pa.Table.from_pylist(observations), destination/'observations.parquet', compression=COMPRESSION)
@@ -291,8 +328,11 @@ def run(args):
         if variant['helicity'] is not None and not metadata.label.eq(2).any():
             continue
         destination = base/'shards'/variant['name']/f'{args.task:04d}'
-        if (destination/'summary.json').exists():
+        replay = base/'truth_replay'/variant['name']/f'{args.task:04d}'
+        if (replay/'summary.json' if args.truth_replay else destination/'summary.json').exists():
             continue
+        if args.truth_replay and not (destination/'summary.json').exists():
+            raise ValueError('truth replay requires the original response to compare')
         tick = time.monotonic()
         output = scratch/(variant['name']+'.root')
         macro = scratch/(variant['name']+'.mac')
@@ -301,33 +341,95 @@ def run(args):
         env = dict(os.environ, PINPOINT_USE_INPUT_Z='1', PINPOINT_W_DENSITY_SCALE=str(variant['density']))
         if variant['helicity'] is not None:
             env['PINPOINT_TAU_HELICITY'] = str(variant['helicity'])
-        log_path = args.root/'logs'/f'{args.scope}_{args.task:04d}_{variant["name"]}.g4.log'
+        log_path = args.root/'logs'/f'{args.scope}_{args.task:04d}_{variant["name"]}{"_truth" if args.truth_replay else ""}.g4.log'
         with log_path.open('w') as log:
-            lcg107([args.root/'g4/pinpoint_s6', macro], cwd=scratch, env=env, stdout=log, stderr=subprocess.STDOUT)
-        convert_response(output, destination, metadata, geometry)
+            executable = args.root/('g4_truth' if args.truth_replay else 'g4')/'pinpoint_s6'
+            lcg107([executable, macro], cwd=scratch, env=env, stdout=log, stderr=subprocess.STDOUT)
+        converted = scratch/'converted' if args.truth_replay else destination
+        convert_response(output, converted, metadata, geometry)
+        if args.truth_replay:
+            comparisons = {name: pq.read_table(destination/name).equals(pq.read_table(converted/name))
+                for name in ['observations.parquet', 'targets.parquet', 'ideal_tracker.parquet']}
+            if not all(comparisons.values()):
+                write_json(replay/'response_mismatch.json', comparisons)
+                raise ValueError('truth recording changed a frozen response; original outputs preserved')
+            truth = pd.read_parquet(converted/'provenance.parquet')
+            from analysis.flavour.s6.prepare import KEY
+            replay.mkdir(parents=True, exist_ok=True)
+            columns = KEY+[c for c in truth if c.startswith('resim_')]
+            truth[columns].to_parquet(replay/'truth.parquet', index=False, compression='gzip')
+            shutil.rmtree(converted)
         output_bytes = output.stat().st_size
         output.unlink()
         import gzip
         with log_path.open('rb') as original, gzip.open(str(log_path)+'.gz', 'wb') as compressed:
             shutil.copyfileobj(original, compressed)
         log_path.unlink()
-        write_json(destination/'summary.json', {'status': 'complete', 'task': args.task, 'events': len(metadata),
+        write_json((replay if args.truth_replay else destination)/'summary.json', {'status': 'complete', 'task': args.task, 'events': len(metadata),
             'variant': variant, 'seconds': time.monotonic()-tick, 'transient_ROOT_bytes': output_bytes,
-            'ROOT_retained': False, 'fixed_input_vertices': True})
+            'ROOT_retained': False, 'fixed_input_vertices': True,
+            **({'response_exactly_equal': comparisons, 'tau_valid': int(truth.resim_tau_decay_valid.sum()),
+                'tau_branches': truth.resim_tau_branch.value_counts().to_dict(),
+                'charm_primary': int(truth.resim_charm_primary.sum()),
+                'charm_tree_rows': int(truth.resim_charm_tree_rows.sum())} if args.truth_replay else {})})
         print(json.dumps({'scope': args.scope, 'task': args.task, 'variant': variant['name'],
             'events': len(metadata), 'seconds': time.monotonic()-tick}), flush=True)
     shutil.rmtree(scratch)
 
 
+def finalize_truth(args):
+    import numpy as np
+    import pandas as pd
+    from analysis.flavour.inventory import COMPRESSION
+    from analysis.flavour.s6.prepare import KEY
+    base = args.root/args.scope
+    manifest = pd.read_parquet(base/'manifest.parquet')
+    paths = sorted((base/'truth_replay').glob('*/*/summary.json'))
+    if not paths:
+        raise ValueError('no compact truth replay evidence')
+    frames, seconds = [], 0.
+    for path in paths:
+        summary = json.loads(path.read_text())
+        if not all(summary['response_exactly_equal'].values()):
+            raise ValueError('compact replay response differs')
+        frame = pd.read_parquet(path.parent/'truth.parquet')
+        frame['condition'] = path.parent.parent.name
+        frames.append(frame)
+        seconds += summary['seconds']
+    truth = pd.concat(frames, ignore_index=True)
+    if truth.duplicated(KEY+['condition']).any():
+        raise ValueError('duplicate compact truth keys')
+    conditions = transport_variants(json.loads((args.root/'conditions.json').read_text()))
+    if args.scope == 'generator':
+        conditions = conditions[:1]
+    for variant in conditions:
+        name = variant['name']
+        expected = manifest[manifest.label.eq(2)] if variant['helicity'] is not None else manifest
+        actual = truth[truth.condition.eq(name)]
+        if not np.array_equal(actual.sort_values(KEY)[KEY].to_numpy(), expected.sort_values(KEY)[KEY].to_numpy()):
+            raise ValueError(f'incomplete compact truth condition {name}')
+    truth.to_parquet(base/'decay_truth.parquet', index=False, compression=COMPRESSION)
+    write_json(base/'truth_completion.json', {'status': 'complete', 'rows': len(truth),
+        'condition_counts': truth.groupby('condition').size().to_dict(), 'seconds': seconds,
+        'all_observations_exactly_equal': True, 'physics_and_frozen_inputs_changed': False,
+        'tau_valid': int(truth.resim_tau_decay_valid.sum()),
+        'tau_branches': truth.resim_tau_branch.value_counts().to_dict(),
+        'charm_primary': int(truth.resim_charm_primary.sum()),
+        'charm_tree_rows': int(truth.resim_charm_tree_rows.sum()),
+        'trajectory_scope': 'primary tau/charm and direct children; initial position/momentum only'})
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['build', 'smoke', 'prepare', 'run'])
+    parser.add_argument('command', choices=['build', 'smoke', 'prepare', 'run', 'finalize_truth'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--g4-source', type=Path, default=G4_SOURCE)
     parser.add_argument('--cpus', type=int, default=4)
     parser.add_argument('--events-per-task', type=int, default=16)
     parser.add_argument('--task', type=int, default=0)
     parser.add_argument('--scope', choices=['transport', 'generator'], default='transport')
+    parser.add_argument('--compact-truth', action='store_true')
+    parser.add_argument('--truth-replay', action='store_true')
     args = parser.parse_args()
     globals()[args.command](args)
 

@@ -80,6 +80,13 @@ def finalize(args):
         if len(actual) != len(expected) or not np.array_equal(actual.sort_values(KEY)[KEY].to_numpy(),
             expected.sort_values(KEY)[KEY].to_numpy()):
             raise ValueError(f'{args.scope} condition {condition} event coverage differs')
+    truth_path = args.root/args.scope/'decay_truth.parquet'
+    if truth_path.exists():
+        truth = pd.read_parquet(truth_path)
+        frame = frame.drop(columns=[c for c in frame if c.startswith('resim_')]).merge(
+            truth, on=KEY+['condition'], how='left', validate='one_to_one', sort=False)
+        if frame.resim_tau_branch.isna().any():
+            raise ValueError('compact decay truth missing shifted events')
     frame.to_parquet(args.root/'predictions'/f'{args.scope}_raw.parquet', index=False, compression=COMPRESSION)
     write_json(args.root/'predictions'/f'{args.scope}_completion.json', {'status': 'complete',
         'events': len(frame), 'condition_counts': frame.groupby('condition').size().to_dict()})

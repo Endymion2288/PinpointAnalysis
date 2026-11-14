@@ -36,7 +36,8 @@ def collect(args):
         for command in commands:
             try:
                 response = subprocess.run(command, capture_output=True, text=True, timeout=55)
-                values = json.loads(response.stdout) if response.returncode == 0 else []
+                # condor_q may return success and no text when no ads match.
+                values = json.loads(response.stdout.strip() or '[]') if response.returncode == 0 else []
                 snapshots.append({'schedd': schedd, 'command': command, 'exit': response.returncode,
                     'stderr': response.stderr, 'records': len(values)})
                 lookup = {i: n for i, n, _ in entries}
