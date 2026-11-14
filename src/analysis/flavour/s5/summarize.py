@@ -11,6 +11,7 @@ def run(root, output):
     report = json.loads((root/'evaluation/final/summary.json').read_text())
     accounting = json.loads((root/'campaign_accounting.json').read_text())
     cleanup = json.loads((root/'cleanup.json').read_text())
+    evidence = {row['name']: row for row in acceptance['models']}
     columns = ['NLL', 'macro_AP', 'macro_AUROC', 'macro_F1', 'balanced_accuracy',
                'class_0_AP', 'class_1_AP', 'class_2_AP', 'class_3_AP',
                'class_2_eff_at_0.01_FPR', 'class_2_eff_at_0.001_FPR']
@@ -25,6 +26,7 @@ def run(root, output):
             'epochs': None if hgb else config['epochs'], 'label_budget': config['label_budget'],
             'metrics': {key: entry['metrics'][key] for key in columns},
             'auxiliary_quality': entry['auxiliary_quality'], 'six_way': entry.get('six_way'),
+            'learning': evidence.get(entry['name'], {}).get('learning'),
             'elapsed_seconds': manifest.get('elapsed_seconds', manifest.get('seconds'))})
     result = {'stage': 'S5', 'complete': True, 'root': str(root),
         'scope': acceptance['scope'], 'calibration_test_used': False,

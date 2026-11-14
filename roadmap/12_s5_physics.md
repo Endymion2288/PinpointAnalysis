@@ -46,3 +46,7 @@ Direct4/six-way两组是预先固定的控制，不依赖剩余screen结果，�
 Containment采用观测端边缘/末端signal fraction作为leakage proxy，保留有效mask，不称作真实shower containment。辅助回归同时报告预测/目标方差及相对于仅10k所选train标签均值的误差，避免把近常数输出当成功重建。正式评价入口为`analysis.flavour.s5.evaluate`，原生响应诊断由CPU批作业`analysis.flavour.s5.diagnostics`生成。
 
 旧kinematic Linear+Huber在px/py上未优于train均值，不能作为方向重建成功的证据。额外revision2采用train-only逐分量std预条件的MSE、均值初始化、非负pZ/E link，并比较Linear与normalized residual MLP。依据[GradNorm, ICML2018](https://proceedings.mlr.press/v80/chen18a.html)、[ReZero, UAI2021](https://proceedings.mlr.press/v161/bachlechner21a.html)和FAMO的损失平衡/残差初始化思想，先处理目标与尺度，未实现完整动态梯度算法。16-event gate同时要求四分量误差下降，已通过；泛化由两项额外4-pass对照测量，探索范围与预定候选确认分开记录。
+
+修复的四pass完整validation见[阶段201](../workbook/2026-11-14_stage201_s5_component_results_and_direction_audit.md)：MLP的encoded px MSE比train常数低1.18%，pz/E低约36.4%，py差值区间仍跨零。后续[固定encoder诊断](../workbook/2026-11-14_stage202_s5_direction_readout_results.md)完成完整10k train与10k validation读回及FP64 ridge求解，正则化仅在train family folds选择；py MSE差−0.000098174、block CI95[−0.000178426,−0.000018241]，只有约0.34%改善。保留少量signed方向信息的事实与仍弱的方位角重建，未把低预测幅度当作硬件信息缺失。
+
+最终评价矩阵固定为26个神经网络+3个HGB，完整10k相同validation；三seed确认比较8-pass各自direct4控制，额外head修复比较4-pass控制。`analysis.flavour.s5.finalize`读取配置、实际健康采样、参数变化、checkpoint复算、真实六类fit与方向审查；`accounting`保存allocation终态，`cleanup`合并重复输出并保留selected模型和证据，`summarize`导出仓库小型JSON。独立test不在本阶段使用。

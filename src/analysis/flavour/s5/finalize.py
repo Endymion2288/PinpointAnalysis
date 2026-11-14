@@ -25,10 +25,21 @@ def audit(root, campaign, tag, require_closure=False):
             raise ValueError('learning/replay evidence missing: '+name)
         if not (directory/'best.pt').exists() or entries[name]['metrics']['events'] != 10000:
             raise ValueError('checkpoint or full validation missing: '+name)
+        samples = json.loads((directory/'training_health.json').read_text())['samples']
+        if not samples or not all(row['healthy'] for row in samples):
+            raise ValueError('saved internal-health measurements failed: '+name)
+        head_statistics = [item for row in samples if row['informative_nodes'] > 0
+                           for item in row['activations'].get('head.2', [])]
+        if not head_statistics or max(item['zero_fraction'] for item in head_statistics) == 1.:
+            raise ValueError('head activation learning evidence is missing: '+name)
         models.append({'name': name, 'variant': config['variant'], 'seed': config['seed'], 'epochs': config['epochs'],
                        'parameters': manifest['parameters'], 'GPU': manifest['gpu'], 'best_epoch': manifest['best_epoch'],
                        'replay_maximum_probability_difference': replay['maximum_probability_difference'],
-                       'parameter_delta_norms': replay['parameter_delta_norms'], 'metrics': entries[name]['metrics']})
+                       'parameter_delta_norms': replay['parameter_delta_norms'],
+                       'learning': {'optimizer_steps': manifest['optimizer_steps'], 'internal_health_samples': len(samples),
+                                    'maximum_SiLU_zero_fraction': max(item['zero_fraction'] for item in head_statistics),
+                                    'selected_checkpoint_probability_std': replay['validation_probability_std']},
+                       'metrics': entries[name]['metrics']})
     for directory in hgb:
         manifest = json.loads((directory/'manifest.json').read_text())
         if manifest['status'] != 'complete' or manifest['maximum_replay_difference'] != 0:
