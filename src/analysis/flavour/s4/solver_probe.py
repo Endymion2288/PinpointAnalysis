@@ -14,6 +14,7 @@ from analysis.flavour.inventory import write_json
 from analysis.flavour.s4.dataset import LabelDataset
 from analysis.flavour.s4.probes import extract, fit_probe
 from analysis.flavour.s4.train import build_model, validate_pretraining
+from analysis.flavour.s2.train import save_parquet, atomic_output
 
 
 def main():
@@ -33,10 +34,17 @@ def main():
         features = extract(model, dataset, {**case, 'extract_branches': ['full', 'global']},
             torch.device('cpu'), output / 'progress.json', case['initialization'])
         labels = dataset.metadata.label.to_numpy(); dataset.native.close()
+        cache = args.root / 'temporary_features' / config['name'] / case['initialization']
+        cache.mkdir(parents=True, exist_ok=True)
+        save_parquet(dataset.metadata, cache / 'train_metadata.parquet')
+        for branch, array in features.items():
+            atomic_output(cache / (branch + '.npy'),
+                lambda stream, value=array: np.save(stream, value, allow_pickle=False))
         for branch, x in features.items():
             reference, a = fit_probe(x, labels, 'linear', {**case, 'probe_linear_solver': 'lbfgs',
                 'probe_linear_max_iter': 10000, 'probe_linear_tolerance': 1e-8,
-                'probe_require_stationarity': True, 'probe_solver_threads': 2})
+                'probe_require_stationarity': True, 'probe_solver_threads': 2,
+                'probe_lbfgs_polish': config.get('reference_gradient_continuation', False)})
             candidate, b = fit_probe(x, labels, 'linear', {**case, 'probe_linear_solver': 'newton-cg',
                 'probe_linear_max_iter': 200, 'probe_linear_tolerance': 1e-6,
                 'probe_require_stationarity': True, 'probe_solver_threads': 2})

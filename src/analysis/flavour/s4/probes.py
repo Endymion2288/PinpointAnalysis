@@ -19,6 +19,7 @@ from sklearn.preprocessing import StandardScaler,FunctionTransformer
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import log_loss
 from scipy.special import logsumexp,expit
+from scipy.optimize import minimize
 from threadpoolctl import threadpool_limits
 import torch
 from torch.utils.data import DataLoader
@@ -54,6 +55,46 @@ def linear_stationarity(pipeline,features,labels):
         'certificate_precision':'CPU float64 using the fitted scaler outputs'}
 
 
+def polish_linear_reference(pipeline, features, labels):
+    """Continue L-BFGS with gradient stopping on the unchanged convex objective."""
+    x = np.asarray(pipeline[:-1].transform(features), dtype=np.float64)
+    model = pipeline[-1]
+    target = np.searchsorted(model.classes_, labels)
+    n, dimensions = x.shape
+    shape = (model.coef_.shape[0], dimensions + 1)
+
+    def objective(parameters):
+        values = parameters.reshape(shape)
+        weights, intercept = values[:, :-1], values[:, -1]
+        scores = x @ weights.T + intercept
+        if len(model.classes_) == 2:
+            scores = scores[:, 0]
+            loss = np.mean(np.logaddexp(0, scores) - target * scores)
+            residual = (expit(scores) - target)[:, None]
+        else:
+            normalizer = logsumexp(scores, axis=1)
+            loss = np.mean(normalizer - scores[np.arange(n), target])
+            residual = np.exp(scores - normalizer[:, None])
+            residual[np.arange(n), target] -= 1
+        gradient = np.column_stack((residual.T @ x / n + weights / (model.C * n),
+            residual.mean(0)))
+        return loss + np.square(weights).sum() / (2 * model.C * n), gradient.ravel()
+
+    initial = np.column_stack((model.coef_, model.intercept_)).ravel()
+    result = minimize(objective, initial, method='L-BFGS-B', jac=True,
+        options={'ftol': 0., 'gtol': model.tol * .1, 'maxiter': model.max_iter,
+            'maxls': 50, 'maxfun': model.max_iter * 50})
+    values = result.x.reshape(shape)
+    model.coef_ = values[:, :-1].copy()
+    model.intercept_ = values[:, -1].copy()
+    return {'method': 'L-BFGS-B continuation, identical C/scaler/objective',
+        'ftol': 0., 'gtol': model.tol * .1, 'iterations': int(result.nit),
+        'function_evaluations': int(result.nfev), 'status': int(result.status),
+        'message': str(result.message), 'success': bool(result.success),
+        'initial_gradient_infinity_norm': float(np.max(np.abs(objective(initial)[1]))),
+        'final_gradient_infinity_norm': float(np.max(np.abs(result.jac)))}
+
+
 def fit_probe(features, labels, mode, config):
     """Fit without held-out labels and retain numerical convergence evidence."""
     estimator=(LogisticRegression(C=1.,max_iter=config.get('probe_linear_max_iter',500),
@@ -66,6 +107,11 @@ def fit_probe(features, labels, mode, config):
     with threadpool_limits(limits=config.get('probe_solver_threads',1)),warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter('always',ConvergenceWarning)
         pipeline.fit(features,labels)
+        polish = None
+        if mode == 'linear' and config.get('probe_lbfgs_polish', False):
+            if estimator.solver != 'lbfgs':
+                raise ValueError('gradient-only L-BFGS continuation is for the reference solver')
+            polish = polish_linear_reference(pipeline, features, labels)
     messages=[str(row.message) for row in caught if issubclass(row.category,ConvergenceWarning)]
     for row in caught:
         if not issubclass(row.category,ConvergenceWarning):
@@ -83,6 +129,9 @@ def fit_probe(features, labels, mode, config):
         'fit_accuracy':float(np.mean(estimator.classes_[probability.argmax(1)]==labels)),
         'coefficient_L2_norm':float(np.sqrt(sum(np.square(value).sum() for value in coefficients))),
         'C':estimator.C if mode=='linear' else None}
+    if polish is not None:
+        audit['reference_continuation'] = polish
+        audit['passed'] = audit['passed'] and polish['success']
     if mode=='linear':
         with threadpool_limits(limits=config.get('probe_solver_threads',1)):
             audit.update(linear_stationarity(pipeline,features,labels))

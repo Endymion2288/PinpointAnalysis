@@ -1,0 +1,65 @@
+{
+  "stage": "S4_CPU_only_readout_fits",
+  "experiments": [
+    {
+      "name": "s4_newton_cpu_v2_scratch_s42",
+      "program": "probe_fit",
+      "feature_source": "s4_newton_features_scratch_s42",
+      "readout_campaign": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_newton_v2_readouts.json",
+      "tasks": [
+        0,
+        1,
+        2
+      ],
+      "wait_for_completion_seconds": 14400
+    },
+    {
+      "name": "s4_newton_cpu_v2_mae3_s42",
+      "program": "probe_fit",
+      "feature_source": "s4_newton_features_mae3_s42",
+      "readout_campaign": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_newton_v2_readouts.json",
+      "tasks": [
+        3,
+        4,
+        5
+      ],
+      "wait_for_completion_seconds": 14400
+    },
+    {
+      "name": "s4_newton_cpu_v2_ema3_s42",
+      "program": "probe_fit",
+      "feature_source": "s4_newton_features_ema3_s42",
+      "readout_campaign": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_newton_v2_readouts.json",
+      "tasks": [
+        6,
+        7,
+        8
+      ],
+      "wait_for_completion_seconds": 14400
+    },
+    {
+      "name": "s4_newton_cpu_v2_mae5_s42",
+      "program": "probe_fit",
+      "feature_source": "s4_newton_features_mae5_s42",
+      "readout_campaign": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_newton_v2_readouts.json",
+      "tasks": [
+        9,
+        10,
+        11
+      ],
+      "wait_for_completion_seconds": 14400
+    },
+    {
+      "name": "s4_newton_cpu_v2_rel_channel5_s42",
+      "program": "probe_fit",
+      "feature_source": "s4_newton_features_rel_channel5_s42",
+      "readout_campaign": "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_newton_v2_readouts.json",
+      "tasks": [
+        12,
+        13,
+        14
+      ],
+      "wait_for_completion_seconds": 14400
+    }
+  ]
+}

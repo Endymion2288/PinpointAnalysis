@@ -35,6 +35,34 @@ class ReadoutSolverTests(unittest.TestCase):
              'probe_linear_tolerance': 1e-9, 'probe_require_stationarity': True})
         self.assertFalse(audit['passed']); self.assertFalse(audit['stationarity_passed'])
 
+    def test_gradient_reference_continuation_preserves_multiclass_objective(self):
+        rng = np.random.default_rng(14)
+        base = rng.normal(size=(320, 12)).astype('float32')
+        x = np.concatenate([base, base + .02 * rng.normal(size=base.shape)], axis=1)
+        labels = np.argmax(base[:, :4] + rng.normal(size=(320, 4)), axis=1)
+        settings = {'probe_linear_max_iter': 5000, 'probe_linear_tolerance': 1e-8,
+            'probe_require_stationarity': True}
+        reference, a = fit_probe(x, labels, 'linear', {**settings,
+            'probe_linear_solver': 'lbfgs', 'probe_lbfgs_polish': True})
+        candidate, b = fit_probe(x, labels, 'linear', {**settings,
+            'probe_linear_solver': 'newton-cg'})
+        self.assertTrue(a['passed']); self.assertTrue(b['passed'])
+        self.assertLessEqual(a['gradient_infinity_norm'], 1.01e-8)
+        self.assertLess(abs(a['regularized_mean_objective'] - b['regularized_mean_objective']), 1e-9)
+        np.testing.assert_allclose(reference.predict_proba(x), candidate.predict_proba(x), atol=1e-5, rtol=0)
+
+    def test_gradient_reference_continuation_handles_unpenalized_binary_intercept(self):
+        rng = np.random.default_rng(18)
+        x = rng.normal(size=(240, 8)).astype('float32')
+        labels = (x[:, 0] + .7 * rng.normal(size=240) > .6).astype(int)
+        settings = {'probe_linear_max_iter': 2000, 'probe_linear_tolerance': 1e-8,
+            'probe_require_stationarity': True}
+        _, a = fit_probe(x, labels, 'linear', {**settings,
+            'probe_linear_solver': 'lbfgs', 'probe_lbfgs_polish': True})
+        _, b = fit_probe(x, labels, 'linear', {**settings, 'probe_linear_solver': 'newton-cg'})
+        self.assertTrue(a['passed']); self.assertTrue(b['passed'])
+        self.assertLess(abs(a['regularized_mean_objective'] - b['regularized_mean_objective']), 1e-9)
+
     def test_feature_selection_keeps_desired_row_order_and_rejects_wrong_labels(self):
         bank = pd.DataFrame({'run': [10081] * 4, 'chunk': [2] * 4,
             'row': [4, 1, 3, 2], 'label': [0, 1, 2, 3]})

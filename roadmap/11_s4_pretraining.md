@@ -94,7 +94,7 @@ FASERCal式partial Rel语义学习的前期诊断见[stage119](../workbook/2026-
 
 EMA3、MAE5、partial channel Rel5的1k下游修复已完成，10k正常候选按新共同选择复用，100k三项fine-tuning仍运行。所有来源SSL已经健康/学习readback，复用encoder而不重训SSL本身；channel Rel使用额外模拟语义监督，不能称纯自监督标签效率。统一目标比较冻结于[30配置/45预测](configs/s4_transfer4_objectives_evaluation.json)及[66配对](configs/s4_transfer4_objectives_pairs.json)。
 
-Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k full Scratch/MAE3仍触及上限，旧完整readability评价已停止。新的[同目标Newton-CG回归](configs/s4_newton_solver_gate.json)采用同features、fit-only scaler和C=1，要求真实梯度驻点与同目标概率/目标值对照。通过后[五项GPU暂存features](configs/s4_newton_feature_banks.json)各提取一次100k train/10k validation，[15项CPU readouts](configs/s4_newton_readouts.json)按精确nested-label事件键分别拟合；GPU不等待CPU求解。暂存数组在完整验收后删除，只保留小型readouts、预测和provenance。新驻点结果尚未测量，未收敛旧模型仅作诊断。
+Frozen readout的L-BFGS max_iter从500提高到5,000后，1k/10k可收敛，100k full Scratch/MAE3仍触及上限，旧完整readability评价已停止。首轮同目标回归中Newton-CG全部满足1e-6梯度要求，但L-BFGS参考因目标变化提前停止，梯度1.68e-8至4.62e-8超过原1e-8要求。修复后的[同目标v2回归](configs/s4_newton_solver_gate_v2.json)仅为参考增加`ftol=0`的梯度停止continuation，保持原阈值和目标，见[阶段171](../workbook/2026-11-14_stage171_s4_reference_gradient_stopping.md)。通过后[五项GPU暂存features](configs/s4_newton_v2_feature_banks.json)各提取一次100k train/10k validation，[15项CPU readouts](configs/s4_newton_v2_readouts.json)按精确nested-label事件键分别拟合；GPU不等待CPU求解。暂存数组在完整验收后删除，只保留小型readouts、预测和provenance。v2真实驻点结果尚未测量，未收敛旧模型仅作诊断。
 
 本轮不扩至1M。完成剩余目标对照、驻点readout、完整物理统计、真实allocation终态和总成本后形成S4最终报告。当前已完成低标签重训和matched控制，S4整体仍进行中。
 
