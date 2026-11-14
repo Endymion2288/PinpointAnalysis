@@ -1,0 +1,184 @@
+{
+  "pairs": [
+    {
+      "name": "baseline_mae3_minus_scratch_s17",
+      "a": "s4_empty_scratch_n10000_s17",
+      "b": "s4_empty_mae3_n10000_s17",
+      "seed": 17
+    },
+    {
+      "name": "baseline_mae3_minus_scratch_s42",
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_empty_mae3_n10000_s42",
+      "seed": 42
+    },
+    {
+      "name": "baseline_mae3_minus_scratch_s2026",
+      "a": "s4_empty_scratch_n10000_s2026",
+      "b": "s4_empty_mae3_n10000_s2026",
+      "seed": 2026
+    },
+    {
+      "name": "optimized_mae3_minus_scratch_s17",
+      "a": "s4_optimized_scratch_n10000_s17",
+      "b": "s4_optimized_mae3_n10000_s17",
+      "seed": 17
+    },
+    {
+      "name": "optimized_mae3_minus_scratch_s42",
+      "a": "s4_optimized_scratch_n10000_s42",
+      "b": "s4_optimized_mae3_n10000_s42",
+      "seed": 42
+    },
+    {
+      "name": "optimized_mae3_minus_scratch_s2026",
+      "a": "s4_optimized_scratch_n10000_s2026",
+      "b": "s4_optimized_mae3_n10000_s2026",
+      "seed": 2026
+    },
+    {
+      "name": "optimized_minus_baseline_scratch_s17",
+      "a": "s4_empty_scratch_n10000_s17",
+      "b": "s4_optimized_scratch_n10000_s17",
+      "seed": 17
+    },
+    {
+      "name": "optimized_minus_baseline_scratch_s42",
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_optimized_scratch_n10000_s42",
+      "seed": 42
+    },
+    {
+      "name": "optimized_minus_baseline_scratch_s2026",
+      "a": "s4_empty_scratch_n10000_s2026",
+      "b": "s4_optimized_scratch_n10000_s2026",
+      "seed": 2026
+    },
+    {
+      "name": "optimized_minus_baseline_mae3_s17",
+      "a": "s4_empty_mae3_n10000_s17",
+      "b": "s4_optimized_mae3_n10000_s17",
+      "seed": 17
+    },
+    {
+      "name": "optimized_minus_baseline_mae3_s42",
+      "a": "s4_empty_mae3_n10000_s42",
+      "b": "s4_optimized_mae3_n10000_s42",
+      "seed": 42
+    },
+    {
+      "name": "optimized_minus_baseline_mae3_s2026",
+      "a": "s4_empty_mae3_n10000_s2026",
+      "b": "s4_optimized_mae3_n10000_s2026",
+      "seed": 2026
+    }
+  ],
+  "seed_mean_comparisons": [
+    {
+      "name": "baseline_mae3_minus_scratch",
+      "label_budget": 10000,
+      "pairs": [
+        {
+          "a": "s4_empty_scratch_n10000_s17",
+          "b": "s4_empty_mae3_n10000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_empty_scratch_n10000_s42",
+          "b": "s4_empty_mae3_n10000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_empty_scratch_n10000_s2026",
+          "b": "s4_empty_mae3_n10000_s2026",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "optimized_mae3_minus_scratch",
+      "label_budget": 10000,
+      "pairs": [
+        {
+          "a": "s4_optimized_scratch_n10000_s17",
+          "b": "s4_optimized_mae3_n10000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_optimized_scratch_n10000_s42",
+          "b": "s4_optimized_mae3_n10000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_optimized_scratch_n10000_s2026",
+          "b": "s4_optimized_mae3_n10000_s2026",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "optimized_minus_baseline_scratch",
+      "label_budget": 10000,
+      "pairs": [
+        {
+          "a": "s4_empty_scratch_n10000_s17",
+          "b": "s4_optimized_scratch_n10000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_empty_scratch_n10000_s42",
+          "b": "s4_optimized_scratch_n10000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_empty_scratch_n10000_s2026",
+          "b": "s4_optimized_scratch_n10000_s2026",
+          "seed": 2026
+        }
+      ]
+    },
+    {
+      "name": "optimized_minus_baseline_mae3",
+      "label_budget": 10000,
+      "pairs": [
+        {
+          "a": "s4_empty_mae3_n10000_s17",
+          "b": "s4_optimized_mae3_n10000_s17",
+          "seed": 17
+        },
+        {
+          "a": "s4_empty_mae3_n10000_s42",
+          "b": "s4_optimized_mae3_n10000_s42",
+          "seed": 42
+        },
+        {
+          "a": "s4_empty_mae3_n10000_s2026",
+          "b": "s4_optimized_mae3_n10000_s2026",
+          "seed": 2026
+        }
+      ]
+    }
+  ],
+  "paired_tau_branches": true,
+  "comparison_groups": {
+    "s4_empty_scratch_n10000_s17": "Baseline Scratch",
+    "s4_empty_mae3_n10000_s17": "Baseline MAE3",
+    "s4_empty_scratch_n10000_s42": "Baseline Scratch",
+    "s4_empty_mae3_n10000_s42": "Baseline MAE3",
+    "s4_empty_scratch_n10000_s2026": "Baseline Scratch",
+    "s4_empty_mae3_n10000_s2026": "Baseline MAE3",
+    "s4_optimized_scratch_n10000_s17": "Optimized Scratch",
+    "s4_optimized_scratch_n10000_s42": "Optimized Scratch",
+    "s4_optimized_scratch_n10000_s2026": "Optimized Scratch",
+    "s4_optimized_mae3_n10000_s17": "Optimized MAE3",
+    "s4_optimized_mae3_n10000_s42": "Optimized MAE3",
+    "s4_optimized_mae3_n10000_s2026": "Optimized MAE3"
+  },
+  "evaluation_scope": "S4 complete 10k validation reused after optimization design; calibration/test frozen",
+  "design_scope": "Optimization was designed after inspecting baseline S4 validation. Recipe and refit epoch were selected only by family-grouped train-inner OOF NLL within the original 10k labels. Baseline used validation-NLL selection; optimized fits use the fixed final epoch. Comparisons describe this entire change and are conditional on the reused validation. After the compilation failure, all LP competitors were retrained and the common OOF selection repeated. It again selects early/6 passes. The six complete non-LP candidates have identical actual training settings and are reused with original names/configs; only selection provenance is refreshed externally.",
+  "paired_event_bootstrap": {
+    "replicates": 400,
+    "unit": "connected physical run/chunk components",
+    "seed_mean_is_ensemble": false
+  }
+}

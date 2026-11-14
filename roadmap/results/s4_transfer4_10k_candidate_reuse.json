@@ -1,0 +1,118 @@
+{
+  "utc": "2026-11-14T04:08:42.309183+00:00",
+  "selection": {
+    "recipe": "early",
+    "epochs": 6,
+    "mean_OOF_NLL": 1.290429473429576,
+    "OOF_NLL_by_initialization": {
+      "scratch": 1.302972205976966,
+      "mae3": 1.2778867408821863
+    },
+    "mean_updates": 2550.0
+  },
+  "scope": "reuse six completed non-LP candidates after corrected competing LP fits and fresh common OOF selection; preserve exact original manifests, names, configs and cost; final validation and parameter audit still required",
+  "candidates": [
+    {
+      "reused": "s4_optimized_scratch_n10000_s17",
+      "proposed": "s4_transfer4_optimized_scratch_n10000_s17",
+      "actual_training_settings_equal": true,
+      "only_metadata_differences": {
+        "name": [
+          "s4_optimized_scratch_n10000_s17",
+          "s4_transfer4_optimized_scratch_n10000_s17"
+        ],
+        "inner_selection_source": [
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner.json",
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner_v4.json"
+        ]
+      },
+      "original_code_commit": "6bea7931ec65915969393f99663e86764a98adc2",
+      "original_best_epoch": 6
+    },
+    {
+      "reused": "s4_optimized_scratch_n10000_s42",
+      "proposed": "s4_transfer4_optimized_scratch_n10000_s42",
+      "actual_training_settings_equal": true,
+      "only_metadata_differences": {
+        "name": [
+          "s4_optimized_scratch_n10000_s42",
+          "s4_transfer4_optimized_scratch_n10000_s42"
+        ],
+        "inner_selection_source": [
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner.json",
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner_v4.json"
+        ]
+      },
+      "original_code_commit": "6bea7931ec65915969393f99663e86764a98adc2",
+      "original_best_epoch": 6
+    },
+    {
+      "reused": "s4_optimized_scratch_n10000_s2026",
+      "proposed": "s4_transfer4_optimized_scratch_n10000_s2026",
+      "actual_training_settings_equal": true,
+      "only_metadata_differences": {
+        "name": [
+          "s4_optimized_scratch_n10000_s2026",
+          "s4_transfer4_optimized_scratch_n10000_s2026"
+        ],
+        "inner_selection_source": [
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner.json",
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner_v4.json"
+        ]
+      },
+      "original_code_commit": "6bea7931ec65915969393f99663e86764a98adc2",
+      "original_best_epoch": 6
+    },
+    {
+      "reused": "s4_optimized_mae3_n10000_s17",
+      "proposed": "s4_transfer4_optimized_mae3_n10000_s17",
+      "actual_training_settings_equal": true,
+      "only_metadata_differences": {
+        "name": [
+          "s4_optimized_mae3_n10000_s17",
+          "s4_transfer4_optimized_mae3_n10000_s17"
+        ],
+        "inner_selection_source": [
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner.json",
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner_v4.json"
+        ]
+      },
+      "original_code_commit": "6bea7931ec65915969393f99663e86764a98adc2",
+      "original_best_epoch": 6
+    },
+    {
+      "reused": "s4_optimized_mae3_n10000_s42",
+      "proposed": "s4_transfer4_optimized_mae3_n10000_s42",
+      "actual_training_settings_equal": true,
+      "only_metadata_differences": {
+        "name": [
+          "s4_optimized_mae3_n10000_s42",
+          "s4_transfer4_optimized_mae3_n10000_s42"
+        ],
+        "inner_selection_source": [
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner.json",
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner_v4.json"
+        ]
+      },
+      "original_code_commit": "6bea7931ec65915969393f99663e86764a98adc2",
+      "original_best_epoch": 6
+    },
+    {
+      "reused": "s4_optimized_mae3_n10000_s2026",
+      "proposed": "s4_transfer4_optimized_mae3_n10000_s2026",
+      "actual_training_settings_equal": true,
+      "only_metadata_differences": {
+        "name": [
+          "s4_optimized_mae3_n10000_s2026",
+          "s4_transfer4_optimized_mae3_n10000_s2026"
+        ],
+        "inner_selection_source": [
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner.json",
+          "/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/roadmap/configs/s4_low_label_inner_v4.json"
+        ]
+      },
+      "original_code_commit": "6bea7931ec65915969393f99663e86764a98adc2",
+      "original_best_epoch": 6
+    }
+  ]
+}
