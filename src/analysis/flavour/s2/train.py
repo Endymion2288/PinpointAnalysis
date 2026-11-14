@@ -180,6 +180,16 @@ def run(args, dataset_class=None, model_factory=None, collate_fn=None, manifest_
         'cross_plane_message_passing':config.get('cross_plane',True),
         'load_seconds':time.perf_counter()-started}
     manifest.update(manifest_extra or {})
+    # Generate future metadata from the instantiated model and actual transform.
+    # Historical manifests remain unchanged.
+    from analysis.flavour.s3.dataset import PlaneDataset
+    from analysis.flavour.v2.metadata import representation_metadata
+    if hasattr(train, 'geometry'):
+        representation = representation_metadata(model, train.geometry, config,
+            plane_windows=isinstance(train, PlaneDataset))
+        manifest['representation_metadata'] = representation
+        manifest['local_blocks'] = representation['block_rule']
+        manifest['cross_plane_message_passing'] = representation['explicit_cross_plane_geometry']
     history=[]
     epoch_predictions=[]
     best=float('inf')

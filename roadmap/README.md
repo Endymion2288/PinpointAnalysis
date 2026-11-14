@@ -1,6 +1,8 @@
 # PINPOINT 下一轮模型优化路线图（v2）
 
-日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。本版是下一轮研究设计，新增模型效果尚未测量。
+日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。独立审查与新版设计已完成，R0 已执行；新增模型泛化效果尚未测量。
+
+**当前执行状态：R0 完成，R1 待启动。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm；排除1,560,122个历史使用family。最终读回73项检查与81项相关测试通过。真实32事件拟合NLL降至0.000418，完整10k profile为后续训练提供了实际资源依据。见 [R0报告](../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[精简结果](v2/r0_results.json)。
 
 **结论：已经取得可复核的小幅改进，尚无证据表明现有方法达到最佳效果。下一步先建立可与合作组对齐的三类强基线，并行保留四类主线；优先解决同输入架构比较、跨层几何关系和训练规模问题，再决定扩大预训练或采用更多类别。**
 
@@ -47,7 +49,7 @@ flowchart TD
 
 | Stage | Main question | Deliverable / decision |
 | --- | --- | --- |
-| R0 | 哪些事件仍可用于新的独立确认？现有训练瓶颈在哪里？ | 使用记录清单、新 manifests、实际 token/geometry 元数据和 loader profile |
+| R0（已完成） | 哪些事件仍可用于新的独立确认？现有训练瓶颈在哪里？ | 分区冻结、真实结构、同事件缓存等价、32-event fit及10k profile通过 |
 | R1 | 三类任务做到什么程度？四类是否损害共同三类任务？ | 同输入强基线、合作组条件对照、τ 混入矩阵 |
 | R2 | 数据、曝光、容量中哪个限制性能？ | 100k→300k→1M 条件扩展；4→12→收敛的学习曲线 |
 | R3 | 显式跨层关系能否把细粒度转为有效收益？ | 几何稀疏图、边界通信、原生/粗粒度配对和三 seed 确认 |
@@ -56,10 +58,10 @@ flowchart TD
 | R6 | 预训练和鲁棒训练能否超过强监督基线？ | 定向 MAE/局部监督、同总计算监督控制、held-out 条件 |
 | R7 | 候选是否在新事件和系统变化下保持收益？ | 冻结独立确认、概率与工作点、物理条件和完整报告 |
 
-R1 和 R2 是首要交付；R3 是优先架构改进；R4–R6 由前序证据触发。预计主线 6–10 周，属排期建议，实际 GPU/CPU 时间由 R0 微基准确定。首轮建议分阶段预算 80 device-hours，具体分配与停止条件见[执行计划](v2/04_execution_plan.md)；本次只完成研究设计和轻量复核。
+R1 和 R2 是下一步首要交付；R3 是优先架构改进；R4–R6 由前序证据触发。R0表明短训练宜先用native、2 workers、共享local staging与bounded decoded LRU；H100编译模式的packed+bucket虽有8.20%热态吞吐收益，构建成本约需13个pass摊平，不直接作为4-pass默认值。局部32-slot利用率仅8.83%，后续单独检验变长执行和窗口设计。预计主线6–10周及80 device-hours仍是排期/预算建议，各新架构需重新计时，见[执行计划](v2/04_execution_plan.md)。
 
 ## 历史计划与结果
 
-旧路线的 **14 份完整文档**归入 [archive/2026-11-14_v1](archive/2026-11-14_v1/README.md)，归档说明见[archive 索引](archive/README.md)。根目录原 01–13 页面保留历史链接入口；原 `configs/`、`results/`、`tools/` 路径继续服务已有脚本和报告。旧路线中“下一阶段”“尚未测量”等文字反映各记录形成时点，S0–S6 的最终状态以 stage236 及各阶段最终报告为准。
+旧路线的 **14 份完整文档**归入 [archive/2026-11-14_v1](archive/2026-11-14_v1/README.md)，旧01–13全文由该入口访问，归档说明见[archive 索引](archive/README.md)。原 `configs/`、`results/`、`tools/` 路径继续服务已有脚本和报告。旧路线中“下一阶段”“尚未测量”等文字反映各记录形成时点，S0–S6 的最终状态以 stage236 及各阶段最终报告为准。
 
 关键证据：[S2 stage55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[修复 S3 stage87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)、[S4 stage181](../workbook/2026-11-14_stage181_s4_final_results.md)、[S5 stage203](../workbook/2026-11-14_stage203_s5_final_results.md)、[S5 补充 stage205](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[S6 stage236](../workbook/2026-11-14_stage236_s6_final_results.md)、[本次 stage237](../workbook/2026-11-14_stage237_independent_review_and_roadmap_v2.md)。

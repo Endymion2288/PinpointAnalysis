@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "stage": "R0",
+  "status": "complete",
+  "UTC": "2026-11-14T19:33:59.324472+00:00",
+  "source_base_commit": "5209d75",
+  "workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
+  "accepted_foundation": "existing samples, source-family keys and detector-proxy reused",
+  "inventory": {
+    "availability": [
+      {
+        "label": 0,
+        "unused_rows": 669597,
+        "unused_families": 669597
+      },
+      {
+        "label": 1,
+        "unused_rows": 3298100,
+        "unused_families": 3298100
+      },
+      {
+        "label": 2,
+        "unused_rows": 493480,
+        "unused_families": 493480
+      },
+      {
+        "label": 3,
+        "unused_rows": 1215348,
+        "unused_families": 1215348
+      }
+    ],
+    "ambiguous_unused_families": 0,
+    "historically_used_rows": 1560122,
+    "historically_used_families": 1560122,
+    "accepted_inventory_rows": 7237572,
+    "accepted_inventory_families": 7237572,
+    "availability_scope": "eligible unused old Train/Validation, before new reservations"
+  },
+  "partitions": {
+    "counts": {
+      "confirm": {
+        "0": 50000,
+        "1": 50000,
+        "2": 50000,
+        "3": 50000
+      },
+      "cut_b": {
+        "0": 40000,
+        "1": 40000,
+        "2": 40000,
+        "3": 40000
+      },
+      "cal_a": {
+        "0": 10000,
+        "1": 10000,
+        "2": 10000,
+        "3": 10000
+      },
+      "tune": {
+        "0": 10000,
+        "1": 10000,
+        "2": 10000,
+        "3": 10000
+      },
+      "train_100000": {
+        "0": 25000,
+        "1": 25000,
+        "2": 25000,
+        "3": 25000
+      },
+      "train_300000": {
+        "0": 75000,
+        "1": 75000,
+        "2": 75000,
+        "3": 75000
+      },
+      "train_1000000": {
+        "0": 250000,
+        "1": 250000,
+        "2": 250000,
+        "3": 250000
+      }
+    },
+    "initial_construction_checks": 33,
+    "Confirm_public": "confirm_index/family_hi/family_lo only",
+    "Confirm_payload_access_after_construction": "sealed; no response conversion, inference or row/label readback",
+    "nested_Train": [
+      100000,
+      300000,
+      1000000
+    ]
+  },
+  "representation": {
+    "parameters": 897992,
+    "node_feature_count": 18,
+    "pixel_pitch_mm": [
+      0.020800000000008367,
+      0.022800000000003706
+    ],
+    "pixel_window_pixels": 16,
+    "pixel_window_mm": [
+      0.3328000000001339,
+      0.3648000000000593
+    ],
+    "max_channels_per_block": 32,
+    "blocks_per_region": 32,
+    "queries_per_region_or_module": 2,
+    "global_latents": 64,
+    "local_attention_or_edge_layers": 2,
+    "explicit_geometry_context_layers": 0,
+    "global_latent_attention_layers": 2,
+    "explicit_cross_plane_geometry": false,
+    "modalities": [
+      "pixel",
+      "bar",
+      "tracker"
+    ]
+  },
+  "equivalence": {
+    "events": 10000,
+    "all_collated_tensors_bitwise_equal": true,
+    "original_frontend_readbacks": 256,
+    "cache_format_revision": 2,
+    "GPU_max_abs_difference": {
+      "T4": 1.1920928955078125e-07,
+      "A100": 0.0,
+      "H100": 0.0
+    },
+    "uint64_family_identity": "exact per-integer-column comparison; no mixed signed/uint64 float conversion"
+  },
+  "learning": {
+    "events": 32,
+    "per_class": 8,
+    "seed": 42,
+    "precision": "FP32",
+    "GPU": "Tesla T4",
+    "steps": 64,
+    "event_exposures": 512,
+    "initial_NLL": 1.3295272588729858,
+    "final_NLL": 0.0004175903450231999,
+    "final_accuracy": 1.0,
+    "probability_vectors": 32,
+    "all_health_checks_pass": true,
+    "scope": "real Train memorization and optimization only"
+  },
+  "pipeline": {
+    "measured_cases": [
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "native_w2",
+        "training": true,
+        "workers": 2,
+        "batch_size": 8,
+        "warm_events_per_second": 69.55114501613858,
+        "steady_data_wait_fraction": 0.06682712029161367,
+        "first_pass_events_per_second": 55.235983937189175,
+        "aggregate_RSS_MiB": 6671.56640625,
+        "GPU_allocated_MiB": 1038.25634765625
+      },
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "native_w4",
+        "training": true,
+        "workers": 4,
+        "batch_size": 8,
+        "warm_events_per_second": 70.3009536738336,
+        "steady_data_wait_fraction": 0.011577018576840003,
+        "first_pass_events_per_second": 45.11958967436279,
+        "aggregate_RSS_MiB": 10055.3203125,
+        "GPU_allocated_MiB": 1038.158203125
+      },
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "native_bucket_w2",
+        "training": true,
+        "workers": 2,
+        "batch_size": 8,
+        "warm_events_per_second": 56.862853053617926,
+        "steady_data_wait_fraction": 0.1729444515963154,
+        "first_pass_events_per_second": 47.26423174137461,
+        "aggregate_RSS_MiB": 6951.08203125,
+        "GPU_allocated_MiB": 1117.119140625
+      },
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "native_bucket_w4",
+        "training": true,
+        "workers": 4,
+        "batch_size": 8,
+        "warm_events_per_second": 60.28418405417455,
+        "steady_data_wait_fraction": 0.041964842323662224,
+        "first_pass_events_per_second": 42.13685565603877,
+        "aggregate_RSS_MiB": 10426.546875,
+        "GPU_allocated_MiB": 1117.119140625
+      },
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "packed_bucket_w2",
+        "training": true,
+        "workers": 2,
+        "batch_size": 8,
+        "warm_events_per_second": 60.95479590574546,
+        "steady_data_wait_fraction": 0.04768154405748748,
+        "first_pass_events_per_second": 48.066111234590686,
+        "aggregate_RSS_MiB": 5211.625,
+        "GPU_allocated_MiB": 1117.119140625
+      },
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "packed_bucket_w4",
+        "training": true,
+        "workers": 4,
+        "batch_size": 8,
+        "warm_events_per_second": 63.537176376786945,
+        "steady_data_wait_fraction": 0.006582762491705012,
+        "first_pass_events_per_second": 42.66404400616477,
+        "aggregate_RSS_MiB": 6718.7734375,
+        "GPU_allocated_MiB": 1117.119140625
+      },
+      {
+        "campaign": "stream",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "scenario": "validation_native_w4",
+        "training": false,
+        "workers": 4,
+        "batch_size": 8,
+        "warm_events_per_second": 62.157693782815166,
+        "steady_data_wait_fraction": 0.22889214822929516,
+        "first_pass_events_per_second": 62.157693782815166,
+        "aggregate_RSS_MiB": 10016.3203125,
+        "GPU_allocated_MiB": 350.806640625
+      },
+      {
+        "campaign": "stream_compiled",
+        "GPU": "NVIDIA H100 NVL",
+        "scenario": "native_w2",
+        "training": true,
+        "workers": 2,
+        "batch_size": 8,
+        "warm_events_per_second": 173.8921104272485,
+        "steady_data_wait_fraction": 0.20880193537122282,
+        "first_pass_events_per_second": 73.81710255520285,
+        "aggregate_RSS_MiB": 7326.62890625,
+        "GPU_allocated_MiB": 804.5361328125
+      },
+      {
+        "campaign": "stream_compiled",
+        "GPU": "NVIDIA H100 NVL",
+        "scenario": "packed_bucket_w2",
+        "training": true,
+        "workers": 2,
+        "batch_size": 8,
+        "warm_events_per_second": 188.14399698194342,
+        "steady_data_wait_fraction": 0.10800836718114218,
+        "first_pass_events_per_second": 150.31165712320006,
+        "aggregate_RSS_MiB": 6013.3671875,
+        "GPU_allocated_MiB": 882.35302734375
+      },
+      {
+        "campaign": "stream_compiled",
+        "GPU": "NVIDIA H100 NVL",
+        "scenario": "validation_packed_bucket_w2",
+        "training": false,
+        "workers": 2,
+        "batch_size": 8,
+        "warm_events_per_second": 284.01816242234565,
+        "steady_data_wait_fraction": 0.3584290375321218,
+        "first_pass_events_per_second": 284.01816242234565,
+        "aggregate_RSS_MiB": 8395.47265625,
+        "GPU_allocated_MiB": 323.95166015625
+      }
+    ],
+    "default_short_training": {
+      "input": "native",
+      "workers": 2,
+      "batch_size": 8,
+      "cache_shards": 2,
+      "bucket_size": 0,
+      "shared_local_staging": true,
+      "compiled_local_encoder": "reuse accepted runtime repair; new models require fit and timing"
+    },
+    "compiled_packed_pipeline_warm_speed_ratio": 1.0819582125933052,
+    "compiled_cache_build_seconds": 53.96399534097873,
+    "compiled_cache_bytes": 976458096,
+    "warm_seconds_saved_per_10k_pass": 4.356142843142152,
+    "derived_cache_build_amortization_warm_passes": 12.388022451085115,
+    "amortization_scope": "linear planning from one 10k campaign; independent restarted total cost unmeasured",
+    "channel_padding_utilization": 0.08832834929144165,
+    "limits": [
+      "compiled native versus packed_bucket changes cache and sampler; shared compiler disk cache",
+      "A100 eager and H100 compiled are different devices; same-device compilation gain unmeasured",
+      "fixed dense-source 10k sample; full inventory occupancy and larger-pool throughput not measured",
+      "two passes per training scenario; runtime uncertainty not independently estimated"
+    ]
+  },
+  "acceptance": {
+    "passed": 73,
+    "checks": 73,
+    "unit_tests": 81,
+    "all_jobs_terminal": true,
+    "AFS_directories_removed": 9,
+    "temporary_scratch_removed": true
+  },
+  "resources": {
+    "HTCondor_allocated_CPU_core_hours": 7.6866666666666665,
+    "HTCondor_measured_CPU_hours": 1.5444444444444445,
+    "HTCondor_device_hours": 0.9091666666666667,
+    "HTCondor_device_hours_by_GPU": {
+      "NVIDIA A100-PCIE-40GB": 0.7466666666666667,
+      "NVIDIA H100 NVL": 0.1625
+    },
+    "interactive_T4_device_hours_including_failed_upper_bounds": 0.1756879791881268,
+    "total_device_hours_upper_bound": 1.0848546458547934,
+    "planning_envelope_device_hours": 2.0,
+    "different_GPU_hours_are_not_FLOP_equivalent": true,
+    "interactive_CPU_hours": "unmeasured; batch CPU measurements and RAM profiles reported separately"
+  },
+  "artifacts": {
+    "partitions": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/partitions.json",
+    "usage_closure": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/usage_closure.json",
+    "preparation": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/preparation.json",
+    "metadata": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/representation_metadata.json",
+    "acceptance": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/acceptance.json",
+    "resources": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/resources.json",
+    "cleanup": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/cleanup.json",
+    "fit": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/fit/fit32_a2.json",
+    "unit_tests": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/logs/unit_tests_delivery.log",
+    "figures": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/figures"
+  },
+  "unmeasured": [
+    "actual retrained T3/T4 generalization on new Tune",
+    "new architectures and geometry gains",
+    "training saturation at 300k/1M",
+    "calibrated real hardware envelope",
+    "physical flux and tau yield"
+  ]
+}

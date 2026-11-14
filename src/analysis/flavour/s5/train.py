@@ -126,6 +126,8 @@ def run(args):
                 'input': 'native hardware observations; optional measured objects; no truth variables',
                 'selection': 'validation NLL' if not config.get('fixed_final') else 'fixed final epoch',
                 'gradient_cosine_scope': 'shared raw head-input representation, not all encoder parameters'}
+    from analysis.flavour.v2.metadata import representation_metadata
+    manifest['representation_metadata'] = representation_metadata(model, train.geometry, config, plane_windows=True)
     if config.get('kinematics_revision', 1) >= 2:
         manifest['kinematics_reference'] = {'mean': model.kinematics_mean.tolist(), 'scale': model.kinematics_scale.tolist(),
                                            'fit': 'selected train labels only', 'objective': 'component-standardized MSE'}

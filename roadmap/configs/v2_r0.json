@@ -1,0 +1,16 @@
+{
+  "stage": "R0",
+  "seed": 20261114,
+  "inventory": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s0_s1_2026-11-11/inventory/events.parquet",
+  "geometry": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s0_s1_2026-11-11/shards/10083/geometry.json",
+  "input_root": "/eos/project-f/fasersim-bonn/public/pinpoint/data",
+  "historical_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour",
+  "train_sizes": [100000, 300000, 1000000],
+  "reserve_per_class": {"confirm": 50000, "cut_b": 40000, "cal_a": 10000, "tune": 10000},
+  "profile_events": 10000,
+  "micro_events": 256,
+  "profile_train_pool": "train_100000",
+  "candidate_manifest": "roadmap/configs/s6_candidates.json",
+  "reference_model": "s4_empty_scratch_n100000_s42",
+  "accepted_foundation": "existing accepted samples, family keys and detector-proxy reused"
+}

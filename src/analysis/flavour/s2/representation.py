@@ -6,6 +6,17 @@ residuals. Projected tokens have explicit coordinate validity; no x-y pairing.
 
 import numpy as np
 
+NODE_FEATURES = (
+    'x_scaled', 'y_scaled', 'z_scaled', 'measured_x', 'measured_y',
+    'log1p_count', 'log1p_edep_div10', 'log1p_pe_div15',
+    'interval_width_x_div420', 'interval_width_y_div420', 'sigma_x_mm', 'sigma_y_mm',
+    'is_pixel', 'is_bar', 'is_tracker', 'response', 'local_x_residual', 'local_y_residual',
+)
+XYZ_SCALES_MM = (210., 210., 3000.)
+MAX_CHANNELS_PER_BLOCK = 32
+SPATIAL_WINDOW_MM = 4.
+TRACKER_STATION_PROXY_MM = 1000.
+
 
 def pixel_view(pixel, geometry, pitch_mm=0., projection=False, reducer='count', origin_shift=0.):
     if reducer not in ['count','or']:
@@ -78,7 +89,7 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
             feat[:,3:5]=view['measured']
             feat[:,5]=np.log1p(view['count'])
             feat[:,12]=1
-            group_keys=np.column_stack([xyz[:,2],view['view'],np.floor(xyz[:,:2]/4)])
+            group_keys=np.column_stack([xyz[:,2],view['view'],np.floor(xyz[:,:2]/SPATIAL_WINDOW_MM)])
             raw_counts.append(len(observations['pixel']['channel_id']))
         elif detector=='bar':
             bars=observations['bar']
@@ -100,7 +111,7 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
             xy=np.asarray(tracker['xy_mm'],dtype='float64').reshape(-1,2)
             station=np.asarray(tracker['station'],dtype='float64')
             # station index is metadata; no ideal crossing z or truth momentum.
-            xyz=np.column_stack([xy,station*1000])
+            xyz=np.column_stack([xy,station*TRACKER_STATION_PROXY_MM])
             n=len(xyz)
             feat=np.zeros((n,18),dtype='float32')
             feat[:,3:5]=1
@@ -110,7 +121,7 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
             raw_counts.append(n)
         else:
             raise ValueError(detector)
-        feat[:,:3]=xyz/[210,210,3000]
+        feat[:,:3]=xyz/XYZ_SCALES_MM
         feat[:,15]=1
         if shuffle_local and n and detector=='pixel':
             # Observation-only diagnostic: permute x/y among nodes in a plane
@@ -120,8 +131,8 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
                 index=np.flatnonzero(xyz[:,2]==z)
                 feat[index,1]=feat[rng.permutation(index),1]
             xyz[:,1]=feat[:,1]*210
-            group_keys=np.column_stack([xyz[:,2],view['view'],np.floor(xyz[:,:2]/4)])
-        feat[:,16:18]=((xyz[:,:2]/4-np.floor(xyz[:,:2]/4))-.5)*feat[:,3:5]
+            group_keys=np.column_stack([xyz[:,2],view['view'],np.floor(xyz[:,:2]/SPATIAL_WINDOW_MM)])
+        feat[:,16:18]=((xyz[:,:2]/SPATIAL_WINDOW_MM-np.floor(xyz[:,:2]/SPATIAL_WINDOW_MM))-.5)*feat[:,3:5]
         if not build_blocks:
             features.append(feat)
             continue
@@ -131,8 +142,8 @@ def token_inputs(observations, geometry, pitch_mm=0., projection=False, reducer=
             index=np.flatnonzero(inv==g)
             # Canonical geometric order makes input permutation irrelevant.
             index=index[np.lexsort((feat[index,2],feat[index,1],feat[index,0]))]
-            for start in range(0,len(index),32):
-                blocks.append(index[start:start+32])
+            for start in range(0,len(index),MAX_CHANNELS_PER_BLOCK):
+                blocks.append(index[start:start+MAX_CHANNELS_PER_BLOCK])
         order=np.concatenate(blocks) if blocks else np.array([],dtype='int64')
         group=np.concatenate([np.full(len(b),group_offset+i,dtype='int64') for i,b in enumerate(blocks)]) if blocks else np.array([],dtype='int64')
         group_offset+=len(blocks)

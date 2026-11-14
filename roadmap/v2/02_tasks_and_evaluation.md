@@ -2,7 +2,7 @@
 
 **先交付实际重训的三类模型，同时保留四类模型和 τ specialist。类别数由同事件、同输入、同计算的比较决定；更多类别只有在保留共同任务质量并改善 τ 工作点时晋级。**
 
-本文数值门槛和样本分配是下一轮的设计值，实际完成情况由 R0–R7 报告记录。已有 detector-proxy 与样本接受状态继续有效。
+本文效果门槛是下一轮的设计值，样本分配已由 R0 冻结；各阶段实际完成情况由 R0–R7 报告记录。已有 detector-proxy 与样本接受状态继续有效。
 
 ## 1. 四种任务的精确定义
 
@@ -49,9 +49,9 @@ R0 从既有 accepted manifest 和所有历史 train/SSL/validation/probe/manual
 
 优先从旧 train 和未使用的旧 validation 余量中分配；原 test、已拟合 temperature 的旧 calibration 均不复用为新独立确认。曾用于全库 schema/数量盘点、但没有进入模型开发的事件，不因此自动失去可用性。若未使用事件不足，则新生成独立 hard scatters，并复用 accepted response；新确认完成前可以继续完成 R1–R6 的开发实验。
 
-建议的四类平衡设计如下，可按实际未使用余量调整一次并冻结：
+下列四类平衡分配已由 R0 冻结，实际事件与历史隔离检查见 [stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)。
 
-| Partition | Proposed size | Role | Access rule |
+| Partition | Frozen size | Role | Access rule |
 | --- | ---: | --- | --- |
 | Train pool | 100k / 300k / 1M nested | 监督、局部监督、train-only SSL | 排除下列所有 family |
 | Tune | 40k = 10k/class | HPO、checkpoint 与候选选择 | 重复开发使用，统计按开发结果表述 |
@@ -59,7 +59,7 @@ R0 从既有 accepted manifest 和所有历史 train/SSL/validation/probe/manual
 | Cut-B | 160k = 40k/class | 固定 1%/0.1% 背景阈值 | 与 Cal-A 不交叉，不用于模型排名 |
 | Confirm | 200k = 50k/class | 最终独立比较 | 模型、calibrator、prior、cuts、主假设冻结后开放 |
 
-分类 label 预算只计 Train pool 内真正有监督的 unique events；SSL 语料单列。Cut-B 对每类有 120k 背景，0.1% 目标约 120 个背景通过，明显多于旧 validation 的 7 个。精确 raw 数目、权重和 Neff 均在实际 manifests 中记录；上述数量当前未测量。
+分类 label 预算只计 Train pool 内真正有监督的 unique events；SSL 语料单列。Cut-B 对每个 one-versus-rest 任务有已冻结的 120k 背景事件；0.1% 目标对应约 120 个背景通过，这是期望计数，实际通过数、权重和 Neff 尚未测量。其余 raw 分区人数已核对，Confirm 的类别人数只使用 R0 构造时的平衡检查，不重新读取封存标签。
 
 所有输入模型共用 manifests；所有归一化、簇阈值学习、监督分量尺度、负样本选择均在 Train 内确定。Tune/Cal-A/Cut-B/Confirm 不得与任一候选使用的初始化权重的历史训练或预训练 family 相交；旧 MAE 初始化也要经过这个使用记录核对。对同一个真实事件进行 readout/transport perturbation 时，只改变响应，继续保留其 family 和 partition。
 

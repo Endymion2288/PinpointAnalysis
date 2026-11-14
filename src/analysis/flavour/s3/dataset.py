@@ -4,7 +4,14 @@ import numpy as np
 import torch
 
 from analysis.flavour.s2.dataset import SpatialDataset
-from analysis.flavour.s2.representation import token_inputs
+from analysis.flavour.s2.representation import (
+    MAX_CHANNELS_PER_BLOCK, SPATIAL_WINDOW_MM, TRACKER_STATION_PROXY_MM,
+    XYZ_SCALES_MM, token_inputs,
+)
+
+
+DEFAULT_WINDOW_PIXELS = 16
+TRACKER_WINDOW_MM = 16
 
 
 def plane_tokens(observations, geometry, config, seed=0, *, build_input_blocks=False):
@@ -28,12 +35,12 @@ def plane_tokens(observations, geometry, config, seed=0, *, build_input_blocks=F
         nodes = nodes[nodes[:, 15] > 0].copy()
         if not len(nodes):
             continue
-        xyz = nodes[:, :3].astype('float64') * [210, 210, 3000]
+        xyz = nodes[:, :3].astype('float64') * XYZ_SCALES_MM
         if detector == 'pixel':
             plane = np.abs(xyz[:, 2, None] - np.asarray(geometry['pixel_Zpos'])).argmin(1)
             module = layout[plane]
-            size = config.get('window_pixels', 16)
-            width = (np.array([4., 4.]) if size == 0 else size * np.array([
+            size = config.get('window_pixels', DEFAULT_WINDOW_PIXELS)
+            width = (np.full(2, SPATIAL_WINDOW_MM) if size == 0 else size * np.array([
                 np.median(np.diff(geometry['pixel_Xpos'])), np.median(np.diff(geometry['pixel_Ypos']))]))
             cell = np.floor(xyz[:, :2] / width)
             nodes[:, 16:18] = ((xyz[:, :2] / width - cell) - .5) * nodes[:, 3:5]
@@ -51,8 +58,8 @@ def plane_tokens(observations, geometry, config, seed=0, *, build_input_blocks=F
             module = np.asarray([mapping[round(float(v), 3)] for v in xyz[:, 2]])
             keys = np.column_stack([module, np.round(xyz[:, 2], 3)])
         else:
-            module = n_layers + np.rint(xyz[:, 2] / 1000).astype('int64')
-            keys = np.column_stack([module, np.floor(xyz[:, :2] / 16)])
+            module = n_layers + np.rint(xyz[:, 2] / TRACKER_STATION_PROXY_MM).astype('int64')
+            keys = np.column_stack([module, np.floor(xyz[:, :2] / TRACKER_WINDOW_MM)])
         if not config.get('signal', True):
             nodes[:, 6:8] = 0
         if not config.get('local_residual', True):
@@ -63,8 +70,8 @@ def plane_tokens(observations, geometry, config, seed=0, *, build_input_blocks=F
         boundaries = np.r_[0, np.flatnonzero(np.diff(ordered_group)) + 1, len(order)]
         ids, block_ids = [], []
         for left, right in zip(boundaries[:-1], boundaries[1:]):
-            for start in range(left, right, 32):
-                take = order[start:min(start + 32, right)]
+            for start in range(left, right, MAX_CHANNELS_PER_BLOCK):
+                take = order[start:min(start + MAX_CHANNELS_PER_BLOCK, right)]
                 ids.extend(take)
                 block_ids.extend([offset] * len(take))
                 offset += 1
@@ -89,14 +96,14 @@ class PlaneDataset(SpatialDataset):
 def collate_planes(events):
     counts_by_event = [np.bincount(event['groups']) for event in events]
     total_blocks = sum(len(counts) for counts in counts_by_event)
-    nodes = np.zeros((total_blocks, 32, 18), dtype='float32')
-    masks = np.zeros((total_blocks, 32), dtype=bool)
+    nodes = np.zeros((total_blocks, MAX_CHANNELS_PER_BLOCK, 18), dtype='float32')
+    masks = np.zeros((total_blocks, MAX_CHANNELS_PER_BLOCK), dtype=bool)
     event_mask = np.zeros((len(events), max(map(len, counts_by_event))), dtype=bool)
     keys, geometry, event_ids, block_ids = [], [], [], []
     offset = 0
     for event_id, (event, counts) in enumerate(zip(events, counts_by_event)):
         groups = event['groups']
-        if np.any(np.diff(groups) < 0) or counts.max() > 32 or counts.min() < 1:
+        if np.any(np.diff(groups) < 0) or counts.max() > MAX_CHANNELS_PER_BLOCK or counts.min() < 1:
             raise ValueError('S3 requires canonical contiguous blocks of 1..32 nodes')
         starts = np.r_[0, np.cumsum(counts)[:-1]]
         within = np.arange(len(groups)) - starts[groups]

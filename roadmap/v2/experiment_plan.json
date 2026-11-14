@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "proposed_design_not_runner_config",
+  "status": "design_with_completed_R0_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "W01-W08 not implemented by this review; no new model trained or batch job submitted",
+  "implementation_status": "R0/W01-W03 implemented and completed; W04-W08 pending; no new generalization result",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -58,7 +58,7 @@
     }
   },
   "partitions": {
-    "state": "proposed_counts_availability_unmeasured",
+    "state": "frozen_and_measured_R0",
     "family_key": [
       "family_hi",
       "family_lo"
@@ -97,7 +97,31 @@
     "total_non_train_reserved": 440000,
     "historical_weight_reuse": "all evaluation partitions disjoint from all reused initializations training and SSL families",
     "old_s6_test": "public historical reference; never new independent confirmation",
-    "fallback": "if unused families insufficient, independently generate hard scatters with accepted response; development continues"
+    "fallback": "if unused families insufficient, independently generate hard scatters with accepted response; development continues",
+    "available_before_reservation": [
+      {
+        "label": 0,
+        "unused_rows": 669597,
+        "unused_families": 669597
+      },
+      {
+        "label": 1,
+        "unused_rows": 3298100,
+        "unused_families": 3298100
+      },
+      {
+        "label": 2,
+        "unused_rows": 493480,
+        "unused_families": 493480
+      },
+      {
+        "label": 3,
+        "unused_rows": 1215348,
+        "unused_families": 1215348
+      }
+    ],
+    "historically_used_families_excluded": 1560122,
+    "measured_result": "r0_results.json"
   },
   "fairness": {
     "architectures": "same accepted observations including tracker, same events and HPO allowance; architecture-specific LR tuning",
@@ -259,7 +283,10 @@
         "W02",
         "W03"
       ],
-      "planned_device_hours": 2
+      "planned_device_hours": 2,
+      "status": "complete",
+      "measured_result": "r0_results.json",
+      "actual_device_hours_upper_bound": 1.0848546458547934
     },
     {
       "id": "R1",
@@ -273,7 +300,8 @@
         "W06",
         "W08"
       ],
-      "planned_device_hours": 18
+      "planned_device_hours": 18,
+      "status": "pending"
     },
     {
       "id": "R2",
@@ -281,7 +309,8 @@
         "R1"
       ],
       "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
-      "planned_device_hours": 18
+      "planned_device_hours": 18,
+      "status": "pending"
     },
     {
       "id": "R3",
@@ -292,7 +321,8 @@
       "work_items": [
         "W07"
       ],
-      "planned_device_hours": 20
+      "planned_device_hours": 20,
+      "status": "pending"
     },
     {
       "id": "R4",
@@ -300,7 +330,8 @@
         "R2"
       ],
       "work": "candidate/fit quality then learned association; raw/object all-event fusion",
-      "planned_device_hours": 8
+      "planned_device_hours": 8,
+      "status": "pending"
     },
     {
       "id": "R5",
@@ -312,7 +343,8 @@
         "R3 winner when available",
         "R4 objects only if quality supports use"
       ],
-      "planned_device_hours": 8
+      "planned_device_hours": 8,
+      "status": "pending"
     },
     {
       "id": "R6",
@@ -323,7 +355,8 @@
       "conditional_inputs": [
         "best observed encoder from R3-R5"
       ],
-      "planned_device_hours": 4
+      "planned_device_hours": 4,
+      "status": "pending"
     },
     {
       "id": "R7",
@@ -335,7 +368,8 @@
       "conditional_inputs": [
         "only promoted optional R3-R6 candidates"
       ],
-      "planned_device_hours": 2
+      "planned_device_hours": 2,
+      "status": "pending"
     }
   ],
   "scaling_screen": [
@@ -372,7 +406,7 @@
   ],
   "resources": {
     "planned_total_device_hours": 80,
-    "status": "planning envelope, not an allocation or completed measurement",
+    "status": "R0 measured within 2 device-hours; R1-R7 remain a planning envelope",
     "estimated_calendar_weeks": [
       6,
       10
@@ -380,7 +414,18 @@
     "device_types_not_FLOP_equivalent": true,
     "large_tasks": "HTCondor; inspect all available schedd load and compatibility before submitting",
     "interactive": "small real-sample fits and microbenchmarks only",
-    "expand": "reallocate by measured throughput; do not execute full Cartesian matrix"
+    "expand": "reallocate by measured throughput; do not execute full Cartesian matrix",
+    "R0_actual_device_hours_upper_bound": 1.0848546458547934,
+    "R0_CPU_allocation_core_hours": 7.6866666666666665,
+    "R1_default_pipeline": {
+      "input": "native",
+      "workers": 2,
+      "batch_size": 8,
+      "cache_shards": 2,
+      "bucket_size": 0,
+      "shared_local_staging": true,
+      "compiled_local_encoder": "reuse accepted runtime repair; new models require fit and timing"
+    }
   },
   "required_learning_evidence": [
     "real small-sample fitting",
@@ -393,12 +438,11 @@
   "unmeasured": [
     "actual retrained T3 gain",
     "new architectures gain",
-    "unused family counts",
-    "new split availability",
     "training saturation at 300k/1M",
-    "new device/CPU costs",
     "real calibrated hardware systematic envelope",
-    "physical flux and tau yield"
+    "physical flux and tau yield",
+    "R1-R7 architecture-specific device/CPU costs and larger-pool throughput",
+    "same-device eager versus compiled gain"
   ],
   "references": {
     "evidence": "01_evidence_review.md",
@@ -407,6 +451,18 @@
     "execution": "04_execution_plan.md",
     "literature": "05_literature.md",
     "history_index": "06_workbook_index.md",
-    "measured_review": "current_results_review.json"
+    "measured_review": "current_results_review.json",
+    "R0_measured": "r0_results.json",
+    "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md"
+  },
+  "work_item_status": {
+    "W01": "complete",
+    "W02": "complete",
+    "W03": "complete",
+    "W04": "pending",
+    "W05": "pending",
+    "W06": "pending",
+    "W07": "pending",
+    "W08": "pending"
   }
 }

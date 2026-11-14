@@ -222,6 +222,8 @@ def run(args):
         'GPU':torch.cuda.get_device_name() if device.type=='cuda' else None,'torch':torch.__version__,
         'precision':'BF16 encoder / FP32 objective' if bf16 else 'FP32',
         'calibration_test_used':False,'downstream_validation_used':False,'proxy':'accepted_existing_values'}
+    from analysis.flavour.v2.metadata import representation_metadata
+    manifest['representation_metadata'] = representation_metadata(model, train.geometry, config, plane_windows=True)
     if (output/'last.pt').exists():
         state=torch.load(output/'last.pt',map_location=device,weights_only=False)
         if state['config']!=config:raise ValueError('resume configuration changed')

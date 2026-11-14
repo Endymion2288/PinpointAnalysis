@@ -1,14 +1,14 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**首批工作是 R0 的使用记录/数据效率核对，以及 R1 的实际三类与四类强基线。先完成这两个交付，再由收敛和错误结构决定后续计算投入。**
+**R0已完成，下一步是R1的实际三类与四类强基线。**先完成共同输入、任务和资源对齐的比较，再由收敛与错误结构决定后续计算投入。
 
-本文件与 [experiment_plan.json](experiment_plan.json) 是研究设计，尚未实现新的 runner 或提交任务。已有 accepted samples、response 参数和路径工具直接复用。阶段编号使用 R0–R7，与已完成的旧 S0–S6 区分；新的 workbook 从 stage238 起连续记录。
+本文件与 [experiment_plan.json](experiment_plan.json) 记录研究合同及执行状态。W01–W03由`analysis.flavour.v2`实现并完成HTCondor验证，见[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[r0_results.json](r0_results.json)；W04–W08待实现，JSON不能直接交给旧训练CLI。已有accepted samples、response参数和路径工具继续复用。阶段编号使用R0–R7，与已完成的旧S0–S6区分。
 
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |
 | --- | --- | --- | --- |
-| R0 | Week 1 | 使用记录、v2 manifests、loader/transform/profile、实际架构元数据 | 新确认 family 与所有历史使用清单不交叉；完整输入白名单；profile 可复核 |
+| R0（完成） | Completed 2026-11-14 | 使用记录、v2 manifests、loader/transform/profile、实际架构元数据 | 73项最终读回与81项测试通过；Confirm保持封存 |
 | R1 | Week 1–2 | B0–B4 的 T3/T4 同输入 screen；合作组表示与域对齐 | 共同三类性能、τ contamination、同计算/曝光表；前两名确定 |
 | R2 | Week 2–3 | unique data / passes / capacity 小矩阵 | 明确仍在改善、过拟合或资源受限；选择收敛参考配方 |
 | R3 | Week 3–5 | G1a/G1b/G1c，最佳结构的 native/coarse | 几何关系/压缩单因素收益；三 seed 前两名确认；梯度及内部健康 |
@@ -23,13 +23,15 @@
 
 ### R0.1 使用记录与 manifests
 
-复用 accepted inventory、原 train/validation 子集、SSL/Rel、probe、方向与对象训练、calibration/test manifests；汇总已被模型开发使用的 family。生成[数据合同](02_tasks_and_evaluation.md)的 Train/Tune/Cal-A/Cut-B/Confirm，新 Confirm 只写身份与盲化标签访问路径。先排除历史用过的 family，再确定嵌套 train 预算；实际可用数量未测量。
+已复用accepted inventory、原train/validation子集、SSL/Rel、probe、方向与对象训练、calibration/test manifests，追溯并排除1,560,122个历史使用family。Train100k/300k/1M、Tune40k、Cal-A40k、Cut-B160k、Confirm200k已按[数据合同](02_tasks_and_evaluation.md)平衡冻结。新Confirm只公开family身份；row/label封存，R0后续profile与最终读回未打开其payload。未使用family足以满足分配，不需要新生成样本才能开展R1。
 
 产物为 `manifests/usage_ledger.parquet`、`partitions.json`、每个 split 的 compact row/family manifest 与 counts。原始 detector responses 按需转换，避免把 7.24M 事件全部展开后再决定训练规模。具体 source-family 认证继续沿用用户接受状态。
 
 ### R0.2 实际模型元数据
 
 从实际 transform/config/model 生成：plane window 的 pixel 数与 mm 尺寸、blocks/region 规则、显式 cross-plane layers、latent/query 数、是否包含 tracker、参数量和输入列。修正未来 manifests 的过时 `4mm`/`cross_plane_message_passing` 文本，不改写旧科学结果。
+
+R0实际导出：897,992参数，16×16 pixel窗口为0.3328×0.3648 mm；2个region queries、64个latents、2个global latent attention层、0个显式geometry context层。latent可以混合不同plane信息，当前结构没有显式跨plane几何关系层。完整白名单位于`representation_metadata.json`。
 
 ### R0.3 数据效率
 
@@ -38,6 +40,12 @@
 默认比较 2/4 loader workers、bounded scratch cache、packed/bucketed batch 和观测 transform cache；CPU 线程与作业申请一致。减少同一 ROOT/Parquet 多次解码和每 epoch 重复排序；cache key 含 geometry/readout/representation revision。缓存是临时执行资产，最终仅保留能恢复的配置与小型核对结果。
 
 进入训练前，新表示与原观察量在事件键、总响应、mask 和通道映射上通过同事件检查。旧窗口和新边界消息表示的差异是模型实验因素，不要求它们 logits 相同。性能门槛以可重复 profile 为准；建议把记录的 data-wait/总时间降到 20% 以下，达不到时指出具体瓶颈，仍可在剩余预算内推进必要训练。
+
+R0已在10k真实Train事件上完成native/packed全部collated tensors逐位等价、256-event原frontend数组核对及GPU数值读回；32-event真实拟合在64updates后NLL=0.000418、accuracy=100%，分支梯度和参数更新通过。该拟合检验优化路径，三类/四类泛化效果仍未测量。
+
+同一A100/eager下，native2/4 workers热态吞吐69.551/70.301 events/s，aggregate RSS6.515/9.820 GiB；分桶后即便使用packed也未超过native。另一H100/compiled下，native2与packed+bucket2为173.892/188.144 events/s，steady wait20.880%/10.801%。后者是cache与sampler的组合比较；两张卡的数据不构成同设备编译收益测量。
+
+R1短训练默认native、2 workers、共享local staging、bounded 2-shard decoded LRU；compiled复用S3修复环境。packed热态约快8.20%，但10k构建需53.964 s，每pass节省4.356 s，约13个热态pass才摊平。本估计尚未测量独立重启的总成本；同表示多训练复用时再选择cache。局部32-slot利用率仅8.83%，inference的steady wait为22.89%或35.84%，后续单独优化local执行、collate与持久validation loader。各新架构仍须先做真实小样本拟合与计时。
 
 ## 3. R1：最小强基线矩阵
 
@@ -130,24 +138,28 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 
 预算包括编译、失败和无效尝试；阶段没有效果时将剩余额度用于下一条独立假设或提前收尾。1M 扩展或大规模新模拟超出首轮范围时，先由已测吞吐生成独立资源计划。不同 MIG/整卡型号分别计 allocation；模型计算效率尽量在相同设备和并发条件下比较，不把 MIG 小时当整卡等效 FLOPs。
 
+R0实际：A100 allocation 0.746667 h，H100 allocation 0.162500 h，交互T4含失败尝试上界0.175688 h，合计上界 **1.084855 device-hours**；HTCondor allocated CPU **7.686667 core-hours**、实际进程CPU **1.544444 h**。八条已提交作业均终止，一次站点拒绝未产生allocation。2 h规划额度内已包含失败与编译；GPU小时按型号分别记录，不作FLOP等效相加。
+
+以本轮reference热态吞吐线性外推，100k×4-pass的训练计算约需A100/eager/native2 **1.60 h**，或H100/compiled/native2 **0.64 h**；这是预算估计，不是100k训练实测，不含首次编译、读入、验证与新架构变化。H100/packed+bucket约0.59 h，再加按事件数线性估算的cache构建约0.15 h。R1的18 h上限需据各族实测速率分批分配，不执行全部候选的完整长训练矩阵。
+
 大样本转换、长训练、统计和重模拟经 HTCondor；交互 GPU 仅用于真实 32-event 拟合和小规模压力测试。提交前查询所有可用 schedd 的 running/idle/held、任务兼容性与写入策略，选择兼容且负载最低者并记录依据。每任务一个 writer，迁移时核对实际进程/终态；复用已有 claims、resume 和资源记账。
 
 输入：`/eos/project-f/fasersim-bonn/public/pinpoint/data`。运行输出：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/`。提交文件：`~/condor/Pinpoint/flavour_v2/<stage>/`。CPU/thread、loader 数和 RAM 在实际 profile 后匹配申请，禁止把大量重复 JSON、per-event 小文件或 xAOD 中间产物作为长期输出。EOS 只保留最终模型、必要预测、小型诊断和可复现配置。
 
 ## 8. 首批实现工单与验收
 
-| Work item | Proposed code/config | Input | Acceptance |
-| --- | --- | --- | --- |
-| W01 | `analysis.flavour` 新 partition/usage utility | 历史 accepted manifests | 使用清单可追溯；Confirm 与历史使用 family 无交叉 |
-| W02 | 新 representation metadata exporter | 实际 transform/model | windows、explicit edges、modalities 与真实实现一致 |
-| W03 | 复用现有 loader/cache profiler | 固定 Train events | 分段计时、等价输入/输出、峰值 RAM/GPU memory；定位 data-wait |
-| W04 | T3/T4/T3T loss 与统一 evaluator | 同一 label mapping | known tau coarse labels 不因 decay unknown 丢弃；概率闭合；共同非 τ 评价 |
-| W05 | B1/B2/B3 tracker late-fusion adapters | 同一 observed hits | 三模态同输入、缺失 mask、真实小样本拟合与分支梯度 |
-| W06 | R1 campaign runner/config | 冻结 Train/Tune | 公平 HPO、完整学习曲线和所有 raw counts；不访问 Confirm |
-| W07 | geometry sparse graph prototype | plane/cluster measurements | 候选边 recall、边数尾部、memory；不读取 truth 构图 |
-| W08 | 三类合作组对照报告 | R1 实测输出 | 统一域/先验/工作点和 τ contamination；未对齐项具体列出 |
+| Work item | Code/config | Input | Acceptance | Status |
+| --- | --- | --- | --- | --- |
+| W01 | `analysis.flavour.v2.partitions/usage_closure` | 历史 accepted manifests | 使用清单可追溯；Confirm 与历史使用 family 无交叉 | Complete |
+| W02 | `analysis.flavour.v2.metadata` | 实际 transform/model | windows、explicit edges、modalities 与真实实现一致 | Complete |
+| W03 | `analysis.flavour.v2.data/profile/fit/accept/resources/plots` | 固定 Train events | 分段计时、等价输入/输出、真实学习、RAM/GPU memory与终态 | Complete |
+| W04 | T3/T4/T3T loss 与统一 evaluator | 同一 label mapping | known tau coarse labels 不因 decay unknown 丢弃；概率闭合；共同非 τ 评价 | Pending R1 |
+| W05 | B1/B2/B3 tracker late-fusion adapters | 同一 observed hits | 三模态同输入、缺失 mask、真实小样本拟合与分支梯度 | Pending R1 |
+| W06 | R1 campaign runner/config | 冻结 Train/Tune | 公平 HPO、完整学习曲线和所有 raw counts；不访问 Confirm | Pending R1 |
+| W07 | geometry sparse graph prototype | plane/cluster measurements | 候选边 recall、边数尾部、memory；不读取 truth 构图 | Pending R3 |
+| W08 | 三类合作组对照报告 | R1 实测输出 | 统一域/先验/工作点和 τ contamination；未对齐项具体列出 | Pending R1 |
 
-这些新模块/adapter 当前待实现。现有可立即复核本次结论的命令为：
+W01–W03的完整执行命令及产物在[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)。其余adapter与runner待实现。独立审查的历史复核命令仍为：
 
 ```bash
 which() { command -v "$@"; }
@@ -157,4 +169,4 @@ python roadmap/tools/review_current_results.py \
   --output /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/current_results_review.json
 ```
 
-它只读取历史摘要、validation scores 和 training histories，生成本次描述性复核。新模型训练命令将在 W01–W06 实现并通过真实小样本学习后写入各阶段报告。
+它只读取历史摘要、validation scores和training histories。R1新模型训练命令将在W04–W06实现并通过真实小样本学习后写入下一阶段报告；R0完成不表示R1的模型质量或收敛已测量。
