@@ -72,15 +72,29 @@ def evaluate_one(args):
     one(args)
 
 
+def complete_decay(args):
+    from analysis.flavour.s6 import transport, shift, decay
+    expected = 368 if args.scope == 'transport' else 220
+    started = time.monotonic()
+    while len(list((args.root/args.scope/'truth_replay').glob('*/*/summary.json'))) < expected:
+        if time.monotonic()-started > 10800:
+            raise RuntimeError('compact decay recording timed out')
+        time.sleep(30)
+    transport.finalize_truth(args)
+    shift.finalize(args)
+    decay.evaluate(args)
+
+
 def main():
     import pyarrow as pa
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['calibrate', 'test_finalize', 'evaluate_one'])
+    parser.add_argument('command', choices=['calibrate', 'test_finalize', 'evaluate_one', 'complete_decay'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
     parser.add_argument('--task', type=int, default=0)
+    parser.add_argument('--scope', choices=['transport', 'generator'], default='transport')
     args = parser.parse_args()
     globals()[args.command](args)
 
