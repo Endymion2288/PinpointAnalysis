@@ -18,6 +18,8 @@
 
 H10094GB申请尚Pending，调度消息包含GPU/CPU/memory不足；准备改用先前已验证可立即运行的47GB MIG flavor。55个calibration分块已转换时GPU仍未开始正式推理；不将排队当成计算进度。
 
+子集准确计数为32000（每类8000）和1024（每类256），均未读取test response。命名空间quota仅1 GPU unit，包含pending申请；取消未启动的94GB请求后47GB MIG立即调度。首个多lane作业在启动时发现`python -m __main__`模块路径错误，4个子进程均exit1，未读取模型输入；将launcher改为绝对模块`analysis.flavour.s6.infer`后重新提交。失败日志及pool exit codes已保留，不计作完成的推理。
+
 ## 阶段性结论
 
 14种读出变体在真实输入上可运行，nominal与tracker基值保持精确。尚未测得它们的分类影响，尚无transport/generator结果。

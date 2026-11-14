@@ -350,7 +350,7 @@ def pool(args):
     logs = []
     for lane in range(args.lanes):
         name = f'{args.name}_lane{lane}'
-        command = [sys.executable, '-m', __name__, 'worker', '--root', str(args.root), '--campaign', str(args.campaign),
+        command = [sys.executable, '-m', 'analysis.flavour.s6.infer', 'worker', '--root', str(args.root), '--campaign', str(args.campaign),
                    '--split', args.split, '--name', name, '--batch-size', str(args.batch_size), '--workers', str(args.workers),
                    '--precision', args.precision, '--maximum-seconds', str(args.maximum_seconds)]
         if args.compile_local:
