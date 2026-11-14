@@ -16,6 +16,13 @@ class PhysicsModel(PlaneModuleClassifierV2):
         self.auxiliary_heads = nn.ModuleDict({
             'vertex': nn.Sequential(nn.Linear(width, 128), nn.LayerNorm(128), nn.SiLU(), nn.Linear(128, 3)),
             'semantics': nn.Linear(width, 3), 'charm': nn.Linear(width, 1), 'kinematics': nn.Linear(width, 4)})
+        if config.get('kinematics_revision', 1) >= 2:
+            self.register_buffer('kinematics_mean', torch.zeros(4))
+            self.register_buffer('kinematics_scale', torch.ones(4))
+            if config.get('kinematics_head') == 'residual_mlp':
+                self.auxiliary_heads['kinematics'] = nn.Sequential(nn.LayerNorm(width), nn.Linear(width, 128),
+                    nn.SiLU(), nn.Linear(128, 4))
+                self.kinematics_linear = nn.Linear(width, 4)
         self.task_log_variances = nn.ParameterDict({k: nn.Parameter(torch.zeros(())) for k in config.get('auxiliaries', [])})
         self.fusion_norm = nn.LayerNorm(width)
         if config.get('use_objects'):
@@ -27,8 +34,24 @@ class PhysicsModel(PlaneModuleClassifierV2):
             self.relative_scale = nn.Parameter(torch.full((width,), .1))
         # Initialize added heads without reinitializing the encoder.
         for module in [self.head[-1], self.linear_readout, self.auxiliary_heads, getattr(self, 'object_branch', nn.Identity()),
-                       getattr(self, 'relative_branch', nn.Identity()), getattr(self, 'relative_pool', nn.Identity())]:
+                       getattr(self, 'relative_branch', nn.Identity()), getattr(self, 'relative_pool', nn.Identity()),
+                       getattr(self, 'kinematics_linear', nn.Identity())]:
             module.apply(self.initialize)
+        if config.get('kinematics_revision', 1) >= 2:
+            readout = self.auxiliary_heads['kinematics']
+            if isinstance(readout, nn.Sequential):
+                readout = readout[-1]
+            nn.init.zeros_(readout.weight); nn.init.zeros_(readout.bias)
+            if hasattr(self, 'kinematics_linear'):
+                nn.init.zeros_(self.kinematics_linear.weight); nn.init.zeros_(self.kinematics_linear.bias)
+
+    def set_kinematics_reference(self, targets, mask):
+        """Fit physical target preconditioning to the selected train labels."""
+        if self.config.get('kinematics_revision', 1) < 2:
+            return
+        values = torch.as_tensor(targets, dtype=torch.float32, device=self.kinematics_mean.device)[torch.as_tensor(mask, device=self.kinematics_mean.device)]
+        self.kinematics_mean.copy_(values.mean(0))
+        self.kinematics_scale.copy_(values.std(0, unbiased=False).clamp_min(.01))
 
     def forward(self, observation, objects=None):
         encoded = self.encode(observation)
@@ -59,6 +82,15 @@ class PhysicsModel(PlaneModuleClassifierV2):
             logits = self.head(h)+self.linear_readout(h)
             output = {'logits': logits, 'features': h, 'raw_features': raw, 'vertex': vertex}
             output.update({k: head(h) for k, head in self.auxiliary_heads.items() if k != 'vertex'})
+            if self.config.get('kinematics_revision', 1) >= 2:
+                residual = output['kinematics']
+                if hasattr(self, 'kinematics_linear'):
+                    residual = residual+self.kinematics_linear(h)
+                transverse = self.kinematics_mean[:2]+self.kinematics_scale[:2]*residual[:, :2]
+                # Positive encoded pz/E, initialized exactly at their train means.
+                base = torch.log(torch.expm1(self.kinematics_mean[2:].clamp_min(1e-4)))
+                positive = F.softplus(base+residual[:, 2:]*self.kinematics_scale[2:]/base.sigmoid())
+                output['kinematics'] = torch.cat([transverse, positive], -1)
             probability = logits.softmax(-1)
             output['probability'] = (torch.stack([probability[:, 0], probability[:, 1], probability[:, 2:5].sum(-1), probability[:, 5]], -1)
                                      if self.config.get('six_way') else probability)
@@ -81,7 +113,9 @@ def losses(model, output, targets, label):
     for task in model.config.get('auxiliaries', []):
         mask = targets[task+'_mask']
         counts[task] = int(mask.sum())
-        if task in ['vertex', 'kinematics']:
+        if task == 'kinematics' and model.config.get('kinematics_revision', 1) >= 2:
+            per_event = ((output[task]-targets[task].float())/model.kinematics_scale).square()
+        elif task in ['vertex', 'kinematics']:
             per_event = F.smooth_l1_loss(output[task], targets[task].float(), reduction='none', beta=.1)
         elif task == 'semantics':
             per_event = -(targets[task].float()*output[task].log_softmax(-1)).sum(-1)

@@ -11,6 +11,34 @@ from analysis.flavour.s5.objects import reconstruct, vertex_candidate, match_tru
 
 
 class ModelContractTest(unittest.TestCase):
+    def test_standardized_kinematics_starts_at_train_mean_and_keeps_positive_energy(self):
+        torch.set_num_threads(1)
+        reference = np.array([[-.1, .1, .5, .6], [.1, -.1, .8, .9]], dtype='float32')
+        nodes = np.zeros((3, 18), dtype='float32')
+        nodes[:, 3:5] = 1
+        nodes[:, 12] = nodes[:, 15] = 1
+        observation = collate_planes([{'nodes': nodes, 'groups': np.zeros(3, int), 'modules': np.zeros(3, int), 'label': 0, 'index': 0}])
+        for head in ['linear', 'residual_mlp']:
+            with self.subTest(head=head):
+                model = PhysicsModel({'dim': 32, 'latents': 4, 'region_queries': 2, 'kinematics_revision': 2,
+                                      'kinematics_head': head, 'auxiliaries': ['kinematics']})
+                model.set_kinematics_reference(reference, np.array([True, True]))
+                model.eval()
+                result = model(observation)
+                torch.testing.assert_close(result['kinematics'][0], torch.from_numpy(reference.mean(0)))
+                target = {'kinematics': torch.from_numpy(reference[:1]), 'kinematics_mask': torch.tensor([True])}
+                total, _, _ = losses(model, result, target, observation['label'])
+                total.backward()
+                readout = model.auxiliary_heads['kinematics']
+                if isinstance(readout, torch.nn.Sequential):
+                    readout = readout[-1]
+                self.assertGreater(float(readout.weight.grad.norm()), 0.)
+                with torch.no_grad():
+                    readout.bias[2:] = -100.
+                    encoded = model(observation)['kinematics']
+                self.assertTrue(torch.isfinite(encoded).all())
+                self.assertTrue((encoded[:, 2:] >= 0).all())
+
     def test_bar_relative_path_cannot_observe_unmeasured_coordinate(self):
         torch.set_num_threads(1)
         model = PhysicsModel({'dim': 32, 'latents': 4, 'region_queries': 2, 'empty_response_bypass': True, 'relative_path': True})

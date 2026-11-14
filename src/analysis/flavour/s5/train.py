@@ -65,6 +65,8 @@ def run(args):
         raise RuntimeError('S5 real-event fit gate required')
     if config.get('coordinate_revision', 1) > gate['config'].get('coordinate_revision', 1):
         raise RuntimeError('coordinate revision requires a matching real-event fit gate')
+    if config.get('kinematics_revision', 1) > gate['config'].get('kinematics_revision', 1):
+        raise RuntimeError('kinematics revision requires a matching real-event fit gate')
     destination = args.root/'experiments'/config['name']
     destination.mkdir(parents=True, exist_ok=True)
     if (destination/'manifest.json').exists():
@@ -103,6 +105,7 @@ def run(args):
             validation_options.pop(key, None)
     val_loader = DataLoader(validation, batch_sampler=validation_sampler, **validation_options)
     model = build_model(config).to(device)
+    model.set_kinematics_reference(train.targets['kinematics'], train.targets['kinematics_mask'])
     optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config.get('weight_decay', .01))
     total_steps = len(sampler)*config['epochs']
     warmup = config.get('warmup_steps', 100)
@@ -123,6 +126,9 @@ def run(args):
                 'input': 'native hardware observations; optional measured objects; no truth variables',
                 'selection': 'validation NLL' if not config.get('fixed_final') else 'fixed final epoch',
                 'gradient_cosine_scope': 'shared raw head-input representation, not all encoder parameters'}
+    if config.get('kinematics_revision', 1) >= 2:
+        manifest['kinematics_reference'] = {'mean': model.kinematics_mean.tolist(), 'scale': model.kinematics_scale.tolist(),
+                                           'fit': 'selected train labels only', 'objective': 'component-standardized MSE'}
     write_json(destination/'manifest.json', manifest)
     initial_parameters = {k: v.detach().cpu().clone() for k, v in model.named_parameters() if k in ['input.0.weight', 'local.0.q.weight', 'head.0.weight']}
     started = time.monotonic()

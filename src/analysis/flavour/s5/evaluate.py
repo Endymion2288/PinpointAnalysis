@@ -173,7 +173,11 @@ def auxiliary_quality(frame, config, reference):
         row = {'events': int(valid.sum()), 'prediction_std': prediction.std(0).tolist(), 'target_std': target.std(0).tolist(), 'reference': 'constant mean fitted only to selected 10k train labels'}
         if task in ['vertex', 'kinematics']:
             row.update(component_MSE=np.mean((prediction-target)**2, axis=0).tolist(),
-                       constant_train_mean_MSE=np.mean((mean-target)**2, axis=0).tolist())
+                       constant_train_mean_MSE=np.mean((mean-target)**2, axis=0).tolist(),
+                       component_bias=np.mean(prediction-target, axis=0).tolist(),
+                       component_correlation=[float(np.corrcoef(prediction[:, i], target[:, i])[0, 1]) if prediction[:, i].std() > 0 else None for i in range(count)])
+            if task == 'kinematics':
+                row['negative_encoded_pz_E_counts'] = (prediction[:, 2:] < 0).sum(0).tolist()
         elif task == 'semantics':
             p = np.exp(prediction-prediction.max(1, keepdims=True)); p /= p.sum(1, keepdims=True)
             row.update(logit_std=row['prediction_std'], prediction_std=p.std(0).tolist(), score_space='semantic fractions',
@@ -258,6 +262,24 @@ def object_coverage(objects, truth, weights):
     return rows
 
 
+def sample_strata(frame):
+    tau = frame[frame.label.eq(2)]
+    branches = []
+    for branch, group in tau.groupby('tau_branch', sort=True):
+        branches.append({'branch': branch, 'events': len(group),
+            **{flag: int(group[flag].eq(True).sum()) for flag in ['tau_visible_any', 'tau_visible_pixel', 'tau_visible_tracker', 'tau_decay_contained']},
+            'direct_prongs': {str(k): int(v) for k, v in group.tau_direct_prongs.value_counts(dropna=False).items()},
+            'direct_prongs_hit': {str(k): int(v) for k, v in group.tau_direct_prongs_hit.value_counts(dropna=False).items()}})
+    return {'validation_events': len(frame), 'events_by_class': frame.label.value_counts().sort_index().to_dict(),
+            'tau_branches': branches, 'tau_decay_location': tau.tau_decay_location.value_counts().to_dict(),
+            'tau_decay_valid_events': int(tau.tau_decay_valid.sum()),
+            'charm_events_by_class': frame.groupby('label').charm_presence.sum().to_dict(),
+            'empty_events_by_class': frame.groupby('label').all_empty.sum().to_dict(),
+            'measurement_containment_valid': int(frame.response_containment_valid.sum()),
+            'measurement_contained_proxy': int(frame.response_contained_proxy.eq(True).sum()),
+            'scope': 'accepted full validation, no truth-conditioned event rejection'}
+
+
 def run(args):
     started = time.monotonic()
     key = ['run', 'chunk', 'row']
@@ -334,6 +356,7 @@ def run(args):
     validation_truth = catalog[catalog.split.eq('validation')][key].merge(truth, on=key, validate='one_to_one')
     validation_objects = validation_truth[key].merge(objects, on=key, validate='one_to_one')
     report = {'experiments': [r[1] for r in computed], 'comparisons': comparisons, 'seed_means': seed_means,
+              'sample_strata': sample_strata(entries[0][1]),
               'object_resolution_coverage': object_coverage(validation_objects, validation_truth, weights),
               'bootstrap': {'replicates': args.bootstrap, 'blocks': block_summary, 'scope': 'pointwise event-block CI95 conditional on trained weights; reused validation, no test claim'},
               'common_support': support, 'calibration_test_used': False, 'elapsed_seconds': time.monotonic()-started}

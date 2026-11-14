@@ -47,6 +47,7 @@ def main():
     items = [source[i] for i in range(len(source))]
     batches = [device_batch(collate_physics(items[i:i+4]), device) for i in range(0, len(items), 4)]
     model = build_model({**config, 'compile_local': False}).to(device)
+    model.set_kinematics_reference(source.targets['kinematics'], source.targets['kinematics_mask'])
     optimizer = torch.optim.AdamW(model.parameters(), lr=.0005, weight_decay=.001)
     health = TrainingHealth(model)
     output = args.root/'pilot'
@@ -54,14 +55,19 @@ def main():
     records = []
     def measure():
         model.eval()
-        predictions = []
+        predictions, kinematics = [], []
         with torch.no_grad():
             for batch in batches:
-                predictions.append(model(batch['observation'], batch['objects'])['probability'])
+                output_values = model(batch['observation'], batch['objects'])
+                predictions.append(output_values['probability'])
+                kinematics.append(output_values['kinematics'])
         probability = torch.cat(predictions)
         y = torch.tensor(source.metadata.label.to_numpy(), device=device)
-        return float(-probability[torch.arange(len(y), device=device), y].log().mean()), float((probability.argmax(-1) == y).float().mean())
-    initial_loss, initial_accuracy = measure()
+        valid = torch.as_tensor(source.targets['kinematics_mask'], device=device)
+        target = torch.as_tensor(source.targets['kinematics'], device=device)
+        component_MSE = (torch.cat(kinematics)[valid]-target[valid]).square().mean(0).tolist()
+        return float(-probability[torch.arange(len(y), device=device), y].log().mean()), float((probability.argmax(-1) == y).float().mean()), component_MSE
+    initial_loss, initial_accuracy, initial_kinematics = measure()
     started = time.monotonic()
     rng = np.random.default_rng(config['seed'])
     for step in range(config.get('pilot_steps', 256)):
@@ -83,14 +89,17 @@ def main():
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True)
         optimizer.step()
         if (step+1) % 32 == 0:
-            loss, accuracy = measure()
+            loss, accuracy, _ = measure()
             write_json(output/'progress.json', {'step': step+1, 'NLL': loss, 'accuracy': accuracy, 'seconds': time.monotonic()-started})
             print(json.dumps({'step': step+1, 'NLL': loss, 'accuracy': accuracy}), flush=True)
-    final_loss, final_accuracy = measure()
+    final_loss, final_accuracy, final_kinematics = measure()
     passed = final_loss < .7*initial_loss and final_accuracy >= .75 and all(r['healthy'] for r in records)
+    if config.get('kinematics_revision', 1) >= 2:
+        passed &= all(f < .5*i for f, i in zip(final_kinematics, initial_kinematics))
     gate = {'gate_passed': passed, 'events': len(source), 'initial_NLL': initial_loss, 'final_NLL': final_loss,
             'initial_accuracy': initial_accuracy, 'final_accuracy': final_accuracy, 'steps': config.get('pilot_steps', 256),
             'seconds': time.monotonic()-started, 'config': config, 'gpu': torch.cuda.get_device_name() if device.type == 'cuda' else None,
+            'initial_kinematics_component_MSE': initial_kinematics, 'final_kinematics_component_MSE': final_kinematics,
             'event_keys': source.metadata[key].to_dict('records'), 'calibration_test_used': False,
             'scope': 'same-event fit gate on sixteen real nonempty train events, all S5 paths; generalization unmeasured'}
     write_json(output/'health.json', records)
