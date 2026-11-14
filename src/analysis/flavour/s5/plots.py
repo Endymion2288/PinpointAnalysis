@@ -95,16 +95,22 @@ def native_examples(root, output, entry):
 
 
 def plot_results(output, entries, report, root):
-    fig, axis = plt.subplots(figsize=(7, 5))
-    for name, frame, manifest in entries:
-        variant = manifest['config'].get('variant')
-        if manifest['config'].get('seed') != 42 or variant not in ['direct4', 'six', 'combined', 'relative', 'objects', 'object_only', 'moments']:
-            continue
-        precision, recall, _ = precision_recall_curve(frame.label.eq(2), frame.p2)
-        axis.plot(recall, precision, label=variant.replace('_', ' '))
-    axis.set(xlabel='Inclusive tau efficiency', ylabel='Tau purity; balanced four-class prior', title='S5 nominal validation: 2,500 tau + 7,500 backgrounds')
-    axis.legend(fontsize=8)
-    save(fig, output, 'tau_efficiency_purity')
+    passes = sorted({e[2]['config']['epochs'] for e in entries})
+    for epochs in passes:
+        fig, axis = plt.subplots(figsize=(7, 5))
+        for name, frame, manifest in entries:
+            config = manifest['config']
+            variant = config.get('variant')
+            if config.get('seed') != 42 or config['epochs'] != epochs:
+                continue
+            if epochs == 4 and variant not in ['direct4', 'six', 'combined', 'relative', 'objects', 'object_only', 'moments']:
+                continue
+            precision, recall, _ = precision_recall_curve(frame.label.eq(2), frame.p2)
+            axis.plot(recall, precision, label=variant.replace('_', ' '))
+        axis.set(xlabel='Inclusive tau efficiency', ylabel='Tau purity; balanced four-class prior',
+                 title=f'S5 validation; {epochs} passes: 2,500 tau + 7,500 backgrounds')
+        axis.legend(fontsize=8)
+        save(fig, output, f'tau_efficiency_purity_passes{epochs}')
     frame = entries[0][1]
     tau = frame[frame.label.eq(2)]
     groups = tau.groupby('tau_branch').agg(events=('label', 'size'), visible=('tau_visible_any', 'sum'), tracker=('tau_visible_tracker', 'sum'))
@@ -116,7 +122,8 @@ def plot_results(output, entries, report, root):
     axis.legend(fontsize=8)
     save(fig, output, 'tau_decay_visibility')
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-    baseline = next((e for e in entries if e[2]['config'].get('variant') == 'direct4' and e[2]['config'].get('seed') == 42), entries[0])
+    baselines = [e for e in entries if e[2]['config'].get('variant') == 'direct4' and e[2]['config'].get('seed') == 42]
+    baseline = max(baselines, key=lambda e: e[2]['config']['epochs']) if baselines else entries[0]
     f = baseline[1]
     for axis, column, label in zip(axes, ['pixel_channels', 'tracker_channels', 'pixel_tracks'], ['Active pixel channels', 'Tracker measurements', 'Pixel segment candidates']):
         axis.hexbin(np.log1p(f[column]), f.p2, gridsize=35, mincnt=1, bins='log', rasterized=True)
@@ -128,6 +135,21 @@ def plot_results(output, entries, report, root):
         axis.plot([r['coverage'] for r in rows], [r['primary_resolution_mm']['absolute_quantiles_50_68_95'][1][2] for r in rows], marker='o')
     axis.set(xlabel='Vertex candidate coverage of all validation events', ylabel='68% absolute primary z residual [mm]', title='Measured-object vertex quality scan')
     save(fig, output, 'object_vertex_resolution_coverage')
+    for epochs in passes:
+        candidates = [e for e in entries if e[2]['config']['epochs'] == epochs and e[2]['config'].get('seed') == 42]
+        selected = min(candidates, key=lambda e: next(r['metrics']['NLL'] for r in report['experiments'] if r['name'] == e[0]))
+        matrix = np.zeros((4, 4), int)
+        labels = selected[1].label.to_numpy()
+        predicted = selected[1][[f'p{i}' for i in range(4)]].to_numpy().argmax(1)
+        np.add.at(matrix, (labels, predicted), 1)
+        fig, axis = plt.subplots(figsize=(6, 5))
+        axis.imshow(matrix/np.maximum(matrix.sum(1, keepdims=True), 1), vmin=0, vmax=1, cmap='Blues')
+        for i in range(4):
+            for j in range(4):
+                axis.text(j, i, str(matrix[i, j]), ha='center', va='center')
+        axis.set(xticks=range(4), yticks=range(4), xticklabels=['e', 'mu', 'tau', 'NC'], yticklabels=['e', 'mu', 'tau', 'NC'],
+                 xlabel='Predicted class', ylabel='True class', title=f'Minimum validation NLL at seed 42; {epochs} passes\n{selected[2]["config"]["variant"]}; counts per true class = 2,500')
+        save(fig, output, f'class_confusion_passes{epochs}')
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
     for experiment in report['experiments']:
         if experiment['variant'] not in ['kinematics_absolute', 'kinematics_relative'] or experiment['seed'] != 42:
@@ -139,5 +161,23 @@ def plot_results(output, entries, report, root):
             axis.set(xlabel='Coverage after classification-confidence cut', ylabel='68% absolute residual', title=component.replace('_', ' '))
     axes[0].legend(fontsize=7)
     save(fig, output, 'kinematic_resolution_coverage')
+    fig, axes = plt.subplots(3, 2, figsize=(12, 10), constrained_layout=True)
+    for experiment in report['experiments']:
+        if experiment['variant'] not in ['kinematics_absolute', 'kinematics_relative'] or experiment['seed'] != 42:
+            continue
+        for column, field in enumerate(['initE', 'initZ']):
+            strata = [r for r in experiment['kinematics'].get('strata', []) if r['field'] == field]
+            for axis, component in zip(axes[:, column], ['pT_relative', 'delta_theta_rad', 'wrapped_delta_phi_rad']):
+                values = [r['resolution'][component]['absolute_quantiles_50_68_95'] for r in strata]
+                axis.plot(range(len(strata)), [v[1] if v is not None else np.nan for v in values], marker='o',
+                          label=experiment['variant'].replace('_', ' '))
+                labels = (['<100', '100-500', '500-1000', '>=1000'] if field == 'initE' else
+                          ['<-2700', '-2700:-2300', '-2300:-1900', '>=-1900'])
+                axis.set(xticks=range(len(strata)), xticklabels=[f'{label}\nN={r["resolution"][component]["events"]}' for label, r in zip(labels, strata)],
+                         xlabel='True neutrino energy [GeV]' if field == 'initE' else 'True primary z [mm]',
+                         ylabel='68% absolute residual', title=component.replace('_', ' '))
+    axes[0, 0].legend(fontsize=7)
+    fig.suptitle('Simulation-conditional component errors; all valid targets, no confidence cut')
+    save(fig, output, 'kinematic_energy_position')
     display = next((e for e in entries if e[2]['config'].get('variant') == 'vertex_kinematics' and e[2]['config'].get('seed') == 42), baseline)
     native_examples(root, output, display)

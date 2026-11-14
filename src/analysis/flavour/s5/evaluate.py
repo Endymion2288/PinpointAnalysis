@@ -46,7 +46,9 @@ def tau_domains(frame):
 
 def operating_tables(frame, common):
     inclusive = tau_metrics(frame)
-    result = {'inclusive': inclusive, 'strata': [], 'charm_fake_tau': []}
+    result = {'inclusive': inclusive, 'strata': [], 'charm_fake_tau': [], 'charm_branch_fake_tau': [],
+              'threshold_scope': 'empirical validation ROC; calibrated final threshold belongs to S6',
+              'count_interval_scope': 'descriptive Clopper-Pearson counts at validation-selected threshold; no independent operating-point coverage claim'}
     signal = frame.label.eq(2).to_numpy()
     for fpr in [.01, .001]:
         point = inclusive.get(f'FPR_{fpr:g}', {})
@@ -65,13 +67,18 @@ def operating_tables(frame, common):
                 mask = frame.label.eq(label).to_numpy() & frame.charm_presence.eq(charm).to_numpy()
                 result['charm_fake_tau'].append({'label': label, 'charm': charm, 'FPR': fpr,
                                                 **binomial(int(np.sum(mask & selected)), int(mask.sum()))})
+            for branch in ['electron', 'muon', 'hadronic']:
+                mask = frame.label.eq(label).to_numpy() & frame.charm_presence.eq(True).to_numpy() & frame.charm_branch.eq(branch).to_numpy()
+                result['charm_branch_fake_tau'].append({'label': label, 'branch': branch, 'FPR': fpr,
+                                                       **binomial(int(np.sum(mask & selected)), int(mask.sum()))})
     return result
 
 
 def conditional_correlations(frame):
     result = []
     columns = ['pixel_channels', 'bar_channels', 'tracker_channels', 'pixel_tracks', 'tracker_tracks',
-               'cluster_count', 'vertex_sigma_z_mm', 'pixel_edge_fraction', 'bar_end_signal_fraction', 'centroid_slope_change']
+               'cluster_count', 'vertex_sigma_z_mm', 'pixel_edge_fraction', 'pixel_end_fraction',
+               'bar_edge_signal_fraction', 'bar_end_signal_fraction', 'centroid_slope_change']
     for label in range(4):
         selected = frame.label.eq(label)
         for observable in columns:
@@ -169,11 +176,15 @@ def auxiliary_quality(frame, config, reference):
                        constant_train_mean_MSE=np.mean((mean-target)**2, axis=0).tolist())
         elif task == 'semantics':
             p = np.exp(prediction-prediction.max(1, keepdims=True)); p /= p.sum(1, keepdims=True)
-            row.update(soft_cross_entropy=float(-np.mean(np.sum(target*np.log(np.maximum(p, 1e-15)), axis=1))),
+            row.update(logit_std=row['prediction_std'], prediction_std=p.std(0).tolist(), score_space='semantic fractions',
+                       soft_cross_entropy=float(-np.mean(np.sum(target*np.log(np.maximum(p, 1e-15)), axis=1))),
                        constant_train_mean_cross_entropy=float(-np.mean(np.sum(target*np.log(np.maximum(mean, 1e-15)), axis=1))))
         else:
             score = prediction[:, 0]
-            row.update(AP=float(average_precision_score(target[:, 0], score)), AUROC=float(roc_auc_score(target[:, 0], score)),
+            probability = np.exp(-np.logaddexp(0., -score))
+            row.update(logit_std=row['prediction_std'], prediction_std=[float(probability.std())], score_space='charm probability',
+                       constant_train_mean_BCE=float(-np.mean(target*np.log(np.maximum(mean, 1e-15))+(1-target)*np.log(np.maximum(1-mean, 1e-15)))),
+                       AP=float(average_precision_score(target[:, 0], score)), AUROC=float(roc_auc_score(target[:, 0], score)),
                        BCE=float(np.mean(np.logaddexp(0, score)-target[:, 0]*score)), prevalence=float(target.mean()))
         result[task] = row
     return result
@@ -196,6 +207,12 @@ def calculate(entry, common, weights, reference):
               'score_observable_correlations': conditional_correlations(frame), 'kinematics': kinematics(frame, config) if 'pred_vertex_0' in frame else None,
               'all_empty': cache.report(frame.all_empty.to_numpy(dtype=float))}
     report['auxiliary_quality'] = auxiliary_quality(frame, config, reference)
+    report['tau_domain_block_intervals'] = {}
+    for domain in paired_tau:
+        intervals = tau_interval(tau_point[domain], tau_samples[domain])
+        for value in intervals.values():
+            value['estimate'] = value.pop('delta')
+        report['tau_domain_block_intervals'][domain] = intervals
     report['tau_domain_metrics'] = {k: dict(zip(TAU_NAMES, tau_statistics(cache, mask.astype(float)).tolist())) for k, mask in tau_masks.items()}
     report['common_support_tau_domain_metrics'] = {k: dict(zip(TAU_NAMES, tau_statistics(cache, mask*common).tolist())) for k, mask in tau_masks.items()}
     if all(f'q{i}' in frame for i in range(6)):

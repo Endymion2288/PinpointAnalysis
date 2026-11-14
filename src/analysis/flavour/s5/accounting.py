@@ -23,7 +23,12 @@ def utc(value):
 def record_condor(arguments):
     root, submission = arguments
     cluster = int(re.search(r'cluster (\d+)', submission['stdout']).group(1))
-    expected = len(submission['tasks']) if submission['tasks'] else 1
+    planned = len(submission['tasks']) if submission['tasks'] else 1
+    factory_path = root/'runtime'/f'{submission["name"]}.proc0.full.json'
+    factory = json.loads(factory_path.read_text())[0] if factory_path.exists() else {}
+    # Removed late-materialization factories have no per-job history for rows
+    # which were never materialized. Preserve the actual next-ProcId evidence.
+    expected = factory['JobMaterializeNextProcId'] if factory.get('JobStatus') == 3 and 'JobMaterializeNextProcId' in factory else planned
     cache = root/'runtime/backends'/f'{submission["name"]}.condor.json'
     ads = {(r['ClusterId'], r['ProcId']): r for r in json.loads(cache.read_text())} if cache.exists() else {}
     attributes = 'ClusterId,ProcId,JobStatus,ExitCode,RemoteWallClockTime,RequestCpus,JobCurrentStartDate,JobStartDate,LastRemoteHost,RemoteHost,AssignedGPUs'
@@ -48,7 +53,9 @@ def record_condor(arguments):
         jobs.append({'proc': key[1], 'status': ad.get('JobStatus'), 'exit_code': ad.get('ExitCode'),
                      'seconds': seconds, 'cpus': ad.get('RequestCpus', 0), 'remote_host': ad.get('LastRemoteHost', ad.get('RemoteHost'))})
     return {'name': submission['name'], 'backend': 'condor', 'cluster': cluster, 'schedd': submission['schedd'],
-            'expected': expected, 'recorded': len(jobs), 'jobs': jobs,
+            'planned_rows': planned, 'expected': expected, 'unmaterialized_rows': planned-expected,
+            'factory_evidence': {k: factory[k] for k in ['JobMaterializeNextProcId', 'JobStatus', 'NumJobStarts', 'RemoveReason'] if k in factory},
+            'recorded': len(jobs), 'jobs': jobs,
             'terminal': len(jobs) == expected and all(r['status'] in [3, 4] for r in jobs),
             'device_hours': sum(r['seconds'] for r in jobs)/3600 if submission['gpu'] else 0.,
             'CPU_allocation_hours': sum(r['seconds']*r['cpus'] for r in jobs)/3600}
