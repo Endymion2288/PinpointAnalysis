@@ -167,7 +167,34 @@ def strata(frame, config):
     return groups
 
 
-def conditional(frame, probability, prior, points, config):
+def fixed_block_intervals(y, fixed, prior, multiplicity, blocks):
+    """Exact frozen-selection block resamples from small sufficient counts.
+
+    Aggregate by true class before normalizing each replicate to its declared
+    prior. This is equivalent to event weights and avoids a 400 x N array.
+    """
+    b = multiplicity.shape[1]
+    index = blocks*4+y
+    aggregate = lambda value: np.bincount(index, weights=value, minlength=b*4).reshape(b, 4)
+    totals = multiplicity @ aggregate(np.ones(len(y)))
+    scales = np.divide(prior, totals, out=np.zeros_like(totals, dtype=float), where=totals > 0)
+    masses = totals*scales
+    ratio = lambda a, d: np.divide(a, d, out=np.full_like(a, np.nan, dtype=float), where=d > 0)
+    columns = []
+    for passed, final in zip(fixed.passed, fixed.final):
+        for c in range(4):
+            accepted = (multiplicity @ aggregate(passed[:, c]))*scales
+            signal = accepted[:, c]
+            total = accepted.sum(1)
+            resolved = (multiplicity @ aggregate(final == c))*scales
+            columns.extend([ratio(signal, masses[:, c]), ratio(total-signal, masses.sum(1)-masses[:, c]),
+                ratio(signal, total), ratio(resolved[:, c], masses[:, c])])
+        rejected = ((multiplicity @ aggregate(final == 4))*scales).sum(1)
+        columns.append(ratio(rejected, masses.sum(1)))
+    return {name: bootstrap.ci(value) for name, value in zip(fixed.names, columns)}
+
+
+def conditional(frame, probability, prior, points, config, multiplicity=None, blocks=None):
     output = []
     y = frame.label.to_numpy()
     for name, mask in strata(frame, config).items():
@@ -181,7 +208,9 @@ def conditional(frame, probability, prior, points, config):
         output.append({'stratum': name, 'class_counts': count.tolist(),
             'prior_mass_present': float(np.asarray(prior)[count > 0].sum()),
             'metrics': metrics, 'fixed': dict(zip(fixed.names, fixed.vector(w))),
-            'fixed_raw_counts': fixed.counts(w)})
+            'fixed_raw_counts': fixed.counts(w),
+            **({'fixed_block_intervals': fixed_block_intervals(labels, fixed, prior, multiplicity, blocks[mask])}
+               if multiplicity is not None else {})})
     return output
 
 
@@ -243,7 +272,7 @@ def one(args):
         samples[r] = np.r_[cache.compute(w)[0][METRIC_INDEX], fixed.vector(w)]
     np.savez_compressed(destination/'bootstrap.npz', names=sample_names, values=samples)
     result['intervals'] = {n: bootstrap.ci(samples[:, i]) for i, n in enumerate(sample_names)}
-    result['conditional'] = conditional(frame, p, prior, points, config)
+    result['conditional'] = conditional(frame, p, prior, points, config, matrix, blocks)
     cutflow = []
     for point, resolved in zip(points, fixed.final):
         active = ~frame.all_empty.to_numpy()

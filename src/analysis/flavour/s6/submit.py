@@ -56,6 +56,8 @@ def submit(args):
     command = ['analysis.flavour.s6.'+args.module, '--root', str(root)]
     command += args.command
     if args.campaign:
+        if args.module in ['infer', 'variants', 'shift', 'pipeline'] and 'models' not in json.loads(args.campaign.read_text()):
+            raise ValueError('campaign must contain checkpoint models; inference policy is a separate root artifact')
         frozen = root/'code'/f'{args.name}.campaign.json'
         frozen.write_text(args.campaign.read_text())
         command += ['--campaign', str(frozen)]

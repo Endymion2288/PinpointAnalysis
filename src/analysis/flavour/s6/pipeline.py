@@ -62,14 +62,25 @@ def test_finalize(args):
         'seconds_including_wait': time.monotonic()-started})
 
 
+def evaluate_one(args):
+    started = time.monotonic()
+    while not (args.root/'evaluation/test_ready.json').exists():
+        if time.monotonic()-started > 21600:
+            raise RuntimeError('awaiting complete frozen test timed out')
+        time.sleep(30)
+    from analysis.flavour.s6.evaluate import one
+    one(args)
+
+
 def main():
     import pyarrow as pa
     pa.set_cpu_count(1)
     pa.set_io_thread_count(1)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['calibrate', 'test_finalize'])
+    parser.add_argument('command', choices=['calibrate', 'test_finalize', 'evaluate_one'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
+    parser.add_argument('--task', type=int, default=0)
     args = parser.parse_args()
     globals()[args.command](args)
 

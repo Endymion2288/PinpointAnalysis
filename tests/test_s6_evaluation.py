@@ -4,7 +4,8 @@ import unittest
 import numpy as np
 
 from analysis.flavour.s6.bootstrap import weights
-from analysis.flavour.s6.evaluate import FixedCache, exact_interval, reliability
+from analysis.flavour.s6.bootstrap import ci
+from analysis.flavour.s6.evaluate import FixedCache, exact_interval, reliability, fixed_block_intervals
 from analysis.flavour.s6.gfaser import legacy_record
 
 
@@ -31,6 +32,26 @@ class FinalEvaluationTest(unittest.TestCase):
         result = reliability(np.arange(4), p, np.ones(4), 20)
         self.assertEqual(result['top_label']['ECE'], 0.)
         self.assertEqual(sum(result['top_label']['counts']), 4)
+
+    def test_conditional_blocks_equal_explicit_event_resamples(self):
+        y = np.array([0, 0, 1, 1, 2, 2, 3, 3])
+        p = np.array([[.8, .1, .05, .05], [.1, .6, .2, .1], [.1, .7, .1, .1], [.25]*4,
+                      [.1, .1, .7, .1], [.6, .1, .2, .1], [.1, .1, .1, .7], [.25]*4])
+        blocks = np.array([0, 1, 0, 1, 0, 2, 1, 2])
+        multiplicity = np.array([[1, 1, 1], [0, 2, 1], [2, 0, 1], [3, 0, 0]])
+        prior = np.array([.15, .35, .01, .49])
+        fixed = FixedCache(y, p, [{'target_FPR': .01, 'classes': [{'threshold': .5}]*4}])
+        actual = fixed_block_intervals(y, fixed, prior, multiplicity, blocks)
+        # Independent reference explicitly duplicates each event of a block.
+        samples = []
+        for m in multiplicity:
+            indices = np.repeat(np.arange(len(y)), m[blocks])
+            expanded = FixedCache(y[indices], p[indices], fixed.points)
+            samples.append(expanded.vector(weights(y[indices], prior)))
+        for i, name in enumerate(fixed.names):
+            expected = ci(np.asarray(samples)[:, i])
+            self.assertEqual(actual[name]['valid_replicates'], expected['valid_replicates'])
+            np.testing.assert_allclose(actual[name]['CI95'], expected['CI95'], rtol=1e-12)
 
     def test_legacy_ancestry_and_units(self):
         event = {'pdgc': [16, 1000741840, 15, 211], 'status': [0, 0, 1, 1],
