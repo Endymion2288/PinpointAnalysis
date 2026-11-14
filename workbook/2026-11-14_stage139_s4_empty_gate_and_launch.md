@@ -33,7 +33,9 @@ HTCondor `1578483`（bigbird20，实际`b9pgpun204`，H100 2g.24gb MIG）使用�
 
 新增`analysis.flavour.s4.accept_empty`单独检查这18项矩阵：配置/源码产物、14项checkpoint读回、独立best FP32 backward、初始32次及每100步的健康采样、所有update的范数检查计数、三套预训练来源readback、完整10k四分类和400次128块bootstrap、三seed对照、终态allocation及原60 device-hour预算。验收分别报告技术执行和NLL相对constant prior的实际数值；不能把技术通过写成预训练改善。该入口尚未在未完成矩阵上声称通过。
 
-21项相关测试及新增的全update证据测试已通过（验收测试文件6项）。23:55前后清理6个已终态AFS提交文件共5,648 bytes，每个原文与EOS提交记录逐字一致；审计位于`audit/afs_cleanup_20261113T235535.json`，运行中的提交文件保留。
+在训练尚未完成时执行该入口，按预期非零退出：18项配置和三套预训练来源通过，实际checkpoint、评价和终态证据缺失则明确失败，完整结果保存在`audit/empty_accept_before_training.json`。重新生成并人工查看`evaluation/progress_v9/classification_internal_health.png`，两项异常以红色范围及独立preclip norm点标出，最右图显示10,000审查界限；良好的Head激活或最终FP32梯度不能遮盖初始化异常。
+
+21项相关测试及新增的全update证据测试已通过（验收测试文件6项）。23:55前后清理6个已终态AFS提交文件共5,648 bytes，每个原文与EOS提交记录逐字一致；审计位于`audit/afs_cleanup_20261113T235527.json`，运行中的提交文件保留。
 
 ## 阶段性结论
 
