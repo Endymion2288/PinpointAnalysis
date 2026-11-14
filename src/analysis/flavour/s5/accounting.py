@@ -64,6 +64,11 @@ def record_condor(arguments):
 def record_kubeflow(root, submission):
     name = submission['name']
     directory = root/'runtime/backends'
+    cancellation_path = root/'runtime'/f'{name}.cancellation.json'
+    cancellation = json.loads(cancellation_path.read_text()) if cancellation_path.exists() else {}
+    if cancellation.get('never_scheduled') and cancellation.get('delete_exit_code') == 0:
+        return {'name': name, 'backend': 'kubeflow', 'flavor': submission['flavor'], 'pods': [],
+                'terminal': True, 'cancellation': cancellation, 'device_hours': 0., 'CPU_allocation_hours': 0.}
     job = read_command(['kubectl', '--request-timeout=20s', 'get', 'job', name, '-n', 'xcheng', '-o', 'json'])
     job_path = directory/(name+'.job.json')
     if job:

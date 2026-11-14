@@ -44,3 +44,5 @@ Direct4/six-way两组是预先固定的控制，不依赖剩余screen结果，�
 预测/重建px、py、pT、θ、wrapped Δφ分别给偏差和68/95% quantiles，近零pT mask明确；quality-cut扫描必须同时给coverage。absolute/raw与预测vertex-relative并存，真实vertex-centred只作oracle。可见/不可见secondary、正确/错误/随机组画原生响应，score与观测量关系以总体计数支撑。结论至少包括一个有区间的困难通道解释，并列待查原因。
 
 Containment采用观测端边缘/末端signal fraction作为leakage proxy，保留有效mask，不称作真实shower containment。辅助回归同时报告预测/目标方差及相对于仅10k所选train标签均值的误差，避免把近常数输出当成功重建。正式评价入口为`analysis.flavour.s5.evaluate`，原生响应诊断由CPU批作业`analysis.flavour.s5.diagnostics`生成。
+
+旧kinematic Linear+Huber在px/py上未优于train均值，不能作为方向重建成功的证据。额外revision2采用train-only逐分量std预条件的MSE、均值初始化、非负pZ/E link，并比较Linear与normalized residual MLP。依据[GradNorm, ICML2018](https://proceedings.mlr.press/v80/chen18a.html)、[ReZero, UAI2021](https://proceedings.mlr.press/v161/bachlechner21a.html)和FAMO的损失平衡/残差初始化思想，先处理目标与尺度，未实现完整动态梯度算法。16-event gate同时要求四分量误差下降，已通过；泛化由两项额外4-pass对照测量，探索范围与预定候选确认分开记录。

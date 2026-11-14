@@ -31,12 +31,13 @@ def main():
                     continue
                 name = pod['metadata']['name']
                 phase = pod.get('status', {}).get('phase')
-                path = directory/(name+('.terminal.pod.json' if phase in ['Succeeded', 'Failed'] else '.live.pod.json'))
+                deleted = event.get('type') == 'DELETED'
+                path = directory/(name+('.terminal.pod.json' if phase in ['Succeeded', 'Failed'] or deleted else '.live.pod.json'))
                 temporary = path.with_suffix('.tmp')
                 temporary.write_text(json.dumps(pod, indent=2)+'\n')
                 temporary.replace(path)
-                if phase in ['Succeeded', 'Failed']:
-                    print(json.dumps({'pod': name, 'phase': phase, 'snapshot': str(path)}), flush=True)
+                if phase in ['Succeeded', 'Failed'] or deleted:
+                    print(json.dumps({'pod': name, 'phase': phase, 'deleted': deleted, 'snapshot': str(path)}), flush=True)
                     return
         if process.wait() != 0:
             raise RuntimeError('Kubernetes watch ended before a terminal Pod; restart after checking CLI credentials')
