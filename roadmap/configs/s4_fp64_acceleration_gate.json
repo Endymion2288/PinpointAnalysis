@@ -1,0 +1,17 @@
+{
+  "stage": "S4_same_objective_device_acceleration_gate",
+  "experiments": [
+    {
+      "name": "s4_fp64_acceleration_gate_s42",
+      "program": "accelerated_linear",
+      "seed": 42,
+      "references": [
+        "s4_newton_frozen_scratch_n1000_s42",
+        "s4_newton_frozen_mae3_n1000_s42",
+        "s4_newton_frozen_scratch_n10000_s42",
+        "s4_newton_frozen_mae3_n10000_s42"
+      ],
+      "scope": "eight actual same-feature fits; CPU FP64 independent gradient <=1e-6, objective gap <=1e-5, probability difference <=0.005; no held-out selection"
+    }
+  ]
+}

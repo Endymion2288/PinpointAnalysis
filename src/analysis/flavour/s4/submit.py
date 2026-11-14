@@ -141,7 +141,10 @@ def submit(args):
         f'export PINPOINT_CODE_COMMIT={shlex.quote(commit)}',f'cd {shlex.quote(str(repo))}']
     if not cpu_only:
         script.append('source '+shlex.quote(str(repo/'src/analysis/flavour/s3/runtime_repair.sh'))+' '+shlex.quote(str(root)))
-    stage_native_inputs=not cpu_only and not prototype_pool
+    cached_solver_only = args.stage == 'campaign' and args.campaign and all(
+        json.loads(args.campaign.read_text())['experiments'][task].get('program') == 'accelerated_linear'
+        for task in args.tasks)
+    stage_native_inputs=not cpu_only and not prototype_pool and not cached_solver_only
     if stage_native_inputs:
         script.extend(['export PINPOINT_CLASSIFICATION_CACHE_MIB=1024',
             'export PINPOINT_NATIVE_SHARD_ROOT="${_CONDOR_SCRATCH_DIR:-/tmp}/pinpoint_s4_native_inputs"',
