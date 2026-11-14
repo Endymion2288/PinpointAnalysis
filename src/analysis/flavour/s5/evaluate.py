@@ -226,6 +226,8 @@ def calculate(entry, common, weights, reference):
         report['six_way'] = {'events': int(mask.sum()), 'masked_events': int((~mask).sum()),
             'NLL': float(log_loss(y, q[mask], labels=range(6))), 'confusion_counts': confusion_matrix(y, q[mask].argmax(1), labels=range(6)).tolist(),
             'class_AP': [float(average_precision_score(y == i, q[mask, i])) if (y == i).any() else None for i in range(6)],
+            'class_probability_std': q[mask].std(0).tolist(),
+            'class_predicted_counts': np.bincount(q[mask].argmax(1), minlength=6).tolist(),
             'maximum_tau_sum_difference': float(np.max(np.abs(q[:, 2:5].sum(1)-frame.p2.to_numpy())))}
         if report['six_way']['maximum_tau_sum_difference'] > 2e-6:
             raise ValueError('six-way to four-way sum inconsistent')
