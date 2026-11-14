@@ -62,13 +62,13 @@ def fit_probe(features, labels, mode, config):
 
 
 @torch.no_grad()
-def extract(model,dataset,config,device):
+def extract(model,dataset,config,device,progress_path=None,role=None):
     sampler=SpatialBatchSampler(dataset,config.get('batch_size',16),42,shuffle=False)
     options={'num_workers':config.get('workers',1),'collate_fn':collate_planes,'pin_memory':device.type=='cuda'}
     if options['num_workers']:options.update(multiprocessing_context='spawn',worker_init_fn=init_worker,prefetch_factor=1)
     loader=DataLoader(dataset,batch_sampler=sampler,**options)
     result={key:[] for key in ['regional','global','local','summary','full']}
-    indices=[]
+    indices=[];completed=0;started=time.perf_counter();last_report=started
     for batch in loader:
         indices.append(batch.pop('index').numpy());batch.pop('label')
         batch={k:v.to(device) for k,v in batch.items()}
@@ -78,6 +78,13 @@ def extract(model,dataset,config,device):
         values={'regional':branches[:,:3].flatten(1),'global':branches[:,3],
             'local':branches[:,4:].flatten(1),'summary':features['summary'],'full':features['head_input']}
         for key,value in values.items():result[key].append(value.float().cpu().numpy())
+        completed+=len(values['full'])
+        now=time.perf_counter()
+        if progress_path and (now-last_report>=30 or completed==len(dataset)):
+            write_json(progress_path,{'phase':'extracting_'+role,'events_completed':completed,
+                'events_total':len(dataset),'events_per_second':completed/(now-started),
+                'utc':datetime.now(timezone.utc).isoformat()})
+            last_report=now
     order=np.argsort(np.concatenate(indices))
     return {key:np.concatenate(values)[order] for key,values in result.items()}
 
@@ -99,7 +106,7 @@ def main():
         model.load_state_dict(state['model'],strict=True)
     model.to(args.device).eval().requires_grad_(False)
     train=LabelDataset(args.root,'train',config)
-    features=extract(model,train,config,torch.device(args.device))
+    features=extract(model,train,config,torch.device(args.device),output/'progress.json','fit')
     train_only=config.get('probe_scope')=='train_only_branches'
     if train_only:
         # Disjoint readout-fit/readout-probe; the S3 supervised encoder has
@@ -112,7 +119,7 @@ def main():
         xfit={k:v[fit] for k,v in features.items()};xhold={k:v[hold] for k,v in features.items()}
     else:
         val=LabelDataset(args.root,'validation',config)
-        xfit=features;xhold=extract(model,val,config,torch.device(args.device))
+        xfit=features;xhold=extract(model,val,config,torch.device(args.device),output/'progress.json','validation')
         yfit=train.metadata.label.to_numpy();yhold=val.metadata.label.to_numpy();holdmeta=val.metadata.copy()
     measured={};statistics={};optimization={}
     for branch in (list(features) if train_only else config.get('probe_branches',['full','global'])):
@@ -120,6 +127,9 @@ def main():
             'probe':feature_statistics(torch.from_numpy(xhold[branch]))}
         modes=['linear','MLP'] if train_only else ['linear']
         for mode in modes:
+            write_json(output/'progress.json',{'phase':'fitting_'+branch+'_'+mode,'fit_events':len(yfit),
+                'input_features':xfit[branch].shape[1],'GPU_used_by_solver':False,
+                'utc':datetime.now(timezone.utc).isoformat()})
             pipeline,audit=fit_probe(xfit[branch],yfit,mode,config)
             optimization[branch+'_'+mode]=audit
             probability=pipeline.predict_proba(xhold[branch])
@@ -129,6 +139,9 @@ def main():
             prediction=holdmeta.copy()
             for c in range(4):prediction[f'p{c}']=probability[:,c]
             save_parquet(prediction,output/f'{branch}_{mode}_predictions.parquet')
+            print(json.dumps({'branch':branch,'mode':mode,'converged':audit['passed'],
+                'iterations':audit['iterations'],'fit_NLL':audit['fit_NLL'],
+                'heldout_NLL':audit['heldout_NLL']}),flush=True)
     write_json(output/'metrics.json',measured)
     write_json(output/'feature_statistics.json',statistics)
     write_json(output/'probe_optimization.json',optimization)
@@ -143,6 +156,7 @@ def main():
     if not train_only:val.native.close()
     if not converged:
         raise RuntimeError('probe optimization did not converge; predictions are diagnostic only')
+    write_json(output/'progress.json',{'phase':'complete','utc':datetime.now(timezone.utc).isoformat()})
     print(json.dumps({key:{'NLL':value['NLL'],'macro_AP':np.mean([v['PR_AUC'] for v in value['classwise'].values()])} for key,value in measured.items()}),flush=True)
 
 
