@@ -1,0 +1,457 @@
+{
+  "models": [
+    {
+      "utc": "2026-11-14T03:53:52.729293+00:00",
+      "name": "s4_optimized_scratch_n1000_s17",
+      "checkpoints": {
+        "best": {
+          "epoch": 8,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.0015187989920377731,
+              "L2_change": 0.04436430131396295,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        },
+        "last": {
+          "epoch": 8,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.0015187989920377731,
+              "L2_change": 0.04436430131396295,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        }
+      },
+      "checks": {
+        "best_input_updated": false,
+        "best_local_updated": false,
+        "best_local_pool_updated": true,
+        "last_input_updated": false,
+        "last_local_updated": false,
+        "last_local_pool_updated": true
+      },
+      "passed": false,
+      "initialization": {
+        "seed": 17,
+        "pretrained_checkpoint": null,
+        "supervised_initial_checkpoint": null
+      },
+      "scope": "CPU parameter differences to seed-matched build_model or exact loaded parent; compilation disabled only for initialization; complements actual training gradients, does not establish prediction quality or update of every parameter",
+      "code_commit": "fd26864ae23def6716121dc475a2c432323f6128",
+      "used_for_formal_refit_acceptance": true
+    },
+    {
+      "utc": "2026-11-14T03:53:53.188212+00:00",
+      "name": "s4_optimized_mae3_n1000_s42",
+      "checkpoints": {
+        "best": {
+          "epoch": 8,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.0017931759357452393,
+              "L2_change": 0.051121927676209884,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        },
+        "last": {
+          "epoch": 8,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.0017931759357452393,
+              "L2_change": 0.051121927676209884,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        }
+      },
+      "checks": {
+        "best_input_updated": false,
+        "best_local_updated": false,
+        "best_local_pool_updated": true,
+        "last_input_updated": false,
+        "last_local_updated": false,
+        "last_local_pool_updated": true
+      },
+      "passed": false,
+      "initialization": {
+        "seed": 42,
+        "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
+        "supervised_initial_checkpoint": null
+      },
+      "scope": "CPU parameter differences to seed-matched build_model or exact loaded parent; compilation disabled only for initialization; complements actual training gradients, does not establish prediction quality or update of every parameter",
+      "code_commit": "fd26864ae23def6716121dc475a2c432323f6128",
+      "used_for_formal_refit_acceptance": true
+    },
+    {
+      "utc": "2026-11-14T03:53:53.497702+00:00",
+      "name": "s4_optimized_scratch_n10000_s17",
+      "checkpoints": {
+        "best": {
+          "epoch": 6,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.10119067132472992,
+              "L2_change": 0.5720908183150891,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.06298600137233734,
+              "L2_change": 4.425775267439566,
+              "changed_parameter_elements": 188352,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.07245266437530518,
+              "L2_change": 1.4149155955130983,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        },
+        "last": {
+          "epoch": 6,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.10119067132472992,
+              "L2_change": 0.5720908183150891,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.06298600137233734,
+              "L2_change": 4.425775267439566,
+              "changed_parameter_elements": 188352,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.07245266437530518,
+              "L2_change": 1.4149155955130983,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        }
+      },
+      "checks": {
+        "best_input_updated": true,
+        "best_local_updated": true,
+        "best_local_pool_updated": true,
+        "last_input_updated": true,
+        "last_local_updated": true,
+        "last_local_pool_updated": true
+      },
+      "passed": true,
+      "initialization": {
+        "seed": 17,
+        "pretrained_checkpoint": null,
+        "supervised_initial_checkpoint": null
+      },
+      "scope": "CPU parameter differences to seed-matched build_model or exact loaded parent; compilation disabled only for initialization; complements actual training gradients, does not establish prediction quality or update of every parameter",
+      "code_commit": "fd26864ae23def6716121dc475a2c432323f6128",
+      "used_for_formal_refit_acceptance": true
+    },
+    {
+      "utc": "2026-11-14T03:53:53.797432+00:00",
+      "name": "s4_optimized_mae3_n10000_s42",
+      "checkpoints": {
+        "best": {
+          "epoch": 6,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.030744643881917,
+              "L2_change": 0.41441452689129576,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.05750630423426628,
+              "L2_change": 4.721968915993013,
+              "changed_parameter_elements": 188352,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.043335117399692535,
+              "L2_change": 1.1644244764115839,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        },
+        "last": {
+          "epoch": 6,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.030744643881917,
+              "L2_change": 0.41441452689129576,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.05750630423426628,
+              "L2_change": 4.721968915993013,
+              "changed_parameter_elements": 188352,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.043335117399692535,
+              "L2_change": 1.1644244764115839,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        }
+      },
+      "checks": {
+        "best_input_updated": true,
+        "best_local_updated": true,
+        "best_local_pool_updated": true,
+        "last_input_updated": true,
+        "last_local_updated": true,
+        "last_local_pool_updated": true
+      },
+      "passed": true,
+      "initialization": {
+        "seed": 42,
+        "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
+        "supervised_initial_checkpoint": null
+      },
+      "scope": "CPU parameter differences to seed-matched build_model or exact loaded parent; compilation disabled only for initialization; complements actual training gradients, does not establish prediction quality or update of every parameter",
+      "code_commit": "fd26864ae23def6716121dc475a2c432323f6128",
+      "used_for_formal_refit_acceptance": true
+    },
+    {
+      "utc": "2026-11-14T03:53:54.239352+00:00",
+      "name": "s4_inner_lpft4_scratch_n1000_f0_s42",
+      "checkpoints": {
+        "best": {
+          "epoch": 2,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.0,
+              "L2_change": 0.0,
+              "changed_parameter_elements": 0,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        },
+        "last": {
+          "epoch": 12,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.002280808985233307,
+              "L2_change": 0.02358830492869838,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.003081902861595154,
+              "L2_change": 0.2376204556711966,
+              "changed_parameter_elements": 188352,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.002241380512714386,
+              "L2_change": 0.05559346688134165,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        }
+      },
+      "checks": {
+        "best_input_updated": false,
+        "best_local_updated": false,
+        "best_local_pool_updated": false,
+        "last_input_updated": true,
+        "last_local_updated": true,
+        "last_local_pool_updated": true
+      },
+      "passed": false,
+      "initialization": {
+        "seed": 42,
+        "pretrained_checkpoint": null,
+        "supervised_initial_checkpoint": null
+      },
+      "scope": "CPU parameter differences to seed-matched build_model or exact loaded parent; compilation disabled only for initialization; complements actual training gradients, does not establish prediction quality or update of every parameter",
+      "code_commit": "fd26864ae23def6716121dc475a2c432323f6128",
+      "used_for_formal_refit_acceptance": false,
+      "interpretation": "Inner last checkpoint measures full fine-tuning updates; generic best may lie in the intentionally frozen LP phase and is not used by the OOF resolver."
+    },
+    {
+      "utc": "2026-11-14T03:53:54.759224+00:00",
+      "name": "s4_inner_lpft4_mae3_n1000_f0_s42",
+      "checkpoints": {
+        "best": {
+          "epoch": 11,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0024497024714946747,
+              "L2_change": 0.03273990178511546,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.0033560986630618572,
+              "L2_change": 0.3061684007391929,
+              "changed_parameter_elements": 188352,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.002699282020330429,
+              "L2_change": 0.07178264903367791,
+              "changed_parameter_elements": 19487,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        },
+        "last": {
+          "epoch": 12,
+          "branches": {
+            "input": {
+              "maximum_absolute_change": 0.0024778293445706367,
+              "L2_change": 0.03299838075230303,
+              "changed_parameter_elements": 2784,
+              "parameter_elements": 2784,
+              "finite": true
+            },
+            "local": {
+              "maximum_absolute_change": 0.003383528906852007,
+              "L2_change": 0.3084943869292958,
+              "changed_parameter_elements": 188351,
+              "parameter_elements": 188352,
+              "finite": true
+            },
+            "local_pool": {
+              "maximum_absolute_change": 0.0027237646281719208,
+              "L2_change": 0.07238868168980915,
+              "changed_parameter_elements": 19488,
+              "parameter_elements": 19488,
+              "finite": true
+            }
+          }
+        }
+      },
+      "checks": {
+        "best_input_updated": true,
+        "best_local_updated": true,
+        "best_local_pool_updated": true,
+        "last_input_updated": true,
+        "last_local_updated": true,
+        "last_local_pool_updated": true
+      },
+      "passed": true,
+      "initialization": {
+        "seed": 42,
+        "pretrained_checkpoint": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/s4_2026-11-13/experiments/s4_mae_m75_e3_s42/best.pt",
+        "supervised_initial_checkpoint": null
+      },
+      "scope": "CPU parameter differences to seed-matched build_model or exact loaded parent; compilation disabled only for initialization; complements actual training gradients, does not establish prediction quality or update of every parameter",
+      "code_commit": "fd26864ae23def6716121dc475a2c432323f6128",
+      "used_for_formal_refit_acceptance": false,
+      "interpretation": "Inner last checkpoint measures full fine-tuning updates; generic best may lie in the intentionally frozen LP phase and is not used by the OOF resolver."
+    }
+  ],
+  "scope": "Six small checkpoint comparisons without raw events. Old LP refits must fail. Inner fits use only eligible epoch >=3 histories for OOF selection, not their generic best.pt."
+}

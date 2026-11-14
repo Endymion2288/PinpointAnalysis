@@ -1,0 +1,5135 @@
+{
+  "utc": "2026-11-14T03:51:35.021658+00:00",
+  "scope": "S4 complete 10k validation reused for repaired matched-compute control; calibration/test frozen",
+  "design_scope": "Repaired stage145 baseline recipes. Full parent and continuation compute is charged; supervised selection envelope chooses lower validation NLL of complete parent and continuation. Fixed seed42 comparison with conditional physical-block intervals, not an independent training-seed claim.",
+  "common_support": {
+    "edges": {
+      "energy_MeV": [
+        0,
+        100000,
+        300000,
+        1000000,
+        2500000,
+        6000000
+      ],
+      "x_mm": [
+        -1000,
+        -100,
+        0,
+        100,
+        1000
+      ],
+      "y_mm": [
+        -1000,
+        -80,
+        0,
+        80,
+        1000
+      ],
+      "z_mm": [
+        -4000,
+        -2600,
+        -2200,
+        -1800,
+        0
+      ]
+    },
+    "minimum_events_per_class_per_cell": 5,
+    "supported_cells": 103,
+    "total_populated_cells": 234,
+    "retained_events": 8559,
+    "weight_cap": 1.0,
+    "class_weight_sums": [
+      1586.0,
+      1586.0,
+      1586.0,
+      1586.0
+    ],
+    "Neff": 7959.413646535195,
+    "scope": "energy_vertex_joint_common_support_diagnostic_no_flux_weights"
+  },
+  "resampling_blocks": {
+    "chunks": 128,
+    "resampling_blocks": 128,
+    "accepted_family_links_used": true,
+    "multi_chunk_blocks": 0,
+    "blocks_by_class_signature": {
+      "(0,)": 32,
+      "(1,)": 32,
+      "(2,)": 32,
+      "(3,)": 32
+    }
+  },
+  "bootstrap_replicates": 400,
+  "requested_complete": true,
+  "interval_scope": "pointwise paired connected-chunk intervals conditional on the trained seeds and fixed common-support weights; seed SD reported separately",
+  "finite_MC_scope": "1%/0.1% FPR efficiency and tau branch counts reported; low selected backgrounds retain finite-MC intervals",
+  "resource_scope": "per-task elapsed seconds are not allocation sums when sharing GPU; see campaign_accounting and matched_compute separately",
+  "experiments": [
+    {
+      "name": "s4_empty_scratch_n1000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 1,
+        "scope": null
+      },
+      "training_seconds": 1000.0021586479997,
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "code_commit": "f6caea6872bed52d8d4c10ce09634884cf562775",
+      "label_budget": 1000,
+      "four_class": {
+        "macro_AP": 0.2969077208463924,
+        "NLL": 1.5351447110328473,
+        "macro_F1": 0.27693224000515587,
+        "balanced_accuracy": 0.2935,
+        "class_2_AP": 0.2597648969371103,
+        "class_2_eff_at_0.01_FPR": 0.01,
+        "class_2_eff_at_0.001_FPR": 0.0012
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.25976489693711025,
+        "ROC_AUC": 0.5158294400000001,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.7186867594718933,
+          "tau_efficiency": 0.01,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 25,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.8604019284248352,
+          "tau_efficiency": 0.0012,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 3,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.16980121355566663,
+          0.20235592469377442,
+          0.2726164848091081,
+          0.3552263767139986
+        ],
+        "probability_std": [
+          0.12457040116398221,
+          0.14653806835729935,
+          0.1438202528801672,
+          0.19030994049071231
+        ],
+        "probability_min": [
+          0.0027331169694662094,
+          0.0034428592771291733,
+          0.00610091257840395,
+          0.0027278948109596968
+        ],
+        "probability_max": [
+          0.8361369371414185,
+          0.943122923374176,
+          0.9187412261962891,
+          0.9673357605934143
+        ],
+        "argmax_class_counts": [
+          1006,
+          1704,
+          2323,
+          4967
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_mae3_n1000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 1,
+        "scope": null
+      },
+      "training_seconds": 961.7175611900166,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "f6caea6872bed52d8d4c10ce09634884cf562775",
+      "label_budget": 1000,
+      "four_class": {
+        "macro_AP": 0.35919175865857067,
+        "NLL": 1.3996196749866925,
+        "macro_F1": 0.3513690013462126,
+        "balanced_accuracy": 0.35329999999999995,
+        "class_2_AP": 0.2868474991064927,
+        "class_2_eff_at_0.01_FPR": 0.0132,
+        "class_2_eff_at_0.001_FPR": 0.0004
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.28684749910649265,
+        "ROC_AUC": 0.56631936,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.6915914416313171,
+          "tau_efficiency": 0.0132,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 33,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.8313764333724976,
+          "tau_efficiency": 0.0004,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 1,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.204856897283555,
+          0.20591481994830538,
+          0.3404446761366911,
+          0.24878360559837892
+        ],
+        "probability_std": [
+          0.15360008590879773,
+          0.13260357565202477,
+          0.1383213737111647,
+          0.1476185700873096
+        ],
+        "probability_min": [
+          0.003710647812113166,
+          0.0027392979245632887,
+          0.008273229002952576,
+          0.01446629874408245
+        ],
+        "probability_max": [
+          0.960556149482727,
+          0.7324188351631165,
+          0.9224150776863098,
+          0.8443724513053894
+        ],
+        "argmax_class_counts": [
+          1524,
+          1684,
+          4471,
+          2321
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_scratch_n10000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 3,
+        "scope": null
+      },
+      "training_seconds": 2121.109932694002,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "code_commit": "28343f98232f875163d06d1ace0f654756f35f9f",
+      "label_budget": 10000,
+      "four_class": {
+        "macro_AP": 0.42773373448693586,
+        "NLL": 1.2777388776034113,
+        "macro_F1": 0.40151768628036355,
+        "balanced_accuracy": 0.40359999999999996,
+        "class_2_AP": 0.32512824107923655,
+        "class_2_eff_at_0.01_FPR": 0.0268,
+        "class_2_eff_at_0.001_FPR": 0.0028
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.32512824107923666,
+        "ROC_AUC": 0.5997081599999999,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4944199025630951,
+          "tau_efficiency": 0.0268,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 67,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.5464205145835876,
+          "tau_efficiency": 0.0028,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 7,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.2657306144678034,
+          0.21132886996681335,
+          0.2892089360920712,
+          0.23373158048987389
+        ],
+        "probability_std": [
+          0.18800095694034488,
+          0.11135942981208727,
+          0.08896944199165269,
+          0.12206718611215706
+        ],
+        "probability_min": [
+          0.014662648551166058,
+          0.0031638711225241423,
+          0.030061235651373863,
+          0.009637570939958096
+        ],
+        "probability_max": [
+          0.9556912779808044,
+          0.7515465617179871,
+          0.6050618886947632,
+          0.7242445945739746
+        ],
+        "argmax_class_counts": [
+          2428,
+          1318,
+          3410,
+          2844
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_mae3_n10000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 3,
+        "scope": null
+      },
+      "training_seconds": 2116.9772515930235,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "code_commit": "28343f98232f875163d06d1ace0f654756f35f9f",
+      "label_budget": 10000,
+      "four_class": {
+        "macro_AP": 0.4437391555657,
+        "NLL": 1.253411730243753,
+        "macro_F1": 0.39755776407498256,
+        "balanced_accuracy": 0.4049,
+        "class_2_AP": 0.33272081266794,
+        "class_2_eff_at_0.01_FPR": 0.0276,
+        "class_2_eff_at_0.001_FPR": 0.0024
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.33272081266794007,
+        "ROC_AUC": 0.6092981333333334,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.49671614170074463,
+          "tau_efficiency": 0.0276,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 69,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.5695744156837463,
+          "tau_efficiency": 0.0024,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 6,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.2519428149146028,
+          0.20492293909777654,
+          0.26322569069755264,
+          0.27990855785813185
+        ],
+        "probability_std": [
+          0.2245990172003068,
+          0.11448310483389683,
+          0.09829144311662427,
+          0.1484473406479219
+        ],
+        "probability_min": [
+          0.008208590559661388,
+          0.0005511556519195437,
+          0.005135243758559227,
+          0.004017187282443047
+        ],
+        "probability_max": [
+          0.9896677732467651,
+          0.8498026132583618,
+          0.6392166018486023,
+          0.8343026041984558
+        ],
+        "argmax_class_counts": [
+          2282,
+          1087,
+          2654,
+          3977
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_scratch_n100000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 4,
+        "scope": null
+      },
+      "training_seconds": 4913.412279255019,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "715ed4a1521017eeaba6bcd294cf0af66c05e958",
+      "label_budget": 100000,
+      "four_class": {
+        "macro_AP": 0.46845264253650676,
+        "NLL": 1.2149399104213185,
+        "macro_F1": 0.4297451747011701,
+        "balanced_accuracy": 0.4313,
+        "class_2_AP": 0.350945960841952,
+        "class_2_eff_at_0.01_FPR": 0.032,
+        "class_2_eff_at_0.001_FPR": 0.0036
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.35094596084195206,
+        "ROC_AUC": 0.6307121333333334,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4230029582977295,
+          "tau_efficiency": 0.032,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 80,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.47342830896377563,
+          "tau_efficiency": 0.0036,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 9,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.25367621858885975,
+          0.24383807253319537,
+          0.24626978250001558,
+          0.256215926354751
+        ],
+        "probability_std": [
+          0.21800503951229608,
+          0.1489907461230549,
+          0.08529881478210137,
+          0.14014731036145847
+        ],
+        "probability_min": [
+          0.0021310674492269754,
+          0.0008629019139334559,
+          0.0066968523897230625,
+          0.004079475067555904
+        ],
+        "probability_max": [
+          0.9851288795471191,
+          0.9234827756881714,
+          0.5365752577781677,
+          0.9388594627380371
+        ],
+        "argmax_class_counts": [
+          2740,
+          2310,
+          2446,
+          2504
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_mae3_n100000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 4,
+        "scope": null
+      },
+      "training_seconds": 4933.374461072992,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "715ed4a1521017eeaba6bcd294cf0af66c05e958",
+      "label_budget": 100000,
+      "four_class": {
+        "macro_AP": 0.4737769705471011,
+        "NLL": 1.2073156507545997,
+        "macro_F1": 0.42952255631706,
+        "balanced_accuracy": 0.4305,
+        "class_2_AP": 0.3596164953784879,
+        "class_2_eff_at_0.01_FPR": 0.0356,
+        "class_2_eff_at_0.001_FPR": 0.0056
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.3596164953784877,
+        "ROC_AUC": 0.6377649866666667,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4382876455783844,
+          "tau_efficiency": 0.0356,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 89,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.504776656627655,
+          "tau_efficiency": 0.0056,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 14,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.2553721573801711,
+          0.2436395164121088,
+          0.2455493271236075,
+          0.25543900037100536
+        ],
+        "probability_std": [
+          0.22003392519369824,
+          0.15618847275800113,
+          0.09101980515799198,
+          0.1433601577882791
+        ],
+        "probability_min": [
+          0.0013508452102541924,
+          0.000335001852363348,
+          0.002554035745561123,
+          0.0021899768617004156
+        ],
+        "probability_max": [
+          0.9939168095588684,
+          0.9412475228309631,
+          0.5824945569038391,
+          0.9416356086730957
+        ],
+        "argmax_class_counts": [
+          2749,
+          2108,
+          2622,
+          2521
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_supervised_matched_n1000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 1,
+        "scope": null
+      },
+      "training_seconds": 1161.4072287009913,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "f15a41d200423839da0037091199c7f6e61606a6",
+      "label_budget": 1000,
+      "four_class": {
+        "macro_AP": 0.2781052227909293,
+        "NLL": 2.947358840042557,
+        "macro_F1": 0.2787263316028352,
+        "balanced_accuracy": 0.28290000000000004,
+        "class_2_AP": 0.25726677070955756,
+        "class_2_eff_at_0.01_FPR": 0.0112,
+        "class_2_eff_at_0.001_FPR": 0.0016
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.2572667707095576,
+        "ROC_AUC": 0.5086491200000001,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.9828222393989563,
+          "tau_efficiency": 0.0112,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 28,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.9983415603637695,
+          "tau_efficiency": 0.0016,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 4,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.31397656596317736,
+          0.24123536897474004,
+          0.18397242179164744,
+          0.26081564542233043
+        ],
+        "probability_std": [
+          0.3562780568104736,
+          0.32489567281473575,
+          0.27652124458782584,
+          0.33652609796761584
+        ],
+        "probability_min": [
+          1.7406857750756899e-06,
+          2.7823978143715067e-06,
+          5.311404152053001e-07,
+          1.793648323200614e-07
+        ],
+        "probability_max": [
+          0.9998793601989746,
+          0.9999409914016724,
+          0.9998681545257568,
+          0.9999513626098633
+        ],
+        "argmax_class_counts": [
+          3207,
+          2347,
+          1884,
+          2562
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_supervised_matched_n1000_s42__selection",
+      "checkpoint_selection": {
+        "rule": "lowest validation NLL over original Scratch and matched continuation checkpoints",
+        "epoch": 1,
+        "scope": null
+      },
+      "training_seconds": 1000.0021586479997,
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "code_commit": "f6caea6872bed52d8d4c10ce09634884cf562775",
+      "label_budget": 1000,
+      "four_class": {
+        "macro_AP": 0.2969077208463924,
+        "NLL": 1.5351447110328473,
+        "macro_F1": 0.27693224000515587,
+        "balanced_accuracy": 0.2935,
+        "class_2_AP": 0.2597648969371103,
+        "class_2_eff_at_0.01_FPR": 0.01,
+        "class_2_eff_at_0.001_FPR": 0.0012
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.25976489693711025,
+        "ROC_AUC": 0.5158294400000001,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.7186867594718933,
+          "tau_efficiency": 0.01,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 25,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.8604019284248352,
+          "tau_efficiency": 0.0012,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 3,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.16980121355566663,
+          0.20235592469377442,
+          0.2726164848091081,
+          0.3552263767139986
+        ],
+        "probability_std": [
+          0.12457040116398221,
+          0.14653806835729935,
+          0.1438202528801672,
+          0.19030994049071231
+        ],
+        "probability_min": [
+          0.0027331169694662094,
+          0.0034428592771291733,
+          0.00610091257840395,
+          0.0027278948109596968
+        ],
+        "probability_max": [
+          0.8361369371414185,
+          0.943122923374176,
+          0.9187412261962891,
+          0.9673357605934143
+        ],
+        "argmax_class_counts": [
+          1006,
+          1704,
+          2323,
+          4967
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_supervised_matched_n10000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 2,
+        "scope": null
+      },
+      "training_seconds": 1321.338921500006,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "f15a41d200423839da0037091199c7f6e61606a6",
+      "label_budget": 10000,
+      "four_class": {
+        "macro_AP": 0.40718769377865244,
+        "NLL": 1.3046448753846442,
+        "macro_F1": 0.3753613169727935,
+        "balanced_accuracy": 0.3889,
+        "class_2_AP": 0.3047267734232182,
+        "class_2_eff_at_0.01_FPR": 0.0152,
+        "class_2_eff_at_0.001_FPR": 0.002
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.3047267734232182,
+        "ROC_AUC": 0.57292376,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4478161334991455,
+          "tau_efficiency": 0.0152,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 38,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.5689677000045776,
+          "tau_efficiency": 0.002,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 5,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.2579356843253132,
+          0.2907907015025732,
+          0.21222781401937826,
+          0.23904580231341532
+        ],
+        "probability_std": [
+          0.1939425021524121,
+          0.1669804009370681,
+          0.08610625324116163,
+          0.13493458720501353
+        ],
+        "probability_min": [
+          0.005969756282866001,
+          0.0016496585449203849,
+          0.010257638059556484,
+          0.003354919608682394
+        ],
+        "probability_max": [
+          0.9798833727836609,
+          0.9297813177108765,
+          0.7106257677078247,
+          0.7337621450424194
+        ],
+        "argmax_class_counts": [
+          2879,
+          3479,
+          1267,
+          2375
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_supervised_matched_n10000_s42__selection",
+      "checkpoint_selection": {
+        "rule": "lowest validation NLL over original Scratch and matched continuation checkpoints",
+        "epoch": 3,
+        "scope": null
+      },
+      "training_seconds": 2121.109932694002,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "code_commit": "28343f98232f875163d06d1ace0f654756f35f9f",
+      "label_budget": 10000,
+      "four_class": {
+        "macro_AP": 0.42773373448693586,
+        "NLL": 1.2777388776034113,
+        "macro_F1": 0.40151768628036355,
+        "balanced_accuracy": 0.40359999999999996,
+        "class_2_AP": 0.32512824107923655,
+        "class_2_eff_at_0.01_FPR": 0.0268,
+        "class_2_eff_at_0.001_FPR": 0.0028
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.32512824107923666,
+        "ROC_AUC": 0.5997081599999999,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4944199025630951,
+          "tau_efficiency": 0.0268,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 67,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.5464205145835876,
+          "tau_efficiency": 0.0028,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 7,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.2657306144678034,
+          0.21132886996681335,
+          0.2892089360920712,
+          0.23373158048987389
+        ],
+        "probability_std": [
+          0.18800095694034488,
+          0.11135942981208727,
+          0.08896944199165269,
+          0.12206718611215706
+        ],
+        "probability_min": [
+          0.014662648551166058,
+          0.0031638711225241423,
+          0.030061235651373863,
+          0.009637570939958096
+        ],
+        "probability_max": [
+          0.9556912779808044,
+          0.7515465617179871,
+          0.6050618886947632,
+          0.7242445945739746
+        ],
+        "argmax_class_counts": [
+          2428,
+          1318,
+          3410,
+          2844
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_supervised_matched_n100000_s42",
+      "checkpoint_selection": {
+        "rule": "validation_NLL",
+        "epoch": 4,
+        "scope": null
+      },
+      "training_seconds": 1323.9299718149996,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "f15a41d200423839da0037091199c7f6e61606a6",
+      "label_budget": 100000,
+      "four_class": {
+        "macro_AP": 0.46860930929150946,
+        "NLL": 1.2155937349902792,
+        "macro_F1": 0.43234525856235934,
+        "balanced_accuracy": 0.4304,
+        "class_2_AP": 0.3518901789324664,
+        "class_2_eff_at_0.01_FPR": 0.0308,
+        "class_2_eff_at_0.001_FPR": 0.0056
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.35189017893246627,
+        "ROC_AUC": 0.6315070666666667,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4222581684589386,
+          "tau_efficiency": 0.0308,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 77,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.4720357060432434,
+          "tau_efficiency": 0.0056,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 14,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.23865855982271023,
+          0.25478693586397566,
+          0.2514824580551125,
+          0.25507204622444696
+        ],
+        "probability_std": [
+          0.21464679036401552,
+          0.15212369504039358,
+          0.0851622792417978,
+          0.14184244557067005
+        ],
+        "probability_min": [
+          0.0014091378543525934,
+          0.00079117197310552,
+          0.00837018433958292,
+          0.004247261211276054
+        ],
+        "probability_max": [
+          0.9822106957435608,
+          0.9277438521385193,
+          0.5134320259094238,
+          0.9527469277381897
+        ],
+        "argmax_class_counts": [
+          2302,
+          2507,
+          2766,
+          2425
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    },
+    {
+      "name": "s4_empty_supervised_matched_n100000_s42__selection",
+      "checkpoint_selection": {
+        "rule": "lowest validation NLL over original Scratch and matched continuation checkpoints",
+        "epoch": 4,
+        "scope": null
+      },
+      "training_seconds": 4913.412279255019,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "code_commit": "715ed4a1521017eeaba6bcd294cf0af66c05e958",
+      "label_budget": 100000,
+      "four_class": {
+        "macro_AP": 0.46845264253650676,
+        "NLL": 1.2149399104213185,
+        "macro_F1": 0.4297451747011701,
+        "balanced_accuracy": 0.4313,
+        "class_2_AP": 0.350945960841952,
+        "class_2_eff_at_0.01_FPR": 0.032,
+        "class_2_eff_at_0.001_FPR": 0.0036
+      },
+      "tau": {
+        "events": 10000,
+        "tau_events": 2500,
+        "PR_AUC": 0.35094596084195206,
+        "ROC_AUC": 0.6307121333333334,
+        "tau_prevalence": 0.25,
+        "FPR_0.01": {
+          "threshold": 0.4230029582977295,
+          "tau_efficiency": 0.032,
+          "background_acceptance": 0.01,
+          "background_selected": 75,
+          "signal_selected": 80,
+          "tail_statistics_sufficient": true,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        },
+        "FPR_0.001": {
+          "threshold": 0.47342830896377563,
+          "tau_efficiency": 0.0036,
+          "background_acceptance": 0.0009333333333333333,
+          "background_selected": 7,
+          "signal_selected": 9,
+          "tail_statistics_sufficient": false,
+          "threshold_scope": "validation_empirical_curve_S2_comparison_not_final_test_operating_point"
+        }
+      },
+      "prediction_diagnostics": {
+        "events": 10000,
+        "unique_probability_vectors": 9719,
+        "all_events_same_probability_vector": false,
+        "mean_probability": [
+          0.25367621858885975,
+          0.24383807253319537,
+          0.24626978250001558,
+          0.256215926354751
+        ],
+        "probability_std": [
+          0.21800503951229608,
+          0.1489907461230549,
+          0.08529881478210137,
+          0.14014731036145847
+        ],
+        "probability_min": [
+          0.0021310674492269754,
+          0.0008629019139334559,
+          0.0066968523897230625,
+          0.004079475067555904
+        ],
+        "probability_max": [
+          0.9851288795471191,
+          0.9234827756881714,
+          0.5365752577781677,
+          0.9388594627380371
+        ],
+        "argmax_class_counts": [
+          2740,
+          2310,
+          2446,
+          2504
+        ],
+        "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+      }
+    }
+  ],
+  "paired_comparisons": [
+    {
+      "name": "mae3_minus_scratch_n1000",
+      "a": "s4_empty_scratch_n1000_s42",
+      "b": "s4_empty_mae3_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": 0.06228403781217828,
+            "CI95": [
+              0.056148293605119484,
+              0.06991851505005522
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.0744367613410567,
+            "CI95": [
+              0.06553677336264796,
+              0.08496587854768191
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.059799999999999964,
+            "CI95": [
+              0.05165682241674077,
+              0.06940026305260807
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.13552503604615485,
+            "CI95": [
+              -0.14880580423935919,
+              -0.1226958372636403
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.027082602169382408,
+            "CI95": [
+              0.01695544792307461,
+              0.03920911049682788
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0031999999999999997,
+            "CI95": [
+              -0.0036575730558959245,
+              0.009605388671779626
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0007999999999999999,
+            "CI95": [
+              -0.003271354030565367,
+              0.000778719765625311
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": 0.05617813368814267,
+            "CI95": [
+              0.048175459107191676,
+              0.06356637636258804
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.06613724949232613,
+            "CI95": [
+              0.05640100942673086,
+              0.07748546410217315
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.05082298871220137,
+            "CI95": [
+              0.04172054589198086,
+              0.061272840639045166
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.12809054530082298,
+            "CI95": [
+              -0.1442297295658716,
+              -0.11347124731287186
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.008979672494479396,
+            "CI95": [
+              -0.0016118636302227204,
+              0.020181130398969682
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0001572904744916795,
+            "CI95": [
+              -0.007628026819847993,
+              0.006892714668854581
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0014151604315538742,
+            "CI95": [
+              -0.004301461833264602,
+              0.0002662855144194134
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "continued_minus_scratch_n1000",
+      "a": "s4_empty_scratch_n1000_s42",
+      "b": "s4_empty_supervised_matched_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.01880249805546308,
+            "CI95": [
+              -0.023666451082593964,
+              -0.013786078063737139
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.0017940915976793481,
+            "CI95": [
+              -0.009039432771560095,
+              0.012653911480686762
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.010599999999999943,
+            "CI95": [
+              -0.02063584960295929,
+              0.00025911980071468025
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 1.4122141290097099,
+            "CI95": [
+              1.36766841622571,
+              1.4539122595048641
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.002498126227552744,
+            "CI95": [
+              -0.01001571327353212,
+              0.004316511819479689
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0011999999999999997,
+            "CI95": [
+              -0.005412029982841584,
+              0.006449207682991218
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0004000000000000002,
+            "CI95": [
+              -0.0019875993640699526,
+              0.0020728718530165133
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.018336466335462875,
+            "CI95": [
+              -0.023126639222079567,
+              -0.013188113468475232
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.0014431325474985046,
+            "CI95": [
+              -0.012780470893837579,
+              0.009085252122972896
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.014384665631214655,
+            "CI95": [
+              -0.02531700465898712,
+              -0.0032880052863691034
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 1.4215620013898318,
+            "CI95": [
+              1.3743025185413973,
+              1.4646518206425716
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.007106731185057835,
+            "CI95": [
+              -0.015054420672829001,
+              1.5519148526246432e-05
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.001424115941744757,
+            "CI95": [
+              -0.008303004307156045,
+              0.00566603665390342
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0005569272685955445,
+            "CI95": [
+              -0.0028569130562209966,
+              0.002958633930738905
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "continued_minus_mae3_n1000",
+      "a": "s4_empty_mae3_n1000_s42",
+      "b": "s4_empty_supervised_matched_n1000_s42",
+      "label_budget": 1000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.08108653586764136,
+            "CI95": [
+              -0.08938745084335017,
+              -0.07340230331945774
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.07264266974337735,
+            "CI95": [
+              -0.08362767461684345,
+              -0.061210436751794
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.07039999999999991,
+            "CI95": [
+              -0.08172452347121148,
+              -0.05872378849104631
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 1.5477391650558647,
+            "CI95": [
+              1.5003187440639285,
+              1.5929842776687226
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.029580728396935152,
+            "CI95": [
+              -0.041804473885877984,
+              -0.018030947945380252
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.002,
+            "CI95": [
+              -0.00855913095919643,
+              0.004321530624767559
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0012000000000000001,
+            "CI95": [
+              -0.0007694628260023355,
+              0.003235796623972081
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.07451460002360555,
+            "CI95": [
+              -0.08337294315980917,
+              -0.06608278037565019
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.06758038203982464,
+            "CI95": [
+              -0.07952677888898611,
+              -0.05572091061561096
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.06520765434341602,
+            "CI95": [
+              -0.07737864239182277,
+              -0.05302999161432271
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 1.5496525466906548,
+            "CI95": [
+              1.4973585792747504,
+              1.597902875816188
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.01608640367953723,
+            "CI95": [
+              -0.028161011361291285,
+              -0.0036894182531498655
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0012668254672530774,
+            "CI95": [
+              -0.006657841780968849,
+              0.006398127554125987
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.001972087700149419,
+            "CI95": [
+              -0.0002807839775939815,
+              0.004229116105634561
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "supervised_envelope_minus_mae3_n1000",
+      "a": "s4_empty_mae3_n1000_s42",
+      "b": "s4_empty_supervised_matched_n1000_s42__selection",
+      "label_budget": 1000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.06228403781217828,
+            "CI95": [
+              -0.06991851505005524,
+              -0.05614829360511949
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.0744367613410567,
+            "CI95": [
+              -0.08496587854768192,
+              -0.06553677336264797
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.059799999999999964,
+            "CI95": [
+              -0.06940026305260807,
+              -0.05165682241674078
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.13552503604615485,
+            "CI95": [
+              0.1226958372636403,
+              0.14880580423935919
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.027082602169382408,
+            "CI95": [
+              -0.03920911049682788,
+              -0.016955447923074615
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0031999999999999997,
+            "CI95": [
+              -0.009605388671779626,
+              0.003657573055895924
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0007999999999999999,
+            "CI95": [
+              -0.0007787197656253111,
+              0.003271354030565366
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.05617813368814267,
+            "CI95": [
+              -0.06356637636258804,
+              -0.04817545910719168
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.06613724949232613,
+            "CI95": [
+              -0.07748546410217315,
+              -0.05640100942673087
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.05082298871220137,
+            "CI95": [
+              -0.06127284063904517,
+              -0.041720545891980876
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.12809054530082298,
+            "CI95": [
+              0.11347124731287186,
+              0.1442297295658716
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.008979672494479396,
+            "CI95": [
+              -0.020181130398969696,
+              0.0016118636302227163
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0001572904744916795,
+            "CI95": [
+              -0.006892714668854587,
+              0.007628026819847991
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0014151604315538742,
+            "CI95": [
+              -0.00026628551441941343,
+              0.004301461833264602
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "mae3_minus_scratch_n10000",
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_empty_mae3_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": 0.016005421078764126,
+            "CI95": [
+              0.011015986542867699,
+              0.02206304422518779
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.003959922205380995,
+            "CI95": [
+              -0.010843122418193518,
+              0.004001637845043196
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.0013000000000000234,
+            "CI95": [
+              -0.005510604334456246,
+              0.0081916982625164
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.02432714735965824,
+            "CI95": [
+              -0.030319419807039838,
+              -0.017710414303528425
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.007592571588703467,
+            "CI95": [
+              5.6248871067489705e-05,
+              0.015719481621449757
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0007999999999999986,
+            "CI95": [
+              -0.007550715376404306,
+              0.009328634322740838
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0004000000000000002,
+            "CI95": [
+              -0.00462572085187382,
+              0.002519110614507331
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": 0.014381227466694624,
+            "CI95": [
+              0.008930396149666153,
+              0.02077995664803525
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.0029179957038455995,
+            "CI95": [
+              -0.012068367902935116,
+              0.007753847845388193
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.002510600439164845,
+            "CI95": [
+              -0.0065465904085771865,
+              0.012432070218915316
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.023530631523312584,
+            "CI95": [
+              -0.02993718637629687,
+              -0.016316897878765942
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.002965172804336169,
+            "CI95": [
+              -0.005195044671509189,
+              0.010576146997228189
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.0018273565743883967,
+            "CI95": [
+              -0.005253521337764067,
+              0.009391207835026583
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0004782989925041696,
+            "CI95": [
+              -0.005486228907460195,
+              0.001990973043215778
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "continued_minus_scratch_n10000",
+      "a": "s4_empty_scratch_n10000_s42",
+      "b": "s4_empty_supervised_matched_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.02054604070828342,
+            "CI95": [
+              -0.026132820320921506,
+              -0.014777363148688057
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.026156369307570038,
+            "CI95": [
+              -0.0352977620445327,
+              -0.015984247835843186
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.014699999999999935,
+            "CI95": [
+              -0.023348556569089133,
+              -0.005760607409413945
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.026905997781232927,
+            "CI95": [
+              0.018897049389827003,
+              0.03467435390322272
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.020401467656018357,
+            "CI95": [
+              -0.031726184839387314,
+              -0.010188392261031784
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.011600000000000001,
+            "CI95": [
+              -0.01963903010366826,
+              0.001986063512753923
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0007999999999999999,
+            "CI95": [
+              -0.005834707999459723,
+              0.001982612556938402
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.018797213802970836,
+            "CI95": [
+              -0.024831730019012788,
+              -0.012598709707783195
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.021055209579095624,
+            "CI95": [
+              -0.03041347178263737,
+              -0.011279254790460972
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.008615300157169548,
+            "CI95": [
+              -0.01823545113682299,
+              0.00130691069501424
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.025893128093684714,
+            "CI95": [
+              0.017319235015872576,
+              0.034221983714591515
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.01306942267071759,
+            "CI95": [
+              -0.02347359069877705,
+              -0.0027817140888272652
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.00558230695613051,
+            "CI95": [
+              -0.012791217160348055,
+              0.0049571468437791715
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.00019810784066962494,
+            "CI95": [
+              -0.005851453751388113,
+              0.0018977205157374004
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "continued_minus_mae3_n10000",
+      "a": "s4_empty_mae3_n10000_s42",
+      "b": "s4_empty_supervised_matched_n10000_s42",
+      "label_budget": 10000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.036551461787047546,
+            "CI95": [
+              -0.04388901744757504,
+              -0.028953831092585886
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.022196447102189043,
+            "CI95": [
+              -0.03222473573822912,
+              -0.010844189426453064
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.01599999999999996,
+            "CI95": [
+              -0.02590124523178539,
+              -0.006322383026561081
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.05123314514089117,
+            "CI95": [
+              0.04217451157530901,
+              0.060875057341052884
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.027994039244721824,
+            "CI95": [
+              -0.040755104385020814,
+              -0.015320990099908114
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0124,
+            "CI95": [
+              -0.02352754838363391,
+              9.952229299354004e-06
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.00039999999999999975,
+            "CI95": [
+              -0.004760240633034622,
+              0.00237555663642846
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.03317844126966546,
+            "CI95": [
+              -0.040529333115585965,
+              -0.025326265417353742
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.018137213875250024,
+            "CI95": [
+              -0.0298705602641294,
+              -0.006522558515944594
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.011125900596334393,
+            "CI95": [
+              -0.022319615009591374,
+              0.0003235002798110502
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.0494237596169973,
+            "CI95": [
+              0.03932431751783355,
+              0.060115288745655256
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.01603459547505376,
+            "CI95": [
+              -0.027944360233248488,
+              -0.004700236560660117
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.007409663530518907,
+            "CI95": [
+              -0.016030737804875527,
+              0.003055048748659348
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0006764068331737946,
+            "CI95": [
+              -0.003147569289423533,
+              0.002923212124424551
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "supervised_envelope_minus_mae3_n10000",
+      "a": "s4_empty_mae3_n10000_s42",
+      "b": "s4_empty_supervised_matched_n10000_s42__selection",
+      "label_budget": 10000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.016005421078764126,
+            "CI95": [
+              -0.022063044225187792,
+              -0.0110159865428677
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.003959922205380995,
+            "CI95": [
+              -0.004001637845043198,
+              0.010843122418193513
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.0013000000000000234,
+            "CI95": [
+              -0.008191698262516403,
+              0.005510604334456241
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.02432714735965824,
+            "CI95": [
+              0.017710414303528415,
+              0.030319419807039834
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.007592571588703467,
+            "CI95": [
+              -0.015719481621449767,
+              -5.6248871067494604e-05
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0007999999999999986,
+            "CI95": [
+              -0.00932863432274084,
+              0.007550715376404304
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0004000000000000002,
+            "CI95": [
+              -0.0025191106145073367,
+              0.004625720851873819
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.014381227466694624,
+            "CI95": [
+              -0.020779956648035256,
+              -0.008930396149666155
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.0029179957038455995,
+            "CI95": [
+              -0.0077538478453881956,
+              0.012068367902935114
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.002510600439164845,
+            "CI95": [
+              -0.012432070218915323,
+              0.006546590408577181
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.023530631523312584,
+            "CI95": [
+              0.01631689787876594,
+              0.02993718637629687
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.002965172804336169,
+            "CI95": [
+              -0.010576146997228194,
+              0.005195044671509189
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0018273565743883967,
+            "CI95": [
+              -0.00939120783502659,
+              0.005253521337764058
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0004782989925041696,
+            "CI95": [
+              -0.0019909730432157782,
+              0.005486228907460189
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "mae3_minus_scratch_n100000",
+      "a": "s4_empty_scratch_n100000_s42",
+      "b": "s4_empty_mae3_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": 0.005324328010594348,
+            "CI95": [
+              0.002027984513244753,
+              0.008660173068844383
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.00022261838411008483,
+            "CI95": [
+              -0.006000705163571258,
+              0.005793177622981386
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.0008000000000000229,
+            "CI95": [
+              -0.006527419710663422,
+              0.005611109586335915
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.007624259666718869,
+            "CI95": [
+              -0.010731890879252071,
+              -0.004209598433837702
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.008670534536535879,
+            "CI95": [
+              0.0027863668010348853,
+              0.015116287490426594
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.003599999999999999,
+            "CI95": [
+              -0.00655674097224143,
+              0.01187982889790118
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.002,
+            "CI95": [
+              -0.0024341512284905,
+              0.00713854714548727
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": 0.003504985484143519,
+            "CI95": [
+              -0.00026650145121560886,
+              0.0069539130961968785
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": -0.004546247962103289,
+            "CI95": [
+              -0.01131337740577804,
+              0.0025915428114092714
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.005177300900239268,
+            "CI95": [
+              -0.012057708980862341,
+              0.0018012298909491147
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.004971656421417281,
+            "CI95": [
+              -0.008623812539308596,
+              -0.0009935625917138202
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.006622323818773479,
+            "CI95": [
+              0.0010634150569923243,
+              0.011640226824546697
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": 0.00043716812395034124,
+            "CI95": [
+              -0.007639353568658098,
+              0.007740071003554926
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.004709874005751959,
+            "CI95": [
+              -6.92741298122075e-05,
+              0.007517558170038216
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "continued_minus_scratch_n100000",
+      "a": "s4_empty_scratch_n100000_s42",
+      "b": "s4_empty_supervised_matched_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": 0.000156666755002699,
+            "CI95": [
+              -0.0016198771775137884,
+              0.0022526225957188923
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.002600083861189262,
+            "CI95": [
+              -0.002610141791154434,
+              0.008056038495041514
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -0.0009000000000000119,
+            "CI95": [
+              -0.006082460426729205,
+              0.0044278444189238845
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.0006538245689606814,
+            "CI95": [
+              -0.0013550470962271411,
+              0.0025235317653906006
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.0009442180905143704,
+            "CI95": [
+              -0.0029709586108279157,
+              0.005668026749135884
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0011999999999999997,
+            "CI95": [
+              -0.009015544370726252,
+              0.004737423840186776
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.002,
+            "CI95": [
+              -0.0012293000394041275,
+              0.005643170812227859
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": 0.0007569979566456331,
+            "CI95": [
+              -0.0012315297133925261,
+              0.002961681158124564
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.004299032504760603,
+            "CI95": [
+              -0.0015805741919660105,
+              0.010730022849653374
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 3.58870244077103e-07,
+            "CI95": [
+              -0.006091345054652757,
+              0.006294931137060615
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": -0.0010577773203306329,
+            "CI95": [
+              -0.003329821548034478,
+              0.0010571716525475615
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": 0.0007112583639994341,
+            "CI95": [
+              -0.0035198729103397496,
+              0.005676920518174603
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.001895562467483132,
+            "CI95": [
+              -0.007821001409834211,
+              0.004934703913452241
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.003100507307844297,
+            "CI95": [
+              -0.0010822513583390243,
+              0.004643210025383425
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "continued_minus_mae3_n100000",
+      "a": "s4_empty_mae3_n100000_s42",
+      "b": "s4_empty_supervised_matched_n100000_s42",
+      "label_budget": 100000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.005167661255591649,
+            "CI95": [
+              -0.008222205845496032,
+              -0.0018427917210282216
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.0028227022452993467,
+            "CI95": [
+              -0.0028393893308926257,
+              0.009893035277021362
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": -9.999999999998899e-05,
+            "CI95": [
+              -0.006349540089357446,
+              0.0069538435026177785
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.00827808423567955,
+            "CI95": [
+              0.004529895524826183,
+              0.011350722734097402
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.007726316446021508,
+            "CI95": [
+              -0.013223698607809269,
+              -0.002252710197407157
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.004799999999999999,
+            "CI95": [
+              -0.014378917902712104,
+              0.003999125279408979
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": 0.0,
+            "CI95": [
+              -0.005167602533557505,
+              0.004553688268994541
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.002747987527497886,
+            "CI95": [
+              -0.00618705469148941,
+              0.0011196986999929626
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.008845280466863892,
+            "CI95": [
+              0.0013277407881741408,
+              0.01715525608211368
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.005177659770483345,
+            "CI95": [
+              -0.0022026422849768398,
+              0.01333441981453475
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.003913879101086648,
+            "CI95": [
+              -0.000690282277163945,
+              0.007672687382150206
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.005911065454774045,
+            "CI95": [
+              -0.010941468229024018,
+              -0.0011778565021603208
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.0023327305914334732,
+            "CI95": [
+              -0.010457585468172804,
+              0.006595943650559529
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.0016093666979076623,
+            "CI95": [
+              -0.0063129395830075485,
+              0.0013125696415667006
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    },
+    {
+      "name": "supervised_envelope_minus_mae3_n100000",
+      "a": "s4_empty_mae3_n100000_s42",
+      "b": "s4_empty_supervised_matched_n100000_s42__selection",
+      "label_budget": 100000,
+      "seed": 42,
+      "metrics": {
+        "raw": {
+          "macro_AP": {
+            "delta": -0.005324328010594348,
+            "CI95": [
+              -0.008660173068844385,
+              -0.002027984513244753
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.00022261838411008483,
+            "CI95": [
+              -0.00579317762298139,
+              0.006000705163571255
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.0008000000000000229,
+            "CI95": [
+              -0.005611109586335916,
+              0.006527419710663417
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.007624259666718869,
+            "CI95": [
+              0.004209598433837702,
+              0.010731890879252071
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.008670534536535879,
+            "CI95": [
+              -0.015116287490426598,
+              -0.0027863668010348857
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.003599999999999999,
+            "CI95": [
+              -0.011879828897901184,
+              0.006556740972241425
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.002,
+            "CI95": [
+              -0.007138547145487272,
+              0.0024341512284905
+            ],
+            "valid_replicates": 400
+          }
+        },
+        "common_support": {
+          "macro_AP": {
+            "delta": -0.003504985484143519,
+            "CI95": [
+              -0.00695391309619688,
+              0.00026650145121560843
+            ],
+            "valid_replicates": 400
+          },
+          "macro_F1": {
+            "delta": 0.004546247962103289,
+            "CI95": [
+              -0.0025915428114092723,
+              0.011313377405778037
+            ],
+            "valid_replicates": 400
+          },
+          "balanced_accuracy": {
+            "delta": 0.005177300900239268,
+            "CI95": [
+              -0.0018012298909491184,
+              0.012057708980862341
+            ],
+            "valid_replicates": 400
+          },
+          "NLL": {
+            "delta": 0.004971656421417281,
+            "CI95": [
+              0.0009935625917138202,
+              0.008623812539308596
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_AP": {
+            "delta": -0.006622323818773479,
+            "CI95": [
+              -0.011640226824546705,
+              -0.0010634150569923267
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.01_FPR": {
+            "delta": -0.00043716812395034124,
+            "CI95": [
+              -0.0077400710035549275,
+              0.007639353568658096
+            ],
+            "valid_replicates": 400
+          },
+          "class_2_eff_at_0.001_FPR": {
+            "delta": -0.004709874005751959,
+            "CI95": [
+              -0.00751755817003822,
+              6.92741298122066e-05
+            ],
+            "valid_replicates": 400
+          }
+        }
+      }
+    }
+  ],
+  "continuation_history": {
+    "1000": [
+      {
+        "epoch": 1,
+        "train_loss": 0.5423027508768997,
+        "train_seconds": 160.4606978889933,
+        "train_events_per_second": 75.61976334163958,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.28290000000000004,
+          "macro_F1": 0.2787263316028352,
+          "NLL": 2.9473588378906617,
+          "Brier": 1.1228644672607604,
+          "confusion_counts": [
+            [
+              1012,
+              500,
+              424,
+              564
+            ],
+            [
+              666,
+              670,
+              469,
+              695
+            ],
+            [
+              750,
+              592,
+              501,
+              657
+            ],
+            [
+              779,
+              585,
+              490,
+              646
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.5786756266666667,
+              "PR_AUC": 0.32482182091087175
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.5499760533333333,
+              "PR_AUC": 0.27715212803053624
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5086491200000001,
+              "PR_AUC": 0.2572667707095576
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.5153484266666667,
+              "PR_AUC": 0.25318017151275185
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.31397656596317736,
+              0.24123536897474004,
+              0.18397242179164744,
+              0.2608156454223304
+            ],
+            "probability_std": [
+              0.35627805681047453,
+              0.3248956728147353,
+              0.2765212445878263,
+              0.33652609796761634
+            ],
+            "probability_min": [
+              1.7406857750756899e-06,
+              2.7823978143715067e-06,
+              5.311404152053001e-07,
+              1.793648323200614e-07
+            ],
+            "probability_max": [
+              0.9998793601989746,
+              0.9999409914016724,
+              0.9998681545257568,
+              0.9999513626098633
+            ],
+            "argmax_class_counts": [
+              3207,
+              2347,
+              1884,
+              2562
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 301.1221564469888,
+        "train_exposures": 12134,
+        "optimizer_steps_cumulative": 873,
+        "attempted_optimizer_steps_cumulative": 873,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 37.714469515602104,
+          "transfer": 0.761780366054154,
+          "forward_backward": 121.0865440438356,
+          "validation": 134.03296193300048
+        }
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.13669360536115457,
+        "train_seconds": 73.7754706780106,
+        "train_events_per_second": 164.72954883664744,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.28759999999999997,
+          "macro_F1": 0.278010650495689,
+          "NLL": 4.564454815573288,
+          "Brier": 1.2419683726014714,
+          "confusion_counts": [
+            [
+              576,
+              904,
+              401,
+              619
+            ],
+            [
+              319,
+              1144,
+              393,
+              644
+            ],
+            [
+              396,
+              999,
+              395,
+              710
+            ],
+            [
+              362,
+              984,
+              393,
+              761
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.56741512,
+              "PR_AUC": 0.30967441411179875
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.55243544,
+              "PR_AUC": 0.28693661184025926
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.4970434933333333,
+              "PR_AUC": 0.2509034308854251
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.5393247466666666,
+              "PR_AUC": 0.2701338178969409
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.16769599407808763,
+              0.40656785639032966,
+              0.16308831830155038,
+              0.26264783111535756
+            ],
+            "probability_std": [
+              0.3215699922368517,
+              0.4248249090416178,
+              0.31375751292867055,
+              0.37179084775163745
+            ],
+            "probability_min": [
+              3.420636884854389e-09,
+              1.1535547628227505e-08,
+              7.032702420417536e-09,
+              7.198373563888083e-10
+            ],
+            "probability_max": [
+              0.9999995231628418,
+              0.9999997615814209,
+              0.9999995231628418,
+              0.9999978542327881
+            ],
+            "argmax_class_counts": [
+              1653,
+              4031,
+              1582,
+              2734
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 411.486136417996,
+        "train_exposures": 12153,
+        "optimizer_steps_cumulative": 1746,
+        "attempted_optimizer_steps_cumulative": 1746,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 50.82038813485997,
+          "transfer": 1.4054904569493374,
+          "forward_backward": 180.37777774107235,
+          "validation": 168.7795635440125
+        }
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.07729775714978165,
+        "train_seconds": 89.12199045201123,
+        "train_events_per_second": 136.93590031038843,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.2796,
+          "macro_F1": 0.2785527986138558,
+          "NLL": 5.282987475686619,
+          "Brier": 1.27463058888376,
+          "confusion_counts": [
+            [
+              729,
+              666,
+              527,
+              578
+            ],
+            [
+              457,
+              871,
+              586,
+              586
+            ],
+            [
+              508,
+              779,
+              604,
+              609
+            ],
+            [
+              520,
+              816,
+              572,
+              592
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.56973528,
+              "PR_AUC": 0.31343342862419593
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.5359495200000001,
+              "PR_AUC": 0.2753075002834184
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5102019466666667,
+              "PR_AUC": 0.25624608234752055
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.51316744,
+              "PR_AUC": 0.25256814792617904
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.22285628304813954,
+              0.3218404943172202,
+              0.21129479625245376,
+              0.24400842739412237
+            ],
+            "probability_std": [
+              0.36952311165541757,
+              0.4149097889616644,
+              0.3527457723342664,
+              0.37544818251125556
+            ],
+            "probability_min": [
+              2.2798297971693415e-10,
+              6.532298590933294e-10,
+              1.2813249072873845e-10,
+              9.254612701181664e-12
+            ],
+            "probability_max": [
+              1.0,
+              1.0,
+              0.9999996423721313,
+              0.9999998807907104
+            ],
+            "argmax_class_counts": [
+              2214,
+              3132,
+              2289,
+              2365
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 538.8540226139885,
+        "train_exposures": 12204,
+        "optimizer_steps_cumulative": 2619,
+        "attempted_optimizer_steps_cumulative": 2619,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 61.13023794168839,
+          "transfer": 2.4741176770912716,
+          "forward_backward": 256.36456331255613,
+          "validation": 206.29372171302384
+        }
+      },
+      {
+        "epoch": 4,
+        "train_loss": 0.057180749623614344,
+        "train_seconds": 86.19774015300209,
+        "train_events_per_second": 140.6881430821089,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.2857,
+          "macro_F1": 0.27962753255066797,
+          "NLL": 5.864126271510195,
+          "Brier": 1.279692462975436,
+          "confusion_counts": [
+            [
+              1073,
+              536,
+              412,
+              479
+            ],
+            [
+              771,
+              684,
+              458,
+              587
+            ],
+            [
+              795,
+              662,
+              479,
+              564
+            ],
+            [
+              814,
+              617,
+              448,
+              621
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.5789060266666667,
+              "PR_AUC": 0.3181990521747065
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.54003384,
+              "PR_AUC": 0.28024418467532336
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5142931199999999,
+              "PR_AUC": 0.26244332049283486
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.5342192800000001,
+              "PR_AUC": 0.26688806704798934
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.3426124056967093,
+              0.23068419668888254,
+              0.1914098582850772,
+              0.23529353737316241
+            ],
+            "probability_std": [
+              0.43291145205702686,
+              0.3775435691221968,
+              0.3457616957419379,
+              0.37785573723427995
+            ],
+            "probability_min": [
+              4.9201455409875194e-11,
+              1.3853736734181776e-11,
+              2.20587350469037e-11,
+              1.249564470992559e-12
+            ],
+            "probability_max": [
+              1.0,
+              1.0,
+              0.9999997615814209,
+              1.0
+            ],
+            "argmax_class_counts": [
+              3453,
+              2499,
+              1797,
+              2251
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 662.1078474119859,
+        "train_exposures": 12127,
+        "optimizer_steps_cumulative": 3492,
+        "attempted_optimizer_steps_cumulative": 3492,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 72.35905398488103,
+          "transfer": 3.523029151954688,
+          "forward_backward": 329.35839696587936,
+          "validation": 242.12383097203565
+        }
+      },
+      {
+        "epoch": 5,
+        "train_loss": 0.04728661718120021,
+        "train_seconds": 83.94799770999816,
+        "train_events_per_second": 144.756281644496,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.2889,
+          "macro_F1": 0.28702289700614647,
+          "NLL": 6.053550836358562,
+          "Brier": 1.280484458710559,
+          "confusion_counts": [
+            [
+              872,
+              590,
+              524,
+              514
+            ],
+            [
+              586,
+              814,
+              574,
+              526
+            ],
+            [
+              659,
+              743,
+              563,
+              535
+            ],
+            [
+              669,
+              669,
+              522,
+              640
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.5655545866666667,
+              "PR_AUC": 0.3120570705446416
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.5561437333333333,
+              "PR_AUC": 0.28648856197406886
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5131455733333333,
+              "PR_AUC": 0.25810473641946663
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.54816856,
+              "PR_AUC": 0.27393434074288026
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.27834068465500694,
+              0.2639852253962259,
+              0.22996418245406244,
+              0.2277099089978203
+            ],
+            "probability_std": [
+              0.4108187907151437,
+              0.3986805800197745,
+              0.3737568606438356,
+              0.3774842225533501
+            ],
+            "probability_min": [
+              3.0087477648210736e-11,
+              2.733838329327387e-11,
+              3.6553444299203264e-11,
+              1.1136879179279857e-12
+            ],
+            "probability_max": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "argmax_class_counts": [
+              2786,
+              2816,
+              2183,
+              2215
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 786.4466282849899,
+        "train_exposures": 12152,
+        "optimizer_steps_cumulative": 4365,
+        "attempted_optimizer_steps_cumulative": 4365,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 83.57080683298409,
+          "transfer": 4.503884595920681,
+          "forward_backward": 400.164777749771,
+          "validation": 281.7469319650263
+        }
+      },
+      {
+        "epoch": 6,
+        "train_loss": 0.04556201233977238,
+        "train_seconds": 82.79912020800111,
+        "train_events_per_second": 145.50879248153856,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.29140000000000005,
+          "macro_F1": 0.291300795428753,
+          "NLL": 6.306112123808982,
+          "Brier": 1.290089493638957,
+          "confusion_counts": [
+            [
+              729,
+              620,
+              605,
+              546
+            ],
+            [
+              466,
+              817,
+              623,
+              594
+            ],
+            [
+              504,
+              704,
+              679,
+              613
+            ],
+            [
+              554,
+              663,
+              594,
+              689
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.5653467733333333,
+              "PR_AUC": 0.30766977895352554
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.54634304,
+              "PR_AUC": 0.2818513210021658
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5169469600000001,
+              "PR_AUC": 0.26163202080558445
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.5397964533333333,
+              "PR_AUC": 0.2689829488199005
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.22634523971540466,
+              0.2912023146819278,
+              0.2325083250017339,
+              0.24994412049174225
+            ],
+            "probability_std": [
+              0.38595392689708724,
+              0.4120432808079236,
+              0.3781942570908486,
+              0.3915390491221346
+            ],
+            "probability_min": [
+              1.878856445425292e-11,
+              2.4105233434323914e-11,
+              8.669457512988643e-12,
+              1.118170551810127e-12
+            ],
+            "probability_max": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "argmax_class_counts": [
+              2253,
+              2804,
+              2501,
+              2442
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 910.2151457139989,
+        "train_exposures": 12048,
+        "optimizer_steps_cumulative": 5238,
+        "attempted_optimizer_steps_cumulative": 5238,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 95.18476095981896,
+          "transfer": 5.5152990481001325,
+          "forward_backward": 469.4123275166057,
+          "validation": 321.93204643702484
+        }
+      },
+      {
+        "epoch": 7,
+        "train_loss": 0.04493654272315856,
+        "train_seconds": 83.4720342179935,
+        "train_events_per_second": 145.23427053832035,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.2895,
+          "macro_F1": 0.28969167050190187,
+          "NLL": 6.404275211741711,
+          "Brier": 1.2950134291572923,
+          "confusion_counts": [
+            [
+              776,
+              553,
+              604,
+              567
+            ],
+            [
+              498,
+              732,
+              640,
+              630
+            ],
+            [
+              538,
+              648,
+              698,
+              616
+            ],
+            [
+              585,
+              596,
+              630,
+              689
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.5650513066666667,
+              "PR_AUC": 0.30721793386703383
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.5411569066666666,
+              "PR_AUC": 0.27830364351905534
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5141804533333333,
+              "PR_AUC": 0.2597208586284024
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.5360990666666667,
+              "PR_AUC": 0.2666154425770934
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.24052843295792856,
+              0.2620489714082857,
+              0.24042617978730155,
+              0.2569964140897334
+            ],
+            "probability_std": [
+              0.39411429377363816,
+              0.39892121010891995,
+              0.3841600339911294,
+              0.3953689397589195
+            ],
+            "probability_min": [
+              1.0847592789298144e-11,
+              1.1648339411085562e-11,
+              1.0030126035287523e-11,
+              1.4542057879055048e-12
+            ],
+            "probability_max": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "argmax_class_counts": [
+              2397,
+              2529,
+              2572,
+              2502
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1038.3420325969928,
+        "train_exposures": 12123,
+        "optimizer_steps_cumulative": 6111,
+        "attempted_optimizer_steps_cumulative": 6111,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 106.56239382873173,
+          "transfer": 6.48902945088048,
+          "forward_backward": 539.19583292467,
+          "validation": 362.29094413902203
+        }
+      },
+      {
+        "epoch": 8,
+        "train_loss": 0.044684899006681794,
+        "train_seconds": 82.450778421,
+        "train_events_per_second": 147.0453066930906,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.2898,
+          "macro_F1": 0.2900135050596399,
+          "NLL": 6.431765265542524,
+          "Brier": 1.2966222021390705,
+          "confusion_counts": [
+            [
+              773,
+              529,
+              613,
+              585
+            ],
+            [
+              499,
+              706,
+              639,
+              656
+            ],
+            [
+              541,
+              623,
+              699,
+              637
+            ],
+            [
+              582,
+              575,
+              623,
+              720
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.5645799733333333,
+              "PR_AUC": 0.30713313272768356
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.5400214666666666,
+              "PR_AUC": 0.2777719400199546
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5138048533333333,
+              "PR_AUC": 0.25923623960648384
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.5357548266666666,
+              "PR_AUC": 0.2668704249671028
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.2409305914716072,
+              0.2536263372713944,
+              0.24012493636835006,
+              0.26531813508855095
+            ],
+            "probability_std": [
+              0.3945101327576594,
+              0.39465835935396704,
+              0.3839613178570493,
+              0.3998208369916085
+            ],
+            "probability_min": [
+              1.1521220609489458e-11,
+              8.315055241570057e-12,
+              8.392720546313015e-12,
+              2.1742117654877102e-12
+            ],
+            "probability_max": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "argmax_class_counts": [
+              2395,
+              2433,
+              2574,
+              2598
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1160.7583366979961,
+        "train_exposures": 12124,
+        "optimizer_steps_cumulative": 6984,
+        "attempted_optimizer_steps_cumulative": 6984,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 118.06373356087715,
+          "transfer": 7.397017199880793,
+          "forward_backward": 607.9502659427671,
+          "validation": 401.50573482002073
+        }
+      }
+    ],
+    "10000": [
+      {
+        "epoch": 1,
+        "train_loss": 1.2512792542935194,
+        "train_seconds": 233.13027574199077,
+        "train_events_per_second": 50.1136112107969,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3593,
+          "macro_F1": 0.3510731798403068,
+          "NLL": 1.311432532145408,
+          "Brier": 0.7092990112495958,
+          "confusion_counts": [
+            [
+              1073,
+              629,
+              468,
+              330
+            ],
+            [
+              402,
+              1268,
+              333,
+              497
+            ],
+            [
+              532,
+              980,
+              502,
+              486
+            ],
+            [
+              456,
+              910,
+              384,
+              750
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7189851466666666,
+              "PR_AUC": 0.510110453612192
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6337242933333334,
+              "PR_AUC": 0.3970182151347541
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5589750666666666,
+              "PR_AUC": 0.29232272423390787
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6337431733333333,
+              "PR_AUC": 0.36098551624668573
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.2205486929816194,
+              0.29616670248659793,
+              0.24106737777609377,
+              0.24221722595617176
+            ],
+            "probability_std": [
+              0.16252285185758225,
+              0.14503147322034304,
+              0.0741712330317335,
+              0.10015845334595147
+            ],
+            "probability_min": [
+              0.00886185560375452,
+              0.0029952183831483126,
+              0.021619074046611786,
+              0.006669944152235985
+            ],
+            "probability_max": [
+              0.9603007435798645,
+              0.8892529010772705,
+              0.5653080940246582,
+              0.6660362482070923
+            ],
+            "argmax_class_counts": [
+              2463,
+              3787,
+              1687,
+              2063
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 358.05016146400885,
+        "train_exposures": 11683,
+        "optimizer_steps_cumulative": 742,
+        "attempted_optimizer_steps_cumulative": 742,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 79.84779448293557,
+          "transfer": 0.704193708326784,
+          "forward_backward": 151.8211311259074,
+          "validation": 117.76032996599679
+        }
+      },
+      {
+        "epoch": 2,
+        "train_loss": 1.252717810663042,
+        "train_seconds": 131.95621195799322,
+        "train_events_per_second": 88.6203068918245,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3889,
+          "macro_F1": 0.3753613169727935,
+          "NLL": 1.3046448732239648,
+          "Brier": 0.703645049998141,
+          "confusion_counts": [
+            [
+              1311,
+              537,
+              290,
+              362
+            ],
+            [
+              459,
+              1250,
+              267,
+              524
+            ],
+            [
+              610,
+              883,
+              423,
+              584
+            ],
+            [
+              499,
+              809,
+              287,
+              905
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7375470933333333,
+              "PR_AUC": 0.5337221504231517
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6585086133333334,
+              "PR_AUC": 0.41783140841519667
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.57292376,
+              "PR_AUC": 0.3047267734232182
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6422488266666666,
+              "PR_AUC": 0.3724704428530436
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.2579356843253132,
+              0.2907907015025732,
+              0.21222781401937826,
+              0.23904580231341532
+            ],
+            "probability_std": [
+              0.19394250215241224,
+              0.16698040093706842,
+              0.08610625324116175,
+              0.1349345872050136
+            ],
+            "probability_min": [
+              0.005969756282866001,
+              0.0016496585449203849,
+              0.010257638059556484,
+              0.003354919608682394
+            ],
+            "probability_max": [
+              0.9798833727836609,
+              0.9297813177108765,
+              0.7106257677078247,
+              0.7337621450424194
+            ],
+            "argmax_class_counts": [
+              2879,
+              3479,
+              1267,
+              2375
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 530.585551259006,
+        "train_exposures": 11694,
+        "optimizer_steps_cumulative": 1484,
+        "attempted_optimizer_steps_cumulative": 1484,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 92.8808425739553,
+          "transfer": 1.7453131813235814,
+          "forward_backward": 268.8728499920544,
+          "validation": 156.51992889998655
+        }
+      },
+      {
+        "epoch": 3,
+        "train_loss": 1.215552915814775,
+        "train_seconds": 120.8788760949974,
+        "train_events_per_second": 96.89865076835163,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3758,
+          "macro_F1": 0.37517998330616625,
+          "NLL": 1.3305553887448043,
+          "Brier": 0.7150443519801998,
+          "confusion_counts": [
+            [
+              971,
+              545,
+              607,
+              377
+            ],
+            [
+              251,
+              1206,
+              501,
+              542
+            ],
+            [
+              387,
+              865,
+              692,
+              556
+            ],
+            [
+              328,
+              755,
+              528,
+              889
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7272838133333334,
+              "PR_AUC": 0.5267168807076669
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6522228800000001,
+              "PR_AUC": 0.40376553751827793
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5530852266666666,
+              "PR_AUC": 0.2901020757736432
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6439410666666667,
+              "PR_AUC": 0.375487393902718
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.201007043439016,
+              0.2969049787605647,
+              0.2656641815977171,
+              0.23642379709864036
+            ],
+            "probability_std": [
+              0.1858259279685218,
+              0.18221630959538188,
+              0.107150449433196,
+              0.1299909271877755
+            ],
+            "probability_min": [
+              0.0009716505301184952,
+              0.0017959852702915668,
+              0.009614119306206703,
+              0.0029869196005165577
+            ],
+            "probability_max": [
+              0.9809127449989319,
+              0.9735267162322998,
+              0.7874029278755188,
+              0.7648119926452637
+            ],
+            "argmax_class_counts": [
+              1937,
+              3371,
+              2328,
+              2364
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 695.8366608960059,
+        "train_exposures": 11713,
+        "optimizer_steps_cumulative": 2226,
+        "attempted_optimizer_steps_cumulative": 2226,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 105.89830900792731,
+          "transfer": 2.790211394036305,
+          "forward_backward": 374.8571399888169,
+          "validation": 196.33384305199434
+        }
+      },
+      {
+        "epoch": 4,
+        "train_loss": 1.1814984100383499,
+        "train_seconds": 85.052236574993,
+        "train_events_per_second": 137.70360982421894,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3756,
+          "macro_F1": 0.37779280624831796,
+          "NLL": 1.3297484928993164,
+          "Brier": 0.7151039980585279,
+          "confusion_counts": [
+            [
+              940,
+              523,
+              780,
+              257
+            ],
+            [
+              202,
+              1094,
+              761,
+              443
+            ],
+            [
+              305,
+              762,
+              1015,
+              418
+            ],
+            [
+              246,
+              718,
+              829,
+              707
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7351196266666666,
+              "PR_AUC": 0.5397557220641214
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6452347733333333,
+              "PR_AUC": 0.39832922316865205
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5677121866666667,
+              "PR_AUC": 0.30042878280578406
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6488527466666667,
+              "PR_AUC": 0.3817253528894065
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.19749551571001067,
+              0.2865072045700508,
+              0.3006969649591483,
+              0.21530031657805665
+            ],
+            "probability_std": [
+              0.190921604392482,
+              0.1746072233159578,
+              0.124617934328354,
+              0.12643132328908482
+            ],
+            "probability_min": [
+              0.001744732609950006,
+              0.0012647883268073201,
+              0.014040573500096798,
+              0.001912739360705018
+            ],
+            "probability_max": [
+              0.9752388596534729,
+              0.9669774770736694,
+              0.8546974658966064,
+              0.767632007598877
+            ],
+            "argmax_class_counts": [
+              1693,
+              3097,
+              3385,
+              1825
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 822.2515859620034,
+        "train_exposures": 11712,
+        "optimizer_steps_cumulative": 2968,
+        "attempted_optimizer_steps_cumulative": 2968,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 119.72244063395192,
+          "transfer": 3.7674326509732055,
+          "forward_backward": 444.2362455136754,
+          "validation": 236.6192575989844
+        }
+      },
+      {
+        "epoch": 5,
+        "train_loss": 1.1352657795240153,
+        "train_seconds": 85.68078460700053,
+        "train_events_per_second": 136.5883850583204,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3837,
+          "macro_F1": 0.3749513254577482,
+          "NLL": 1.3586166748187432,
+          "Brier": 0.7244433624793857,
+          "confusion_counts": [
+            [
+              1379,
+              178,
+              820,
+              123
+            ],
+            [
+              473,
+              655,
+              1044,
+              328
+            ],
+            [
+              664,
+              369,
+              1205,
+              262
+            ],
+            [
+              579,
+              296,
+              1027,
+              598
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7348228266666667,
+              "PR_AUC": 0.5498748439989293
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6565377600000001,
+              "PR_AUC": 0.405920845102872
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.56732256,
+              "PR_AUC": 0.2979434033110702
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6451178666666667,
+              "PR_AUC": 0.3894593889445013
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.29998078027230224,
+              0.19483821709608237,
+              0.3144672121274751,
+              0.1907137918722612
+            ],
+            "probability_std": [
+              0.24551752193328336,
+              0.1585876255173373,
+              0.14538499229479332,
+              0.13427790250667065
+            ],
+            "probability_min": [
+              0.001302794786170125,
+              8.77878483152017e-05,
+              0.0024711880832910538,
+              0.00038174496148712933
+            ],
+            "probability_max": [
+              0.9969959259033203,
+              0.9568501710891724,
+              0.8615236878395081,
+              0.8061138987541199
+            ],
+            "argmax_class_counts": [
+              3095,
+              1498,
+              4096,
+              1311
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 949.4089544809976,
+        "train_exposures": 11703,
+        "optimizer_steps_cumulative": 3710,
+        "attempted_optimizer_steps_cumulative": 3710,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 134.5773572402104,
+          "transfer": 4.655602658036514,
+          "forward_backward": 513.4089872336044,
+          "validation": 277.27111134798906
+        }
+      },
+      {
+        "epoch": 6,
+        "train_loss": 1.0782748765885637,
+        "train_seconds": 89.47462575499958,
+        "train_events_per_second": 130.78568254694406,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3845,
+          "macro_F1": 0.38430975624029107,
+          "NLL": 1.3526506503669373,
+          "Brier": 0.7219617469363316,
+          "confusion_counts": [
+            [
+              1148,
+              442,
+              732,
+              178
+            ],
+            [
+              299,
+              1008,
+              838,
+              355
+            ],
+            [
+              449,
+              664,
+              1054,
+              333
+            ],
+            [
+              346,
+              591,
+              928,
+              635
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7367752533333333,
+              "PR_AUC": 0.5475828699949838
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6511718666666666,
+              "PR_AUC": 0.40147799679331575
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5706210666666667,
+              "PR_AUC": 0.30013096977639797
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6433869333333333,
+              "PR_AUC": 0.3762391968302815
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.23697262803728517,
+              0.261576364475931,
+              0.30151514601986856,
+              0.19993586246154446
+            ],
+            "probability_std": [
+              0.23370736405774778,
+              0.19223240952195192,
+              0.14444924374666662,
+              0.1409712655594561
+            ],
+            "probability_min": [
+              0.0003065942437388003,
+              0.00030788869480602443,
+              0.0018568711820989847,
+              0.0002990167704410851
+            ],
+            "probability_max": [
+              0.9975361824035645,
+              0.9846862554550171,
+              0.8472298979759216,
+              0.8250264525413513
+            ],
+            "argmax_class_counts": [
+              2242,
+              2705,
+              3552,
+              1501
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1081.9839471310115,
+        "train_exposures": 11702,
+        "optimizer_steps_cumulative": 4452,
+        "attempted_optimizer_steps_cumulative": 4452,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 148.5615153494,
+          "transfer": 5.505523253959836,
+          "forward_backward": 585.8007485646231,
+          "validation": 318.1437611229776
+        }
+      },
+      {
+        "epoch": 7,
+        "train_loss": 1.0240981941543472,
+        "train_seconds": 83.32079591200454,
+        "train_events_per_second": 140.1570865013482,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3832,
+          "macro_F1": 0.3833535610073018,
+          "NLL": 1.356892717150024,
+          "Brier": 0.7235489059006243,
+          "confusion_counts": [
+            [
+              1173,
+              481,
+              528,
+              318
+            ],
+            [
+              328,
+              1051,
+              581,
+              540
+            ],
+            [
+              511,
+              718,
+              723,
+              548
+            ],
+            [
+              361,
+              625,
+              629,
+              885
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7328905066666667,
+              "PR_AUC": 0.5459414931882239
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6463619733333333,
+              "PR_AUC": 0.3936509140647041
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5705277333333334,
+              "PR_AUC": 0.29598525234730844
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.64183272,
+              "PR_AUC": 0.37680295787066587
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.23749790272398968,
+              0.2682939561819716,
+              0.2546506868516677,
+              0.2395574543057941
+            ],
+            "probability_std": [
+              0.24301050190757054,
+              0.19652973931534823,
+              0.1357848305275342,
+              0.16338871301483793
+            ],
+            "probability_min": [
+              0.00047493685269728303,
+              0.00018693480524234474,
+              0.001896957983262837,
+              0.0003841749858111143
+            ],
+            "probability_max": [
+              0.9972233772277832,
+              0.9856835007667542,
+              0.7746438384056091,
+              0.9134508967399597
+            ],
+            "argmax_class_counts": [
+              2373,
+              2875,
+              2461,
+              2291
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1202.5421044500108,
+        "train_exposures": 11678,
+        "optimizer_steps_cumulative": 5194,
+        "attempted_optimizer_steps_cumulative": 5194,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 162.64459015222383,
+          "transfer": 6.361383986935834,
+          "forward_backward": 653.439740037793,
+          "validation": 354.5889519489865
+        }
+      },
+      {
+        "epoch": 8,
+        "train_loss": 0.9951540784399555,
+        "train_seconds": 78.44603737498983,
+        "train_events_per_second": 149.50404625204334,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.3829,
+          "macro_F1": 0.3831567686362817,
+          "NLL": 1.361723745831927,
+          "Brier": 0.7249852429768436,
+          "confusion_counts": [
+            [
+              1187,
+              417,
+              542,
+              354
+            ],
+            [
+              358,
+              955,
+              575,
+              612
+            ],
+            [
+              509,
+              639,
+              735,
+              617
+            ],
+            [
+              376,
+              550,
+              622,
+              952
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7347923199999999,
+              "PR_AUC": 0.5446548221574627
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6443282133333333,
+              "PR_AUC": 0.3930474622186365
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.5700524800000001,
+              "PR_AUC": 0.29543902707079706
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.64042312,
+              "PR_AUC": 0.3749678813022781
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.239107529490249,
+              0.2548422768276083,
+              0.25385258859058374,
+              0.2521976047807897
+            ],
+            "probability_std": [
+              0.24483292804613757,
+              0.19327348122917704,
+              0.13788866243722545,
+              0.16990728688075538
+            ],
+            "probability_min": [
+              0.00032749498495832086,
+              0.00017281962209381163,
+              0.001844977494329214,
+              0.0003775303775910288
+            ],
+            "probability_max": [
+              0.9975243210792542,
+              0.9862402081489563,
+              0.780673623085022,
+              0.9244567155838013
+            ],
+            "argmax_class_counts": [
+              2430,
+              2561,
+              2474,
+              2535
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1320.7840491520037,
+        "train_exposures": 11728,
+        "optimizer_steps_cumulative": 5936,
+        "attempted_optimizer_steps_cumulative": 5936,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 176.9767884965113,
+          "transfer": 7.140652227084502,
+          "forward_backward": 716.0874094147002,
+          "validation": 393.35620415897574
+        }
+      }
+    ],
+    "100000": [
+      {
+        "epoch": 1,
+        "train_loss": 1.2402977283667143,
+        "train_seconds": 268.986965914999,
+        "train_events_per_second": 84.59145937647536,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.405,
+          "macro_F1": 0.3961021870454421,
+          "NLL": 1.2463543666736128,
+          "Brier": 0.6729819639860501,
+          "confusion_counts": [
+            [
+              1328,
+              498,
+              492,
+              182
+            ],
+            [
+              395,
+              1307,
+              500,
+              298
+            ],
+            [
+              609,
+              781,
+              815,
+              295
+            ],
+            [
+              487,
+              802,
+              611,
+              600
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7667981066666667,
+              "PR_AUC": 0.5861676074521458
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6908467733333333,
+              "PR_AUC": 0.46207953016751846
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.6141290666666667,
+              "PR_AUC": 0.33988076674349527
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6788466666666667,
+              "PR_AUC": 0.4305066633678662
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.25248501462963174,
+              0.27674640225626934,
+              0.26746526566119866,
+              0.2033033182343701
+            ],
+            "probability_std": [
+              0.23207527421108406,
+              0.1713764158598779,
+              0.09851271190299571,
+              0.11765699962615873
+            ],
+            "probability_min": [
+              0.0013403723714873195,
+              0.000285743095446378,
+              0.006303495727479458,
+              0.0012726900167763233
+            ],
+            "probability_max": [
+              0.990798830986023,
+              0.9404619932174683,
+              0.5933419466018677,
+              0.8959366083145142
+            ],
+            "argmax_class_counts": [
+              2819,
+              3388,
+              2418,
+              1375
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 395.89470556599554,
+        "train_exposures": 22754,
+        "optimizer_steps_cumulative": 1424,
+        "attempted_optimizer_steps_cumulative": 1424,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 137.15708393006935,
+          "transfer": 1.2459435348719126,
+          "forward_backward": 129.11195155596943,
+          "validation": 116.20719533000374
+        }
+      },
+      {
+        "epoch": 2,
+        "train_loss": 1.241953732823573,
+        "train_seconds": 296.90357198700076,
+        "train_events_per_second": 76.61410015301509,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.41450000000000004,
+          "macro_F1": 0.4100089297526671,
+          "NLL": 1.2376816093782153,
+          "Brier": 0.6696193838545738,
+          "confusion_counts": [
+            [
+              1408,
+              152,
+              533,
+              407
+            ],
+            [
+              445,
+              792,
+              519,
+              744
+            ],
+            [
+              701,
+              343,
+              776,
+              680
+            ],
+            [
+              513,
+              258,
+              560,
+              1169
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7686212266666667,
+              "PR_AUC": 0.5867852495164905
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.68824176,
+              "PR_AUC": 0.46358039456203876
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.6161569866666665,
+              "PR_AUC": 0.3378177854123163
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.66582928,
+              "PR_AUC": 0.43108004931332067
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.24916627248160075,
+              0.22001611066373297,
+              0.25704885263843463,
+              0.2737687640430639
+            ],
+            "probability_std": [
+              0.2189705489591243,
+              0.1352644656621304,
+              0.07789621056057566,
+              0.12320936725222431
+            ],
+            "probability_min": [
+              0.002643893240019679,
+              0.0009505669586360455,
+              0.010058270767331123,
+              0.003735893638804555
+            ],
+            "probability_max": [
+              0.9811011552810669,
+              0.8635890483856201,
+              0.5375868678092957,
+              0.836050271987915
+            ],
+            "argmax_class_counts": [
+              3067,
+              1545,
+              2388,
+              3000
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 774.2728275279951,
+        "train_exposures": 22747,
+        "optimizer_steps_cumulative": 2848,
+        "attempted_optimizer_steps_cumulative": 2848,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 280.7446629162587,
+          "transfer": 2.097234528613626,
+          "forward_backward": 258.36181736466824,
+          "validation": 151.66969097100082
+        }
+      },
+      {
+        "epoch": 3,
+        "train_loss": 1.2128229298008257,
+        "train_seconds": 239.22698162100278,
+        "train_events_per_second": 95.02272630774296,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.4304,
+          "macro_F1": 0.4321756428173889,
+          "NLL": 1.2180529547248178,
+          "Brier": 0.6598480202340834,
+          "confusion_counts": [
+            [
+              1288,
+              185,
+              655,
+              372
+            ],
+            [
+              272,
+              827,
+              728,
+              673
+            ],
+            [
+              441,
+              369,
+              1048,
+              642
+            ],
+            [
+              323,
+              269,
+              767,
+              1141
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7819306133333332,
+              "PR_AUC": 0.6061564996684083
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.69278448,
+              "PR_AUC": 0.4653268343962431
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.6287783466666665,
+              "PR_AUC": 0.3514875963263666
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.6843433066666665,
+              "PR_AUC": 0.45108752129914903
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.2533704993507825,
+              0.22278407691586763,
+              0.27045958388131114,
+              0.25338583948747256
+            ],
+            "probability_std": [
+              0.21736232870949831,
+              0.13561391291828329,
+              0.0872888539589463,
+              0.13881170256491537
+            ],
+            "probability_min": [
+              0.002892865799367428,
+              0.0008697823504917324,
+              0.009158297441899776,
+              0.005211947951465845
+            ],
+            "probability_max": [
+              0.9815669059753418,
+              0.8932185173034668,
+              0.5434903502464294,
+              0.9476269483566284
+            ],
+            "argmax_class_counts": [
+              2324,
+              1650,
+              3198,
+              2828
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1052.8935632499924,
+        "train_exposures": 22732,
+        "optimizer_steps_cumulative": 4272,
+        "attempted_optimizer_steps_cumulative": 4272,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 422.361399966132,
+          "transfer": 2.9496444778487785,
+          "forward_backward": 353.12297989767103,
+          "validation": 186.74315423700318
+        }
+      },
+      {
+        "epoch": 4,
+        "train_loss": 1.1997867144258156,
+        "train_seconds": 232.59760740300408,
+        "train_events_per_second": 97.81270002739573,
+        "validation": {
+          "events": 10000,
+          "balanced_accuracy": 0.4304,
+          "macro_F1": 0.43234525856235934,
+          "NLL": 1.2155937350240353,
+          "Brier": 0.6584872239903118,
+          "confusion_counts": [
+            [
+              1268,
+              318,
+              606,
+              308
+            ],
+            [
+              285,
+              1086,
+              577,
+              552
+            ],
+            [
+              423,
+              606,
+              928,
+              543
+            ],
+            [
+              326,
+              497,
+              655,
+              1022
+            ]
+          ],
+          "classwise": {
+            "0": {
+              "events": 2500,
+              "ROC_AUC": 0.7811052799999999,
+              "PR_AUC": 0.6053522321746855
+            },
+            "1": {
+              "events": 2500,
+              "ROC_AUC": 0.6921390933333332,
+              "PR_AUC": 0.4648325516324101
+            },
+            "2": {
+              "events": 2500,
+              "ROC_AUC": 0.6315070666666667,
+              "PR_AUC": 0.35189017893246627
+            },
+            "3": {
+              "events": 2500,
+              "ROC_AUC": 0.68555712,
+              "PR_AUC": 0.4523622744264756
+            }
+          },
+          "prediction_diagnostics": {
+            "events": 10000,
+            "unique_probability_vectors": 9719,
+            "all_events_same_probability_vector": false,
+            "mean_probability": [
+              0.23865855982271023,
+              0.25478693586397566,
+              0.2514824580551125,
+              0.25507204622444696
+            ],
+            "probability_std": [
+              0.21464679036401518,
+              0.15212369504039394,
+              0.08516227924179794,
+              0.14184244557066963
+            ],
+            "probability_min": [
+              0.0014091378543525934,
+              0.00079117197310552,
+              0.00837018433958292,
+              0.004247261211276054
+            ],
+            "probability_max": [
+              0.9822106957435608,
+              0.9277438521385193,
+              0.5134320259094238,
+              0.9527469277381897
+            ],
+            "argmax_class_counts": [
+              2302,
+              2507,
+              2766,
+              2425
+            ],
+            "scope": "raw published probabilities; distinct-vector count alone is not a causal diagnosis"
+          }
+        },
+        "wall_seconds": 1322.7173447980022,
+        "train_exposures": 22751,
+        "optimizer_steps_cumulative": 5696,
+        "attempted_optimizer_steps_cumulative": 5696,
+        "amp_skipped_steps_cumulative": 0,
+        "timing_cumulative": {
+          "data_wait": 563.6366544890916,
+          "transfer": 3.7856564981193515,
+          "forward_backward": 442.54609202469874,
+          "validation": 220.6356652960094
+        }
+      }
+    ]
+  },
+  "training_health": {
+    "models": [
+      {
+        "name": "s4_empty_scratch_n1000_s42",
+        "samples": 72,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9965062737464905,
+              0.9999946355819702
+            ],
+            "maximum_fraction_below_minus5": 0.0015625000232830644,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.7017660140991211,
+              4.3063812255859375
+            ],
+            "maximum_fraction_below_minus5": 0.08993055671453476,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9999842047691345,
+              1.079246997833252
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.355294793844223,
+              0.8054253458976746
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 178.84438911875387,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 2.7223561183120637e-09,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 1
+      },
+      {
+        "name": "s4_empty_mae3_n1000_s42",
+        "samples": 72,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9939488172531128,
+              0.9999942183494568
+            ],
+            "maximum_fraction_below_minus5": 0.0006944444612599909,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.7443472146987915,
+              3.187047243118286
+            ],
+            "maximum_fraction_below_minus5": 0.0885416716337204,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9999913573265076,
+              1.0845556259155273
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.4552287757396698,
+              0.791071355342865
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 41.785064668413284,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 1.204427007905906e-06,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 1
+      },
+      {
+        "name": "s4_empty_scratch_n10000_s42",
+        "samples": 132,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9784502983093262,
+              0.9999939203262329
+            ],
+            "maximum_fraction_below_minus5": 0.006770833395421505,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.7177990078926086,
+              9.049138069152832
+            ],
+            "maximum_fraction_below_minus5": 0.0966796875,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9999863505363464,
+              1.0310232639312744
+            ],
+            "maximum_fraction_below_minus5": 0.02083333395421505,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.13402536511421204,
+              0.612658679485321
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 170.44031315475416,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 0.11950547248125076,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 3
+      },
+      {
+        "name": "s4_empty_mae3_n10000_s42",
+        "samples": 132,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9718201756477356,
+              0.9999935626983643
+            ],
+            "maximum_fraction_below_minus5": 0.004861111287027597,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.7414656281471252,
+              8.171363830566406
+            ],
+            "maximum_fraction_below_minus5": 0.1487630307674408,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.989762008190155,
+              1.0027787685394287
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.2515936493873596,
+              0.6151838302612305
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 27.758155474719842,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 0.262846440076828,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 3
+      },
+      {
+        "name": "s4_empty_scratch_n100000_s42",
+        "samples": 282,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9101661443710327,
+              0.9999943375587463
+            ],
+            "maximum_fraction_below_minus5": 0.00798611156642437,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.7196234464645386,
+              6.499413967132568
+            ],
+            "maximum_fraction_below_minus5": 0.1110026091337204,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9658020734786987,
+              1.0185623168945312
+            ],
+            "maximum_fraction_below_minus5": 0.013671875,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.16327035427093506,
+              0.6072459816932678
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 134.6813871097281,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 0.015515229664742947,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 4
+      },
+      {
+        "name": "s4_empty_mae3_n100000_s42",
+        "samples": 282,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.8768138289451599,
+              0.9999939799308777
+            ],
+            "maximum_fraction_below_minus5": 0.0062500000931322575,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.7535565495491028,
+              7.2805914878845215
+            ],
+            "maximum_fraction_below_minus5": 0.1344401091337204,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9470059275627136,
+              1.0082963705062866
+            ],
+            "maximum_fraction_below_minus5": 0.0016276042442768812,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.1703743040561676,
+              0.6183004379272461
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 21.911371587854905,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 0.021278593689203262,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 4
+      },
+      {
+        "name": "s4_empty_supervised_matched_n1000_s42",
+        "samples": 101,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9871053695678711,
+              0.9997380971908569
+            ],
+            "maximum_fraction_below_minus5": 0.0015625000232830644,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              0.8515691161155701,
+              5.332746505737305
+            ],
+            "maximum_fraction_below_minus5": 0.0888671875,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9996911287307739,
+              1.1131192445755005
+            ],
+            "maximum_fraction_below_minus5": 0.0006510416860692203,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.34953993558883667,
+              0.8529767394065857
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 57.55388405607076,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 1.690211230524763e-12,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 1
+      },
+      {
+        "name": "s4_empty_supervised_matched_n10000_s42",
+        "samples": 91,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.9710379242897034,
+              0.9818841218948364
+            ],
+            "maximum_fraction_below_minus5": 0.00529513880610466,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              1.9902828931808472,
+              7.734074115753174
+            ],
+            "maximum_fraction_below_minus5": 0.0556640625,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              1.004063606262207,
+              1.0403714179992676
+            ],
+            "maximum_fraction_below_minus5": 0.0221354179084301,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.11716949939727783,
+              0.5574572086334229
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 34.824843897372524,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 0.22225089371204376,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 2
+      },
+      {
+        "name": "s4_empty_supervised_matched_n100000_s42",
+        "samples": 88,
+        "all_healthy": true,
+        "activations": {
+          "head_input_norm": {
+            "RMS_range": [
+              0.891816258430481,
+              0.9234501719474792
+            ],
+            "maximum_fraction_below_minus5": 0.008029513992369175,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.0": {
+            "RMS_range": [
+              2.1185498237609863,
+              3.9721193313598633
+            ],
+            "maximum_fraction_below_minus5": 0.0478515625,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.1": {
+            "RMS_range": [
+              0.9610990881919861,
+              1.0098472833633423
+            ],
+            "maximum_fraction_below_minus5": 0.004557291977107525,
+            "maximum_zero_fraction": 0.0
+          },
+          "head.2": {
+            "RMS_range": [
+              0.18858787417411804,
+              0.4869685471057892
+            ],
+            "maximum_fraction_below_minus5": 0.0,
+            "maximum_zero_fraction": 0.0
+          }
+        },
+        "maximum_preclip_gradient_norm": 20.660626733619115,
+        "gradient_review_limit": 10000.0,
+        "gradient_review_pass": true,
+        "minimum_input_gradient_squared_norm": 0.08338334411382675,
+        "intentional_LP_samples": 0,
+        "checkpoint_epoch": 4
+      }
+    ],
+    "samples": 1252,
+    "scope": "sampled activation and gradient evidence including extreme finite gradients; checkpoint readback checked separately"
+  }
+}
