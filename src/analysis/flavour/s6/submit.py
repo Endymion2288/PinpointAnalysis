@@ -16,6 +16,12 @@ def choose_schedd(root):
     snapshot = subprocess.check_output(['condor_status', '-schedd', '-af', 'Name', 'TotalRunningJobs', 'TotalIdleJobs', 'TotalHeldJobs'], text=True)
     exclusions_path = root/'runtime/schedd_exclusions.json'
     exclusions = json.loads(exclusions_path.read_text()) if exclusions_path.exists() else {}
+    plan_path = root/'plan.json'
+    if plan_path.exists():
+        prior_root = json.loads(plan_path.read_text()).get('source')
+        prior_path = Path(prior_root)/'runtime/schedd_exclusions.json' if prior_root else None
+        if prior_path and prior_path.exists():
+            exclusions = {**json.loads(prior_path.read_text()), **exclusions}
     candidates = []
     checks = []
     for line in snapshot.splitlines():
