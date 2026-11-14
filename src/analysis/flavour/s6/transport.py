@@ -167,6 +167,25 @@ def transport_variants(config):
         for s in t['tau_helicity_proxies']]
 
 
+def accepted_records(plan, frame):
+    import uproot
+    from analysis.flavour.s5.truth import group_flat
+    from analysis.flavour.s6.gfaser import nominal_record
+    frame = frame.reset_index(drop=True)
+    records = [None]*len(frame)
+    trivial = uproot.source.futures.TrivialExecutor()
+    for (run, chunk), group in frame.groupby(['run', 'chunk'], sort=True):
+        path = Path(plan['input_root'])/str(run)/f'{run}_{chunk:03d}.root'
+        with uproot.open(path, decompression_executor=trivial, interpretation_executor=trivial,
+                         object_cache=None, array_cache=None) as source:
+            metadata = source['event'].arrays(library='np')
+            primary = group_flat(source['primaries'], ['evtID', 'PDG', 'Px', 'Py', 'Pz', 'E'])
+            for index, row in group.iterrows():
+                event = {k: v[int(row.row)] for k, v in metadata.items()}
+                records[index] = nominal_record(event, primary[int(event['evtID'])])
+    return records
+
+
 def convert_response(output, destination, metadata, geometry):
     import awkward as ak
     import numpy as np
@@ -241,7 +260,19 @@ def run(args):
         spec = groups.iloc[args.task]
         chosen = manifest.run.eq(spec.run) & manifest.chunk.eq(spec.chunk)
     metadata = manifest[chosen].copy()
-    records = pq.read_table(base/'particles.parquet').take(np.flatnonzero(chosen)).to_pylist()
+    if (base/'particles.parquet').exists():
+        records = pq.read_table(base/'particles.parquet').take(np.flatnonzero(chosen)).to_pylist()
+    else:
+        import pyarrow as pa
+        from analysis.flavour.inventory import COMPRESSION
+        part = base/'input_parts'/f'{args.task:04d}.parquet'
+        if part.exists():
+            records = pq.read_table(part).to_pylist()
+        else:
+            records = accepted_records(plan, metadata)
+            part.parent.mkdir(parents=True, exist_ok=True)
+            pq.write_table(pa.Table.from_pylist(records), part, compression=COMPRESSION)
+        print(json.dumps({'scope': args.scope, 'task': args.task, 'input_primaries_ready': len(records)}), flush=True)
     if args.scope == 'generator':
         import hashlib
         family = [int.from_bytes(hashlib.blake2b((p+':'+str(r)).encode(), digest_size=8).digest(), 'little')
