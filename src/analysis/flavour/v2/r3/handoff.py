@@ -38,6 +38,8 @@ def main():
     parser.add_argument('--completed-probes',type=Path,nargs='*',default=[])
     parser.add_argument('--probe-attempt')
     parser.add_argument('--final-probe-attempt')
+    parser.add_argument('--additional-final-probes',type=Path,nargs='*',default=[])
+    parser.add_argument('--final-probe-wait-seconds',type=float,default=0.)
     args=parser.parse_args()
     if args.completed_probes and not args.probe_attempt:parser.error('completed probes require a unique probe attempt')
     configs=[json.loads(p.read_text()) for p in args.configs]
@@ -101,7 +103,11 @@ def main():
         '--name',args.attempt,'--configs',*map(str,args.configs),'--parallel',str(args.parallel),
         '--smoke','--share-r3-inputs','--cache-workers',str(args.cache_workers),
         '--train-module','analysis.flavour.v2.r3.train']
-    if args.final_probe_attempt:command+=['--post-r3-probe-attempt',args.final_probe_attempt]
+    if args.final_probe_attempt:
+        command+=['--post-r3-probe-attempt',args.final_probe_attempt,
+            '--post-r3-probe-wait-seconds',str(args.final_probe_wait_seconds)]
+        if args.additional_final_probes:
+            command+=['--post-r3-extra-experiments',*map(str,args.additional_final_probes)]
     subprocess.run(command,check=True)
     finish_probe()
     record['status']='complete';write_json(path,record)

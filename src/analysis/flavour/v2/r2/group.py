@@ -29,6 +29,9 @@ def main():
     parser.add_argument('--cache-workers',type=int,default=4)
     parser.add_argument('--post-r3-probe-attempt',
         help='After completed R3 fits, reuse this allocation and its exact Train/Tune mmap arrays for final probes')
+    parser.add_argument('--post-r3-extra-experiments',type=Path,nargs='*',default=[],
+        help='Also read completed sibling weights with the same transformed inputs')
+    parser.add_argument('--post-r3-probe-wait-seconds',type=float,default=0.)
     parser.add_argument('--train-module',default='analysis.flavour.v2.r2.train',
         choices=['analysis.flavour.v2.r2.train','analysis.flavour.v2.r3.train'])
     args=parser.parse_args()
@@ -144,9 +147,12 @@ def main():
             record['post_r3_probes']={'status':'running','attempt':args.post_r3_probe_attempt,
                 'shared_transformed_inputs':True,'count_as_separate_allocation':False}
             write_json(record_path,record)
+            experiments=list(dict.fromkeys([args.root/'experiments'/c['name'] for c in configs]
+                +args.post_r3_extra_experiments))
             post_code=subprocess.run([sys.executable,'-m','analysis.flavour.v2.r3.probes',
-                '--root',str(args.root),'--experiments',*[str(args.root/'experiments'/c['name']) for c in configs],
-                '--attempt',args.post_r3_probe_attempt,'--cache-workers',str(args.cache_workers)],env=env).returncode
+                '--root',str(args.root),'--experiments',*map(str,experiments),
+                '--attempt',args.post_r3_probe_attempt,'--cache-workers',str(args.cache_workers),
+                '--wait-complete-seconds',str(args.post_r3_probe_wait_seconds)],env=env).returncode
             record['post_r3_probes'].update(status='complete' if post_code==0 else 'failed',exit_code=post_code)
     failed=[r for r in record['completed'] if r.get('exit_code',0)]
     record.update(status='failed' if failed or post_code else 'complete',wall_seconds=time.perf_counter()-started)

@@ -9,6 +9,7 @@ import argparse
 import json
 from pathlib import Path
 import tempfile
+import time
 
 import numpy as np
 import pandas as pd
@@ -124,6 +125,8 @@ def main():
     parser.add_argument('--experiments',type=Path,nargs='+',required=True)
     parser.add_argument('--attempt',required=True)
     parser.add_argument('--cache-workers',type=int,default=4)
+    parser.add_argument('--wait-complete-seconds',type=float,default=0.,
+        help='Allow an independently running sibling model to finish while preceding readouts use this cache')
     args=parser.parse_args()
     torch.set_num_threads(1)
     torch.backends.cuda.matmul.allow_tf32=True
@@ -136,6 +139,10 @@ def main():
     scratch=tempfile.TemporaryDirectory(prefix='r3-probe-inputs-')
     for experiment in args.experiments:
         record=json.loads((experiment/'manifest.json').read_text())
+        waiting=time.monotonic()
+        while record['status']!='complete' and time.monotonic()-waiting<args.wait_complete_seconds:
+            time.sleep(max(0.,min(5.,args.wait_complete_seconds-(time.monotonic()-waiting))))
+            record=json.loads((experiment/'manifest.json').read_text())
         if record['status']!='complete':raise ValueError('readability requires completed fixed-endpoint weights')
         config={**record['config'],'cache_training_inputs':False}
         rows=selected[selected.label.ne(2)] if config['task']=='T3' else selected

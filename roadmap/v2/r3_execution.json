@@ -1,7 +1,7 @@
 {
   "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T17:36:40.601490+00:00",
+  "UTC": "2026-11-15T17:54:26.722225+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -71,9 +71,8 @@
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 43,
-  "latest_stage_report": "../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md",
   "pending": [
-    "G1 full-Tune checkpoint readback and frozen feature probes on acquired Kubeflow MIG",
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
     "evidence-triggered seed,resolution,anchor/fusion choices",
@@ -588,7 +587,29 @@
       "Cal_A_Cut_B_Confirm_payload_read": false
     },
     "health": "health/g1_c1/results.json",
-    "full_readability": "pending probes/g1_c1/results.json"
+    "full_readability": {
+      "status": "complete",
+      "source": "probes/g1_c1/results.json",
+      "Train_events": 4000,
+      "Tune_events": 40000,
+      "checkpoint_readback": {
+        "status": "complete",
+        "events": 40000,
+        "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+        "maximum_probability_abs_difference": 0.0,
+        "mean_probability_abs_difference": 0.0,
+        "argmax_agreement": 1.0,
+        "minimum_argmax_agreement": 0.99,
+        "tolerance": 0.01,
+        "scope": "all fixed Tune rows reforwarded from saved exposure weights and freshly prepared accepted inputs; numerical device/batch variation tolerance, not a scientific comparison"
+      },
+      "all_domain_BA3": {
+        "local": 0.4523333333333333,
+        "regional": 0.4624,
+        "global": 0.5035,
+        "tracker": 0.413
+      }
+    }
   },
   "G2_candidate_audit": {
     "status": "complete",
@@ -670,21 +691,23 @@
     "revision": 3
   },
   "resource_snapshot": {
-    "UTC": "2026-11-15T15:22:38.444926+00:00",
-    "device_hours": 2.8047964873578812,
-    "allocated_CPU_core_hours": 38.243919245998065,
+    "UTC": "2026-11-15T17:53:08.324896+00:00",
+    "device_hours": 12.358423999812867,
+    "allocated_CPU_core_hours": 130.34289066414038,
     "device_hours_by_model_or_partition": {
-      "NVIDIA H100L-1-12C MIG 1g.12gb": 1.4390649103456075,
-      "NVIDIA H100 NVL MIG 3g.47gb": 1.365731577012274
+      "NVIDIA H100L-1-12C MIG 1g.12gb": 8.35198977768421,
+      "NVIDIA A100-PCIE-40GB": 0.15833333333333333,
+      "NVIDIA H100 NVL MIG 3g.47gb": 3.8208786665731003,
+      "h100-94gb": 0.02722222222222222
     },
     "active_or_unresolved": [
-      "r3_g2_diagnostic_c4",
-      "pinpoint-r3-g1-k1"
+      "r3_g2_ablation_c9",
+      "pinpoint-r3-g2-k4"
     ],
     "terminal_cost": false
   },
   "G2_formal": {
-    "status": "all_Train100k_and_Tune40k_mmap_complete_formal_training_started",
+    "status": "control_relations_restoring_saved100k_on_Kubeflow_ablation_continues_Condor",
     "models": [
       "b2_g2_control_t4_s42",
       "b2_g2_relations_t4_s42",
@@ -724,7 +747,29 @@
         "shared_transformed_inputs": true
       }
     ],
-    "full_training_results_measured": false
+    "full_training_results_measured": false,
+    "current_allocations": {
+      "control_and_relations": "pinpoint-r3-g2-k4",
+      "global_ablation": "1583010.0"
+    },
+    "replacement_recovery": [
+      {
+        "name": "g2_k4_c0",
+        "status": "complete",
+        "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "actual_Tune_used": false
+      },
+      {
+        "name": "g2_k4_c1",
+        "status": "complete",
+        "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "actual_Tune_used": false
+      }
+    ]
   },
   "collation": {
     "status": "complete",
@@ -884,10 +929,17 @@
     }
   },
   "replacement_resource": {
-    "job": "pinpoint-r3-g2-k3",
+    "job": "pinpoint-r3-g2-k4",
     "flavor": "h100-47gb",
-    "status": "allocated_profiling_single_and_parallel3_before_decision",
-    "previous_whole_candidate": "pinpoint-r3-g2-k2 terminal; no scheduling observed,98s lifecycle upper bound counted",
-    "old_G2_writers_continue": true
+    "status": "released_after_old_terminal_proof_both_recovery_checks_passed",
+    "three_way_candidate": "pinpoint-r3-g2-k3 completed G1 probe and declined all-three migration after measured no advantage",
+    "old_control_relations_terminal": [
+      1583008,
+      1583009
+    ],
+    "old_ablation_continues": 1583010,
+    "decision": "audit/native_migration_decision_k4.json",
+    "writer_terminal_proof": "audit/g2_k4_writer_handoff.json",
+    "post_training_probes": "all three native completed weights reuse same Train/Tune mmap; sibling weights read-only"
   }
 }
