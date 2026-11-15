@@ -12,6 +12,8 @@
 
 B4主任务三seed均已完成，见[stage253](../../workbook/2026-11-15_stage253_r1_reference_seed_comparison.md)：T3−T4平均BA差−0.094 pp，条件事件CI95[−0.334,+0.086]；各类recall差值在seed间改变符号。B1 seed42 T3的BA3=0.5662，B2十条条件诊断完成，总覆盖35/55；完整排名仍待B3 T3。
 
+B1投影控制与合作组条件域见[stage254](../../workbook/2026-11-15_stage254_r1_projection_controls_and_domains.md)：B1 T3−HGB的BA3差+2.03 pp，[+1.57,+2.52]；相对B4的μ recall低6.91 pp。Tracker重训BA增益+3.93 pp，主要来自NC。B1已在冻结规则下必然进入前两名，两个必要seed已提前提交；完整排名和另一族扩展继续等待B3，不改变选择规则。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |
