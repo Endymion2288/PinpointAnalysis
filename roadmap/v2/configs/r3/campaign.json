@@ -24,5 +24,38 @@
   "required_probes": "local/regional/global readability,actual training gradients,and retrained ablation; distinguish available,used and useful information",
   "promotion": "unchanged v2 2pp BA3 or1pp tau efficiency with the declared NLL/per-class/common-task constraints",
   "resources": "earliest compatible Condor/Kubeflow full/shared/MIG; choose concurrency by measured operation throughput,RAM/VRAM and full-validation peak; count allocation once",
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "formal_models": [
+    "b1_m0_t4_s42",
+    "b1_g1_stride2_t4_s42",
+    "b2_g2_control_t4_s42",
+    "b2_g2_relations_t4_s42",
+    "b2_g2_global_ablation_t4_s42",
+    "b1_c1_sensor_rows_t4_s42"
+  ],
+  "extensions": [
+    {
+      "design": "G1",
+      "models": [
+        "b1_g1_stride2_t4_s42"
+      ],
+      "reason": "M0 endpoint BA3 +0.3833pp but mu recall -4.08pp and sparse mu -14.816pp; tau -0.02pp CI crosses zero. Retain spatial recipe for matched architecture intervention; 1368 point and116 core reviews pass."
+    },
+    {
+      "design": "G2",
+      "models": [
+        "b2_g2_control_t4_s42",
+        "b2_g2_relations_t4_s42",
+        "b2_g2_global_ablation_t4_s42"
+      ],
+      "reason": "M0 failed muon noninferiority; retain spatial sampler. Revision3 five real learning gates passed. Full Tune40k finite/coverage/peak completed on1g MIG; c7 three-model operation throughput43.047events/s while co-running G1 on3g. Shared scratch mmap arrays are tensor-equivalent by unit checks; require exact real-input collation and R3 recovery before formal optimization. Native control ignores identical candidate arrays."
+    },
+    {
+      "design": "C1",
+      "models": [
+        "b1_c1_sensor_rows_t4_s42"
+      ],
+      "reason": "Implement the frozen v2 compact sensor-row screen:111 actual z rows replace1322 physical rows; accepted horizontal1mm responses and tracker retained, explicit z/gap/type channels and stride2. Freeze before candidate Tune access; require response mapping, real fit, resource and recovery gates. Compare100k x4 with R2 D0; this is a representation screen."
+    }
+  ]
 }

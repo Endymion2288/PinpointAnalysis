@@ -1,8 +1,8 @@
 {
   "stage": "R3",
   "status": "frozen",
-  "revision": 1,
-  "UTC": "2026-11-15T16:46:01.749023+00:00",
+  "revision": 2,
+  "UTC": "2026-11-15T17:59:35.027981+00:00",
   "formal_models": [
     "b1_m0_t4_s42",
     "b1_g1_stride2_t4_s42",
@@ -23,6 +23,10 @@
     {
       "output": "evaluation_c1",
       "contract": "contracts/c1_evaluation.json"
+    },
+    {
+      "output": "evaluation_global_ablation_projection",
+      "contract": "contracts/global_ablation_projection_evaluation.json"
     }
   ],
   "required_evidence": [
@@ -194,9 +198,12 @@
     "r3_contrasts_evaluation_c1",
     "r3_compact_matched_cost",
     "r3_feature_readability",
-    "r3_training_branch_health"
+    "r3_training_branch_health",
+    "r3_endpoints_evaluation_global_ablation_projection",
+    "r3_contrasts_evaluation_global_ablation_projection"
   ],
   "conditional_additions": "evidence-triggered seeds,resolution or mechanism controls must be frozen before their endpoints and added to campaign/completion/evaluation requirements; no policy relaxation",
   "resource_scope": "all attempts and auxiliary probes,allocation counted once,terminal states required",
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "revision_reason": "Add the missing same100k strong projection comparison for the retrained global ablation before its complete Tune endpoints; all original requirements retained."
 }

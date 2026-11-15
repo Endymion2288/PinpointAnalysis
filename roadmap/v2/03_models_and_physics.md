@@ -98,6 +98,8 @@ flowchart LR
 
 本族control与relations的首轮比较估计“增加关系分支”的整体效应，额外参数、计算与实际邻域一起改变。若它有值得扩展的收益，再增加一个同容量local MLP或保持degree/plane/modality分布的打乱边重训控制，区分容量与具体几何关联的贡献；打乱只能在事件内部进行，不允许混入其他事件。固定权重时打乱边衡量依赖，不能替代重训控制。有限预算下先完成整体效应，不据此单独宣布几何归纳偏置已被证明。
 
+当前control/relations/no-global不是完整的关系×global路径2×2矩阵。global消融只估计已含relations时去除global的条件效应；若只有组合配置有效，追加无global且无relations的匹配重训控制，或在实际胜出结构上做同容量/打乱边控制，才能进一步解释关系增量。各原生候选同时与同100k×4的B1 D0直接比较；去除global的强基线参照已在其完整终点开放前补充冻结，见[stage299](../../workbook/2026-11-15_stage299_r3_full_reference_and_prefix_health.md)。
+
 节点先用 observation-only cluster 或高占用窗口 token，边连接相邻 1–3 个可见 plane，并允许越过无响应 plane。构图依赖已知 geometry、观测 hit/interval 与 uncertainty，不读取 trackID、PDG 或真 vertex。
 
 候选边特征包括：

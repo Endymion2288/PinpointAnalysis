@@ -350,3 +350,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 296 | [R3固定五折输出诊断与共享最终probe](../../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md) |
 | 297 | [R3首层stride正式终点与后备资源](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md) |
 | 298 | [R3双模型部分迁移与G1完整权重重算](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md) |
+| 299 | [R3完整强参照、首轮健康与新卡缓存实测](../../workbook/2026-11-15_stage299_r3_full_reference_and_prefix_health.md) |

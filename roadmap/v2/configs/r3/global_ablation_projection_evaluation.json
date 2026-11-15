@@ -1,0 +1,30 @@
+{
+  "status": "frozen_before_ablation_endpoint_access",
+  "UTC": "2026-11-15T17:59:35.027981+00:00",
+  "experiments": [
+    {
+      "id": "b2_g2_global_ablation_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_global_ablation_t4_s42"
+    },
+    {
+      "id": "b1_d0_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d0_t4_s42"
+    }
+  ],
+  "contrasts": [
+    {
+      "a": "b2_g2_global_ablation_t4_s42",
+      "b": "b1_d0_t4_s42",
+      "reason": "native_no_global_vs_projection_same100k4passes_not_single_factor",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    }
+  ],
+  "reason": "Complete the strong projection reference for every native candidate before full Tune endpoints; within-family improvement alone does not prove a better overall candidate.",
+  "scope": "supplemental repeated-development Tune comparison, own-task best-screen secondary, not independent confirmation; architecture and parameter/compute differences are not a single geometry factor",
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}
