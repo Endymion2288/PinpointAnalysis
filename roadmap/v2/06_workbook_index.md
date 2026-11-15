@@ -320,3 +320,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 266 | [r1 occupancy three-seed readback](../../workbook/2026-11-15_stage266_r1_occupancy_three_seed_readback.md) |
 | 267 | [r1 completion matrix acceptance](../../workbook/2026-11-15_stage267_r1_completion_matrix_acceptance.md) |
 | 268 | [r1 B3 compute complete](../../workbook/2026-11-15_stage268_r1_b3_compute_complete.md) |
+| 269 | [r1 B2 T4 seed17 readback](../../workbook/2026-11-15_stage269_r1_b2_t4_seed17_readback.md) |
