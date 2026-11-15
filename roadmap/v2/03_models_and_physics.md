@@ -38,7 +38,7 @@ B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel
 | Sampling phase / filtering | 先以单点、短线和真实Train响应检查栅格相位敏感性，再决定是否加入降采样前滤波[P5] | 记录映射与边界，不把探测器整体平移当物理对称性；滤波可能削弱孤立信号，收益待测 |
 | Sparse local residual | 在投影融合前保留轻量的高分辨率局部方向/邻接路径，与现有totals skip分开 | 使用全部accepted响应，记录短结构经过聚合的保留率；局部稀疏卷积不能自行连接相隔很远的plane[P6] |
 
-每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，保留已冻结R1合同及结果；R2首批已在训练，R3尚未启动。
+每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。这些是与已冻结R1合同分别配对的结构干预。R2已完成，M0重混因μ质量约束未通过而不采用，G1 stride2正在正式训练；相位敏感和小样本拟合不作为泛化收益。
 
 [stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)补充了同结构的有效训练对照：B1 seed42 fresh计算控制在391,633次曝光、wall-based schedule下，低occupancy μ多识别879个，域内recall差+31.38 pp [29.53,33.04]；同组e/NC分别少识别703/367个，全域BA反而下降0.493 pp。全空事件仍全部判NC。结构和投影相同，预算与schedule共同改变，说明训练配方和决策取舍必须与压缩假设一起排查。R2先跟踪逐类概率、recall与AP/ROC；必要时在Train-inner或Tune内按family交叉拟合低维logit-bias/冻结readout诊断，检验固定表示的可读性。该诊断不打开Cal-A，也不重写R1排名。
 
@@ -57,7 +57,15 @@ T3 μ的1% FPR效率逐seed增益均为正：+5.36/+4.32/+4.87 pp；argmax recal
 
 R2固定screen的[新增读回](r2_progress_review.json)也显示，低occupancy子域本身的μ AUROC目前约.50–.57，不能把本节全域排序结论外推到该子域。终点评价须同时检查局部排序、预测类比例和e/NC取舍；低维bias仅诊断决策部分，高分辨残差与几何关系负责检验缺少的可用特征。
 
-## 3. 优先架构 G1：显式几何与跨层稀疏关系
+### 2.3 图像基线的紧凑表示对照
+
+代码复核确认B1对pixel/bar共同使用物理1mm的1322×420网格，两个投影共享CNN权重；合作组报告按pixel plane/panel排列多幅紧凑图像，pixel示例15×250/15×200，strip示例68×40/56×40。二者的空行数量、局部邻接及卷积计算不同，R1并非该表示的严格复现。沿z缩短网格可能减少无响应间隙上的dense计算，是否改善训练或分类尚未测量。
+
+在当前G1结果形成后，安排一个独立的紧凑图像候选：bar用真实panel/bar ID与测量轴，pixel用plane与1mm横向投影；同一accepted响应、信号、边界、totals及tracker set继续保留。真实z、相邻plane间距与sensor类型通过显式坐标/embedding或关系层输入，避免将row ordinal当成等距物理坐标。图像尺寸由accepted geometry生成，不硬编码报告示例。先逐事件核对通道映射/计数/能量/PE及条带未测坐标，再做真实拟合与Train-only吞吐profile。
+
+先以同Tune40k、同Train100k和4 passes作小规模基线比较，再按实测选一项继续监督；若需要公平等时结论，另在同allocation匹配预算。网格、模态分支、stride与容量分别记录，不能把组合改变后的收益归因于单一因素。其主决策同样包括全域和稀疏逐类、τ工作点及成本。原研究的exact scores/事件列表尚未取得，也不阻止这一同响应的表示研究。
+
+## 3. 原生几何关系：R3 G2及条件扩展
 
 ```mermaid
 flowchart LR
@@ -78,11 +86,17 @@ flowchart LR
 
 ### 3.1 局部表示与窗口边界
 
-以现有 dim96、块内 attention 为起点，第一步只增加同 plane 相邻窗口的消息交换，避免短结构被固定窗口边界切断。两种低成本实现择一：plane 内 sparse 2D convolution；或基于 measured xy 的 local EdgeConv，邻居数从 8/16 起做 train-only profile。窗口平移只作为边界鲁棒性诊断；不把探测器整体平移、任意旋转视为普适物理不变性。
+正式R3 G2使用B2原生族dim64及本族匹配控制；B4 dim96的后续迁移须单独对照。压缩前消息保留全部raw节点，连接同plane的跨窗口节点及跨plane候选，检验短结构在固定窗口边界处的信息路径。两种低成本实现择一：plane 内 sparse 2D convolution；或基于 measured xy 的 local EdgeConv，邻居数从 8/16 起做 train-only profile。窗口平移只作为边界鲁棒性诊断；不把探测器整体平移、任意旋转视为普适物理不变性。
 
 每个 block/cluster 显式保留 centroid、测量轴 mask、xy covariance/extent、channel count、signal summary、plane/module ID；raw local skip 继续存在。原生 residual 与 cluster moments 同时提供，但 binary pixel 不加入模拟 charge 或 per-track deposit。连接降采样前后的映射，以测量真实局部信号经过压缩的变化。
 
 ### 3.2 跨层候选图
+
+已实现的R3 G2原型在全部原生节点上增加一层压缩前消息：同plane跨窗口最多4条，前后同类可见plane及跨传感器候选合计出度最多14。1024个平衡Train事件的同recorded-trackID候选recall，pixel gap1/2/3为27.53%/10.15%/17.48%；该truth只用于审计，不参与构图。PixelSD首贡献者标签不等同完整ancestry，候选recall也不等同整轨效率。低recall要求R4检验更广方向候选、歧义和学习筛选；不能仅因98%以上节点有边就判定关联充分。正式分类增益尚未测量。
+
+新增材料输入为名义轴向slab厚度积分：silicon header单位μm，10换算为0.010 mm，W/scintillator header为mm。它们不是真实轨迹长度、动量或辐射长度。原型修订号3的学习检查与旧revision2分开；X0与散射协方差只有在材料成分和传播模型明确后另行加入。下面保留对象级图和其他候选实现的后续设计。
+
+本族control与relations的首轮比较估计“增加关系分支”的整体效应，额外参数、计算与实际邻域一起改变。若它有值得扩展的收益，再增加一个同容量local MLP或保持degree/plane/modality分布的打乱边重训控制，区分容量与具体几何关联的贡献；打乱只能在事件内部进行，不允许混入其他事件。固定权重时打乱边衡量依赖，不能替代重训控制。有限预算下先完成整体效应，不据此单独宣布几何归纳偏置已被证明。
 
 节点先用 observation-only cluster 或高占用窗口 token，边连接相邻 1–3 个可见 plane，并允许越过无响应 plane。构图依赖已知 geometry、观测 hit/interval 与 uncertainty，不读取 trackID、PDG 或真 vertex。
 
@@ -104,12 +118,12 @@ S2 已有 block 级跨层 attention/graph 及 plane-only 控制，τ AP 主区�
 
 | Variant | Single change | Question |
 | --- | --- | --- |
-| G1a | 跨窗口/跨层 sparse edges，保留现有 fusion | 关系是否在进入压缩前增加可用信息？ |
-| G1b | 原 backbone + geometry-anchored region/query | query 同质化和几何定位是否限制信息读取？ |
-| G1c | 用 late fusion 替代 global latent 路径，保留相同输入 | global 路径是否值得其参数与计算？ |
-| G1d | 最佳关系结构的 native / 100μm / 1mm | 新结构能否把原生粒度转为任务收益？ |
+| G2a | 跨窗口/跨层 sparse edges，保留现有 fusion | 关系是否在进入压缩前增加可用信息？ |
+| G2b | 原 backbone + geometry-anchored region/query | query 同质化和几何定位是否限制信息读取？ |
+| G2c | 用 late fusion 替代 global latent 路径，保留相同输入 | global 路径是否值得其参数与计算？ |
+| G2d | 最佳关系结构的 native / 100μm / 1mm | 新结构能否把原生粒度转为任务收益？ |
 
-G1a/G1b 先单因素，只有二者各有价值才组合。G1c 是重训 ablation；置换 feature 只衡量固定权重依赖，不能替代它。Latent 数 64→128/256、queries 2→4 在 plateau 后做小范围扫描，单纯增加数量不视为关系问题的解决。
+G2a/G2b先单因素，只有二者各有价值才组合。这里的G2a–d为设计子项；正式执行ID中的G1专指B1 stride控制，G2专指原生关系族。G2c是重训ablation；置换 feature 只衡量固定权重依赖，不能替代它。Latent 数 64→128/256、queries 2→4 在 plateau 后做小范围扫描，单纯增加数量不视为关系问题的解决。
 
 ### 3.4 高占用执行
 

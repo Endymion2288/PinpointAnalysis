@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0、R1、R2已完成，R3的M0正在执行。**M0预算、缓存等价及实际恢复通过，完整R3结果待形成，见[stage285](../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md)和[r3_execution.json](r3_execution.json)。R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
+**R0、R1、R2已完成；R3的M0/G0/候选图审计已完成，G1正式训练与G2验证进行中。**M0全程重混没有通过μ质量约束，G1及下一批G2保留原D2采样，采样和结构效应分别配对。完整R3结果尚未形成，见[stage288](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)、[单位修正stage289](../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)和[r3_execution.json](r3_execution.json)。R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
 
 R1三seed比较中B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56.3044%，τ效率在1% FPR下为5.0200%。相对B4的τ效率增益2.423 pp [1.941,2.977]满足预定τ研究门槛；T3相对HGB的1.973333 pp低于2 pp实用门槛，相对B4则未满足μ recall非劣。完整交付不等于全部科学门槛通过。
 
@@ -8,7 +8,7 @@ R1三seed比较中B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56
 
 R1终态batch成本45.708889异构device-hours、307.181111 CPU core-hours；R2为7.475833 h、116.65 core-hours，均已终态。历史SSL和交互下界单列。按R0上界+R1/R2 batch累计54.269577 h，后续按实际成本分批选最小矩阵，保留R7资源。资源继续以尽快开始、兼容即可为原则，接受不同GPU、共享设备和MIG。
 
-本文件与[experiment_plan.json](experiment_plan.json)记录研究合同及状态。W01–W06/W08已完成，W07为R3待实现；R1入口为`analysis.flavour.v2.r1`，规格JSON不能直接传给旧CLI。原始审查见stage237，R0见stage238，R1中期过程见stages239–273，最终状态以stage274为准；不修改历史报告形成时的结果。
+本文件与[experiment_plan.json](experiment_plan.json)记录研究合同及状态。W01–W06/W08已完成，W07已实现并完成候选审计，分类收益待R3正式比较；R1入口为`analysis.flavour.v2.r1`，规格JSON不能直接传给旧CLI。原始审查见stage237，R0见stage238，R1中期过程见stages239–273，最终状态以stage274为准；不修改历史报告形成时的结果。
 
 ## 1. 分阶段依赖与交付
 
@@ -119,11 +119,11 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 
 ### R3：几何关系与压缩
 
-先以M0控制采样配方，再固定训练和输入做B1的stride4→2及相位诊断，测额外计算与稀疏信号保留。原生路线优先G1a（压缩前跨窗口/跨层边），使用本族共同baseline；其后按结果决定G1b（显式几何anchors）和G1c（重训去除latent、late fusion）。不同族干预分别配对，不能将跨族输入/训练变化归于单一关系层。G1a/G1b均有独立收益时再组合。只对最有价值改变补三seed，再仅对最佳结构进行native/100μm/1mm三点配对。
+M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位诊断，测额外计算与稀疏信号保留。原生路线优先G2a（压缩前跨窗口/跨层边），使用本族共同baseline；其后按结果决定G2b（显式几何anchors）和G2c（重训去除global路径、late fusion）。不同族干预分别配对，不能将跨族输入/训练变化归于单一关系层。G2a/G2b均有独立收益时再组合。只对最有价值改变补三seed，再仅对最佳结构进行native/100μm/1mm三点配对。G1/G2为正式执行族名，G2a–d是[03](03_models_and_physics.md)的条件设计子项。
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
-首个小批次按以下顺序执行，R2已选D2两个固定endpoint；R3的M0已冻结并开始训练，后续配置依前序证据在提交前另行冻结。
+首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2已冻结并在Kubeflow MIG训练，G2正式配置在资源及修正单位后的学习验证通过后冻结。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
 
 | Work | Controlled change | Required evidence / next decision |
 | --- | --- | --- |
@@ -132,6 +132,8 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 | G1: B1 local retention | 同一1mm投影、width16、seed42和输入；仅首层stride4→2，累计stride32→16，fresh训练 | 先32-event真实拟合、分支梯度与完整validation峰值，再同unique/曝光/LR对照。报告全域、逐类、低occupancy AP/AUROC和τ工作点及额外成本 |
 | G2: native relations | 使用本族匹配训练参照，只在压缩前加入跨窗口/跨plane测量边；保留bar区间和真实z spacing | 候选关系覆盖、边数尾部、传播可达性与实际训练增益。单列相对本族参照和相对B1的效果，不能将跨族差值解释为纯几何边收益 |
 | G3: replication / scale | 仅最有价值的一项干预补seeds17/2026，然后检验native/100μm/1mm | 依预定2 pp BA或1 pp τ工作点门槛及相应质量约束晋级；未达门槛保留精确效应，重排后续小批次 |
+
+紧随当前G1/G2证据，优先安排一个紧凑sensor-row图像screen，具体见[03 §2.3](03_models_and_physics.md#23-图像基线的紧凑表示对照)。它使用相同响应及真实z信息，先核对映射和成本，再以Train100k×4比较；属于新的表示候选，不属于首层stride的单因素结论。只扩展有实际收益或明确成本优势的一项，不同时扫描所有图像尺寸、宽度、heads和SSL目标。
 
 G1首先保持R2实际数值配方和有效batch；若显存或执行方式迫使改变batch/precision，先补同设置的stride4参照。较慢结构的同曝光比较同时交付成本，需要同计算结论时另列同allocation的预算控制。保留原始概率，重复使用相同Tune开发合同；Cal-A/Cut-B/Confirm直到R7继续封存。新的低维readout、正则化或数据规模选择与几何改动分别配对。
 
@@ -167,7 +169,7 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 
 ## 7. 资源与运行规则
 
-原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3的M0正在执行、终态成本待统计，R4–R7尚未启动；剩余矩阵须按实际结果分批重排：
+原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3的M0已完成、G1和G2诊断仍在运行，R3最终成本待统计，R4–R7尚未启动；剩余矩阵须按实际结果分批重排：
 
 | Stage | Planned device-hours ceiling |
 | --- | ---: |
@@ -203,7 +205,7 @@ R0实际：A100 allocation 0.746667 h，H100 allocation 0.162500 h，交互T4含
 | W04 | `analysis.flavour.v2.r1.tasks/metrics/evaluate` | 同一 label mapping | T3/T4完整评价、raw counts/污染与133配对；T3T/T4D概率/loss已测试，实际训练留R5 | Complete R1 |
 | W05 | `analysis.flavour.v2.r1.models/data/fit` | 同一 observed hits | adapters、八项真实学习门槛及全部41模型健康/完整输出验收通过 | Complete R1 |
 | W06 | `analysis.flavour.v2.r1.campaign/extend/train` | 冻结 Train/Tune | 16项screen、四pass排名、必要三seed和10项compute完成；Confirm封存 | Complete R1 |
-| W07 | geometry sparse graph prototype | plane/cluster measurements | 候选边 recall、边数尾部、memory；不读取 truth 构图 | Pending R3 |
+| W07 | `analysis.flavour.v2.r3.relations/graph_audit/models` | plane/cluster measurements | 1024-event候选审计完成；recorded-label recall与完整ancestry分开，正式分类与全Tune资源验收待完成 | Prototype/audit complete; R3 classification pending |
 | W08 | [三类合作组对照报告](08_r1_collaboration.md) | R1 实测输出 | 18行域表与完整结果核对；统一prior/工作点、三seed/compute及原研究复现缺项明确 | Complete R1 comparison |
 
 W01–W03的完整执行命令及产物在[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)。W04–W06的实现、真实拟合与screen分别见stages239–243；完整R1与W08验收见stage274。独立审查的历史复核命令为：

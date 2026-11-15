@@ -1,7 +1,7 @@
 {
-  "status": "M0_evaluated_G1_formal_running_G2_profile_running_R3_not_complete",
+  "status": "M0_evaluated_G1_formal_running_G2_revision3_learning_passed_resource_profile_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T14:26:29.421053+00:00",
+  "UTC": "2026-11-15T15:24:09.816102+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -53,33 +53,31 @@
     },
     "status": "complete",
     "counters": {
-      "updates": 62522,
-      "training_exposures": 499780,
-      "non_tau_exposures": 375003,
+      "updates": 150117,
+      "training_exposures": 1200000,
+      "non_tau_exposures": 900000,
       "exposure_by_class": [
-        125060,
-        124984,
-        124777,
-        124959
+        300000,
+        300000,
+        300000,
+        300000
       ],
-      "train_seconds": 1201.2848244919442,
-      "validation_seconds": 48.83260170998983,
-      "data_wait_seconds": 21.94734056526795,
-      "lr_sum": 15.850313440877072
+      "train_seconds": 2878.545904509723,
+      "validation_seconds": 200.2710266490467,
+      "data_wait_seconds": 51.495390145340934,
+      "lr_sum": 23.589806175917317
     },
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 37,
-  "latest_stage_report": "../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md",
   "pending": [
-    "M0 fixed endpoint and independent paired evaluation;adopt/reject mixing",
-    "G0 phase diagnosis",
-    "G1 matched stride control,real fit,throughput and full-validation peaks",
-    "G2 native pre-compression relations with matched within-family control,candidate coverage and tails",
-    "local/regional/global readability,gradients and retrained ablation",
-    "evidence-triggered seed/resolution/anchor/fusion choices",
-    "final scientific decision,terminal accounting,figures and acceptance"
+    "G1 fixed-exposure endpoint and full Tune comparison against matched D2 stride4",
+    "G2 complete Tune resource profile and formal control/relations/retrained-ablation training",
+    "trained-model local/regional/global/tracker probes and gradient/ablation review",
+    "evidence-triggered seed,resolution,compact-image,anchor/fusion choices",
+    "final scientific decisions,terminal resource accounting,figures and complete R3 acceptance"
   ],
   "Cal_A_Cut_B_Confirm_payload_read": false,
   "G0": {
@@ -130,8 +128,8 @@
     "parallel_operation_events_per_second": 41.21429426788975
   },
   "G2_diagnostics": {
-    "status": "shared_input_profile_running_four_learning_gates_already_complete",
-    "cluster": "1582994.0",
+    "status": "revision3_five_real_learning_gates_complete_shared_resource_profile_running",
+    "cluster": "1583000.0",
     "schedd": "bigbird20.cern.ch",
     "configurations": [
       "configs/r3/probe_b2_control_t4_s42.json",
@@ -158,21 +156,199 @@
       "T3_relation_NLL": 0.0047997538931667805,
       "T4_relation_NLL": 0.018145566806197166
     },
-    "candidate_audit_status": "running",
+    "candidate_audit_status": "complete",
     "kubeflow_rejected": "server Pod dry-run: namespace GPU units limit1 includes existing M0 MIG; no allocation created",
     "material_unit_correction": {
       "raw_silicon_thickness_um": 10.0,
       "silicon_thickness_mm": 0.01,
       "corrected_revision": 3,
       "evidence": "G4 AnalysisManager.cc line708 divides silicon thickness by um; tungsten/scint headers are mm; utils/geometry.py and s6/truth_geometry.py agree",
-      "learning_gates": "1583003.0_running",
+      "learning_gates": "1583003.0_complete_five_cases",
       "old_revision2_learning_is_diagnostic_only": true,
       "profile_scope": "same shape and operations, revised units require corrected learning; current profile remains compute/memory evidence for that execution graph"
-    }
+    },
+    "profile_revision": 2,
+    "profile_scope": "resource measurements for same shapes and operations only; no revision2 generalization/learning claim after material correction",
+    "actual_revision3_learning": {
+      "status": "complete",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5/gates.json",
+      "allocation": "1583003.0",
+      "cases": [
+        {
+          "family": "B2",
+          "task": "T3",
+          "events": 24,
+          "parameters": 199753,
+          "steps": 96,
+          "seconds": 74.38273632799974,
+          "GPU_peak_MiB": 1179.32568359375,
+          "final": {
+            "NLL": 0.006426918786019087,
+            "accuracy": 1.0,
+            "probability_std": [
+              0.46543046832084656,
+              0.4682568311691284,
+              0.4671682119369507
+            ],
+            "distinct_vectors": 24,
+            "finite": true
+          },
+          "checks": {
+            "fit_accuracy": true,
+            "fit_NLL": true,
+            "nonconstant_probability": true,
+            "branch_gradients": true,
+            "branch_updates": true,
+            "finite_branch_activations": true
+          },
+          "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5_c0/B2_T3.json",
+          "native_relations": false,
+          "native_global_ablation": false,
+          "revision": 3
+        },
+        {
+          "family": "B2",
+          "task": "T4",
+          "events": 32,
+          "parameters": 199882,
+          "steps": 128,
+          "seconds": 81.57724177002092,
+          "GPU_peak_MiB": 1166.81689453125,
+          "final": {
+            "NLL": 0.008801565505564213,
+            "accuracy": 1.0,
+            "probability_std": [
+              0.42955639958381653,
+              0.42384204268455505,
+              0.4304933547973633,
+              0.428414523601532
+            ],
+            "distinct_vectors": 32,
+            "finite": true
+          },
+          "checks": {
+            "fit_accuracy": true,
+            "fit_NLL": true,
+            "nonconstant_probability": true,
+            "branch_gradients": true,
+            "branch_updates": true,
+            "finite_branch_activations": true
+          },
+          "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5_c0/B2_T4.json",
+          "native_relations": false,
+          "native_global_ablation": false,
+          "revision": 3
+        },
+        {
+          "family": "B2",
+          "task": "T3",
+          "events": 24,
+          "parameters": 207754,
+          "steps": 128,
+          "seconds": 88.41028098901734,
+          "GPU_peak_MiB": 1556.22802734375,
+          "final": {
+            "NLL": 0.000607549911364913,
+            "accuracy": 1.0,
+            "probability_std": [
+              0.47100940346717834,
+              0.471057265996933,
+              0.4708597958087921
+            ],
+            "distinct_vectors": 24,
+            "finite": true
+          },
+          "checks": {
+            "fit_accuracy": true,
+            "fit_NLL": true,
+            "nonconstant_probability": true,
+            "branch_gradients": true,
+            "branch_updates": true,
+            "finite_branch_activations": true
+          },
+          "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5_c1/B2_T3.json",
+          "native_relations": true,
+          "native_global_ablation": false,
+          "revision": 3
+        },
+        {
+          "family": "B2",
+          "task": "T4",
+          "events": 32,
+          "parameters": 207883,
+          "steps": 128,
+          "seconds": 83.5810103660042,
+          "GPU_peak_MiB": 1655.8046875,
+          "final": {
+            "NLL": 0.009574102237820625,
+            "accuracy": 1.0,
+            "probability_std": [
+              0.4299604892730713,
+              0.4295938313007355,
+              0.4251558184623718,
+              0.4272005558013916
+            ],
+            "distinct_vectors": 32,
+            "finite": true
+          },
+          "checks": {
+            "fit_accuracy": true,
+            "fit_NLL": true,
+            "nonconstant_probability": true,
+            "branch_gradients": true,
+            "branch_updates": true,
+            "finite_branch_activations": true
+          },
+          "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5_c1/B2_T4.json",
+          "native_relations": true,
+          "native_global_ablation": false,
+          "revision": 3
+        },
+        {
+          "family": "B2",
+          "task": "T4",
+          "events": 32,
+          "parameters": 157771,
+          "steps": 160,
+          "seconds": 97.08146408898756,
+          "GPU_peak_MiB": 1658.53955078125,
+          "final": {
+            "NLL": 0.024306824430823326,
+            "accuracy": 1.0,
+            "probability_std": [
+              0.4108349084854126,
+              0.4285441040992737,
+              0.4257412850856781,
+              0.4246557950973511
+            ],
+            "distinct_vectors": 32,
+            "finite": true
+          },
+          "checks": {
+            "fit_accuracy": true,
+            "fit_NLL": true,
+            "nonconstant_probability": true,
+            "branch_gradients": true,
+            "branch_updates": true,
+            "finite_branch_activations": true
+          },
+          "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5_c2/B2_T4.json",
+          "native_relations": true,
+          "native_global_ablation": true,
+          "revision": 3
+        }
+      ],
+      "scope": "Train-only 24/32 informative real events; learning health, not generalization performance"
+    },
+    "current_corrected_gate_configs": [
+      "configs/r3/probe_b2_control_t4_s42_c5.json",
+      "configs/r3/probe_b2_relation_t4_s42_c5.json",
+      "configs/r3/probe_b2_global_ablation_t4_s42_c5.json"
+    ]
   },
   "delivery_implementation": {
     "evaluation_contract": "configs/r3/m0_evaluation.json",
-    "readability_probes": "implemented; actual trained feature extraction pending",
+    "readability_probes": "B1 reference Train4k/Tune40k complete; formal G1/G2 trained feature extraction pending",
     "retrained_global_ablation": "implemented; formal fit pending",
     "acceptance": "implemented; not run; missing formal results,decisions and terminal resources"
   },
@@ -214,7 +390,8 @@
     "events": 32,
     "steps": 160,
     "accuracy": 1.0,
-    "NLL": 0.025631815195083618
+    "NLL": 0.025631815195083618,
+    "scope": "historical revision2; superseded for learning acceptance by revision3 g2_c5_c2"
   },
   "readability_B1_reference": {
     "status": "complete",
@@ -229,5 +406,52 @@
       "tracker": 0.4152666666666667
     },
     "scope": "conditional T3 from independently fitted T4 readout; readability, not branch utility"
+  },
+  "G2_ablation_fit_revision3": {
+    "family": "B2",
+    "task": "T4",
+    "events": 32,
+    "parameters": 157771,
+    "steps": 160,
+    "seconds": 97.08146408898756,
+    "GPU_peak_MiB": 1658.53955078125,
+    "final": {
+      "NLL": 0.024306824430823326,
+      "accuracy": 1.0,
+      "probability_std": [
+        0.4108349084854126,
+        0.4285441040992737,
+        0.4257412850856781,
+        0.4246557950973511
+      ],
+      "distinct_vectors": 32,
+      "finite": true
+    },
+    "checks": {
+      "fit_accuracy": true,
+      "fit_NLL": true,
+      "nonconstant_probability": true,
+      "branch_gradients": true,
+      "branch_updates": true,
+      "finite_branch_activations": true
+    },
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/fit/g2_c5_c2/B2_T4.json",
+    "native_relations": true,
+    "native_global_ablation": true,
+    "revision": 3
+  },
+  "resource_snapshot": {
+    "UTC": "2026-11-15T15:22:38.444926+00:00",
+    "device_hours": 2.8047964873578812,
+    "allocated_CPU_core_hours": 38.243919245998065,
+    "device_hours_by_model_or_partition": {
+      "NVIDIA H100L-1-12C MIG 1g.12gb": 1.4390649103456075,
+      "NVIDIA H100 NVL MIG 3g.47gb": 1.365731577012274
+    },
+    "active_or_unresolved": [
+      "r3_g2_diagnostic_c4",
+      "pinpoint-r3-g1-k1"
+    ],
+    "terminal_cost": false
   }
 }

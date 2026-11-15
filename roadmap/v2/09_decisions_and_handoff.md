@@ -1,6 +1,6 @@
 # 研究结论与下一批实验决策
 
-**已有改进成立；现有模型尚未达到已验证的最佳效果。R2已完成，保留四类研究和真实三类交付；下一批先控制采样顺序，再检验局部几何信息路径。**本文将资料审查、已经完成的对照和后续决策放在同一入口。详细证据、模型和评价定义分别见[01](01_evidence_review.md)、[03](03_models_and_physics.md)和[02](02_tasks_and_evaluation.md)。
+**已有改进成立；现有模型尚未达到已验证的最佳效果。R2已完成，保留四类研究和真实三类交付；M0已检验全程重混并保留原采样；当前检验局部几何信息路径。**本文将资料审查、已经完成的对照和后续决策放在同一入口。详细证据、模型和评价定义分别见[01](01_evidence_review.md)、[03](03_models_and_physics.md)和[02](02_tasks_and_evaluation.md)。
 
 ## 1. 对目前结果的判断
 
@@ -32,7 +32,9 @@
 
 [stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)已补充D0两个完整40k Tune终点及独立sklearn排序读回。T3/conditional T4的BA3为56.6500%/56.5333%；三类化增加μ recall但整体BA差值区间跨零，NLL更差。低occupancy μ AUROC为.545742/.543902。按6,845个physical chunk分五折、每折每类2k事件后，两个全局bias未改善整体或稀疏BA；正温度降低NLL而保持argmax。该固定诊断复用到后续全部endpoint，仍属于Tune开发结果；[紧凑数据](r2_readout_review.json)保留合同、逐折拟合与指标。它支持优先检验局部表示，未排除更一般的条件readout。
 
-## 3. 当前批次：完成R2并作一次有依据的分流
+<a id="3-当前批次完成r2并作一次有依据的分流"></a>
+
+## 3. R2最终结果与R3采样决定
 
 R2完整交付包括B1 seed42的fresh D0=100k×4、D1=100k×12、D2=300k×4及两个D1WD控制，共8模型、16个endpoint/best-screen视图、128配对、11域；另有同prefix末轮的两次重放和8项配对。198项验收通过，全部allocation终态。完整数值、科学决策和成本见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)与[结果JSON](r2_results.json)。
 
@@ -54,17 +56,19 @@ D0/D2两个global bias没有净BA改善；D1WD T3/T4分别恢复.78/1.25 pp。�
 
 R3进行中：M0的BA3+0.383 pp，但共同μ recall−4.08 pp、稀疏μ−14.816 pp，τ无增益，不采用全程重混；G1以原D2采样独立检验stride，G2使用本族匹配控制。实时证据见[r3_execution.json](r3_execution.json)，完整R3尚未完成。
 
+新增低成本候选是紧凑sensor-row图像：当前B1按真实z铺开1322×420网格，与合作组按plane/panel排列的图像有较大表示和计算差异。先按accepted geometry压紧空行，并显式保留真实z/间距、模态和tracker；做同事件映射、拟合和吞吐验证后，以100k×4的screen与物理投影比较。该候选不等待原合作组事件列表，也不替代严格复现。只有实测分类或成本优势成立时继续扩展，细节见[03 §2.3](03_models_and_physics.md#23-图像基线的紧凑表示对照)。
+
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |
 | --- | --- | --- |
-| R3: measured relations | M0先检验D2 T4全程重混，冻结采样配方；B1再检验首层stride4→2及相位；原生族单独检验压缩前跨窗口/跨plane几何边 | 采样与结构分别配对；主任务、逐类/occupancy和成本。最有价值改变补三seed，再做native/100μm/1mm |
+| R3: measured relations | M0已完成并保留原采样；G1检验B1首层stride4→2，G2用本族控制检验压缩前跨窗口/跨plane几何边 | 采样与结构分别配对；主任务、逐类/occupancy和成本。最有价值改变补三seed，再做native/100μm/1mm |
 | R4: objects and tracker | 增加真实station spacing、方向相容与测量不确定度；多候选关联/robust fit控制，再择一learned edge或instance方案；raw路径覆盖全部事件 | candidate recall、整轨efficiency/fake/duplicate/coverage、vertex与方向残差均报告；raw+object增益包含重建失败事件 |
 | R5: tau and labels | 先flat4、tau gate+conditional3、conditional decay辅助；优先τhad specialist，τe/τμ按混淆推进；完整非τ背景及prompt lepton识别一起评估 | 合并后τ工作点改善，共同三类非劣；分支与inclusive效率分别报告；不使用truth路由 |
 | R6: targeted learning | 仅在胜出encoder上追加一项连续性/局部监督或topology MAE；同总计算监督为控制；加入已接受幅度的readout训练扰动 | 下游实际收益或数据效率成立；名义与未见扰动pattern同时评价，不以pretext loss下降晋级 |
 | R7: independent confirmation | 冻结候选、权重、先验、主比较；Cal-A拟合概率、Cut-B选择阈值，最后打开200k Confirm | 最多两项主要比较、多重比较控制、逐类与τ工作点、系统变化和最终资源完整交付 |
 
-R3的B1降采样与原生几何边是两条独立干预，分别使用本族控制；不把二者同时更换后的差值归为单一机制。G1a的重点是关系发生在压缩之前/窗口之间，以及有符号方向、uncertainty和材料信息，承接旧S2跨层对照。
+R3的B1降采样与原生几何边是两条独立干预，分别使用本族控制；不把二者同时更换后的差值归为单一机制。G2压缩前消息的重点是关系发生在压缩之前/窗口之间，以及有符号方向、uncertainty和材料信息，承接旧S2跨层对照。
 
 R5分两条物理路径。OPERA支持在可见母轨/次级顶点上结合1h/3h、电子和μ通道特征，背景必须包含charm、强子再相互作用和大角度μ散射。NOMAD则提供“无法分开τ衰变点时仍利用可测末态运动学”的先例；本项目须先建立方向/动量的resolution–coverage和接受度闭环，才能把它作为实际分类输入。[H7/H8](05_literature.md#h7)说明文献依据。没有可分辨kink不等于没有τ信息。
 
@@ -80,4 +84,4 @@ R1实际batch成本45.708889异构device-hours，已超过原18 h规划；R2一�
 
 统一晋级值沿用[02](02_tasks_and_evaluation.md#6-统计设计与晋级门槛)：三类ΔBA3至少2 pp并满足NLL/逐类约束；τ在1%背景工作点Δ效率至少1 pp、区间支持正效应且共同三类非劣。更小收益如实记录，用成本与科学问题决定是否追加。最终交付至少包含合作组三类对照、保留/暂缓τ的证据、已选模型的完整概率与工作点、新独立确认、可复现配置和资源账本。
 
-旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1/R2已完成，R3的M0已完成且不采用新采样，G1正式训练及G2资源/学习验证在执行；R4–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。
+旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1/R2已完成，R3的M0已完成且不采用新采样，修正硅单位后的五项真实学习检查已通过，G1正式训练及G2资源验证仍在执行；R4–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。

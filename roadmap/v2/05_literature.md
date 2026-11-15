@@ -4,6 +4,8 @@
 
 本轮方法重点：FASERCal Methods/Supplement；NuGraph2 context-aware 的输入、辅助头与结果；Object Condensation 编码/损失；OGM 的分支梯度机制；pAUC 的目标、采样与 mini-batch 误差。其余条目核对摘要/官方页面，用于设计筛选。正式采用代码时固定 revision 并补读相应实现。
 
+最终整理时再次访问FASERCal与NuGraph2 context-aware官方全文、pAUC会议页和CERN训练文档，五个来源（另含INFERNO摘要）均HTTP200，访问日期2026-11-15。FASERCal的样本/训练规模与本地`main.tex`一致，NuGraph2的feature extension收益和额外decoder负结果再次核对。访问清单见[source_update_stage290.json](source_update_stage290.json)，网页和提取正文保留在`results/roadmap_review_2026-11-15/`。
+
 ## 1. 本地资料与 FASERCal
 
 <a id="f1"></a>**F1. S. Alonso-Monsalve et al., Towards foundation-style models for energy-frontier heterogeneous neutrino detectors via self-supervised pretraining.** *Nature Machine Intelligence* 8, 1581–1595 (2026)，online 2026-09-30；[正式论文](https://www.nature.com/articles/s42256-026-01309-6)，DOI `10.1038/s42256-026-01309-6`；[arXiv:2604.07037v2](https://arxiv.org/html/2604.07037v2)，[本地源码](../../docs/FASERCal/arXiv-2604.07037v2.tar.gz)。本次重新核对论文在线全文、Methods 和本地 main.tex。
@@ -111,6 +113,8 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 <a id="m8"></a>**M8. I. Loshchilov, F. Hutter, Decoupled Weight Decay Regularization.** ICLR2019；[arXiv:1711.05101](https://arxiv.org/abs/1711.05101)。2026-11-15在线读取摘要，HTTP200、43,412bytes，访问记录及HTML保存在`R2/audit/literature_stage280/`。文章明确区分Adam的L2 penalty和decoupled weight decay，并给出image classification泛化证据。当前已使用AdamW，若完整R2参考表现出Train改善而Tune退化，后续只改变其decoupled衰减强度，保持LR、数据和曝光固定；论文没有替PINPOINT确定最佳系数，单个对照也不构成完整HPO。
 
 <a id="m9"></a>**M9. K. Mishchenko, A. Khaled, P. Richtárik, Random Reshuffling: Simple Analysis with Vast Improvements.** [arXiv:2006.05988](https://arxiv.org/abs/2006.05988)。2026-11-15读取官方摘要，HTTP200、43,602bytes，记录位于`R2/audit/literature_stage283/`。有限样本gradient-descent中reshuffling与顺序采样的差异支持把训练次序作为独立优化因素检查；其理论不直接推出本项目AdamW下的预期收益。stage283实测D1/D1WD末轮e偏移与末段类别组成相符后，使用同一第11轮prefix、同事件/batch大小/updates/LR的原顺序和全池随机排列重放，先检验条件末轮效应，再决定fresh训练控制。
+
+<a id="m10-inferno"></a>**M10. P. de Castro, T. Dorigo, INFERNO: Inference-Aware Neural Optimisation.** [arXiv:1806.04743](https://arxiv.org/abs/1806.04743)。2026-11-15核对官方题名、作者与摘要。该方法针对含nuisance的参数推断优化summary statistics，说明分类性能与最终参数不确定度可以是不同目标。PINPOINT先保留完整score模板和响应矩阵；真实曝光/背景约束明确后再比较过程产额拟合的精度、偏差与coverage。当前没有对应nuisance闭环，不将摘要示例当作本项目效果，也不替代本轮BA/τ工作点评价。实现前须补读其likelihood、近似和优化细节。
 
 ## 5. 预训练的候选与优先级
 

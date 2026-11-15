@@ -101,6 +101,8 @@ purity = pi * epsilon / (pi * epsilon + (1-pi) * f)
 
 有真实 flux、cross-section、target exposure 和数据驱动 background constraints 后，才增加含 nuisance 的 profile-likelihood sensitivity 或 discovery significance。当前稀有 prior 是情景分析。可在开发期预先优化多个 FPR 区间，避免只为 balanced AUC 优化。
 
+若后续目标是测量各过程的产额/比例，还应在冻结模型上交付`true process → score bins / selected categories`的响应矩阵、每列接受率和系统变化，允许使用完整分数模板。argmax分类把其余概率压成一个标签，会损失产额拟合可利用的信息；模型更高的BA不自动代表更小的过程比例误差。先有可靠的样本权重、曝光和nuisance模型，再用Asimov/伪实验比较拟合偏差与区间覆盖。INFERNO提供直接优化参数不确定度的后续方法依据，当前只作为条件路线，不新增为本轮必训模型，见[文献M10](05_literature.md#m10-inferno)。
+
 ## 6. 统计设计与晋级门槛
 
 保留 accepted-family 连接的物理块重采样，同一配对使用同一组 resamples。screen 默认 seed42；只将前两名和共同基线扩到 seeds17/42/2026。三 seed 各自差值与 sample SD 单列；事件 bootstrap 不解释为训练种子总体区间。若训练波动和目标增益相当，再增加 seeds，先 profile 和缩小候选。

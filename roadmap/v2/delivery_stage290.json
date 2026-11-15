@@ -1,0 +1,26 @@
+{
+  "status": "complete",
+  "UTC": "2026-11-15T15:26:30.179847+00:00",
+  "scope": "roadmap synthesis delivery and corrected real learning readback; R3 campaign remains incomplete",
+  "checks": {
+    "markdown_files": 26,
+    "local_links": 655,
+    "missing_links": [],
+    "parsed_v2_json_files": 67,
+    "workbook_reports": 290,
+    "unindexed_workbooks": [],
+    "archived_v1_documents": 14,
+    "official_sources_HTTP200": 5,
+    "revision3_real_learning_cases": 5,
+    "real_learning_boolean_checks": 30,
+    "existing_unit_tests_passed": 37,
+    "git_diff_check": true,
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "future_design_unmeasured": [
+    "compact sensor-row images with explicit physical spacing",
+    "parameter/degree-matched retrained relation control if warranted",
+    "inference-aware process-yield objective after physical exposure/nuisance model"
+  ],
+  "active_work": "G1 formal training and G2 full-Tune resource profile continue; G2 formal classification not launched; no final R3 gain claim"
+}

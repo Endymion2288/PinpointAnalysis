@@ -75,4 +75,4 @@ R1的benchmark三类prior为1/3、1/3、1/3。几何域内重新等类加权；�
 3. 按原分离图像尺寸与12维tracker构建adapter，与R1统一accepted-response版本另做配对；分别改变表示、容量或训练长度。原pixel removal按同配方实际重训，保留固定权重压力诊断供解释。
 4. 在现有R1同输入比较后，R2先以B1的fresh D0/D1/D2检查数据、曝光和训练配方；B2按实际问题和费用追加。R3再检验投影stride和稀疏局部信息路径。未得到原研究输入不阻塞这些已定义的模型改进。
 
-W08的R1对照已完成；严格原研究复现仍依赖上述原始输入。41模型完整结果和同计算表已交付，122条allocation全部终态，batch成本45.708889异构device-hours。Cal-A/Cut-B/Confirm继续封存；R2首批B1 D0/D1/D2已在异构MIG上执行，完整科学评价待完成，见[进展快照](r2_progress_review.json)。
+W08的R1对照已完成；严格原研究复现仍依赖上述原始输入。41模型完整结果和同计算表已交付，122条allocation全部终态，batch成本45.708889异构device-hours。Cal-A/Cut-B/Confirm继续封存；R2已完成D0/D1/D2及必要控制，198项验收通过，见[最终结果](r2_results.json)。其开发结果与R1共同域表分开；严格原研究复现仍需前述输入。

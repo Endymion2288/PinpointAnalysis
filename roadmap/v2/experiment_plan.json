@@ -4,7 +4,7 @@
   "status": "completed_R0_R1_R2_R3_in_progress",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R3 M0 evaluated and global mixing rejected by class quality; G0/candidate audit complete; G1 formal running; G2 corrected learning/resource/probe validation running; R3 not complete; Cal-A/Cut-B/Confirm sealed",
+  "implementation_status": "R0/R1/R2 complete; R3 M0 rejected for mu quality, G0/candidate audit complete; G1 formal running; G2 revision3 five real learning gates pass, resource profile running, formal generalization unmeasured; Cal-A/Cut-B/Confirm sealed",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -548,7 +548,15 @@
         "decision": "pair against original R2 D2 raw endpoint for all/sparse BA,NLL,per-class ranking,recalls,tau and cost; adopt if effective,then necessary T3; use same sampling on both sides of G1 and keep sampling versus geometry gains separate"
       },
       "execution_record": "r3_execution.json",
-      "progress_report": "../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md"
+      "progress_report": "../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md",
+      "measured_progress": "M0+G0+Train1024 candidate audit complete; original sampler retained; G1 formal running; corrected revision3 five real learning gates pass; full Tune resource profile still running; formal G2 not launched",
+      "latest_report": "../../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md",
+      "next_conditional_screen": {
+        "representation": "compact sensor-row images with explicit physical z/spacing",
+        "status": "designed_not_implemented_not_measured",
+        "minimum_training": "same Train100k x4 and Tune40k; profile then one screen before expansion",
+        "reason": "current1322x420 physical-z dense grid differs from collaboration sensor-row representation; isolate representation and cost"
+      }
     },
     {
       "id": "R4",
@@ -735,7 +743,7 @@
     "R1_interactive_operation_hours_lower_bound": 0.3255333065249336,
     "R0_recorded_upper_bound_plus_R1_batch_hours": 46.79374353474368,
     "nominal_original_plan_remainder_before_R1_interactive_hours": 33.20625646525632,
-    "remaining_policy": "M0 fresh D2 T4 global shuffle then separately controlled geometry batches; measure input supply,validation,startup and full RAM/VRAM peak on obtained resources; no fixed GPU model or whole-card requirement; defer low-value expansions and reserve R7 confirmation",
+    "remaining_policy": "M0 complete; retain original sampler. Finish G1/G2 physical/local-path comparisons, then evidence-selected compact-image/seed/resolution/objects/tau batches; profile on earliest compatible full/shared/MIG allocations and reserve R7",
     "independent_model_concurrency": "profile aggregate operation throughput and full-validation RAM/VRAM on an obtained allocation; share compressed staging; independent model/optimizer/checkpoint; count allocation once; never fill released slots with unmotivated experiments",
     "R2_actual_batch_device_hours": 7.475833333333334,
     "R2_CPU_allocation_core_hours": 116.64999999999999,
@@ -750,7 +758,17 @@
     "R2_interactive_operation_hours_lower_bound": 0.17765723452153098,
     "R0_recorded_upper_bound_plus_R1_R2_batch_hours": 54.26957686807702,
     "nominal_original_plan_remainder_before_complete_R1_R2_interactive_hours": 25.730423131922983,
-    "historical_resource_fields": "R0_recorded_upper_bound_plus_R1_batch_hours and nominal_original_plan_remainder_before_R1_interactive_hours preserve pre-R2 accounting; use the R1_R2 fields for current totals"
+    "historical_resource_fields": "R0_recorded_upper_bound_plus_R1_batch_hours and nominal_original_plan_remainder_before_R1_interactive_hours preserve pre-R2 accounting; use the R1_R2 fields for current totals",
+    "R3_snapshot": {
+      "UTC": "2026-11-15T15:22:38.444926+00:00",
+      "device_hours": 2.8047964873578812,
+      "allocated_CPU_core_hours": 38.243919245998065,
+      "active_or_unresolved": [
+        "r3_g2_diagnostic_c4",
+        "pinpoint-r3-g1-k1"
+      ],
+      "terminal_cost": false
+    }
   },
   "required_learning_evidence": [
     "real small-sample fitting",
@@ -799,9 +817,9 @@
     "W04": "complete_R1_T3_T4_evaluation;T3T_T4D_probability_loss_tested_training_pending_R5",
     "W05": "complete_R1_adapters_real_fits_and_model_health",
     "W06": "complete_R1_screens_full_training_seed_expansion_and_evaluation",
-    "W07": "pending",
+    "W07": "prototype_and_Train1024_candidate_audit_complete_R3_formal_classification_pending",
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
   "last_updated": "2026-11-15",
-  "latest_evidence_stage": 285
+  "latest_evidence_stage": 290
 }

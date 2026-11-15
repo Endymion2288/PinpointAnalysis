@@ -1,6 +1,8 @@
 # 当前结果的独立评估与系统性审查
 
-**现有方法有进步，但最优性没有建立。R1已补齐同输入基线和真实三类重训；下一步先做训练饱和与数据规模研究，再检验跨层测量关系。保留四类研究，同时交付三类基线。**
+**现有方法有进步，但最优性没有建立。R1已补齐同输入基线和真实三类重训，R2已完成首轮数据/曝光研究；当前优先检验局部信息利用与跨层测量关系。保留四类研究，同时交付三类基线。**
+
+R2/M0补充：300k×4的B1 T3/conditional T4 BA3为57.0967%/57.1267%，T4 BA4=45.7650%，τ效率在开发集1% FPR处为6.05%；相对D0的τ增量0.94 pp，低于预定1 pp实用门槛。全程重混M0的BA3虽提高0.383 pp，共同μ recall却降低4.08 pp，未通过质量约束，后续保留原采样。收敛、容量和新独立确认尚未建立。完整证据见[R2最终报告](../../workbook/2026-11-15_stage284_r2_final_results.md)和[M0报告](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)。
 
 2026-11-15更新：[R1最终报告](../../workbook/2026-11-15_stage274_r1_final_results.md)完成41模型、133配对、21项三seed平均配对和452项验收。B1 T3 BA3=56.5633%，T4 conditional=56.3044%，τ效率在1% FPR下为5.0200%；相对B4的τ增益2.423 pp [1.941,2.977]满足研究门槛。B1 T3对HGB的1.973333 pp低于预设2 pp，对B4的μ recall非劣也未通过。三类化未稳定改善共同任务，所有seed42四pass主模型末轮NLL仍下降。后续结论与原S6独立test分开，完整开发结果见[r1_results.json](r1_results.json)。
 
@@ -85,6 +87,8 @@ S4 曾完成 matched-compute 长监督控制，特定配方在 1k/10k 过拟合�
 
 训练 manifest 记录的 data-wait/总耗时为 31.16%–46.64%，是 loader 计时口径，不能当作 GPU idle 百分比。应复用既有等价缓存/分桶经验，重新 profile 新的较大样本流，先处理重复变换和数据供给。
 
+后续R0/R2已落实等价缓存和allocation内共享staging。R3 M0实测data-wait=51.4954 s、training=2878.5459 s，按该记录口径约1.79%；这两段来自不同模型/执行配方，不作缓存单因素加速估计。旧data-wait不再作为当前所有模型的统一瓶颈。原生关系族仍需检查构图、padding、全Tune峰值及CPU/RAM，不能把B1缓存收益直接外推。
+
 ### A4. 部分运行元数据与实际结构不一致
 
 六个最终 manifest 的 `local_blocks` 仍写 `same_plane_4mm...`，实际配置为 `window_pixels=16`，native pixel window 约 0.3328×0.3648 mm；`cross_plane_message_passing=true` 也不能说明 multiscale 启用了显式跨层几何层。R0 应从实际 transform/model 生成版本化元数据。此次审查保留旧产物原文，并以配置和代码判读实际执行。
@@ -115,7 +119,7 @@ S6 固定 32k 子样本中，sparse-noise proxy 使 BA 下降 0.017750，combine
 
 [stage278只读快照](r2_progress_review.json)补读R2初始六模型的固定screen。相同275个低occupancy真μ上，D0 T3的recall随75k/150k/225k/300k曝光为7.6364%/48.7273%/10.9091%/8.3636%，AUROC为.528130/.565069/.558096/.550168。D1 T3的300k中间点recall虽为87.2727%，AUROC仅.568411。这些是已存Tune screen诊断，AP/AUROC没有从事件概率独立重算；混淆计数、recall、BA算术已重新核对。
 
-当前证据同时支持训练/决策偏移与局部特征不足两条检查，不能由全域μ排序较好就认定稀疏事件仅需改bias。固定4k screen的低occupancy非τ共869行、μ占比31.6456%，该混合是AP的prevalence参照；它与全域三类均衡benchmark的分母不同。完整预算、Train gap及40k Tune尚需完成。后续分流见[09](09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流)。
+当前证据同时支持训练/决策偏移与局部特征不足两条检查，不能由全域μ排序较好就认定稀疏事件仅需改bias。固定4k screen的低occupancy非τ共869行、μ占比31.6456%，该混合是AP的prevalence参照；它与全域三类均衡benchmark的分母不同。完整预算、Train gap及40k Tune后来已由R2完成：D2稀疏μ AUROC仍仅约.548（T3）/.552（T4 conditional），低维全局bias未恢复其分离。该段screen快照用于解释过程，最终分流见[09](09_decisions_and_handoff.md#3-r2最终结果与r3采样决定)。
 
 ## 5. 故障历史、后续修复与待检验假设
 

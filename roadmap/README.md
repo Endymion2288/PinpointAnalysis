@@ -1,91 +1,79 @@
-# PINPOINT 下一轮模型优化路线图（v2）
+# PINPOINT 模型评估与下一轮完整路线图（v2）
 
-更新：2026-11-15。最初独立审查基线为Git `37dd763`、workbook stage236的S0–S6；新R1最终评价源码为`4567ab8`。旧计划已归档，新版设计、R0、R1和R2已完成。R2交付八模型及必要的末轮采样顺序控制，198项验收全部通过。R3的M0已完成：全程重混的BA3小幅提高，但μ质量约束不通过，因此保留原采样。G0和候选图审计已完成，G1正式stride对照在Kubeflow MIG训练，G2正在完整资源与修订单位后的学习验证；R3尚未完成，见[stage288](../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)和[执行状态](v2/r3_execution.json)。R4–R7尚未启动。先读[研究结论与下一批决策](v2/09_decisions_and_handoff.md)，再按下表进入详细证据。
+更新：2026-11-15。**已有改进有数据支持，当前模型尚未达到已验证的最优效果。近期交付真实三类模型，研究主线保留四类；优先改善局部信息利用、跨层关系和对象重建，再检验 τ 分道与定向预训练。**
 
-**当前结论：保留四类研究，同时交付真实三类基线；先优化训练配方和数据规模，再检验几何关系与局部信息损失。现有模型取得了可复核改进，尚未达到已知最佳效果。**
+原计划的14份文档已完整归档至 [archive/2026-11-14_v1](archive/2026-11-14_v1/README.md)。本轮整理覆盖旧S0–S6的236份报告，追加研究记录见[完整索引](v2/06_workbook_index.md)。已读取5份本地报告共80页、FASERCal论文源码，并联网核对论文、方法和CERN资源文档；来源、采用理由和适用条件见[文献综述](v2/05_literature.md)。
 
-R1的41/41模型、133项配对、21项三seed平均配对、11个评价域和55条压力路径已交付，452项最终验收全部通过。独立概率/计数、核心区间和压力读回分别通过2,557/2,512/5,666项。完整证据见[最终报告stage274](../workbook/2026-11-15_stage274_r1_final_results.md)与[最终结果JSON](v2/r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
+## 对当前结果的判断
 
-| Family | Seeds | T3 BA3 (%) | T4 conditional BA3 (%) | T4 BA4 (%) | Tau efficiency at 1% FPR (%) |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| B0 HGB | 3 | 54.5900 | 54.5300 | 43.1025 | 2.8300 |
-| B1 ResNet | 3 | 56.5633 | 56.3044 | 44.5733 | 5.0200 |
-| B2 ParticleNet adaptation | 3 | 55.0689 | 55.3911 | 43.3658 | 2.9933 |
-| B3 Geometry ParT | 1 | 55.0600 | 55.2900 | 43.2775 | 2.7000 |
-| B4 revision3 Scratch | 3 | 54.3922 | 54.4867 | 42.3217 | 2.5967 |
-| B4-MAE reference | 1 | — | 54.7200 | 43.0325 | 2.4100 |
+| Evidence | Measured result | Interpretation |
+| --- | --- | --- |
+| S6, independent test | MAE3 ensemble BA4=43.5226%；相对同100k监督标签的Scratch +0.3354 pp，配对区间支持正效应 | 预训练收益成立，另有预训练成本 |
+| S6, frozen tau cut | validation 1%背景阈值下，test τ效率3.5556%，实际FPR=1.2080% | 当前绝对性能不足以支持高纯稀有τ选择 |
+| R1, matched-input development comparison | 三seed的B1 ResNet T3 BA3=56.5633%，B4分层Scratch=54.3922%；B1的τ效率5.0200%，比B4高2.423 pp | 更复杂的当前backbone未在本轮预算下胜出，简单强基线必须保留 |
+| R1, matched-time T3 vs conditional T4 | B1共同BA3差+0.064 pp，区间跨零；B2为−0.313 pp；两族T3 NLL3均更差 | 删除τ没有稳定改善共同任务，困难不限于第四类 |
+| R2, data/exposure study | D2=300k×4的T3/conditional T4 BA3=57.0967%/57.1267%；T4 BA4=45.7650%，τ效率6.05% | 更多unique数据有益；相对D0的增量仍小，收敛和容量上限未建立 |
+| R3 M0, full-pass reshuffling | 对D2，BA3 +0.383 pp，但μ recall −4.08 pp，稀疏μ −14.816 pp；τ无增益 | 不采用该采样替换，后续几何实验保留原采样 |
 
-表为单模型指标的seed均值，使用新Tune40k；共同三类使用相同30k非τ事件。不是ensemble，也不是独立Confirm结果。B1相对B4的τ效率增加2.423 pp [1.941,2.977]，满足预设τ研究门槛；绝对效率仍低。B1 T3相对HGB增加**1.973333 pp**，精确值低于2 pp实用门槛；相对B4虽高2.171 pp，μ argmax recall低2.410 pp，逐类非劣未通过。
+BA为balanced accuracy；pp为百分点。R1/R2/M0使用新Tune40k开发集，表中τ效率均在该开发集1% FPR处评价；它们与S6独立test分别解释。三seed数值为单模型指标均值；R2/M0为seed42，事件区间不代表训练seed总体波动。与合作组原研究完全匹配后的净增益仍未测量，已完成的同类方法对照及差异见[08](v2/08_r1_collaboration.md)。
 
-简化为三类没有稳定改善共同任务。同allocation等时预算下，B1 compute T3−T4 conditional的BA3为+.064 pp [−.179,+.302]，B2为−.313 pp [−.514,−.113]；两者NLL3均更差。B1/B2的μ recall改善同时伴随e/NC损失。四pass末轮NLL仍下降，不能把当前排名当作收敛上限；B2−B3排名差+.220 pp的区间也跨零。μ分数排序与argmax取舍不同，见[专项读回](v2/r1_muon_decision_review.json)。
+主要不足有五项：局部窗口和投影降采样可能压缩短轨信息；显式跨层测量关系不足；旧对象重建fake较多；训练饱和、容量及更大数据收益尚未形成闭环；整体NLL/AUC与低背景τ目标不完全一致。各项的代码证据、已排除的故障和待检验假设见[01](v2/01_evidence_review.md)。目前没有证据可以据此判定探测器的四类信息上限。
 
-R2研究B1一族：fresh **D0=100k×4、D1=100k×12、D2=300k×4**及两个D1WD控制，共8模型/16视图/128配对、11域、Train gap和五折readout。D2 T3相对同曝光D1的BA3提高3.927 pp，相对D0仅+.447 pp [.078,.815]；稀疏BA没有改善、μ AUROC仍约.548。D2 T4的共同BA3=57.1267%、BA4=45.7650%、τ效率6.05%，后者相对D0增加.940 pp [.419,1.566]，仍小于1 pp门槛。增强weight decay改善D1，但终点仍落后D0。固定第11轮prefix的末轮原顺序精确复现保存概率，重混使BA3提高1.277 pp [.810,1.803]、NLL3降低.049451；稀疏排序和τ增益区间仍跨零。八模型均未建立plateau。见[最终报告stage284](../workbook/2026-11-15_stage284_r2_final_results.md)、[最终结果](v2/r2_results.json)和[执行状态](v2/r2_execution.json)。M0已完成且未通过逐类约束，后续保留原采样，分别检验B1 stride与原生跨层关系；采样和架构收益独立配对，具体工单见[04](v2/04_execution_plan.md)。
+## 类别和模型选择
 
-R1终态122条allocation共45.708889个异构device-hours、307.181111 CPU core-hours，超过原18 h规划；R2的39条allocation全部终态，共**7.475833个异构device-hours、116.65 CPU core-hours**。均包含失败、探针和迁移，当前无未决allocation。按R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h，完整交互allocation开销尚未测量；交互operation下界与历史SSL另列。后续按实测小批次重排，保留R7确认资源。
+三类为`CC νe / CC νμ / NC`，训练时排除τ，评价时单列τ污染。四类为`CC νe / CC νμ / CC ντ / NC`，同时在相同非τ事件上报告条件三类结果。共同输入、事件、曝光和计算分别控制，不能用删除真τ后的指标上涨替代三类重训。
 
-资源安排采用**尽快启动、兼容即可**的原则：HTCondor 与 Kubeflow 并用，接受不同 GPU、平台提供的共享设备和 MIG。当前 LCG108/Torch2.7.1 包含 SM75 起的内核，T4 使用 FP32，A100/H100 可使用 BF16；V100 的 SM70 启动失败属于本构建兼容性问题。具体操作、同计算比较口径和失败恢复见[资源执行说明](v2/07_resources_and_operations.md)。
+τ先保留flat4，与`tau gate + conditional3`、条件`τ→e/μ/had`辅助头比较。更多类别由合并四类或τ工作点的实测收益决定。had1/had3须先核对最终charged-prong、可见轨与当前direct-daughter计数的关系。拓扑采用OPERA的分道思路，未分辨衰变点的事件另检验NOMAD式可见运动学；两条路径都先验证PINPOINT实际可测量的输入。
 
-以下为新版设计形成时的S6历史证据，与本次R1开发集结果分别解释。
+晋级标准在R1前冻结：三类候选ΔBA3至少2 pp并满足NLL和逐类质量约束；τ候选在1%背景工作点Δ效率至少1 pp、区间支持正效应且共同三类非劣。小幅正结果照实保留，不自动扩大实验矩阵。具体概率、损失、分母、先验和统计设计见[02](v2/02_tasks_and_evaluation.md)。
 
-独立 test 上，MAE3 ensemble 的四类 balanced accuracy 为 **43.5226%**，相对同为 100k 监督标签的 Scratch 增加 **0.3354 个百分点**；τ 在冻结 validation 1% 背景阈值下效率 **3.5556%**，实际 test FPR **1.2080%**。这些结果支持预训练收益，绝对性能仍不足以支持高纯 τ 分析。两者监督协议匹配，MAE 另有预训练成本。当前所有 accepted samples、split 和 detector-proxy 继续作为有效研究基础。
-
-本次重新读取六个最终 revision 3 模型的训练记录和已有 validation 预测，发现：
-
-- 六模型均以第 4/4 轮为 best，末轮 NLL 继续下降 **0.00203–0.00779**，训练饱和未建立。
-- 100k 监督标签、100k SSL 语料和约 0.898M 参数构成当前主模型规模；没有完成 300k/1M 监督训练的饱和研究。
-- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是S6条件诊断；R1实际三类重训及最终预算配对见stage274，不能将两批不同评价事件直接解释为净增益。
-- 记录中的 data-wait/总耗时为 **31.16%–46.64%**。先提升数据供给，可把更多计算用于长训练和有效模型比较。
-
-数值、统计口径和代码证据见[独立评估](v2/01_evidence_review.md)及[复核 JSON](v2/current_results_review.json)。
-
-## 阅读顺序
-
-| Document | Purpose |
-| --- | --- |
-| [01：结果、资料与系统性不足](v2/01_evidence_review.md) | 回答改进是否成立、哪些比较尚不公平、哪些故障已修复、哪些瓶颈仍是假设 |
-| [02：类别选择与评价合同](v2/02_tasks_and_evaluation.md) | 三类、四类、条件六类的并行方式；新独立确认集、尾部统计与晋级规则 |
-| [03：模型与物理设计](v2/03_models_and_physics.md) | 跨层稀疏关系、raw/object 双路径、异构融合、τ/charm 与方向任务 |
-| [04：执行路线与实验工单](v2/04_execution_plan.md) | R0–R7 依赖、最小实验矩阵、资源安排、首批具体工作和交付标准 |
-| [05：文献依据](v2/05_literature.md) | 本地资料及本次联网核对的论文、采用理由、适用边界 |
-| [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加阶段的入口 |
-| [07：GPU 与后端执行](v2/07_resources_and_operations.md) | 减少排队、共享/MIG、实际软件兼容性、单任务写入与成本 |
-| [08：R1 合作组三类对照](v2/08_r1_collaboration.md) | 已测量域表、输入/训练差异及原研究复现所需具体资料 |
-| [09：研究结论与下一批决策](v2/09_decisions_and_handoff.md) | 对已有改进、最优性和类别数的判断；R2分流、R3–R7顺序、τ两条物理路径与资源安排 |
-| [实验规格](v2/experiment_plan.json) | 可解析的设计合同；需实现对应 runner 后才能提交，不能直接传给旧 CLI |
-
-## 研究路线与决策
+## 执行顺序与决策
 
 ```mermaid
 flowchart TD
-    A[Reuse accepted readout and data] --> B[New development and confirmation manifests]
-    B --> C[Three-class and four-class matched baselines]
-    C --> D[Training and data scaling]
-    D --> E[Cross-plane geometry and sparse local relations]
-    E --> F[Raw and reconstructed object fusion]
-    F --> G[Tau specialists and conditional decay heads]
-    G --> H[Targeted pretraining and robustness]
-    H --> I[Locked independent confirmation]
-    C --> J[Three-class collaboration result]
-    G --> K[Keep four classes if useful tau gain is confirmed]
+    A[Accepted data and response] --> B[Matched three and four class baselines]
+    B --> C[Data and training controls]
+    C --> D[Local retention and cross-plane relations]
+    D --> E[Track and vertex reconstruction]
+    E --> F[Tau specialists and conditional decay heads]
+    D --> G[Targeted pretraining and robustness]
+    F --> H[Locked independent confirmation]
+    G --> H
+    B --> I[Three-class collaboration deliverable]
 ```
 
-三类输出为 `CC νe / CC νμ / NC`；四类输出为 `CC νe / CC νμ / CC ντ / NC`。三类模型训练时排除 τ，部署时仍须评价 τ 污染。四类模型必须在同一非 τ 样本上给出条件三类结果；两者由同样的输入、样本和计算预算比较。τ 子通道优先作为条件辅助头或 specialist，不直接把全部训练改成六类均衡 softmax。
-
-| Stage | Main question | Deliverable / decision |
+| Stage | Question and minimum work | Status / exit |
 | --- | --- | --- |
-| R0（已完成） | 哪些事件仍可用于新的独立确认？现有训练瓶颈在哪里？ | 分区冻结、真实结构、同事件缓存等价、32-event fit及10k profile通过 |
-| R1（已完成） | 三类任务做到什么程度？四类是否损害共同三类任务？ | 41模型完整交付；B1本轮最强，三类化未稳定改善共同任务，保留四类研究 |
-| R2（已完成） | 数据、曝光、容量中哪个限制性能？ | 8模型及末轮顺序控制、198项验收；选择D2参考，收敛/容量仍开放，1M暂缓 |
-| R3 | 显式跨层关系能否把细粒度转为有效收益？ | 几何稀疏图、边界通信、原生/粗粒度配对和三 seed 确认 |
-| R4 | 能否重建有用对象，而不是引入大量假关联？ | Track/vertex/association 的效率–fake–coverage 与 raw/object 分类对照 |
-| R5 | τ 是否值得保留为主类别，细分是否有用？ | Flat4、3+τ、条件 τ decay 头；固定 FPR、分支及 charm 对照 |
-| R6 | 预训练和鲁棒训练能否超过强监督基线？ | 定向 MAE/局部监督、同总计算监督控制、held-out 条件 |
-| R7 | 候选是否在新事件和系统变化下保持收益？ | 冻结独立确认、概率与工作点、物理条件和完整报告 |
+| R0 | 新分区、真实模型元数据、缓存等价和真实小样本学习 | 已完成；Cal-A40k/Cut-B160k/Confirm200k继续封存 |
+| R1 | HGB、ResNet、ParticleNet、ParT、分层模型，同输入T3/T4和必要三seed/等时控制 | 已完成41模型；452项验收通过，四类继续研究 |
+| R2 | 100k×4、100k×12、300k×4及有依据的正则化/顺序控制 | 已完成8模型和末轮控制；198项验收通过，D2为后续参考 |
+| R3 | M0采样、G0相位、G1首层stride4→2、G2压缩前原生几何关系 | M0/G0/候选审计完成；G1训练、G2验证进行中。只对最有价值改变补seed/粒度 |
+| R4 | 多候选tracking、vertex、tracker spacing/方向，raw/object双路径 | 先验收candidate recall和整轨fake–efficiency–coverage，再测全事件分类增量 |
+| R5 | flat4、分解头、条件decay与τhad specialist；charm等背景 | 以inclusiveτ工作点和共同三类质量决定继续四类、细分或近期三类交付 |
+| R6 | 胜出encoder上的一种定向局部监督/预训练，加held-out响应条件 | 与同总计算监督控制比较；实际下游或鲁棒性收益成立后再扩展 |
+| R7 | 冻结至多两个主比较，Cal-A校准、Cut-B阈值、新Confirm和系统变化 | 新独立确认、物理条件、完整概率/工作点、代码与成本交付 |
 
-R3先完成M0采样控制，再推进优先架构改进；R4–R6由前序证据触发。R0表明短训练宜先用native、2 workers、共享local staging与bounded decoded LRU；H100编译模式的packed+bucket虽有8.20%热态吞吐收益，构建成本约需13个pass摊平，不直接作为4-pass默认值。局部32-slot利用率仅8.83%，后续单独检验变长执行和窗口设计。原6–10周及80 device-hours为规划建议，R1实际超出阶段额度；后续采用一族优先、问题驱动的小批次，按实测重新计时。
+R4–R6由前序证据触发，不要求先完成全部候选才能交付三类结果。未建立学习、对象覆盖或下游收益的分支先定位原因；有效负结果也形成明确决策。完整最小矩阵、实施工单、触发与停止条件见[04](v2/04_execution_plan.md)，当前科学判断集中在[09](v2/09_decisions_and_handoff.md)。
 
-## 历史计划与结果
+R3最新执行状态见[r3_execution.json](v2/r3_execution.json)。新增材料特征已按G4源码修正：silicon header的10使用μm，换算为0.010 mm；W/scintillator厚度使用mm。修正后的五项真实学习检查全部通过，正式G2分类收益尚未测量。候选图、M0与G1不依赖该厚度特征。单位修正见[stage289](../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)，最终整理和学习读回见[stage290](../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md)。
 
-旧路线的 **14 份完整文档**归入 [archive/2026-11-14_v1](archive/2026-11-14_v1/README.md)，旧01–13全文由该入口访问，归档说明见[archive 索引](archive/README.md)。原 `configs/`、`results/`、`tools/` 路径继续服务已有脚本和报告。旧路线中“下一阶段”“尚未测量”等文字反映各记录形成时点，S0–S6 的最终状态以 stage236 及各阶段最终报告为准。
+## 资源与阅读入口
 
-关键证据：[S2 stage55](../workbook/2026-11-12_stage55_s2_final_acceptance.md)、[修复 S3 stage87](../workbook/2026-11-13_stage87_s3_repair_final_results.md)、[S4 stage181](../workbook/2026-11-14_stage181_s4_final_results.md)、[S5 stage203](../workbook/2026-11-14_stage203_s5_final_results.md)、[S5 补充 stage205](../workbook/2026-11-14_stage205_s5_scope_completion_audit.md)、[S6 stage236](../workbook/2026-11-14_stage236_s6_final_results.md)、[本次 stage237](../workbook/2026-11-14_stage237_independent_review_and_roadmap_v2.md)。
+**以预计完成时间选择资源，HTCondor和Kubeflow并用，接受异构GPU、共享设备及MIG。**不为同型号或整卡等待。并发数由真实吞吐、CPU/RAM、显存和完整validation峰值决定；同allocation共享一次输入staging，各模型独立checkpoint。当前LCG108构建包含SM75起的内核，T4用FP32，A100/H100可用BF16；不同精度需保留必要匹配控制。V100的既有失败属于软件构建兼容性问题。
+
+R1/R2终态batch成本分别45.708889/7.475833异构device-hours；R3成本随运行更新。原80 h为规划估计，R1已经超出阶段估计，后续按实测小批次重排并保留确认资源。跨GPU/MIG的device-hours只用于记账，不等同于相同计算量。CERN flavor、配额、提交及恢复见[07](v2/07_resources_and_operations.md)与[归档Kubeflow说明](archive/2026-11-14_v1/08_kubeflow.md)。
+
+| Document | Content |
+| --- | --- |
+| [01 证据审查](v2/01_evidence_review.md) | 改进幅度、资料对照、系统性不足与假设 |
+| [02 任务与评价](v2/02_tasks_and_evaluation.md) | T3/T4/条件分道、分区、先验、尾部统计与晋级 |
+| [03 模型和物理设计](v2/03_models_and_physics.md) | 几何关系、raw/object融合、τ、方向与定向预训练 |
+| [04 执行计划](v2/04_execution_plan.md) | R0–R7矩阵、依赖、实施工单和交付 |
+| [05 文献](v2/05_literature.md) | 本地与联网来源、采用理由和适用条件 |
+| [06 工作记录索引](v2/06_workbook_index.md) | 全部阶段记录入口 |
+| [07 计算资源](v2/07_resources_and_operations.md) | Condor/Kubeflow、混合GPU、共享与成本 |
+| [08 合作组三类对照](v2/08_r1_collaboration.md) | 已测共同域结果、原研究差异与复现所缺输入 |
+| [09 当前决策](v2/09_decisions_and_handoff.md) | 当前结论、下一批优先级与条件分流 |
+| [实验规格](v2/experiment_plan.json) | 可解析研究合同；各阶段runner使用对应具体配置 |
+
+S6旧独立结论以[stage236](../workbook/2026-11-14_stage236_s6_final_results.md)为准，新开发比较以[R1 stage274](../workbook/2026-11-15_stage274_r1_final_results.md)、[R2 stage284](../workbook/2026-11-15_stage284_r2_final_results.md)和[R3 stage288](../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)为准。原`configs/`、`results/`、`tools/`路径继续服务历史结果；大型产物保留在仓库外的统一results目录。
