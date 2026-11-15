@@ -15,14 +15,14 @@ sm_75, sm_80, sm_86, sm_89, sm_90, compute_90
 | T4 / SM75 | FP32、eager；按实测时长选择deadline | R1已测CNN和ParT profile；CUDA零张量/归约启动通过 |
 | A100 / SM80 | 已验收的BF16 encoder + FP32 head；编译按各族健康选择 | 多项R0/R1真实拟合、profile和训练 |
 | H100 / SM90, full GPU or MIG | 同上；MIG按独立allocation调度 | R1已有3g.47gb实际训练 |
-| V100 / SM70 | 当前构建不能执行；不提交本环境训练 | 两项CNN扩展出现`no kernel image is available` |
+| V100 / SM70 | LCG108不能执行；已有LCG107兼容构建，R1尚未复验 | 两项LCG108扩展失败；历史S2的LCG107/Torch2.5.1已执行V100 |
 | Other devices | 先做CUDA和真实小样本forward/backward probe | 不能仅根据更新的Capability数值认定当前二进制可用 |
 
-V100本身支持FP32；本次失败的原因是当前Torch二进制没有SM70内核，改用FP32不能补上内核。若未来有现成兼容环境，可独立验证V100，不需要为本轮先重新编译Torch。B2另有compiled BF16局部反传故障，当前采用已通过真实拟合的eager路径；这是算子/执行配方限制。
+V100本身支持FP32；本次失败的原因是LCG108的Torch二进制没有SM70内核，改用FP32不能补上内核。历史[stage11](../../workbook/2026-11-11_stage11_s2_gpu_compatibility.md)已确认LCG107/Torch2.5.1/Python3.11.9支持SM70，S2也已实际执行。若后续profile显示它能缩短完成时间，复用该构建并重新验证当前模型的真实forward/backward、数据读回和数值配方，记录软件版本；当前R1训练仍使用已验证的LCG108。B2另有compiled BF16局部反传故障，当前采用已通过真实拟合的eager路径。
 
 `analysis.flavour.v2.submit`默认最低Capability为7.5，不限定DeviceName。R1训练在创建实验目录、复制全样本之前执行一个实际CUDA算子；SM75运行时切换FP32/eager，并在manifest分别保存submitted recipe、实际精度、GPU、Capability和Torch内核架构。更高设备仍须由实际probe验证。
 
-2026-11-15实际广告补充：Condor H100 1g.12gb/2g.24gb MIG省略Capability；提交条件对这些明确的SM90型号补充识别，保留实际CUDA probe。R1已测aggregate RSS最高12,647 MiB，GPU默认请求15GiB，经站点变换为5 CPU/15,360 MB，可进入17GB的1g节点；旧16GiB会变成6 CPU/18GB而排除它们。三个尚未开始的作业修正后已在1g MIG启动，见[stage255](../../workbook/2026-11-15_stage255_r1_stress_audit_and_mig_matching.md)。
+2026-11-15实际广告补充：Condor H100 1g.12gb/2g.24gb MIG省略Capability；提交条件对这些明确的SM90型号补充识别，保留实际CUDA probe。完整B2已测aggregate RSS最高13,441.5 MiB，GPU默认请求15GiB，经站点变换为5 CPU/15,360 MB，可进入17GB的1g节点；旧16GiB会变成6 CPU/18GB而排除它们。三个尚未开始的作业修正后已在1g MIG启动，见[stage255](../../workbook/2026-11-15_stage255_r1_stress_audit_and_mig_matching.md)。
 
 ## 2. 调度与比较
 
@@ -33,6 +33,10 @@ V100本身支持FP32；本次失败的原因是当前Torch二进制没有SM70内
 5. 使用平台提供的MIG或共享GPU资源；`request_gpus=1`指一个平台公布的逻辑设备，具体是否为分区按runtime记录。共享比例、显存和隔离由平台能力决定，不能自行假设任意小数GPU请求可被调度。
 
 **曝光匹配**回答相同非τ事件训练次数下的任务差异。**同计算匹配**在同一allocation上从fresh初始化执行T3/T4预算控制，记录实际wall、训练、验证、updates及±5%预算误差。跨GPU的device-hours仅作资源记账；不同型号、MIG和精度不解释为相同FLOPs。平台并发负载会影响wall比较，结果中保留实际吞吐。
+
+[stage259](../../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)实际比较B2：1g MIG当前约22 events/s，2g Train-only probe为34.62/37.41 events/s；单seed三项操作的训练时间投影可缩短约4–5 h，尚不是最终wall测量。替代allocation先取得资源并通过profile，再确认旧作业eviction/abort与终态、归档未完成目录，最后以包含新allocation ID的release文件启动fresh T4/T3/compute。两项旧1g运行的2,616/2,929 s全部计费。初始40 events/s门槛拒绝了35–37的profile，按剩余完成时间证据改为32，并提交新的不可变attempt；此处调整资源启发式，模型/排名合同不变。
+
+`submit --min-gpu-memory-mb`默认10,000，继续接受1g。上述替代探针临时使用20,000以寻找不同容量分区，不限定型号或要求整卡。B1继续在1g有效训练；接收任意卡与按实测为某架构选择更合适的卡同时适用。
 
 ## 3. Kubeflow
 

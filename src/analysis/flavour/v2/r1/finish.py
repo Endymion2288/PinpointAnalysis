@@ -21,7 +21,7 @@ def submit(root, name, module, arguments, gpu=False, cpus=4, memory=None, flavou
     record = root/'runtime'/f'{name}.submission.json'
     if record.exists() and json.loads(record.read_text()).get('submitted'):
         return
-    # 15 GiB covers measured R1 peaks (12,647 MiB) and maps to 5 CPU at CERN.
+    # 15 GiB covers measured R1 peaks (13,442 MiB) and maps to 5 CPU at CERN.
     # A 16 GiB request maps to 6 CPU / 18 GB, excluding 17 GB MIG hosts.
     memory = memory or ('15GB' if gpu else '16GB')
     command = [sys.executable, '-m', 'analysis.flavour.v2.submit', '--stage', 'R1', '--root', str(root),

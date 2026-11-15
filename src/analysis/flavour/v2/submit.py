@@ -11,14 +11,14 @@ import subprocess
 import tarfile
 
 
-def gpu_requirement(minimum_capability, device_name=None):
+def gpu_requirement(minimum_capability, device_name=None, minimum_memory_mb=10000):
     """Accept known SM90 MIG ads when CERN omits their Capability property."""
     minimum = max(7.5, minimum_capability)
     capability = f'(Capability >= {minimum})'
     if minimum<=9.0:
         capability = (f'({capability} || ((Capability =?= UNDEFINED) && '
                       'regexp("^NVIDIA H100.* MIG ", DeviceName)))')
-    requirement = '(GlobalMemoryMb >= 10000) && '+capability
+    requirement = f'(GlobalMemoryMb >= {minimum_memory_mb}) && '+capability
     if device_name:
         requirement += ' && (DeviceName == '+json.dumps(device_name)+')'
     return requirement
@@ -97,6 +97,8 @@ def main():
     parser.add_argument("--memory", default="16GB")
     parser.add_argument("--gpu", action="store_true")
     parser.add_argument("--gpu-model", help="Exact observed CUDA device name, for matched-compute campaigns")
+    parser.add_argument("--min-gpu-memory-mb", type=int, default=10000,
+                        help="Task-specific memory floor; default also accepts 1g MIG devices")
     parser.add_argument("--disk", default="12GB")
     parser.add_argument("--job-flavour", default="workday")
     parser.add_argument("--deadline-seconds", type=int, default=28800)
@@ -153,7 +155,7 @@ def main():
                'requirements = (OpSysAndVer == "AlmaLinux9")', f'+JobFlavour = "{args.job_flavour}"',
                "should_transfer_files = YES", "when_to_transfer_output = ON_EXIT", 'transfer_output_files = ""']
     if args.gpu:
-        requirement = gpu_requirement(args.min_capability, args.gpu_model)
+        requirement = gpu_requirement(args.min_capability, args.gpu_model, args.min_gpu_memory_mb)
         content += ["request_gpus = 1", "require_gpus = " + requirement]
     content.append("queue 1")
     path = directory / "job.sub"
@@ -167,6 +169,7 @@ def main():
                 "command": args.command, "wrapper": wrapper.read_text(), "submit": path.read_text(),
                 "cpus": args.cpus, "gpu": args.gpu,
                 "requested_minimum_capability": args.min_capability,
+                "requested_minimum_GPU_memory_MiB": args.min_gpu_memory_mb,
                 "LCG108_Torch_kernel_minimum_capability": 7.5,
                 "missing_GPU_capability_policy": "known NVIDIA H100 MIG is SM90; actual CUDA startup probe still required",
                 "stdout": response.stdout, "stderr": response.stderr,

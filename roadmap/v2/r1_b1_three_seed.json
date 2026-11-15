@@ -1,0 +1,3626 @@
+{
+  "status": "interim_complete",
+  "scope": "development Tune; raw uncalibrated probabilities; descriptive score-selected operating points",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/b1_three_seed",
+  "metrics_revision": "r1-tie-aware-float-boundary-2",
+  "replicates": 400,
+  "bootstrap": {
+    "chunks": 6845,
+    "resampling_blocks": 6845,
+    "accepted_family_links_used": true,
+    "multi_chunk_blocks": 0,
+    "blocks_by_class_signature": {
+      "(0,)": 866,
+      "(1,)": 3796,
+      "(2,)": 648,
+      "(3,)": 1535
+    },
+    "replicates": 400,
+    "seed": 20261116,
+    "paired": true,
+    "scope": "development Tune intervals; training seed spread reported separately"
+  },
+  "models": {
+    "final_b1_t3_s17": {
+      "name": "final_b1_t3_s17",
+      "family": "B1",
+      "task": "T3",
+      "seed": 17,
+      "kind": "main",
+      "predictions": "experiments/final_b1_t3_s17/predictions.parquet",
+      "BA3": 0.5677,
+      "NLL3": 0.870674982523591,
+      "macro_AP3": 0.6585186442160548,
+      "macro_AUROC3": 0.7711523741666667,
+      "recall_e_mu_NC": [
+        0.6048,
+        0.4986,
+        0.5997
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2847,
+        2971,
+        4182
+      ],
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582904.0",
+      "unique_train_events": 75000
+    },
+    "final_b1_t4_s17": {
+      "name": "final_b1_t4_s17",
+      "family": "B1",
+      "task": "T4",
+      "seed": 17,
+      "kind": "main",
+      "predictions": "experiments/final_b1_t4_s17/predictions.parquet",
+      "BA3": 0.5626333333333333,
+      "NLL3": 0.8709136138175536,
+      "macro_AP3": 0.6566090968284192,
+      "macro_AUROC3": 0.7701538899999999,
+      "recall_e_mu_NC": [
+        0.5618,
+        0.5128,
+        0.6133
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2390,
+        3179,
+        4431
+      ],
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582904.0",
+      "unique_train_events": 100000,
+      "BA4": 0.4451,
+      "NLL4": 1.1904594499762293,
+      "tau_eff_1pct": 0.0513,
+      "tau_eff_0p1pct": 0.0113,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.4668296277523041,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            63,
+            127,
+            513,
+            110
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.6309963099630996,
+              "input_coverage": 0.020325,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.04926534140017286,
+              "input_coverage": 0.010413,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.005108900242000537,
+              "input_coverage": 0.010041300000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.6200335025787354,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            10,
+            10,
+            113,
+            10
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.7902097902097901,
+              "input_coverage": 0.003575,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.10244786944696282,
+              "input_coverage": 0.001103,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.01118479659507077,
+              "input_coverage": 0.0010103,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b1_t3_s42": {
+      "name": "final_b1_t3_s42",
+      "family": "B1",
+      "task": "T3",
+      "seed": 42,
+      "kind": "main",
+      "predictions": "experiments/final_b1_t3_s42/predictions.parquet",
+      "BA3": 0.5662,
+      "NLL3": 0.8719672265104358,
+      "macro_AP3": 0.6557864055498176,
+      "macro_AUROC3": 0.7694799991666667,
+      "recall_e_mu_NC": [
+        0.6301,
+        0.4998,
+        0.5687
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        3049,
+        2939,
+        4012
+      ],
+      "GPU": "Tesla T4",
+      "precision": "FP32",
+      "allocation_id": "1582883.0",
+      "unique_train_events": 75000
+    },
+    "final_b1_t4_s42": {
+      "name": "final_b1_t4_s42",
+      "family": "B1",
+      "task": "T4",
+      "seed": 42,
+      "kind": "main",
+      "predictions": "experiments/final_b1_t4_s42/predictions.parquet",
+      "BA3": 0.5649333333333334,
+      "NLL3": 0.8662493880948835,
+      "macro_AP3": 0.6577364206524458,
+      "macro_AUROC3": 0.7711018383333332,
+      "recall_e_mu_NC": [
+        0.6306,
+        0.4694,
+        0.5948
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        3064,
+        2630,
+        4306
+      ],
+      "GPU": "Tesla T4",
+      "precision": "FP32",
+      "allocation_id": "1582883.0",
+      "unique_train_events": 100000,
+      "BA4": 0.446225,
+      "NLL4": 1.1877919579164222,
+      "tau_eff_1pct": 0.0509,
+      "tau_eff_0p1pct": 0.0134,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.4783141613006592,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            48,
+            132,
+            509,
+            120
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.6291718170580964,
+              "input_coverage": 0.020225,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.04889999039292919,
+              "input_coverage": 0.010409000000000002,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.00506926669920027,
+              "input_coverage": 0.010040900000000002,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.6333351135253906,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            7,
+            15,
+            134,
+            8
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.8170731707317073,
+              "input_coverage": 0.0041,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.11921708185053381,
+              "input_coverage": 0.001124,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.01323587514816278,
+              "input_coverage": 0.0010124,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b1_t3_s2026": {
+      "name": "final_b1_t3_s2026",
+      "family": "B1",
+      "task": "T3",
+      "seed": 2026,
+      "kind": "main",
+      "predictions": "experiments/final_b1_t3_s2026/predictions.parquet",
+      "BA3": 0.5630000000000001,
+      "NLL3": 0.8684902277537092,
+      "macro_AP3": 0.6577071031778429,
+      "macro_AUROC3": 0.7701143275,
+      "recall_e_mu_NC": [
+        0.5933,
+        0.5335,
+        0.5622
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2719,
+        3352,
+        3929
+      ],
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582905.0",
+      "unique_train_events": 75000
+    },
+    "final_b1_t4_s2026": {
+      "name": "final_b1_t4_s2026",
+      "family": "B1",
+      "task": "T4",
+      "seed": 2026,
+      "kind": "main",
+      "predictions": "experiments/final_b1_t4_s2026/predictions.parquet",
+      "BA3": 0.5615666666666667,
+      "NLL3": 0.8641528523741799,
+      "macro_AP3": 0.6567567567899211,
+      "macro_AUROC3": 0.7703938425,
+      "recall_e_mu_NC": [
+        0.5734,
+        0.5503,
+        0.561
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2485,
+        3560,
+        3955
+      ],
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582905.0",
+      "unique_train_events": 100000,
+      "BA4": 0.445875,
+      "NLL4": 1.1847690382385718,
+      "tau_eff_1pct": 0.0484,
+      "tau_eff_0p1pct": 0.0103,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.5015773177146912,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            62,
+            136,
+            484,
+            102
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.6173469387755102,
+              "input_coverage": 0.0196,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.04661016949152542,
+              "input_coverage": 0.010384000000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.004821485495696524,
+              "input_coverage": 0.010038400000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.6651526093482971,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            10,
+            9,
+            103,
+            11
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.7744360902255638,
+              "input_coverage": 0.0033250000000000003,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.09423604757548033,
+              "input_coverage": 0.001093,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0102050926384623,
+              "input_coverage": 0.0010093,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b4_t3_s17": {
+      "name": "final_b4_t3_s17",
+      "family": "B4",
+      "task": "T3",
+      "seed": 17,
+      "kind": "main",
+      "predictions": "experiments/final_b4_t3_s17/predictions.parquet",
+      "BA3": 0.5447000000000001,
+      "NLL3": 0.9026663335046187,
+      "macro_AP3": 0.6267985899438854,
+      "macro_AUROC3": 0.7510971941666668,
+      "recall_e_mu_NC": [
+        0.5471,
+        0.4849,
+        0.6021
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2466,
+        3163,
+        4371
+      ],
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582873.0",
+      "unique_train_events": 75000
+    },
+    "final_b4_t4_s17": {
+      "name": "final_b4_t4_s17",
+      "family": "B4",
+      "task": "T4",
+      "seed": 17,
+      "kind": "main",
+      "predictions": "experiments/final_b4_t4_s17/predictions.parquet",
+      "BA3": 0.5425333333333334,
+      "NLL3": 0.9073827099976506,
+      "macro_AP3": 0.6233494428370663,
+      "macro_AUROC3": 0.7491100191666668,
+      "recall_e_mu_NC": [
+        0.5219,
+        0.5022,
+        0.6035
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2156,
+        3406,
+        4438
+      ],
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582873.0",
+      "unique_train_events": 100000,
+      "BA4": 0.421625,
+      "NLL4": 1.229104110635152,
+      "tau_eff_1pct": 0.024,
+      "tau_eff_0p1pct": 0.004,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.38510987162590027,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            92,
+            110,
+            240,
+            98
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.4444444444444444,
+              "input_coverage": 0.013500000000000002,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.02366863905325444,
+              "input_coverage": 0.01014,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.002396644697423607,
+              "input_coverage": 0.010014,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.43868470191955566,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            6,
+            17,
+            40,
+            7
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.5714285714285714,
+              "input_coverage": 0.00175,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.03883495145631069,
+              "input_coverage": 0.0010299999999999999,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.003988035892323031,
+              "input_coverage": 0.001003,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b4_t3_s42": {
+      "name": "final_b4_t3_s42",
+      "family": "B4",
+      "task": "T3",
+      "seed": 42,
+      "kind": "main",
+      "predictions": "experiments/final_b4_t3_s42/predictions.parquet",
+      "BA3": 0.5435,
+      "NLL3": 0.9012408595648076,
+      "macro_AP3": 0.6276799115826738,
+      "macro_AUROC3": 0.7515666616666667,
+      "recall_e_mu_NC": [
+        0.5446,
+        0.5689,
+        0.517
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2426,
+        3982,
+        3592
+      ],
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "pinpoint-r1-extend-b4-s42-k12",
+      "unique_train_events": 75000
+    },
+    "final_b4_t4_s42": {
+      "name": "final_b4_t4_s42",
+      "family": "B4",
+      "task": "T4",
+      "seed": 42,
+      "kind": "main",
+      "predictions": "experiments/final_b4_t4_s42/predictions.parquet",
+      "BA3": 0.5467666666666667,
+      "NLL3": 0.9028700652120004,
+      "macro_AP3": 0.6225701029003531,
+      "macro_AUROC3": 0.7493863566666668,
+      "recall_e_mu_NC": [
+        0.5873,
+        0.5224,
+        0.5306
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2923,
+        3500,
+        3577
+      ],
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "pinpoint-r1-extend-b4-s42-k12",
+      "unique_train_events": 100000,
+      "BA4": 0.42457500000000004,
+      "NLL4": 1.2234681809875827,
+      "tau_eff_1pct": 0.0269,
+      "tau_eff_0p1pct": 0.0031,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.40293434262275696,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            92,
+            111,
+            269,
+            97
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.47275922671353254,
+              "input_coverage": 0.014225,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.02645294522568591,
+              "input_coverage": 0.010169000000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.00268546156994679,
+              "input_coverage": 0.0100169,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.4683303236961365,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            7,
+            14,
+            31,
+            9
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.5081967213114754,
+              "input_coverage": 0.0015249999999999999,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.030362389813907934,
+              "input_coverage": 0.001021,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.003093503642351062,
+              "input_coverage": 0.0010021000000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b4_t3_s2026": {
+      "name": "final_b4_t3_s2026",
+      "family": "B4",
+      "task": "T3",
+      "seed": 2026,
+      "kind": "main",
+      "predictions": "experiments/final_b4_t3_s2026/predictions.parquet",
+      "BA3": 0.5435666666666666,
+      "NLL3": 0.9021594503661843,
+      "macro_AP3": 0.6248368568758563,
+      "macro_AUROC3": 0.7496039233333334,
+      "recall_e_mu_NC": [
+        0.5297,
+        0.5504,
+        0.5506
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2349,
+        3882,
+        3769
+      ],
+      "GPU": "NVIDIA H100 NVL",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582874.0",
+      "unique_train_events": 75000
+    },
+    "final_b4_t4_s2026": {
+      "name": "final_b4_t4_s2026",
+      "family": "B4",
+      "task": "T4",
+      "seed": 2026,
+      "kind": "main",
+      "predictions": "experiments/final_b4_t4_s2026/predictions.parquet",
+      "BA3": 0.5453,
+      "NLL3": 0.902855326830643,
+      "macro_AP3": 0.6229546843108035,
+      "macro_AUROC3": 0.74881228,
+      "recall_e_mu_NC": [
+        0.5653,
+        0.5635,
+        0.5071
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2642,
+        3975,
+        3383
+      ],
+      "GPU": "NVIDIA H100 NVL",
+      "precision": "BF16_encoder_FP32_head",
+      "allocation_id": "1582874.0",
+      "unique_train_events": 100000,
+      "BA4": 0.42345,
+      "NLL4": 1.22339384185046,
+      "tau_eff_1pct": 0.027,
+      "tau_eff_0p1pct": 0.0028,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.40331828594207764,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            84,
+            120,
+            270,
+            96
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.4736842105263158,
+              "input_coverage": 0.014249999999999999,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.02654867256637168,
+              "input_coverage": 0.01017,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0026954177897574117,
+              "input_coverage": 0.010017000000000002,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.46662214398384094,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            3,
+            18,
+            28,
+            9
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.4827586206896552,
+              "input_coverage": 0.00145,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0275049115913556,
+              "input_coverage": 0.001018,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0027949690556997404,
+              "input_coverage": 0.0010018,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "screen_b0_t3_lr0.05_s42": {
+      "name": "screen_b0_t3_lr0.05_s42",
+      "family": "B0",
+      "task": "T3",
+      "seed": 42,
+      "kind": "main",
+      "predictions": "experiments/screen_b0_t3_lr0.05_s42/predictions.parquet",
+      "BA3": 0.5459,
+      "NLL3": 0.8974487666008354,
+      "macro_AP3": 0.6249957303890539,
+      "macro_AUROC3": 0.74944576,
+      "recall_e_mu_NC": [
+        0.5812,
+        0.4881,
+        0.5684
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2957,
+        3094,
+        3949
+      ],
+      "GPU": "CPU",
+      "precision": "CPU",
+      "allocation_id": null,
+      "unique_train_events": 75000
+    },
+    "final_b0_t3_s17": {
+      "name": "final_b0_t3_s17",
+      "family": "B0",
+      "task": "T3",
+      "seed": 17,
+      "kind": "main",
+      "predictions": "experiments/final_b0_t3_s17/predictions.parquet",
+      "BA3": 0.5459,
+      "NLL3": 0.8974487666008354,
+      "macro_AP3": 0.6249957303890539,
+      "macro_AUROC3": 0.74944576,
+      "recall_e_mu_NC": [
+        0.5812,
+        0.4881,
+        0.5684
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2957,
+        3094,
+        3949
+      ],
+      "GPU": "CPU",
+      "precision": "CPU",
+      "allocation_id": null,
+      "unique_train_events": 75000
+    },
+    "final_b0_t3_s2026": {
+      "name": "final_b0_t3_s2026",
+      "family": "B0",
+      "task": "T3",
+      "seed": 2026,
+      "kind": "main",
+      "predictions": "experiments/final_b0_t3_s2026/predictions.parquet",
+      "BA3": 0.5459,
+      "NLL3": 0.8974487666008354,
+      "macro_AP3": 0.6249957303890539,
+      "macro_AUROC3": 0.74944576,
+      "recall_e_mu_NC": [
+        0.5812,
+        0.4881,
+        0.5684
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2957,
+        3094,
+        3949
+      ],
+      "GPU": "CPU",
+      "precision": "CPU",
+      "allocation_id": null,
+      "unique_train_events": 75000
+    },
+    "screen_b0_t4_lr0.05_s42": {
+      "name": "screen_b0_t4_lr0.05_s42",
+      "family": "B0",
+      "task": "T4",
+      "seed": 42,
+      "kind": "main",
+      "predictions": "experiments/screen_b0_t4_lr0.05_s42/predictions.parquet",
+      "BA3": 0.5453,
+      "NLL3": 0.8972463741861216,
+      "macro_AP3": 0.6251631093425066,
+      "macro_AUROC3": 0.7495417166666667,
+      "recall_e_mu_NC": [
+        0.58,
+        0.489,
+        0.5669
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2948,
+        3106,
+        3946
+      ],
+      "GPU": "CPU",
+      "precision": "CPU",
+      "allocation_id": null,
+      "unique_train_events": 100000,
+      "BA4": 0.431025,
+      "NLL4": 1.2149643049297028,
+      "tau_eff_1pct": 0.0283,
+      "tau_eff_0p1pct": 0.0026,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.48959021218922233,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            72,
+            123,
+            283,
+            105
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.4854202401372213,
+              "input_coverage": 0.014575,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.027791417067661785,
+              "input_coverage": 0.010183000000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0028248305600750622,
+              "input_coverage": 0.0100183,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.600867422513297,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            9,
+            8,
+            26,
+            13
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.46428571428571425,
+              "input_coverage": 0.0014,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.025590551181102362,
+              "input_coverage": 0.001016,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.002595846645367412,
+              "input_coverage": 0.0010016,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b0_t4_s17": {
+      "name": "final_b0_t4_s17",
+      "family": "B0",
+      "task": "T4",
+      "seed": 17,
+      "kind": "main",
+      "predictions": "experiments/final_b0_t4_s17/predictions.parquet",
+      "BA3": 0.5453,
+      "NLL3": 0.8972463741861216,
+      "macro_AP3": 0.6251631093425066,
+      "macro_AUROC3": 0.7495417166666667,
+      "recall_e_mu_NC": [
+        0.58,
+        0.489,
+        0.5669
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2948,
+        3106,
+        3946
+      ],
+      "GPU": "CPU",
+      "precision": "CPU",
+      "allocation_id": null,
+      "unique_train_events": 100000,
+      "BA4": 0.431025,
+      "NLL4": 1.2149643049297028,
+      "tau_eff_1pct": 0.0283,
+      "tau_eff_0p1pct": 0.0026,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.48959021218922233,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            72,
+            123,
+            283,
+            105
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.4854202401372213,
+              "input_coverage": 0.014575,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.027791417067661785,
+              "input_coverage": 0.010183000000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0028248305600750622,
+              "input_coverage": 0.0100183,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.600867422513297,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            9,
+            8,
+            26,
+            13
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.46428571428571425,
+              "input_coverage": 0.0014,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.025590551181102362,
+              "input_coverage": 0.001016,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.002595846645367412,
+              "input_coverage": 0.0010016,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    },
+    "final_b0_t4_s2026": {
+      "name": "final_b0_t4_s2026",
+      "family": "B0",
+      "task": "T4",
+      "seed": 2026,
+      "kind": "main",
+      "predictions": "experiments/final_b0_t4_s2026/predictions.parquet",
+      "BA3": 0.5453,
+      "NLL3": 0.8972463741861216,
+      "macro_AP3": 0.6251631093425066,
+      "macro_AUROC3": 0.7495417166666667,
+      "recall_e_mu_NC": [
+        0.58,
+        0.489,
+        0.5669
+      ],
+      "tau_forced_assignments_e_mu_NC": [
+        2948,
+        3106,
+        3946
+      ],
+      "GPU": "CPU",
+      "precision": "CPU",
+      "allocation_id": null,
+      "unique_train_events": 100000,
+      "BA4": 0.431025,
+      "NLL4": 1.2149643049297028,
+      "tau_eff_1pct": 0.0283,
+      "tau_eff_0p1pct": 0.0026,
+      "tau_actual_FPR_1pct": 0.01,
+      "tau_prior_scenarios": {
+        "0.01": {
+          "threshold": 0.48959021218922233,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            72,
+            123,
+            283,
+            105
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.4854202401372213,
+              "input_coverage": 0.014575,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.027791417067661785,
+              "input_coverage": 0.010183000000000001,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.0028248305600750622,
+              "input_coverage": 0.0100183,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        },
+        "0.001": {
+          "threshold": 0.600867422513297,
+          "cut_source": "same-domain uniform four-class development benchmark",
+          "raw_selected_original_labels": [
+            9,
+            8,
+            26,
+            13
+          ],
+          "raw_support_original_labels": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "prior_scenarios": {
+            "0.25": {
+              "prior_e_mu_tau_NC": [
+                0.25,
+                0.25,
+                0.25,
+                0.25
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.46428571428571425,
+              "input_coverage": 0.0014,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.01": {
+              "prior_e_mu_tau_NC": [
+                0.33,
+                0.33,
+                0.01,
+                0.33
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.025590551181102362,
+              "input_coverage": 0.001016,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            },
+            "0.001": {
+              "prior_e_mu_tau_NC": [
+                0.333,
+                0.333,
+                0.001,
+                0.333
+              ],
+              "all_classes_observed": true,
+              "tau_fraction": 0.002595846645367412,
+              "input_coverage": 0.0010016,
+              "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+            }
+          }
+        }
+      }
+    }
+  },
+  "mean_seed_pairs": [
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T3",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B1",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "same non-tau unique rows and four exposures",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0025888888888884556,
+          "95pct": [
+            0.0004175286401470006,
+            0.0047897486275415785
+          ],
+          "per_seed_differences": [
+            0.00506666666666622,
+            0.001266666666665972,
+            0.0014333333333331755
+          ],
+          "training_seed_sample_SD": 0.002147436025003184
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.0032721941670353916,
+          "95pct": [
+            0.0016605306539016615,
+            0.004800932693943113
+          ],
+          "per_seed_differences": [
+            -0.0002386312939657298,
+            0.00571783841554685,
+            0.004337375379525055
+          ],
+          "training_seed_sample_SD": 0.0031178263440522036
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.0003032928909763403,
+          "95pct": [
+            -0.000869421571605757,
+            0.0015020847792110278
+          ],
+          "per_seed_differences": [
+            0.0019095473876362679,
+            -0.0019500151026285995,
+            0.0009503463879213525
+          ],
+          "training_seed_sample_SD": 0.002009493549379162
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": -0.0003009566666661116,
+          "95pct": [
+            -0.001211946917929636,
+            0.0006387921816937109
+          ],
+          "per_seed_differences": [
+            0.000998484166665814,
+            -0.001621839166665251,
+            -0.00027951499999889773
+          ],
+          "training_seed_sample_SD": 0.0013102932502313774
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.020799999999998414,
+          "95pct": [
+            0.017514562020783747,
+            0.02459157020958099
+          ],
+          "per_seed_differences": [
+            0.04299999999999782,
+            -0.0005000000000016103,
+            0.01989999999999903
+          ],
+          "training_seed_sample_SD": 0.021763961036538975
+        },
+        "recall_mu": {
+          "difference_a_minus_b": -0.00019999999999999649,
+          "95pct": [
+            -0.003932518599819188,
+            0.003271755287823905
+          ],
+          "per_seed_differences": [
+            -0.01419999999999938,
+            0.03039999999999854,
+            -0.01679999999999915
+          ],
+          "training_seed_sample_SD": 0.026532244533773102
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.012833333333332734,
+          "95pct": [
+            -0.0163581931475994,
+            -0.009659040297891022
+          ],
+          "per_seed_differences": [
+            -0.01359999999999939,
+            -0.02609999999999879,
+            0.0011999999999999789
+          ],
+          "training_seed_sample_SD": 0.013666138201164092
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.00016666666666683336,
+          "95pct": [
+            -0.006832790636602868,
+            0.00568717840848304
+          ],
+          "per_seed_differences": [
+            0.0009999999999999454,
+            -0.002400000000000402,
+            0.0008999999999999564
+          ],
+          "training_seed_sample_SD": 0.00193476958145773
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": -0.0025000000000002637,
+          "95pct": [
+            -0.010814045985546864,
+            0.0044489364513150545
+          ],
+          "per_seed_differences": [
+            -0.004600000000000416,
+            0.00530000000000036,
+            -0.008200000000000734
+          ],
+          "training_seed_sample_SD": 0.00699070811863919
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.003666666666666494,
+          "95pct": [
+            -0.0008492904114419827,
+            0.008071586638016182
+          ],
+          "per_seed_differences": [
+            0.00729999999999964,
+            0.0033999999999998476,
+            0.0002999999999999947
+          ],
+          "training_seed_sample_SD": 0.0035076107727813935
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0009666666666667592,
+          "95pct": [
+            -0.0039541741566464575,
+            0.008605845891445004
+          ],
+          "per_seed_differences": [
+            -0.0005000000000000421,
+            0.0012000000000001176,
+            0.002200000000000202
+          ],
+          "training_seed_sample_SD": 0.0013650396819630086
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.0006666666666666395,
+          "95pct": [
+            -0.0046156722190231255,
+            0.004338706033387053
+          ],
+          "per_seed_differences": [
+            0.0007999999999999396,
+            -0.0016999999999999238,
+            -0.0010999999999999344
+          ],
+          "training_seed_sample_SD": 0.0013051181300300513
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": -0.0012000000000001083,
+          "95pct": [
+            -0.006866503608298263,
+            0.005850916234771761
+          ],
+          "per_seed_differences": [
+            -0.009300000000000835,
+            -0.00580000000000052,
+            0.01150000000000103
+          ],
+          "training_seed_sample_SD": 0.011136875683961918
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.001966666666666228,
+          "95pct": [
+            -0.004534558533236085,
+            0.007718613621601713
+          ],
+          "per_seed_differences": [
+            9.999999999998899e-05,
+            0.0032999999999988594,
+            0.0024999999999998357
+          ],
+          "training_seed_sample_SD": 0.0016653327995724294
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.006499999999999469,
+          "95pct": [
+            -0.008882323199229042,
+            0.014836427398933096
+          ],
+          "per_seed_differences": [
+            0.0035999999999998256,
+            -0.002600000000000491,
+            0.018499999999999073
+          ],
+          "training_seed_sample_SD": 0.010844814429025232
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.001266666666666601,
+          "95pct": [
+            -0.005153391658098257,
+            0.006293474031012425
+          ],
+          "per_seed_differences": [
+            0.0021999999999998687,
+            -0.0007999999999999674,
+            0.002399999999999902
+          ],
+          "training_seed_sample_SD": 0.0017925772879664162
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.0059999999999997096,
+          "95pct": [
+            -0.0022222314426897046,
+            0.012318744445822226
+          ],
+          "per_seed_differences": [
+            0.010099999999999498,
+            0.0066999999999996784,
+            0.001199999999999951
+          ],
+          "training_seed_sample_SD": 0.004491102314576896
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": -0.004999999999999755,
+          "95pct": [
+            -0.010151611401832497,
+            0.00390904337008693
+          ],
+          "per_seed_differences": [
+            0.0019999999999998908,
+            -0.0119999999999994,
+            -0.004999999999999755
+          ],
+          "training_seed_sample_SD": 0.006999999999999645
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.003733333333333667,
+          "95pct": [
+            -0.007733257515993832,
+            0.010660386347245995
+          ],
+          "per_seed_differences": [
+            0.013000000000001163,
+            -0.0034000000000003056,
+            0.001600000000000143
+          ],
+          "training_seed_sample_SD": 0.00840555371961574
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T3",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T3",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "Scratch architecture comparison",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.021711111111110015,
+          "95pct": [
+            0.018077774047175206,
+            0.02519770877954035
+          ],
+          "per_seed_differences": [
+            0.0229999999999988,
+            0.022699999999998943,
+            0.019433333333332303
+          ],
+          "training_seed_sample_SD": 0.001978308293391972
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.03164473554929229,
+          "95pct": [
+            -0.035573928414142114,
+            -0.027846308739344593
+          ],
+          "per_seed_differences": [
+            -0.031991350981026234,
+            -0.02927363305437536,
+            -0.03366922261247529
+          ],
+          "training_seed_sample_SD": 0.0022181994013064673
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.030898931513765288,
+          "95pct": [
+            0.027960302642222337,
+            0.033957902902165736
+          ],
+          "per_seed_differences": [
+            0.03172005427216862,
+            0.02810649396714271,
+            0.03287024630198454
+          ],
+          "training_seed_sample_SD": 0.002485762662685975
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.019492973888885528,
+          "95pct": [
+            0.01727835159925282,
+            0.021701478401996932
+          ],
+          "per_seed_differences": [
+            0.020055179999996398,
+            0.017913337499997017,
+            0.020510404166663165
+          ],
+          "training_seed_sample_SD": 0.0013868113070295146
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.06893333333333,
+          "95pct": [
+            0.06240903318361178,
+            0.07502983158432813
+          ],
+          "per_seed_differences": [
+            0.0576999999999972,
+            0.08549999999999591,
+            0.06359999999999688
+          ],
+          "training_seed_sample_SD": 0.014647297816775411
+        },
+        "recall_mu": {
+          "difference_a_minus_b": -0.02409999999999879,
+          "95pct": [
+            -0.032085481309484215,
+            -0.016904601422497764
+          ],
+          "per_seed_differences": [
+            0.013699999999999324,
+            -0.06909999999999655,
+            -0.016899999999999138
+          ],
+          "training_seed_sample_SD": 0.04186693205860474
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.020299999999998986,
+          "95pct": [
+            0.01476553771542152,
+            0.026188074314851675
+          ],
+          "per_seed_differences": [
+            -0.0023999999999999577,
+            0.051699999999997415,
+            0.0115999999999995
+          ],
+          "training_seed_sample_SD": 0.028079707975688106
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.013566666666666024,
+          "95pct": [
+            0.004585306170368882,
+            0.024784276954387407
+          ],
+          "per_seed_differences": [
+            0.020099999999999035,
+            0.008699999999999625,
+            0.011899999999999411
+          ],
+          "training_seed_sample_SD": 0.005879909296352269
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.006333333333333906,
+          "95pct": [
+            -0.005465561622336709,
+            0.01766809021697067
+          ],
+          "per_seed_differences": [
+            0.013000000000001163,
+            0.006900000000000635,
+            -0.0009000000000000813
+          ],
+          "training_seed_sample_SD": 0.006967304595992774
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.04849999999999762,
+          "95pct": [
+            0.04056895884809241,
+            0.05822626248289246
+          ],
+          "per_seed_differences": [
+            0.05359999999999737,
+            0.04319999999999788,
+            0.048699999999997606
+          ],
+          "training_seed_sample_SD": 0.005202883815731172
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.024433333333335527,
+          "95pct": [
+            0.015073591491214552,
+            0.03580583179114493
+          ],
+          "per_seed_differences": [
+            0.027400000000002464,
+            0.021400000000001924,
+            0.0245000000000022
+          ],
+          "training_seed_sample_SD": 0.0030005555041250197
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.040166666666668745,
+          "95pct": [
+            0.03197243400960791,
+            0.04795538335080502
+          ],
+          "per_seed_differences": [
+            0.0397000000000018,
+            0.03650000000000199,
+            0.044300000000002435
+          ],
+          "training_seed_sample_SD": 0.003920884254008943
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.01730000000000154,
+          "95pct": [
+            0.006749617609482432,
+            0.02634719468345692
+          ],
+          "per_seed_differences": [
+            0.013100000000001132,
+            0.016000000000001437,
+            0.022800000000002048
+          ],
+          "training_seed_sample_SD": 0.004978955713802307
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.015699999999999232,
+          "95pct": [
+            0.005572410811685612,
+            0.024508522198738735
+          ],
+          "per_seed_differences": [
+            0.012999999999999345,
+            0.009799999999999587,
+            0.024299999999998767
+          ],
+          "training_seed_sample_SD": 0.007617742447733029
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.03466666666666498,
+          "95pct": [
+            0.015998738935006262,
+            0.049221334083158846
+          ],
+          "per_seed_differences": [
+            0.03789999999999816,
+            0.02969999999999859,
+            0.036399999999998184
+          ],
+          "training_seed_sample_SD": 0.0043661577311557625
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.08429999999999586,
+          "95pct": [
+            0.0695375366049914,
+            0.09542195178681341
+          ],
+          "per_seed_differences": [
+            0.08289999999999592,
+            0.07909999999999609,
+            0.09089999999999554
+          ],
+          "training_seed_sample_SD": 0.006023288138549957
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.08503333333333324,
+          "95pct": [
+            0.06486147693392182,
+            0.10052295193663235
+          ],
+          "per_seed_differences": [
+            0.09400000000000021,
+            0.07589999999999972,
+            0.08519999999999976
+          ],
+          "training_seed_sample_SD": 0.00905115093970583
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": 0.07609999999999688,
+          "95pct": [
+            0.05813609707080691,
+            0.09741053968484227
+          ],
+          "per_seed_differences": [
+            0.07459999999999634,
+            0.07239999999999687,
+            0.08129999999999742
+          ],
+          "training_seed_sample_SD": 0.004635730794600096
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.05830000000000523,
+          "95pct": [
+            0.03914301195574262,
+            0.07113984112900928
+          ],
+          "per_seed_differences": [
+            0.06460000000000579,
+            0.045000000000004044,
+            0.06530000000000585
+          ],
+          "training_seed_sample_SD": 0.011523454343209057
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T4",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "Scratch architecture comparison",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.018177777777777144,
+          "95pct": [
+            0.014576205430217226,
+            0.02178157817446496
+          ],
+          "per_seed_differences": [
+            0.02009999999999912,
+            0.01816666666666633,
+            0.016266666666665985
+          ],
+          "training_seed_sample_SD": 0.0019166908211037362
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.03726408258455738,
+          "95pct": [
+            -0.04074150160721404,
+            -0.03345808933038289
+          ],
+          "per_seed_differences": [
+            -0.03646909618009564,
+            -0.03662067711711314,
+            -0.038702474456463354
+          ],
+          "training_seed_sample_SD": 0.0012479874109904544
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.034076014740853165,
+          "95pct": [
+            0.031024106361273982,
+            0.036967197478650966
+          ],
+          "per_seed_differences": [
+            0.033259653991351,
+            0.035166317752092,
+            0.033802072479116485
+          ],
+          "training_seed_sample_SD": 0.000982407729104779
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.021446971666664354,
+          "95pct": [
+            0.019288796409495067,
+            0.023487158521450002
+          ],
+          "per_seed_differences": [
+            0.02104387083333137,
+            0.021715481666664038,
+            0.021581562499997653
+          ],
+          "training_seed_sample_SD": 0.00035545927639529237
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.030433333333332424,
+          "95pct": [
+            0.024698442195149686,
+            0.03625986767210499
+          ],
+          "per_seed_differences": [
+            0.03989999999999805,
+            0.04329999999999956,
+            0.008099999999999663
+          ],
+          "training_seed_sample_SD": 0.01941580112519998
+        },
+        "recall_mu": {
+          "difference_a_minus_b": -0.01853333333333242,
+          "95pct": [
+            -0.026109450329093044,
+            -0.01063412735587824
+          ],
+          "per_seed_differences": [
+            0.010599999999999499,
+            -0.05299999999999744,
+            -0.013199999999999323
+          ],
+          "training_seed_sample_SD": 0.03213367911293748
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.04263333333333127,
+          "95pct": [
+            0.03657240168519418,
+            0.048672154422502285
+          ],
+          "per_seed_differences": [
+            0.009799999999999476,
+            0.06419999999999693,
+            0.053899999999997394
+          ],
+          "training_seed_sample_SD": 0.02889711634978921
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": 0.024233333333334935,
+          "95pct": [
+            0.01940786019985225,
+            0.029773976794429002
+          ],
+          "per_seed_differences": [
+            0.02730000000000176,
+            0.024000000000001614,
+            0.02140000000000143
+          ],
+          "training_seed_sample_SD": 0.0029569128044861772
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": 0.008366666666667027,
+          "95pct": [
+            0.005030894961756689,
+            0.011502192606189593
+          ],
+          "per_seed_differences": [
+            0.007300000000000317,
+            0.010300000000000437,
+            0.007500000000000329
+          ],
+          "training_seed_sample_SD": 0.0016772994167212828
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.03764856244732225,
+          "95pct": [
+            -0.040767551036388884,
+            -0.03420524371841741
+          ],
+          "per_seed_differences": [
+            -0.03864466065892147,
+            -0.03567622307115692,
+            -0.03862480361188836
+          ],
+          "training_seed_sample_SD": 0.0017081248597975499
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.01029999999999969,
+          "95pct": [
+            0.0023787876564236167,
+            0.021052746106504767
+          ],
+          "per_seed_differences": [
+            0.011399999999999466,
+            0.01150000000000001,
+            0.00799999999999959
+          ],
+          "training_seed_sample_SD": 0.0019924858845172195
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.005600000000000546,
+          "95pct": [
+            -0.00691283675022022,
+            0.0168622051532185
+          ],
+          "per_seed_differences": [
+            0.004600000000000416,
+            0.002000000000000307,
+            0.010200000000000917
+          ],
+          "training_seed_sample_SD": 0.004190465367951714
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.05383333333333095,
+          "95pct": [
+            0.045598578698717473,
+            0.06296543583381799
+          ],
+          "per_seed_differences": [
+            0.05209999999999758,
+            0.05069999999999773,
+            0.05869999999999753
+          ],
+          "training_seed_sample_SD": 0.0042723919920031475
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.024633333333335544,
+          "95pct": [
+            0.013303013213166395,
+            0.03585473382655909
+          ],
+          "per_seed_differences": [
+            0.028300000000002545,
+            0.021300000000001908,
+            0.02430000000000218
+          ],
+          "training_seed_sample_SD": 0.0035118845842845663
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.041766666666668804,
+          "95pct": [
+            0.03288353363901578,
+            0.05101871964935654
+          ],
+          "per_seed_differences": [
+            0.04180000000000213,
+            0.04430000000000246,
+            0.03920000000000182
+          ],
+          "training_seed_sample_SD": 0.0025501633934583447
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.026233333333335426,
+          "95pct": [
+            0.015601077428797586,
+            0.034321598012671824
+          ],
+          "per_seed_differences": [
+            0.023100000000002004,
+            0.034300000000002655,
+            0.02130000000000162
+          ],
+          "training_seed_sample_SD": 0.007043673284113941
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.013633333333333034,
+          "95pct": [
+            0.005586532345344095,
+            0.02390451736161753
+          ],
+          "per_seed_differences": [
+            0.014199999999999324,
+            0.010000000000000564,
+            0.016699999999999215
+          ],
+          "training_seed_sample_SD": 0.0033857544703254096
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.020966666666665867,
+          "95pct": [
+            0.004166716012202056,
+            0.04086162631133572
+          ],
+          "per_seed_differences": [
+            0.020799999999998986,
+            0.02639999999999937,
+            0.015699999999999242
+          ],
+          "training_seed_sample_SD": 0.0053519466863314385
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.09366666666666207,
+          "95pct": [
+            0.08152650570350402,
+            0.10694582856363705
+          ],
+          "per_seed_differences": [
+            0.09109999999999555,
+            0.10029999999999506,
+            0.0895999999999956
+          ],
+          "training_seed_sample_SD": 0.0057933870346568335
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.08720000000000093,
+          "95pct": [
+            0.07431052404757701,
+            0.10287983132452609
+          ],
+          "per_seed_differences": [
+            0.08350000000000067,
+            0.08360000000000134,
+            0.09450000000000075
+          ],
+          "training_seed_sample_SD": 0.006322183167229353
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0895999999999973,
+          "95pct": [
+            0.07165229768879175,
+            0.10443529035355514
+          ],
+          "per_seed_differences": [
+            0.08299999999999712,
+            0.1048999999999981,
+            0.08089999999999668
+          ],
+          "training_seed_sample_SD": 0.013291726750126144
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.07203333333333974,
+          "95pct": [
+            0.05581390676269929,
+            0.08887668582826068
+          ],
+          "per_seed_differences": [
+            0.06190000000000556,
+            0.08280000000000723,
+            0.0714000000000064
+          ],
+          "training_seed_sample_SD": 0.010464384039844427
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.022516666666665314,
+          "95pct": [
+            0.019306131151702637,
+            0.026138812723868008
+          ],
+          "per_seed_differences": [
+            0.023474999999997803,
+            0.021649999999999447,
+            0.022424999999998696
+          ],
+          "training_seed_sample_SD": 0.0009159466869484417
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T3",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B0",
+        "T3",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "Scratch versus observation-summary baseline",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.01973333333333242,
+          "95pct": [
+            0.01513218682072703,
+            0.02378174040589345
+          ],
+          "per_seed_differences": [
+            0.02179999999999893,
+            0.020299999999999097,
+            0.017099999999999227
+          ],
+          "training_seed_sample_SD": 0.0024006943440039695
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.02707128767159524,
+          "95pct": [
+            -0.031247398047601727,
+            -0.02286243489240403
+          ],
+          "per_seed_differences": [
+            -0.026773784077247287,
+            -0.025481540090405486,
+            -0.028958538847132953
+          ],
+          "training_seed_sample_SD": 0.0017574872346786913
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.03234165392551632,
+          "95pct": [
+            0.028728165204953946,
+            0.03620185196004016
+          ],
+          "per_seed_differences": [
+            0.03352291382699979,
+            0.03079067516076217,
+            0.032711372788786997
+          ],
+          "training_seed_sample_SD": 0.0014031397153222488
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.02080314027777541,
+          "95pct": [
+            0.018312987217471887,
+            0.02334527012657309
+          ],
+          "per_seed_differences": [
+            0.021706614166662863,
+            0.02003423916666547,
+            0.020668567499997903
+          ],
+          "training_seed_sample_SD": 0.0008442700453901805
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.02819999999999867,
+          "95pct": [
+            0.020914821504780162,
+            0.03589672477599337
+          ],
+          "per_seed_differences": [
+            0.023599999999998844,
+            0.04889999999999772,
+            0.012099999999999445
+          ],
+          "training_seed_sample_SD": 0.01882631137530576
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.022533333333332222,
+          "95pct": [
+            0.015204263629070411,
+            0.030063199271767507
+          ],
+          "per_seed_differences": [
+            0.010499999999999454,
+            0.011699999999999433,
+            0.045399999999997775
+          ],
+          "training_seed_sample_SD": 0.019812201627615624
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.008466666666666253,
+          "95pct": [
+            0.0016642391660511735,
+            0.01548748951428072
+          ],
+          "per_seed_differences": [
+            0.03129999999999844,
+            0.00029999999999996696,
+            -0.00619999999999965
+          ],
+          "training_seed_sample_SD": 0.020039544239660062
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.006099999999999726,
+          "95pct": [
+            -0.005573008009942734,
+            0.019681097322166018
+          ],
+          "per_seed_differences": [
+            0.00789999999999963,
+            0.0045999999999998264,
+            0.005799999999999722
+          ],
+          "training_seed_sample_SD": 0.00167032930884891
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.001333333333333457,
+          "95pct": [
+            -0.01618712358563303,
+            0.01675876264721938
+          ],
+          "per_seed_differences": [
+            0.0039000000000003476,
+            1.3877787807814457e-17,
+            0.0001000000000000098
+          ],
+          "training_seed_sample_SD": 0.0022233608194204995
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.041099999999998,
+          "95pct": [
+            0.03164585925452042,
+            0.04976538624243698
+          ],
+          "per_seed_differences": [
+            0.04389999999999786,
+            0.03789999999999816,
+            0.04149999999999798
+          ],
+          "training_seed_sample_SD": 0.0030199337741081494
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.005433333333333822,
+          "95pct": [
+            -0.010157559089717438,
+            0.016246463110698776
+          ],
+          "per_seed_differences": [
+            0.007000000000000631,
+            0.004300000000000387,
+            0.0050000000000004485
+          ],
+          "training_seed_sample_SD": 0.0014011899704657069
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.042800000000002315,
+          "95pct": [
+            0.03295621751248786,
+            0.05231207393716043
+          ],
+          "per_seed_differences": [
+            0.04440000000000223,
+            0.0411000000000024,
+            0.04290000000000231
+          ],
+          "training_seed_sample_SD": 0.001652271164185746
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.027433333333335447,
+          "95pct": [
+            0.016561272590785263,
+            0.03904861651504269
+          ],
+          "per_seed_differences": [
+            0.02180000000000161,
+            0.026200000000002006,
+            0.03430000000000273
+          ],
+          "training_seed_sample_SD": 0.006340609855001374
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.024499999999998818,
+          "95pct": [
+            0.011959114125138361,
+            0.03685941227966556
+          ],
+          "per_seed_differences": [
+            0.025399999999998757,
+            0.023099999999998955,
+            0.024999999999998745
+          ],
+          "training_seed_sample_SD": 0.0012288205727443357
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.022666666666665558,
+          "95pct": [
+            0.0028517692204028887,
+            0.03807636769075424
+          ],
+          "per_seed_differences": [
+            0.01999999999999902,
+            0.02029999999999904,
+            0.027699999999998615
+          ],
+          "training_seed_sample_SD": 0.0043615746392021365
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.07619999999999626,
+          "95pct": [
+            0.06175112889167394,
+            0.08878295283492131
+          ],
+          "per_seed_differences": [
+            0.0773999999999962,
+            0.07309999999999639,
+            0.07809999999999617
+          ],
+          "training_seed_sample_SD": 0.002707397274136057
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.05356666666666405,
+          "95pct": [
+            0.03958760243358994,
+            0.06682583127782409
+          ],
+          "per_seed_differences": [
+            0.05709999999999721,
+            0.04889999999999761,
+            0.054699999999997334
+          ],
+          "training_seed_sample_SD": 0.004215843134336427
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": 0.08663333333333108,
+          "95pct": [
+            0.0693300177135282,
+            0.10661064810772052
+          ],
+          "per_seed_differences": [
+            0.09069999999999753,
+            0.08369999999999789,
+            0.0854999999999978
+          ],
+          "training_seed_sample_SD": 0.003635014901390638
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.08240000000000731,
+          "95pct": [
+            0.05296948055042122,
+            0.10176926491262672
+          ],
+          "per_seed_differences": [
+            0.08850000000000786,
+            0.07580000000000672,
+            0.08290000000000736
+          ],
+          "training_seed_sample_SD": 0.006364746656388397
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T4",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B0",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "Scratch versus observation-summary baseline",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.017744444444443896,
+          "95pct": [
+            0.01370918058474767,
+            0.022135454331228745
+          ],
+          "per_seed_differences": [
+            0.017333333333332646,
+            0.01963333333333306,
+            0.016266666666665985
+          ],
+          "training_seed_sample_SD": 0.0017205726867444864
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.030141089423912654,
+          "95pct": [
+            -0.033553640843018616,
+            -0.026053225154438347
+          ],
+          "per_seed_differences": [
+            -0.02633276036856358,
+            -0.030996986091234358,
+            -0.03309352181194003
+          ],
+          "training_seed_sample_SD": 0.0034606925827658694
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.03187098208108733,
+          "95pct": [
+            0.028748031950918723,
+            0.03501862343564513
+          ],
+          "per_seed_differences": [
+            0.031445987485910876,
+            0.032573311309938124,
+            0.031593647447413
+          ],
+          "training_seed_sample_SD": 0.0006126994575901899
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.02100814027777435,
+          "95pct": [
+            0.01854241114593001,
+            0.02357643067868557
+          ],
+          "per_seed_differences": [
+            0.020612173333329875,
+            0.021560121666663545,
+            0.020852125833329627
+          ],
+          "training_seed_sample_SD": 0.0004928558519730361
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.008600000000000127,
+          "95pct": [
+            0.0023928863475206823,
+            0.015261630071144212
+          ],
+          "per_seed_differences": [
+            -0.018199999999999106,
+            0.0505999999999992,
+            -0.006599999999999717
+          ],
+          "training_seed_sample_SD": 0.036832594261060926
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.02183333333333226,
+          "95pct": [
+            0.015055004587028971,
+            0.030319580300503662
+          ],
+          "per_seed_differences": [
+            0.023799999999998878,
+            -0.019599999999999063,
+            0.06129999999999697
+          ],
+          "training_seed_sample_SD": 0.04048584114642022
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.022799999999998932,
+          "95pct": [
+            0.015485111071847362,
+            0.029364382265405036
+          ],
+          "per_seed_differences": [
+            0.046399999999997776,
+            0.027899999999998704,
+            -0.005899999999999683
+          ],
+          "training_seed_sample_SD": 0.026520369529852553
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": 0.021900000000001512,
+          "95pct": [
+            0.016639655854429742,
+            0.028272748934987945
+          ],
+          "per_seed_differences": [
+            0.023000000000001592,
+            0.02260000000000156,
+            0.020100000000001377
+          ],
+          "training_seed_sample_SD": 0.001571623364550287
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": 0.009066666666667058,
+          "95pct": [
+            0.0057074897641822,
+            0.012437998364520166
+          ],
+          "per_seed_differences": [
+            0.008700000000000378,
+            0.010800000000000459,
+            0.0077000000000003385
+          ],
+          "training_seed_sample_SD": 0.0015821925715075035
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.02729082288596496,
+          "95pct": [
+            -0.030906482552485105,
+            -0.023810728672897317
+          ],
+          "per_seed_differences": [
+            -0.024504854953475208,
+            -0.027172347013282083,
+            -0.03019526669113759
+          ],
+          "training_seed_sample_SD": 0.002847055291935411
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.006466666666666537,
+          "95pct": [
+            -0.00536457727889813,
+            0.016319494058425858
+          ],
+          "per_seed_differences": [
+            0.007099999999999662,
+            0.007200000000000206,
+            0.005099999999999744
+          ],
+          "training_seed_sample_SD": 0.0011846237095945787
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.007533333333334055,
+          "95pct": [
+            -0.004170921000371099,
+            0.027216591410172016
+          ],
+          "per_seed_differences": [
+            0.012200000000001099,
+            -0.0016000000000000111,
+            0.01200000000000108
+          ],
+          "training_seed_sample_SD": 0.007910330797971939
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.03323333333333169,
+          "95pct": [
+            0.023352445872649674,
+            0.04066477778755681
+          ],
+          "per_seed_differences": [
+            0.0323999999999984,
+            0.030299999999998495,
+            0.03699999999999817
+          ],
+          "training_seed_sample_SD": 0.0034268547289507617
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.006666666666667265,
+          "95pct": [
+            -0.00934464853444541,
+            0.019410658316300018
+          ],
+          "per_seed_differences": [
+            0.009700000000000875,
+            0.005300000000000471,
+            0.0050000000000004485
+          ],
+          "training_seed_sample_SD": 0.0026312227829156914
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.04526666666666912,
+          "95pct": [
+            0.03480768926375215,
+            0.05413420438117751
+          ],
+          "per_seed_differences": [
+            0.04540000000000245,
+            0.044600000000002485,
+            0.04580000000000241
+          ],
+          "training_seed_sample_SD": 0.0006110100926607416
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.028933333333335573,
+          "95pct": [
+            0.016237466610187868,
+            0.03723605015383588
+          ],
+          "per_seed_differences": [
+            0.03140000000000246,
+            0.03230000000000254,
+            0.023100000000001716
+          ],
+          "training_seed_sample_SD": 0.005071817557181838
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.024133333333332525,
+          "95pct": [
+            0.013294744377785946,
+            0.03610744094431838
+          ],
+          "per_seed_differences": [
+            0.026899999999998703,
+            0.02140000000000003,
+            0.024099999999998845
+          ],
+          "training_seed_sample_SD": 0.0027501515109771136
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.019366666666665932,
+          "95pct": [
+            -0.004929440288669605,
+            0.03999066814630321
+          ],
+          "per_seed_differences": [
+            0.019599999999999035,
+            0.026099999999999374,
+            0.012399999999999384
+          ],
+          "training_seed_sample_SD": 0.006852979887124519
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0737333333333297,
+          "95pct": [
+            0.06385081722930626,
+            0.0868068915934433
+          ],
+          "per_seed_differences": [
+            0.07399999999999637,
+            0.0726999999999964,
+            0.07449999999999632
+          ],
+          "training_seed_sample_SD": 0.0009291573243177164
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.04316666666666455,
+          "95pct": [
+            0.030126944116586597,
+            0.058039997432307755
+          ],
+          "per_seed_differences": [
+            0.04259999999999792,
+            0.03779999999999814,
+            0.04909999999999759
+          ],
+          "training_seed_sample_SD": 0.005671272637894443
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": 0.08993333333333066,
+          "95pct": [
+            0.07382437217557951,
+            0.11193068918814866
+          ],
+          "per_seed_differences": [
+            0.08699999999999748,
+            0.09399999999999713,
+            0.0887999999999974
+          ],
+          "training_seed_sample_SD": 0.003635014901390638
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.06656666666667264,
+          "95pct": [
+            0.04898023229161953,
+            0.08998792529363926
+          ],
+          "per_seed_differences": [
+            0.0634000000000057,
+            0.06710000000000602,
+            0.0692000000000062
+          ],
+          "training_seed_sample_SD": 0.002936551265231856
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.014708333333332472,
+          "95pct": [
+            0.01112768971073097,
+            0.018437779599667463
+          ],
+          "per_seed_differences": [
+            0.014074999999999338,
+            0.01519999999999938,
+            0.014849999999998698
+          ],
+          "training_seed_sample_SD": 0.0005757241816471352
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    }
+  ],
+  "quality_criteria": [
+    {
+      "a": [
+        "B1",
+        "T3",
+        "main"
+      ],
+      "b": [
+        "B4",
+        "T3",
+        "main"
+      ],
+      "all_criteria_met": false,
+      "checks": [
+        {
+          "name": "BA3_practical_gain",
+          "value": 0.021711111111110015,
+          "relation": ">=",
+          "limit": 0.02,
+          "passed": true
+        },
+        {
+          "name": "BA3_positive_lower_bound",
+          "value": 0.018077774047175206,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "NLL3_upper_bound",
+          "value": -0.027846308739344593,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_e_lower_bound",
+          "value": 0.06240903318361178,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_mu_lower_bound",
+          "value": -0.032085481309484215,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": false
+        },
+        {
+          "name": "recall_NC_lower_bound",
+          "value": 0.01476553771542152,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        }
+      ],
+      "failed": [
+        "recall_mu_lower_bound"
+      ],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    },
+    {
+      "a": [
+        "B1",
+        "T4",
+        "main"
+      ],
+      "b": [
+        "B4",
+        "T4",
+        "main"
+      ],
+      "all_criteria_met": true,
+      "checks": [
+        {
+          "name": "tau_1pct_practical_gain",
+          "value": 0.024233333333334935,
+          "relation": ">=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "tau_1pct_positive_lower_bound",
+          "value": 0.01940786019985225,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "BA3_lower_bound",
+          "value": 0.014576205430217226,
+          "relation": ">=",
+          "limit": -0.005,
+          "passed": true
+        },
+        {
+          "name": "NLL4_upper_bound",
+          "value": -0.03420524371841741,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "actual_FPR_recorded_for_both_models",
+          "value": true,
+          "relation": ">=",
+          "limit": true,
+          "passed": true
+        }
+      ],
+      "failed": [],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    },
+    {
+      "a": [
+        "B1",
+        "T3",
+        "main"
+      ],
+      "b": [
+        "B0",
+        "T3",
+        "main"
+      ],
+      "all_criteria_met": false,
+      "checks": [
+        {
+          "name": "BA3_practical_gain",
+          "value": 0.01973333333333242,
+          "relation": ">=",
+          "limit": 0.02,
+          "passed": false
+        },
+        {
+          "name": "BA3_positive_lower_bound",
+          "value": 0.01513218682072703,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "NLL3_upper_bound",
+          "value": -0.02286243489240403,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_e_lower_bound",
+          "value": 0.020914821504780162,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_mu_lower_bound",
+          "value": 0.015204263629070411,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_NC_lower_bound",
+          "value": 0.0016642391660511735,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        }
+      ],
+      "failed": [
+        "BA3_practical_gain"
+      ],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    },
+    {
+      "a": [
+        "B1",
+        "T4",
+        "main"
+      ],
+      "b": [
+        "B0",
+        "T4",
+        "main"
+      ],
+      "all_criteria_met": true,
+      "checks": [
+        {
+          "name": "tau_1pct_practical_gain",
+          "value": 0.021900000000001512,
+          "relation": ">=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "tau_1pct_positive_lower_bound",
+          "value": 0.016639655854429742,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "BA3_lower_bound",
+          "value": 0.01370918058474767,
+          "relation": ">=",
+          "limit": -0.005,
+          "passed": true
+        },
+        {
+          "name": "NLL4_upper_bound",
+          "value": -0.023810728672897317,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "actual_FPR_recorded_for_both_models",
+          "value": true,
+          "relation": ">=",
+          "limit": true,
+          "passed": true
+        }
+      ],
+      "failed": [],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    }
+  ],
+  "seed_spread": [
+    {
+      "family": "B0",
+      "task": "T3",
+      "seeds": [
+        42,
+        17,
+        2026
+      ],
+      "BA3_values": [
+        0.5459,
+        0.5459,
+        0.5459
+      ],
+      "BA3_mean": 0.5459,
+      "BA3_sample_SD": 0.0,
+      "NLL3_mean": 0.8974487666008354,
+      "runtime_by_seed": [
+        {
+          "name": "screen_b0_t3_lr0.05_s42",
+          "seed": 42,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "final_b0_t3_s17",
+          "seed": 17,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "final_b0_t3_s2026",
+          "seed": 2026,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B0",
+      "task": "T4",
+      "seeds": [
+        42,
+        17,
+        2026
+      ],
+      "BA3_values": [
+        0.5453,
+        0.5453,
+        0.5453
+      ],
+      "BA3_mean": 0.5453,
+      "BA3_sample_SD": 0.0,
+      "NLL3_mean": 0.8972463741861216,
+      "runtime_by_seed": [
+        {
+          "name": "screen_b0_t4_lr0.05_s42",
+          "seed": 42,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "final_b0_t4_s17",
+          "seed": 17,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "final_b0_t4_s2026",
+          "seed": 2026,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B1",
+      "task": "T3",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5677,
+        0.5662,
+        0.5630000000000001
+      ],
+      "BA3_mean": 0.5656333333333334,
+      "BA3_sample_SD": 0.002400694344004078,
+      "NLL3_mean": 0.8703774789292454,
+      "runtime_by_seed": [
+        {
+          "name": "final_b1_t3_s17",
+          "seed": 17,
+          "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582904.0"
+        },
+        {
+          "name": "final_b1_t3_s42",
+          "seed": 42,
+          "GPU": "Tesla T4",
+          "precision": "FP32",
+          "allocation_id": "1582883.0"
+        },
+        {
+          "name": "final_b1_t3_s2026",
+          "seed": 2026,
+          "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582905.0"
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B1",
+      "task": "T4",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5626333333333333,
+        0.5649333333333334,
+        0.5615666666666667
+      ],
+      "BA3_mean": 0.5630444444444445,
+      "BA3_sample_SD": 0.0017205726867443034,
+      "NLL3_mean": 0.8671052847622057,
+      "runtime_by_seed": [
+        {
+          "name": "final_b1_t4_s17",
+          "seed": 17,
+          "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582904.0"
+        },
+        {
+          "name": "final_b1_t4_s42",
+          "seed": 42,
+          "GPU": "Tesla T4",
+          "precision": "FP32",
+          "allocation_id": "1582883.0"
+        },
+        {
+          "name": "final_b1_t4_s2026",
+          "seed": 2026,
+          "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582905.0"
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B4",
+      "task": "T3",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5447000000000001,
+        0.5435,
+        0.5435666666666666
+      ],
+      "BA3_mean": 0.5439222222222222,
+      "BA3_sample_SD": 0.0006743995957997656,
+      "NLL3_mean": 0.9020222144785368,
+      "runtime_by_seed": [
+        {
+          "name": "final_b4_t3_s17",
+          "seed": 17,
+          "GPU": "NVIDIA A100-PCIE-40GB",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582873.0"
+        },
+        {
+          "name": "final_b4_t3_s42",
+          "seed": 42,
+          "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "pinpoint-r1-extend-b4-s42-k12"
+        },
+        {
+          "name": "final_b4_t3_s2026",
+          "seed": 2026,
+          "GPU": "NVIDIA H100 NVL",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582874.0"
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B4",
+      "task": "T4",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5425333333333334,
+        0.5467666666666667,
+        0.5453
+      ],
+      "BA3_mean": 0.5448666666666667,
+      "BA3_sample_SD": 0.0021496769783181458,
+      "NLL3_mean": 0.9043693673467645,
+      "runtime_by_seed": [
+        {
+          "name": "final_b4_t4_s17",
+          "seed": 17,
+          "GPU": "NVIDIA A100-PCIE-40GB",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582873.0"
+        },
+        {
+          "name": "final_b4_t4_s42",
+          "seed": 42,
+          "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "pinpoint-r1-extend-b4-s42-k12"
+        },
+        {
+          "name": "final_b4_t4_s2026",
+          "seed": 2026,
+          "GPU": "NVIDIA H100 NVL",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582874.0"
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    }
+  ],
+  "independent_review": {
+    "status": "complete",
+    "require_full": false,
+    "scope": "independent array/count readback of development results; uncertainty and scientific promotion reviewed separately",
+    "largest_absolute_errors": {
+      "BA": 1.0769163338864018e-14,
+      "NLL": 5.10702591327572e-15,
+      "working_point": 1.1129985821867194e-14,
+      "prior_purity": 0.0
+    },
+    "passed": 573,
+    "failed": [],
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

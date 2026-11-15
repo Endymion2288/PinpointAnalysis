@@ -13,22 +13,25 @@ import numpy as np
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--family', default='B4')
+    parser.add_argument('--interim', default='reference_seeds')
     args = parser.parse_args()
-    folder = args.root/'interim/reference_seeds'
+    family = args.family
+    folder = args.root/'interim'/args.interim
     result = json.loads((folder/'evaluation/results.json').read_text())
     figure, axes = plt.subplots(1, 2, figsize=(12, 4.8), constrained_layout=True)
     seeds = [17, 42, 2026]
     spread = {(row['family'], row['task']): row for row in result['seed_spread']}
     for task, marker in [('T3','o'), ('T4','s')]:
-        axes[0].plot(range(3), np.asarray(spread[('B4',task)]['BA3_values'])*100,
-                     marker+'-', label=f'B4 {task}')
+        axes[0].plot(range(3), np.asarray(spread[(family,task)]['BA3_values'])*100,
+                     marker+'-', label=f'{family} {task}')
         axes[0].axhline(spread[('B0',task)]['BA3_mean']*100, linestyle='--',
                         color='tab:blue' if task=='T3' else 'tab:orange', alpha=.5, label=f'HGB {task}')
     axes[0].set(xticks=range(3), xticklabels=[str(seed) for seed in seeds], xlabel='Training seed',
                 ylabel='Common non-tau balanced accuracy (%)', title='Realized seed values, same four-pass exposure')
     axes[0].legend(fontsize=8, ncol=2)
     pair = next(row for row in result['mean_seed_pairs']
-                if row['a_family_task_kind']==['B4','T3','main'] and row['b_family_task_kind']==['B4','T4','main'])
+                if row['a_family_task_kind']==[family,'T3','main'] and row['b_family_task_kind']==[family,'T4','main'])
     metrics = ['BA3','recall_e','recall_mu','recall_NC']
     for i, seed in enumerate(seeds):
         points = [pair['metrics'][key]['per_seed_differences'][i]*100 for key in metrics]
@@ -45,7 +48,7 @@ def main():
     axes[1].legend(fontsize=8, ncol=2)
     for axis in axes:
         axis.grid(axis='y', alpha=.2)
-    figure.suptitle('B4 reference: development Tune 40k; seeds 17, 42, 2026\nIntervals condition on these trained models; colored dots include seed and runtime variation')
+    figure.suptitle(f'{family}: development Tune 40k; seeds 17, 42, 2026\nIntervals condition on these trained models; colored dots include seed and runtime variation')
     output = folder/'figures'
     output.mkdir(exist_ok=True)
     for ext in ['pdf','png']:

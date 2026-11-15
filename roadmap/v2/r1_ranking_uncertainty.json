@@ -1,0 +1,99 @@
+{
+  "status": "complete",
+  "models": {
+    "B1": {
+      "mean_BA3": 0.5655666666666667,
+      "agrees_with_frozen_ranking": true
+    },
+    "B2": {
+      "mean_BA3": 0.5539499999999999,
+      "agrees_with_frozen_ranking": true
+    },
+    "B3": {
+      "mean_BA3": 0.5517500000000001,
+      "agrees_with_frozen_ranking": true
+    },
+    "B4": {
+      "mean_BA3": 0.5451333333333334,
+      "agrees_with_frozen_ranking": true
+    }
+  },
+  "pairs": [
+    {
+      "a": "B1",
+      "b": "B2",
+      "difference_a_minus_b": 0.01161666666666672,
+      "95pct": [
+        0.008348230296595576,
+        0.01442611383482341
+      ],
+      "valid_replicates": 400
+    },
+    {
+      "a": "B1",
+      "b": "B3",
+      "difference_a_minus_b": 0.013816666666666588,
+      "95pct": [
+        0.010702539952674863,
+        0.016937756833726506
+      ],
+      "valid_replicates": 400
+    },
+    {
+      "a": "B1",
+      "b": "B4",
+      "difference_a_minus_b": 0.020433333333333303,
+      "95pct": [
+        0.016643865688793988,
+        0.024223948971693172
+      ],
+      "valid_replicates": 400
+    },
+    {
+      "a": "B2",
+      "b": "B3",
+      "difference_a_minus_b": 0.0021999999999998687,
+      "95pct": [
+        -0.00046832264491873107,
+        0.004943717941753225
+      ],
+      "valid_replicates": 400
+    },
+    {
+      "a": "B2",
+      "b": "B4",
+      "difference_a_minus_b": 0.008816666666666584,
+      "95pct": [
+        0.005220274014756429,
+        0.012548026089205123
+      ],
+      "valid_replicates": 400
+    },
+    {
+      "a": "B3",
+      "b": "B4",
+      "difference_a_minus_b": 0.006616666666666715,
+      "95pct": [
+        0.0029414722007373743,
+        0.010327145440881497
+      ],
+      "valid_replicates": 400
+    }
+  ],
+  "replicates": 400,
+  "seed": 20261116,
+  "bootstrap": {
+    "chunks": 6845,
+    "resampling_blocks": 6845,
+    "accepted_family_links_used": true,
+    "multi_chunk_blocks": 0,
+    "blocks_by_class_signature": {
+      "(0,)": 866,
+      "(1,)": 3796,
+      "(2,)": 648,
+      "(3,)": 1535
+    }
+  },
+  "scope": "post-hoc pointwise development intervals for frozen mean T3/T4 conditional BA3; fixed fitted seed42; same physical-block draws across all models/tasks; ranking rule and selected families unchanged",
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

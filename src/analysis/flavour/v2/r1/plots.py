@@ -225,6 +225,10 @@ def results(root):
     figure.suptitle('Four-pass development learning curves, seed 42')
     save(figure, root, 'r1_learning_curves')
 
+    stress_results(root, entries)
+
+
+def stress_results(root, entries):
     stress = json.loads((root/'evaluation/stress_results.json').read_text())['models']
     figure, axes = plt.subplots(2, 3, figsize=(14, 7), constrained_layout=True)
     for entry in entries:
@@ -256,10 +260,11 @@ def results(root):
                     ylabel='Change in tau efficiency' if row==0 else 'Change in actual background acceptance',
                     title='Frozen nominal tau cut (1% full Tune FPR)')
     axes[0, 0].legend(fontsize=7, ncol=2)
+    axes[0, 1].legend(fontsize=7, ncol=2)
     for axis in axes.flat:
         axis.axhline(0., color='black', linestyle=':', linewidth=.8)
         axis.grid(alpha=.15)
-    figure.suptitle('1,600 paired Tune events; 95% physical-block intervals; accepted condition proxies')
+    figure.suptitle('1,600 paired development Tune events, seed 42; 95% physical-block intervals; accepted proxies')
     save(figure, root, 'r1_stress')
 
 
@@ -267,7 +272,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--results', action='store_true')
+    parser.add_argument('--stress-only', action='store_true')
     args = parser.parse_args()
+    if args.stress_only:
+        config = json.loads((args.root/'evaluation_config.json').read_text())
+        entries = [e for e in config['models'] if e.get('kind', 'main') == 'main' and e['seed'] == 42]
+        stress_results(args.root, entries)
+        return
     fitting(args.root)
     if args.results:
         results(args.root)

@@ -20,6 +20,8 @@ B1投影控制与合作组条件域见[stage254](../../workbook/2026-11-15_stage
 
 [stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)完整排名确定前两名B1/B2；B2比B3的平均BA只高0.220 pp，不将点排序解释为已确认的架构优势。B1同结构计算控制在低occupancy恢复879个μ、同时损失703个e和367个NC，全域BA下降0.493 pp [−0.876,−0.105]。R2同时检查训练配方和逐类决策，R3的压缩原因仍待单因素验证。
 
+[stage259](../../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)补齐排名区间：B1−B2为+1.162 pp [0.835,1.443]，B2−B3为+0.220 pp [−0.047,0.494]。B1三seed T3−T4 conditional的BA3差+0.259 pp [0.042,0.479]，NLL3反而增加0.003272，逐类为e +2.080、μ −0.020、NC −1.283 pp。B1 T4相对B4的τ1%效率增加2.423 pp [1.941,2.977]，支持保留四类主线，同时报告其μ代价。B1 T3相对HGB平均BA增益1.973 pp，未达到预设2 pp实用门槛；相对B4仍未满足μ非劣。完整同计算和B2 seed结果继续执行。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |
@@ -88,7 +90,9 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 根据R1目前的完整四pass排名，优先profile总体最强B1和原生最强B2，并在完整R1三seed复核后冻结R2配方。B4保留R1 D0及逐类共同参考；是否追加其长训练由前两族的实测问题和费用决定，不自动运行三族全矩阵。B3末轮仍明显改善，若B2的规模收益有限且资源支持，再考虑其长训练控制。优先在seed42做：
 
-| ID | Unique labels | Passes | Contrast |
+表中N是冻结四类pool的事件数；T4实际监督N个unique labels，T3使用其中3N/4个非τlabels。D1/D2的总曝光在T4均为1.2M，在T3均为0.9M，标签预算按真正训练的行数报告。
+
+| ID | Frozen pool events N | Passes | Contrast |
 | --- | ---: | ---: | --- |
 | D0 | 100k | 4 | R1 可复用的基准 |
 | D1 | 100k | 12 | 同数据更长曝光；重新定义完整 schedule，不从已退火到最低 LR 的尾部机械续跑 |

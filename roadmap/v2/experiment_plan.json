@@ -4,7 +4,7 @@
   "status": "design_with_completed_R0_and_R1_full_training_in_progress_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 complete; R1 frozen seed42 four-pass ranking complete (B1/B2/B3/B4); B1/B2 and reference B4 expanded to three seeds; 55 stress paths with 400 draws and independent5666 checks complete; remaining expanded training, full nominal evaluation and acceptance in progress",
+  "implementation_status": "R0 complete; R1 seed42 ranking and paired ranking uncertainty complete; B1/B4/B0 three-seed main-task statistics and573 independent checks complete;55 stress paths/400 draws/5666 checks complete; B1 compute, B2 expanded seeds/compute and B3 compute running; final41-model evaluation and acceptance pending",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -303,17 +303,19 @@
       "planned_device_hours": 18,
       "status": "in_progress",
       "progress_report": "../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md",
-      "measured_progress": "140k data accepted; eight learning gates and all16 screens complete; seed42 four-pass architecture ranking complete; B4 three-seed tasks/compute complete; B1/B2 expanded seeds and B3 compute still running; 55 stress paths/400 draws/5666 independent checks complete; complete41-model133-pair evaluation contract enumerated; final nominal statistics and acceptance pending",
+      "measured_progress": "seed42 ranking and paired pointwise intervals complete; B1/B4/B0 three-seed18-model40-pair main-task evaluation complete (573 independent checks); B1 T4 tau gain satisfies development criteria versusB4/HGB; B1 T3 fails practical BA3 gain versusHGB and mu noninferiority versusB4; B2 seeds moved safely to faster2g MIG after Train-only probes; final41-model133-pair nominal evaluation/compute/acceptance pending",
       "interim_results": "r1_interim_b4.json",
       "ranking_result": "r1_architecture_ranking.json",
       "interim_training_control": "r1_b1_compute_controls.json",
       "resource_progress": {
-        "snapshot_UTC": "2026-11-15T03:00:33Z",
-        "allocation_device_hours_so_far": 30.32128161,
+        "snapshot_UTC": "2026-11-15T03:31:39Z",
+        "allocation_device_hours_so_far": 33.10224804,
         "planning_envelope_exceeded": true,
         "terminal_cost": false,
-        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate"
-      }
+        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; aborted1g attempts and replacement probes included"
+      },
+      "three_seed_B1_result": "r1_b1_three_seed.json",
+      "ranking_uncertainty": "r1_ranking_uncertainty.json"
     },
     {
       "id": "R2",
@@ -387,33 +389,73 @@
   "scaling_screen": [
     {
       "id": "D0",
-      "unique_labels": 100000,
       "passes": 4,
-      "execute_if": "R1 reusable reference"
+      "execute_if": "R1 reusable reference",
+      "frozen_pool_events": 100000,
+      "unique_supervised_labels": {
+        "T3": 75000,
+        "T4": 100000
+      },
+      "supervised_exposures": {
+        "T3": 300000,
+        "T4": 400000
+      }
     },
     {
       "id": "D1",
-      "unique_labels": 100000,
       "passes": 12,
-      "execute_if": "R2 reference"
+      "execute_if": "R2 reference",
+      "frozen_pool_events": 100000,
+      "unique_supervised_labels": {
+        "T3": 75000,
+        "T4": 100000
+      },
+      "supervised_exposures": {
+        "T3": 900000,
+        "T4": 1200000
+      }
     },
     {
       "id": "D2",
-      "unique_labels": 300000,
       "passes": 4,
-      "execute_if": "available labels and R0 profile budget"
+      "execute_if": "available labels and R0 profile budget",
+      "frozen_pool_events": 300000,
+      "unique_supervised_labels": {
+        "T3": 225000,
+        "T4": 300000
+      },
+      "supervised_exposures": {
+        "T3": 900000,
+        "T4": 1200000
+      }
     },
     {
       "id": "D3",
-      "unique_labels": 300000,
       "passes": 12,
-      "execute_if": "D1/D2 still improve and budget supports"
+      "execute_if": "D1/D2 still improve and budget supports",
+      "frozen_pool_events": 300000,
+      "unique_supervised_labels": {
+        "T3": 225000,
+        "T4": 300000
+      },
+      "supervised_exposures": {
+        "T3": 2700000,
+        "T4": 3600000
+      }
     },
     {
       "id": "D4",
-      "unique_labels": 1000000,
       "passes": 4,
-      "execute_if": "300k practical gain and independent resource plan"
+      "execute_if": "300k practical gain and independent resource plan",
+      "frozen_pool_events": 1000000,
+      "unique_supervised_labels": {
+        "T3": 750000,
+        "T4": 1000000
+      },
+      "supervised_exposures": {
+        "T3": 3000000,
+        "T4": 4000000
+      }
     }
   ],
   "resources": {
