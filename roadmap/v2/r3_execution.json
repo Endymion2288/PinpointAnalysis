@@ -1,7 +1,7 @@
 {
   "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T18:22:00.206644+00:00",
+  "UTC": "2026-11-15T18:25:57.665372+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -71,7 +71,7 @@
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 45,
-  "latest_stage_report": "../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md",
   "pending": [
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
@@ -998,5 +998,19 @@
     "payload_read_for_polling": false,
     "duplicate_attempts_replayed": false,
     "final_scope": "CPU reviews only; complete R3 still requires GPU probes, conditional decisions and experiments, figures, terminal costs and strict acceptance"
+  },
+  "completion_scope_metadata_audit": {
+    "path": "audit/completion_scope_stage301.json",
+    "status": "incomplete",
+    "summary": {
+      "formal_complete": 3,
+      "formal_total": 6,
+      "evidence_ready": 19,
+      "evidence_total": 24,
+      "complete_primary_evaluations": 2,
+      "primary_evaluation_total": 4
+    },
+    "source_and_live_frozen_scope_equal": true,
+    "actual_acceptance_run": false
   }
 }

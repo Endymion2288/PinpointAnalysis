@@ -1,4 +1,4 @@
-# 工作记录索引：S0–S6与v2至stage300
+# 工作记录索引：S0–S6与v2至stage301
 
 本索引共 236 份既有报告，按原阶段保留。标题来自原文件；本轮全量编目并提取结论，重点证据另见[独立评估](01_evidence_review.md)。索引不表示重新执行全部实验。
 
@@ -352,3 +352,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 298 | [R3双模型部分迁移与G1完整权重重算](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md) |
 | 299 | [R3完整强参照、首轮健康与新卡缓存实测](../../workbook/2026-11-15_stage299_r3_full_reference_and_prefix_health.md) |
 | 300 | [R3按终点依赖并行提交CPU评价](../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md) |
+| 301 | [R3机器计划同步与完整交付范围核对](../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md) |
