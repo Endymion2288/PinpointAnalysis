@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import precision_recall_curve
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.v2.partitions import KEY, FAMILY, equal_identity_rows
@@ -178,7 +179,8 @@ def main():
     catalog = pd.read_parquet(root/'data/catalog.parquet').sort_values(KEY).reset_index(drop=True)
     tune = catalog[catalog.split.eq('validation')].reset_index(drop=True)
     checks, models, core = [], [], {}
-    largest = {'BA': 0., 'NLL': 0., 'working_point': 0., 'prior_purity': 0.}
+    largest = {'BA': 0., 'NLL': 0., 'working_point': 0., 'prior_purity': 0.,
+               'weighted_confusion': 0., 'coverage_and_purity': 0.}
 
     def check(name, value, **details):
         checks.append({'name': name, 'passed': bool(value), **details})
@@ -202,7 +204,7 @@ def main():
             'tracker_empty': frame.tracker_channels.to_numpy()==0}
         for left, right in [(0, 100), (100, 1000), (1000, 5000), (5000, np.inf)]:
             domains[f'occupancy_{left}_{right}'] = channels.ge(left).to_numpy() & channels.lt(right).to_numpy()
-        errors, working_errors, prior_errors = [], [], []
+        errors, working_errors, prior_errors, coverage_errors = [], [], [], []
         for domain, mask in domains.items():
             reported = evaluation['models'][name][domain]
             check(name+'_'+domain+'_raw_counts', reported['raw_counts_original_labels']==
@@ -216,6 +218,15 @@ def main():
                 labels = np.searchsorted([0, 1, 3], y[keep]) if task=='T3' else y[keep]
                 p = common[keep] if task=='T3' else original[keep]
                 measured, support, balanced = direct_metrics(labels, p)
+                raw_matrix = np.zeros((p.shape[1], p.shape[1]), dtype='int64')
+                np.add.at(raw_matrix, (labels, p.argmax(1)), 1)
+                observed = reported.get(task+'_observed_mixture', reported[task])
+                check(name+'_'+domain+'_'+task+'_raw_confusion',
+                      observed['confusion_counts']==raw_matrix.tolist())
+                weighted_matrix = raw_matrix*(len(labels)/(p.shape[1]*support))[:, None] if balanced else raw_matrix
+                error = float(np.max(np.abs(weighted_matrix-np.asarray(reported[task]['confusion_counts']))))
+                largest['weighted_confusion'] = max(largest['weighted_confusion'], error)
+                check(name+'_'+domain+'_'+task+'_benchmark_confusion', error<2e-8)
                 for key, value in measured.items():
                     error = abs(value-reported[task][key])
                     largest[key] = max(largest[key], error)
@@ -231,6 +242,11 @@ def main():
                         selected, counts, acceptance, fpr = selected_rates(labels, p, c, cut, balanced)
                         working_errors += [abs(fpr-row[f'actual_FPR_{target}']),
                             abs(acceptance[c]-row[f'eff_FPR_{target}']), max(0., fpr-target)]
+                        selected_mass = counts/support if balanced else counts
+                        total_mass = p.shape[1] if balanced else len(labels)
+                        coverage_errors.append(abs(selected_mass.sum()/total_mass-row[f'coverage_FPR_{target}']))
+                        if selected_mass.sum()>0:
+                            coverage_errors.append(abs(selected_mass[c]/selected_mass.sum()-row[f'purity_FPR_{target}']))
                         if task=='T4' and c==2 and (args.require_full or 'T4_tau_prior_scenarios' in reported):
                             scenario = reported['T4_tau_prior_scenarios'][str(target)]
                             check(name+'_'+domain+f'_tau_counts_{target}', scenario['raw_selected_original_labels']==counts.tolist())
@@ -243,12 +259,31 @@ def main():
                                     check(name+'_'+domain+f'_unsupported_prior_{target}_{pi}', actual is None)
                                 else:
                                     prior_errors.append(abs(actual-expected))
+                    # A second library provides complete score ties in ascending
+                    # threshold order. At equal recall use the highest threshold,
+                    # matching the smallest accepted set with that recall.
+                    weight = 1./support[labels] if balanced else None
+                    precision, recall, thresholds = precision_recall_curve(labels==c, p[:, c], sample_weight=weight)
+                    tolerance = 4*len(labels)*np.finfo(float).eps
+                    for purity in [.8, .9]:
+                        eligible = np.flatnonzero(precision[:-1]>=purity*(1-tolerance))
+                        j = max(eligible, key=lambda i: (recall[i], thresholds[i])) if len(eligible) else None
+                        efficiency, coverage = 0., 0.
+                        if j is not None:
+                            _, counts, acceptance, _ = selected_rates(labels, p, c, thresholds[j], balanced)
+                            efficiency = acceptance[c]
+                            coverage = (counts/support).sum()/p.shape[1] if balanced else counts.sum()/len(labels)
+                        coverage_errors.extend([abs(efficiency-row[f'eff_purity_{purity}']),
+                                                abs(coverage-row[f'coverage_purity_{purity}'])])
         largest['working_point'] = max(largest['working_point'], max(working_errors, default=0.))
         largest['prior_purity'] = max(largest['prior_purity'], max(prior_errors, default=0.))
         check(name+'_direct_class_mean_metrics', max(errors, default=0.)<2e-10, maximum_absolute_error=max(errors, default=0.))
         check(name+'_direct_working_points', max(working_errors, default=0.)<2e-10,
               maximum_absolute_error=max(working_errors, default=0.))
         check(name+'_direct_prior_purity', max(prior_errors, default=0.)<2e-10)
+        largest['coverage_and_purity'] = max(largest['coverage_and_purity'], max(coverage_errors, default=0.))
+        check(name+'_direct_coverage_and_fixed_purity', max(coverage_errors, default=0.)<2e-10,
+              maximum_absolute_error=max(coverage_errors, default=0.))
         item = {**entry, 'direct_common_three': core[name], 'GPU': manifest.get('GPU', 'CPU'),
                 'precision': manifest['config'].get('precision'), 'wall_seconds': manifest['wall_seconds']}
         if entry['family']!='B0':

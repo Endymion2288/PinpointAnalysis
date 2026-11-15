@@ -38,6 +38,8 @@ V100本身支持FP32；本次失败的原因是LCG108的Torch二进制没有SM70
 
 `submit --min-gpu-memory-mb`默认10,000，继续接受1g。上述替代探针临时使用20,000以寻找不同容量分区，不限定型号或要求整卡。B1继续在1g有效训练；接收任意卡与按实测为某架构选择更合适的卡同时适用。
 
+[stage261](../../workbook/2026-11-15_stage261_r1_collaboration_and_count_audit.md)进一步测得两个H100 NVL Train-only profile为64.63/61.12 events/s；固定65门槛拒绝了仍可能节省约2 h的候选。后续探针使用可执行性下限，release前按实际旧进度、两边吞吐、fresh全部操作及600 s余量，要求至少节省1 h；不以速率是否超过某个整数代替剩余完成时间判断。30,000 MiB只用于这一组更大资源的候选，现有2g训练在新profile/余量条件满足前继续运行。探针、旧进度和失败attempt均记账。
+
 ## 3. Kubeflow
 
 沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据过期，已提醒用户重新登录。当前没有active Kubeflow allocation，继续由Condor推进训练。

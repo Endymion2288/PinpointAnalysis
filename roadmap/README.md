@@ -34,6 +34,7 @@ B1同结构计算控制在更多曝光与wall-based schedule下，μ recall提�
 | [05：文献依据](v2/05_literature.md) | 本地资料及本次联网核对的论文、采用理由、适用边界 |
 | [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加记录入口 |
 | [07：GPU 与后端执行](v2/07_resources_and_operations.md) | 减少排队、共享/MIG、实际软件兼容性、单任务写入与成本 |
+| [08：R1 合作组三类对照](v2/08_r1_collaboration.md) | 已测量域表、输入/训练差异及原研究复现所需具体资料 |
 | [实验规格](v2/experiment_plan.json) | 可解析的设计合同；需实现对应 runner 后才能提交，不能直接传给旧 CLI |
 
 ## 研究路线与决策

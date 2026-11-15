@@ -185,7 +185,7 @@ R0实际：A100 allocation 0.746667 h，H100 allocation 0.162500 h，交互T4含
 | W05 | `analysis.flavour.v2.r1.models/data/fit` | 同一 observed hits | adapters和八项真实T3/T4学习门槛通过；各族完整泛化待测 | Learning gates passed |
 | W06 | `analysis.flavour.v2.r1.campaign/extend/train` | 冻结 Train/Tune | 16项screen完成；四pass、同计算和raw counts在执行；不访问Confirm | In progress R1 |
 | W07 | geometry sparse graph prototype | plane/cluster measurements | 候选边 recall、边数尾部、memory；不读取 truth 构图 | Pending R3 |
-| W08 | 三类合作组对照报告 | R1 实测输出 | 统一域/先验/工作点和 τ contamination；未对齐项具体列出 | Pending R1 |
+| W08 | [三类合作组对照报告](08_r1_collaboration.md) | R1 实测输出 | 18行已测量域表、统一prior/工作点及原研究输入差异已列出；完整同计算与最终读回待完成 | In progress R1 |
 
 W01–W03的完整执行命令及产物在[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)。W04–W06的实现、真实拟合与screen分别见stages239–243；W08在最终完整比较后交付。独立审查的历史复核命令为：
 

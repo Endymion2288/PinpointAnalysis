@@ -312,3 +312,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 258 | [r1 ranking and training tradeoffs](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md) |
 | 259 | [r1 three-seed task evidence and scheduling](../../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md) |
 | 260 | [r1 compact domain export](../../workbook/2026-11-15_stage260_r1_compact_domain_export.md) |
+| 261 | [r1 collaboration and count audit](../../workbook/2026-11-15_stage261_r1_collaboration_and_count_audit.md) |
