@@ -1,0 +1,99 @@
+{
+  "status": "frozen_before_candidate_endpoint_access",
+  "UTC": "2026-11-15T15:59:33.109421+00:00",
+  "experiments": [
+    {
+      "id": "b1_g1_stride2_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_g1_stride2_t4_s42"
+    },
+    {
+      "id": "b1_d2_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t4_s42"
+    },
+    {
+      "id": "b2_g2_control_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_control_t4_s42"
+    },
+    {
+      "id": "b2_g2_relations_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_relations_t4_s42"
+    },
+    {
+      "id": "b2_g2_global_ablation_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_global_ablation_t4_s42"
+    },
+    {
+      "id": "b1_d0_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d0_t4_s42"
+    }
+  ],
+  "contrasts": [
+    {
+      "a": "b1_g1_stride2_t4_s42",
+      "b": "b1_d2_t4_s42",
+      "reason": "first_stride2_only_same_D2",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b2_g2_relations_t4_s42",
+      "b": "b2_g2_control_t4_s42",
+      "reason": "matched_prelocal_relation_branch",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b2_g2_global_ablation_t4_s42",
+      "b": "b2_g2_relations_t4_s42",
+      "reason": "retrained_remove_global_stack",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b2_g2_global_ablation_t4_s42",
+      "b": "b2_g2_control_t4_s42",
+      "reason": "relations_and_remove_global_stack",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b2_g2_control_t4_s42",
+      "b": "b1_d0_t4_s42",
+      "reason": "native_vs_projection_same100k4passes_not_single_factor",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b2_g2_relations_t4_s42",
+      "b": "b1_d0_t4_s42",
+      "reason": "native_relations_vs_projection_same100k4passes_not_single_factor",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

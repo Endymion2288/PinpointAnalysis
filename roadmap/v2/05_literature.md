@@ -46,6 +46,10 @@
 
 采用在稀疏支持上保留局部结构、减少dense空网格计算的原则。它适合plane内高分辨率残差候选；相隔的plane仍需显式几何边或其他可达路径，不能将submanifold convolution本身当成跨层传播。尚未在本项目实现或测得收益；复用现成兼容算子，先profile，再决定是否值得增加环境依赖。
 
+<a id="p7"></a>**P7. R. Liu et al., An Intriguing Failing of Convolutional Neural Networks and the CoordConv Solution.** [arXiv:1807.03247](https://arxiv.org/abs/1807.03247)，2018。2026-11-15核对arXiv作者、题名和摘要，HTTP200；原始摘要及访问记录在`R3/audit/sensor_row_sources_stage292.json`。
+
+论文通过额外坐标通道让卷积访问绝对位置。R3 C1借用这一具体机制，为紧凑sensor-row响应显式提供真实z、前后间距及传感器类型，保留固定探测器边界。它不要求把row ordinal视为物理距离，也不表示坐标通道单独已经改善分类。C1同时改变空行布局、stem输入及stride，整体收益由同响应、同100k×4的正式screen评价；论文的toy/视觉任务倍数不作为PINPOINT效果或速度证据。
+
 ## 3. 中微子重建与实例关系
 
 <a id="h1"></a>**H1. NuGraph2: A Graph Neural Network for Neutrino Physics Event Reconstruction.** 正式题名 *Graph neural network for neutrino physics event reconstruction*，*Phys. Rev. D* 110, 032008 (2024)；[arXiv:2403.11872](https://arxiv.org/abs/2403.11872)，[DOI](https://doi.org/10.1103/PhysRevD.110.032008)。

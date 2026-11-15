@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0、R1、R2已完成；R3的M0/G0/候选图审计已完成，G1正式训练与G2验证进行中。**M0全程重混没有通过μ质量约束，G1及下一批G2保留原D2采样，采样和结构效应分别配对。完整R3结果尚未形成，见[stage288](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)、[单位修正stage289](../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)和[r3_execution.json](r3_execution.json)。R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
+**R0、R1、R2已完成；R3的M0/G0/候选图审计已完成，G1训练中，三个G2任务已获得GPU，C1紧凑图像已验证并提交。**M0全程重混没有通过μ质量约束，G1/G2/C1保留原采样，采样和结构效应分别配对。完整R3结果尚未形成，见[stage288](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)、[单位修正stage289](../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)、[执行加速stage291](../../workbook/2026-11-15_stage291_r3_collation_and_compact_screen.md)和[r3_execution.json](r3_execution.json)。R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
 
 R1三seed比较中B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56.3044%，τ效率在1% FPR下为5.0200%。相对B4的τ效率增益2.423 pp [1.941,2.977]满足预定τ研究门槛；T3相对HGB的1.973333 pp低于2 pp实用门槛，相对B4则未满足μ recall非劣。完整交付不等于全部科学门槛通过。
 
@@ -123,7 +123,7 @@ M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位�
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
-首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2已冻结并在Kubeflow MIG训练，G2正式配置在资源及修正单位后的学习验证通过后冻结。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
+首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2在Kubeflow MIG训练，G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复，当前在三个1g MIG准备本地输入。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
 
 | Work | Controlled change | Required evidence / next decision |
 | --- | --- | --- |
@@ -134,6 +134,8 @@ M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位�
 | G3: replication / scale | 仅最有价值的一项干预补seeds17/2026，然后检验native/100μm/1mm | 依预定2 pp BA或1 pp τ工作点门槛及相应质量约束晋级；未达门槛保留精确效应，重排后续小批次 |
 
 紧随当前G1/G2证据，优先安排一个紧凑sensor-row图像screen，具体见[03 §2.3](03_models_and_physics.md#23-图像基线的紧凑表示对照)。它使用相同响应及真实z信息，先核对映射和成本，再以Train100k×4比较；属于新的表示候选，不属于首层stride的单因素结论。只扩展有实际收益或明确成本优势的一项，不同时扫描所有图像尺寸、宽度、heads和SSL目标。
+
+2026-11-15执行：C1使用111×420有效sensor rows，替代1322×420物理网格；保留1mm横向bin与全部响应，增加真实z/前后间距/类型五个通道、首层stride2。256个Train事件的1,490,680条投影响应逐项可逆，32-event T4在64steps达到100%拟合、NLL0.000134；40k Tune资源检查finite/完整，确定性恢复参数差0。已提交同100k×4 screen1583011.0，参照R2 D0。完整endpoint分类收益仍未测量。G1/G2/C1正式评价合同均在各候选endpoint访问前冻结，几何与表示效应分别报告。
 
 G1首先保持R2实际数值配方和有效batch；若显存或执行方式迫使改变batch/precision，先补同设置的stride4参照。较慢结构的同曝光比较同时交付成本，需要同计算结论时另列同allocation的预算控制。保留原始概率，重复使用相同Tune开发合同；Cal-A/Cut-B/Confirm直到R7继续封存。新的低维readout、正则化或数据规模选择与几何改动分别配对。
 

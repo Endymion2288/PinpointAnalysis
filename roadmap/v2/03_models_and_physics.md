@@ -61,7 +61,7 @@ R2固定screen的[新增读回](r2_progress_review.json)也显示，低occupancy
 
 代码复核确认B1对pixel/bar共同使用物理1mm的1322×420网格，两个投影共享CNN权重；合作组报告按pixel plane/panel排列多幅紧凑图像，pixel示例15×250/15×200，strip示例68×40/56×40。二者的空行数量、局部邻接及卷积计算不同，R1并非该表示的严格复现。沿z缩短网格可能减少无响应间隙上的dense计算，是否改善训练或分类尚未测量。
 
-在当前G1结果形成后，安排一个独立的紧凑图像候选：bar用真实panel/bar ID与测量轴，pixel用plane与1mm横向投影；同一accepted响应、信号、边界、totals及tracker set继续保留。真实z、相邻plane间距与sensor类型通过显式坐标/embedding或关系层输入，避免将row ordinal当成等距物理坐标。图像尺寸由accepted geometry生成，不硬编码报告示例。先逐事件核对通道映射/计数/能量/PE及条带未测坐标，再做真实拟合与Train-only吞吐profile。
+已实现独立紧凑图像候选C1：bar保留真实panel测量轴，pixel保留plane与1mm横向投影；同一accepted响应、信号、边界、totals及tracker set继续保留。111行按真实sensor z排序，真实z、前后层间距与sensor类型经五个静态通道输入，机制参考[CoordConv](05_literature.md#p7)。图像尺寸由accepted geometry生成。256个Train事件、1,490,680条响应的原index和值逐项可逆；32-event T4真实拟合与完整Tune资源/恢复已通过，同100k×4正式分类仍待完成。
 
 先以同Tune40k、同Train100k和4 passes作小规模基线比较，再按实测选一项继续监督；若需要公平等时结论，另在同allocation匹配预算。网格、模态分支、stride与容量分别记录，不能把组合改变后的收益归因于单一因素。其主决策同样包括全域和稀疏逐类、τ工作点及成本。原研究的exact scores/事件列表尚未取得，也不阻止这一同响应的表示研究。
 

@@ -1,7 +1,7 @@
 {
-  "status": "M0_evaluated_G1_formal_running_G2_revision3_learning_passed_resource_profile_running_R3_not_complete",
+  "status": "M0_evaluated_G1_running_G2_three_allocated_preparing_inputs_C1_frozen_and_submitted_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T15:24:09.816102+00:00",
+  "UTC": "2026-11-15T16:00:31.860405+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -70,13 +70,14 @@
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
-  "unit_tests_passed": 37,
-  "latest_stage_report": "../../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md",
+  "unit_tests_passed": 40,
+  "latest_stage_report": "../../workbook/2026-11-15_stage292_r3_formal_launch_and_sensor_validation.md",
   "pending": [
     "G1 fixed-exposure endpoint and full Tune comparison against matched D2 stride4",
-    "G2 complete Tune resource profile and formal control/relations/retrained-ablation training",
+    "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
+    "C1 compact image100k x4 endpoint versus matched D0",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
-    "evidence-triggered seed,resolution,compact-image,anchor/fusion choices",
+    "evidence-triggered seed,resolution,anchor/fusion choices",
     "final scientific decisions,terminal resource accounting,figures and complete R3 acceptance"
   ],
   "Cal_A_Cut_B_Confirm_payload_read": false,
@@ -128,7 +129,7 @@
     "parallel_operation_events_per_second": 41.21429426788975
   },
   "G2_diagnostics": {
-    "status": "revision3_five_real_learning_gates_complete_shared_resource_profile_running",
+    "status": "revision3_five_learning_gates_and_full_Tune_resource_complete",
     "cluster": "1583000.0",
     "schedd": "bigbird20.cern.ch",
     "configurations": [
@@ -344,13 +345,41 @@
       "configs/r3/probe_b2_control_t4_s42_c5.json",
       "configs/r3/probe_b2_relation_t4_s42_c5.json",
       "configs/r3/probe_b2_global_ablation_t4_s42_c5.json"
+    ],
+    "full_validation": [
+      {
+        "config": "probe_b2_control_t4_s42_c3",
+        "events": 40000,
+        "seconds": 862.0193278719962,
+        "GPU_peak_MiB": 1086.74658203125,
+        "memory": {
+          "parent_RSS_MiB": 7989.08984375,
+          "children_RSS_MiB": 10.45703125,
+          "aggregate_RSS_MiB": 7999.546875
+        },
+        "finite": true,
+        "classification_metrics_used_for_selection": false
+      },
+      {
+        "config": "probe_b2_relation_t4_s42_c3",
+        "events": 40000,
+        "seconds": 879.8957357930194,
+        "GPU_peak_MiB": 1136.01416015625,
+        "memory": {
+          "parent_RSS_MiB": 8033.89453125,
+          "children_RSS_MiB": 10.45703125,
+          "aggregate_RSS_MiB": 8044.3515625
+        },
+        "finite": true,
+        "classification_metrics_used_for_selection": false
+      }
     ]
   },
   "delivery_implementation": {
     "evaluation_contract": "configs/r3/m0_evaluation.json",
     "readability_probes": "B1 reference Train4k/Tune40k complete; formal G1/G2 trained feature extraction pending",
-    "retrained_global_ablation": "implemented; formal fit pending",
-    "acceptance": "implemented; not run; missing formal results,decisions and terminal resources"
+    "retrained_global_ablation": "formal revision3 model frozen and allocation running; no final effects yet",
+    "acceptance": "implemented; final models,decisions and terminal resources remain"
   },
   "G1_formal": {
     "status": "running",
@@ -453,5 +482,159 @@
       "pinpoint-r3-g1-k1"
     ],
     "terminal_cost": false
+  },
+  "G2_formal": {
+    "status": "three_allocations_running_shared_Train_Tune_mmap_preparation",
+    "models": [
+      "b2_g2_control_t4_s42",
+      "b2_g2_relations_t4_s42",
+      "b2_g2_global_ablation_t4_s42"
+    ],
+    "clusters": [
+      "1583008.0",
+      "1583009.0",
+      "1583010.0"
+    ],
+    "GPU": "NVIDIA H100L-1-12C MIG1g.12gb",
+    "sampling": "spatial",
+    "pool_events": 100000,
+    "passes": 4,
+    "updates_per_model": 50051,
+    "exposures_per_model": 400000,
+    "shared_cache_recovery": [
+      {
+        "name": "g2_control_c9_c0",
+        "status": "complete",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "shared_transformed_inputs": true
+      },
+      {
+        "name": "g2_relations_c9_c0",
+        "status": "complete",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "shared_transformed_inputs": true
+      },
+      {
+        "name": "g2_ablation_c9_c0",
+        "status": "complete",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "shared_transformed_inputs": true
+      }
+    ],
+    "full_training_results_measured": false
+  },
+  "collation": {
+    "status": "complete",
+    "Train_events": 10000,
+    "batches": 1250,
+    "all_collated_tensors_bitwise_equal": true,
+    "reference_seconds": 82.59266169019975,
+    "vectorized_seconds": 4.286592132411897,
+    "CPU_collation_speedup": 19.267674446023886,
+    "maximum_batch_nodes": 33075,
+    "maximum_batch_edges": 398455
+  },
+  "native_concurrency": {
+    "status": "complete",
+    "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+    "co_running_formal_fit": "G1",
+    "aggregate_operation_events_per_second": [
+      24.153391565834163,
+      24.481977020130465,
+      28.479607880081495,
+      43.04686309918084
+    ],
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/audit/profile_g2_c7_on_g1/results.json",
+    "scope": "Train10k128updates; corrected revision3, vectorized collation, in-memory inputs; full Tune gate provided separately; native mmap formal path recovered exactly"
+  },
+  "C1": {
+    "status": "all_pretraining_validation_complete_formal_submitted",
+    "cluster": "1583011.0",
+    "config": "configs/r3/b1_c1_sensor_rows_t4_s42.json",
+    "reference": "R2 b1_d0_t4_s42; same100k x4",
+    "mapping": {
+      "status": "complete",
+      "Train_events": 256,
+      "response_measurements": 1490680,
+      "all_measurement_indices_and_values_exactly_reversible": true,
+      "physical_shape": [
+        1322,
+        420
+      ],
+      "compact_shape": [
+        111,
+        420
+      ],
+      "gap_quantiles_mm": [
+        7.0,
+        10.0,
+        67.50500000000011
+      ]
+    },
+    "real_learning": {
+      "status": "complete",
+      "events": 32,
+      "steps": 64,
+      "final": {
+        "NLL": 0.00013387270155362785,
+        "accuracy": 1.0,
+        "probability_std": [
+          0.4329271614551544,
+          0.4329359531402588,
+          0.43294548988342285,
+          0.4329330623149872
+        ],
+        "distinct_vectors": 32,
+        "finite": true
+      },
+      "checks": {
+        "fit_accuracy": true,
+        "fit_NLL": true,
+        "nonconstant_probability": true,
+        "branch_gradients": true,
+        "branch_updates": true,
+        "finite_branch_activations": true
+      }
+    },
+    "profile": {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "co_running_formal_fit": "G1",
+      "Train_operation_events_per_second": [
+        174.47037109452862,
+        170.5513864799698
+      ],
+      "full_validation": [
+        {
+          "config": "b1_c1_sensor_rows_t4_s42",
+          "events": 40000,
+          "seconds": 61.635731695918366,
+          "GPU_peak_MiB": 121.92919921875,
+          "memory": {
+            "parent_RSS_MiB": 3940.26171875,
+            "children_RSS_MiB": 13.60546875,
+            "aggregate_RSS_MiB": 3953.8671875
+          },
+          "finite": true,
+          "classification_metrics_used_for_selection": false
+        }
+      ]
+    },
+    "recovery": {
+      "status": "complete",
+      "maximum_parameter_delta": 0.0,
+      "same_exact_probability_and_exposure_tables": true,
+      "precision": "BF16_encoder_FP32_head",
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "source_Train_rows": 32,
+      "optimizer_Train_events": 24,
+      "synthetic_validation_events": 8,
+      "scope": "frozen source Train rows split into optimizer Train and synthetic validation; tests actual cache,global sampler,screen,checkpoint and recovery",
+      "actual_Tune_used": false,
+      "Cal_A_Cut_B_Confirm_payload_read": false
+    },
+    "classification_gain_measured": false
   }
 }

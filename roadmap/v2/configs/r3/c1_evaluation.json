@@ -1,0 +1,28 @@
+{
+  "status": "frozen_before_candidate_endpoint_access",
+  "UTC": "2026-11-15T15:59:33.139693+00:00",
+  "experiments": [
+    {
+      "id": "b1_c1_sensor_rows_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_c1_sensor_rows_t4_s42"
+    },
+    {
+      "id": "b1_d0_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d0_t4_s42"
+    }
+  ],
+  "contrasts": [
+    {
+      "a": "b1_c1_sensor_rows_t4_s42",
+      "b": "b1_d0_t4_s42",
+      "reason": "compact_sensor_rows_with_coordinates_stride2_same100k4passes",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

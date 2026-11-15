@@ -24,16 +24,22 @@ def main():
     for path in (args.root/'experiments').glob('*/manifest.json'):
         for attempt in json.loads(path.read_text()).get('attempts',[]):
             if attempt.get('allocation_id'):attempts[attempt['allocation_id']]=attempt['GPU']
+    shared=[json.loads(p.read_text()) for p in (args.root/'audit').glob('shared_allocation_*.json')]
     for allocation in resources['allocations']:
         identity=allocation['name'] if allocation['backend']=='kubeflow' else str(allocation['cluster'])+'.0'
         matched=[g for g in groups if g.get('allocation_id')==identity]
         if matched:
             allocation['concurrent_workers']=[g['concurrent_jobs'] for g in matched]
             allocation['worker_configs']=[g['configs'] for g in matched]
+            devices={g['GPU'] for g in matched if g.get('GPU')}
+            if len(devices)==1:
+                allocation['GPU']=devices.pop()
+                allocation['GPU_model_provenance']='allocation group CUDA runtime'
         if identity in attempts:
             allocation['GPU']=attempts[identity]
             allocation['GPU_model_provenance']='per-attempt CUDA runtime'
         allocation['counting']='one allocation duration regardless of independent worker count'
+        allocation['shared_suboperations']=[r for r in shared if r.get('allocation_id')==identity]
     by_device=defaultdict(float)
     for allocation in resources['allocations']:
         if allocation.get('device_hours'):
