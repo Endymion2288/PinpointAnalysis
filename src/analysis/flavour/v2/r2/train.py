@@ -172,12 +172,27 @@ def run(args):
             torch.set_rng_state(state['torch_rng'])
             torch.cuda.set_rng_state(state['cuda_rng'])
             np.random.set_state(state['numpy_rng'])
-        record['status']='running'
+        legacy_wall=args.resume and 'wall_seconds_checkpointed' not in record
+        previous_wall=record.get('wall_seconds_checkpointed',
+            counters['train_seconds']+counters['validation_seconds'] if args.resume else 0.)
+        previous_peak=record.get('GPU_peak_MiB',0.)
+        record.update(status='running',GPU=torch.cuda.get_device_name(),
+            allocation_id=os.environ.get('PINPOINT_JOB_ID'),staging=staging,
+            capability=list(torch.cuda.get_device_capability()),Torch_CUDA_architectures=torch.cuda.get_arch_list())
+        if legacy_wall:record['legacy_resume_operation_wall_is_lower_bound']=True
         record['attempts'].append({'allocation_id':os.environ.get('PINPOINT_JOB_ID'),
-            'GPU':torch.cuda.get_device_name(),'resumed_at_update':counters['updates']})
+            'GPU':torch.cuda.get_device_name(),'resumed_at_update':counters['updates'],'staging':staging})
         record['counters']=counters
+        def save_progress(path,position,best_value):
+            elapsed=time.perf_counter()-started
+            record['wall_seconds_checkpointed']=previous_wall+elapsed
+            record['attempts'][-1]['wall_seconds_checkpointed']=elapsed
+            record['GPU_peak_MiB']=max(previous_peak,torch.cuda.max_memory_allocated()/2**20)
+            atomic_state(path,model,optimizer,config,record,counts,position,best_value)
         write_json(output/'manifest.json',record)
         torch.cuda.reset_peak_memory_stats()
+        if not args.resume and not profile:
+            save_progress(resume,(0,0),best)
         interval = config.get('validation_non_tau_exposures',75000)
         next_screen = (counters['non_tau_exposures']//interval+1)*interval
         window=record.get('rolling_window',{})
@@ -259,16 +274,16 @@ def run(args):
                     metric=row['metrics'][config['task']]['NLL']
                     if metric<best:
                         best=metric
-                        atomic_state(output/'best.pt',model,optimizer,config,record,counts,(epoch,batch_position),best)
                         record['best_screen']={'updates':counters['updates'],'NLL':best,'criterion':config['task']+'_NLL'}
+                        save_progress(output/'best.pt',(epoch,batch_position),best)
                     next_screen=(counters['non_tau_exposures']//interval+1)*interval
-                    atomic_state(resume,model,optimizer,config,record,counts,(epoch,batch_position),best)
+                    save_progress(resume,(epoch,batch_position),best)
                     write_json(output/'manifest.json',record)
                     print(json.dumps({'name':config['name'],'screen':row}),flush=True)
                     model.train()
                 if args.stop_after_updates and counters['updates']>=args.stop_after_updates and not at_end:
                     record['status']='checkpointed_for_resume'
-                    atomic_state(resume,model,optimizer,config,record,counts,(epoch,batch_position),best)
+                    save_progress(resume,(epoch,batch_position),best)
                     write_json(output/'manifest.json',record)
                     for loader in [train_loader,screen_loader,full_loader]:
                         if loader is not None:shutdown_loader(loader)
@@ -282,13 +297,20 @@ def run(args):
             if counters['updates']==total_updates:
                 break
             if not profile:
-                atomic_state(resume,model,optimizer,config,record,counts,(epoch+1,0),best)
+                save_progress(resume,(epoch+1,0),best)
                 write_json(output/'manifest.json',record)
         if counters['updates']!=total_updates:
             raise ValueError('training stopped before its prescribed optimizer budget')
-        atomic_state(output/'exposure.pt',model,optimizer,config,record,counts,(epoch,batch_position),best)
+        save_progress(output/'exposure.pt',(epoch,batch_position),best)
         if not profile:
             for kind,path in [('endpoint',output/'exposure.pt'),('best_screen',output/'best.pt')]:
+                if kind=='best_screen' and record['best_screen']['updates']==counters['updates']:
+                    destination=output/'best_predictions.parquet'
+                    destination.unlink(missing_ok=True)
+                    destination.symlink_to('predictions.parquet')
+                    record['best_metrics']=record['metrics']
+                    record['best_predictions_reuse_endpoint_at_same_update']=True
+                    continue
                 if kind=='best_screen':
                     state=torch.load(path,map_location='cpu',weights_only=False)
                     model.load_state_dict(state['model'])
@@ -305,9 +327,12 @@ def run(args):
             if loader is not None:shutdown_loader(loader)
         for dataset in [train,small,tune]:
             if dataset is not None:dataset.native.close()
+        elapsed=time.perf_counter()-started
         record.update(status='complete',counters=counters,unique_train_events=int((counts>0).sum()),
-            input_train_events=len(train),wall_seconds=time.perf_counter()-started,
-            GPU_peak_MiB=torch.cuda.max_memory_allocated()/2**20,memory=memory.peak,
+            input_train_events=len(train),wall_seconds=previous_wall+elapsed,
+            wall_seconds_in_this_attempt=elapsed,
+            operation_time_scope='checkpointed work plus current attempt; allocation accounting also includes interrupted unsaved work',
+            GPU_peak_MiB=max(previous_peak,torch.cuda.max_memory_allocated()/2**20),memory=memory.peak,
             events_per_train_second=(counters['training_exposures']/counters['train_seconds']),
             updates_in_this_attempt=counters['updates']-trained_from)
         del os.environ['PINPOINT_NATIVE_SHARD_ROOT']

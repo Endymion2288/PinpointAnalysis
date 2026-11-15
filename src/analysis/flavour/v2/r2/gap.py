@@ -43,7 +43,6 @@ def plan(root):
 def run(root,names,attempt):
     torch.set_num_threads(1)
     torch.zeros(1,device='cuda:0').sum().item()
-    if torch.cuda.get_device_capability()[0]<8:raise ValueError('BF16 gap inference requires SM80')
     torch.backends.cuda.matmul.allow_tf32=True
     torch.backends.cudnn.allow_tf32=True
     started=time.perf_counter()
@@ -64,6 +63,8 @@ def run(root,names,attempt):
             manifest=json.loads((experiment/'manifest.json').read_text())
             if manifest['status']!='complete':raise ValueError('gap inference requires completed weights')
             config=manifest['config']
+            if config['bf16'] and torch.cuda.get_device_capability()[0]<8:
+                raise ValueError('BF16 gap inference requires SM80')
             data=R1Dataset(data_root,'train',config,cache_dir=scratch)
             rows=selected[selected.label.ne(2)] if config['task']=='T3' else selected
             subset(data,rows)
@@ -73,6 +74,14 @@ def run(root,names,attempt):
                 destination=folder/name/kind
                 destination.mkdir(parents=True,exist_ok=False)
                 state=torch.load(experiment/checkpoint,map_location='cpu',weights_only=False)
+                if kind=='best_screen' and manifest['best_screen']['updates']==manifest['counters']['updates']:
+                    if not all(torch.equal(value,endpoint_weights[key]) for key,value in state['model'].items()):
+                        raise ValueError('same-update endpoint/best weights differ')
+                    (destination/'predictions.parquet').symlink_to('../endpoint/predictions.parquet')
+                    record={**endpoint_report,'checkpoint':kind,'seconds':0.,'reuses_same_update_endpoint':True}
+                    write_json(destination/'report.json',record)
+                    cases.append({'name':name,'checkpoint':kind,'events':len(data),'seconds':0.,'reuses_endpoint':True})
+                    continue
                 model.load_state_dict(state['model'])
                 indices,p,logits,seconds=predict(model,loader,config['task'],config['bf16'])
                 save_predictions(destination/'predictions.parquet',data,indices,p,logits)
@@ -84,6 +93,7 @@ def run(root,names,attempt):
                     'scope':'common Train sample in eval mode; compare with same-checkpoint Tune, not dropout rolling loss',
                     'Cal_A_Cut_B_Confirm_payload_read':False}
                 write_json(destination/'report.json',record)
+                if kind=='endpoint':endpoint_weights,endpoint_report=state['model'],record
                 cases.append({'name':name,'checkpoint':kind,'events':len(frame),'seconds':seconds})
             shutdown_loader(loader)
             data.native.close()

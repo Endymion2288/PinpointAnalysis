@@ -13,6 +13,7 @@ from analysis.flavour.v2.r1.interval_review import domain_mask
 from analysis.flavour.v2.r1.evaluate import scalar_summary, SCALARS
 from analysis.flavour.v2.r2.evaluate import configuration, domains
 from analysis.flavour.v2.r2.campaign import extend
+from analysis.flavour.v2.r2.finish import advance
 from analysis.flavour.v2.r2.schedule import learning_rate, sampler_trace
 from analysis.flavour.v2.r2.train import OffsetSampler
 
@@ -119,6 +120,32 @@ class ScalingBudgetTests(unittest.TestCase):
                 self.assertEqual(new['initialization'],'scratch')
                 self.assertEqual(new['data_root'],old['data_root'])
                 self.assertEqual(new['precision'],old['precision'])
+
+    def test_batch_delivery_waits_for_model_dependencies(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            names=[f'b1_{d}_{t}_s42' for d in ['d0','d1'] for t in ['t3','t4']]
+            write_json(root/'campaign.json',{'initial_models':names})
+            for name in names:
+                write_json(root/'configs'/f'{name}.json',{'family':'B1','design':name.split('_')[1].upper()})
+            for name in names[:2]:write_json(root/'experiments'/name/'manifest.json',{'status':'complete'})
+            calls=[]
+            submit=lambda *args,**kwargs:calls.append((args,kwargs))
+            self.assertFalse(advance(root,submit))
+            self.assertEqual(len(calls),1)
+            self.assertTrue(calls[0][1]['gpu'])
+            self.assertEqual(calls[0][0][1],'r2_gap_b1_d0_a1')
+            for name in names:
+                write_json(root/'experiments'/name/'manifest.json',{'status':'complete'})
+                for kind in ['endpoint','best_screen']:
+                    write_json(root/'gap'/name/kind/'report.json',{'status':'complete'})
+            expected={name+'_'+kind:{} for name in names for kind in ['endpoint','best_screen']}
+            write_json(root/'evaluation/results.json',{'status':'complete','models':expected})
+            for name in ['independent_points','independent_core_intervals']:
+                write_json(root/'evaluation'/f'{name}.json',{'status':'complete'})
+            calls.clear()
+            self.assertTrue(advance(root,submit))
+            self.assertEqual([call[0][1] for call in calls],['r2_evaluate_m4_a1','r2_figures_m4_a1'])
 
 
 if __name__=='__main__':

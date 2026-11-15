@@ -22,7 +22,7 @@ from analysis.flavour.v2.r1.data import R1Dataset
 from analysis.flavour.v2.r2.campaign import config_from_r1, preflight
 
 
-def run(root, r1, r0, attempt, bf16):
+def run(root, r1, r0, attempt, bf16, tasks=('T3','T4'), simulate_migration=False, workers=2):
     output=root/'smoke'/attempt
     output.mkdir(parents=True,exist_ok=False)
     with tempfile.TemporaryDirectory(prefix='r2-smoke-') as scratch:
@@ -49,9 +49,9 @@ def run(root, r1, r0, attempt, bf16):
     selected[selected.split.eq('validation')].to_parquet(output/'data/tune_screen.parquet',index=False,compression=COMPRESSION)
     write_json(output/'data/plan.json',json.loads((r0/'micro_data/plan.json').read_text()))
     cases=[]
-    for task in ['T3','T4']:
+    for task in tasks:
         config=config_from_r1(r1,'B1',task,precision='BF16_encoder_FP32_head' if bf16 else 'FP32')
-        config.update(data_root=str(output/'data'),passes=3,deterministic_verification=True,
+        config.update(data_root=str(output/'data'),passes=3,deterministic_verification=True,workers=workers,
             tune_screen=str(output/'data/tune_screen.parquet'),
             validation_non_tau_exposures=10,preflight=str(output/'preflight'/f'{task}.json'))
         for kind in ['continuous','recovered']:
@@ -61,8 +61,11 @@ def run(root, r1, r0, attempt, bf16):
             if kind=='continuous':preflight(output,path)
             command=[sys.executable,'-m','analysis.flavour.v2.r2.train','--root',str(output),'--config',str(path)]
             env=dict(os.environ,CUBLAS_WORKSPACE_CONFIG=':4096:8')
+            if simulate_migration:env['PINPOINT_JOB_ID']='smoke-simulated-initial-label'
             subprocess.run(command+(['--stop-after-updates','4'] if kind=='recovered' else []),env=env,check=True)
-            if kind=='recovered':subprocess.run(command+['--resume'],env=env,check=True)
+            if kind=='recovered':
+                if simulate_migration:env['PINPOINT_JOB_ID']='smoke-simulated-recovery-label'
+                subprocess.run(command+['--resume'],env=env,check=True)
         left=output/'experiments'/f'{task.lower()}_continuous'
         right=output/'experiments'/f'{task.lower()}_recovered'
         a=torch.load(left/'exposure.pt',map_location='cpu',weights_only=False)
@@ -80,10 +83,19 @@ def run(root, r1, r0, attempt, bf16):
                 raise ValueError(f'recovery changed {field}')
         if not all(m['status']=='complete' and len(m['history'])>1 for m in manifests):
             raise ValueError('screen and completion paths did not run')
+        for m in manifests:
+            if m['wall_seconds']+1e-6<m['counters']['train_seconds']+m['counters']['validation_seconds']:
+                raise ValueError('operation wall excludes recoverable work from an earlier attempt')
+        if len(manifests[1]['attempts'])!=2:
+            raise ValueError('recovery attempt provenance lost')
+        if simulate_migration and (manifests[1]['allocation_id']!='smoke-simulated-recovery-label'
+                or manifests[1]['attempts'][0]['allocation_id']!='smoke-simulated-initial-label'):
+            raise ValueError('current and historical allocation provenance conflated')
         cases.append({'task':task,'maximum_parameter_delta':delta,'tables':predictions,
             'updates':manifests[0]['counters']['updates'],'screens':len(manifests[0]['history']),
             'resume_at_update':4,'precision':config['precision']})
     report={'status':'complete','cases':cases,'scope':'32 frozen Train rows with synthetic validation; not generalization',
+        'simulated_allocation_label_transition':simulate_migration,
         'actual_Tune_used':False,'Cal_A_Cut_B_Confirm_payload_read':False}
     write_json(output/'integrity.json',report)
     print(json.dumps(report),flush=True)
@@ -96,8 +108,11 @@ def main():
     parser.add_argument('--r0',type=Path,required=True)
     parser.add_argument('--attempt',required=True)
     parser.add_argument('--bf16',action='store_true')
+    parser.add_argument('--tasks',choices=['T3','T4'],nargs='+',default=['T3','T4'])
+    parser.add_argument('--simulate-migration',action='store_true')
+    parser.add_argument('--workers',type=int,default=2)
     args=parser.parse_args()
-    run(args.root,args.r1,args.r0,args.attempt,args.bf16)
+    run(args.root,args.r1,args.r0,args.attempt,args.bf16,args.tasks,args.simulate_migration,args.workers)
 
 
 if __name__=='__main__':
