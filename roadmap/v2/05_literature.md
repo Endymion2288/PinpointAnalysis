@@ -88,6 +88,10 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 
 <a id="m5"></a>**M5. Z. C. Lipton et al., Detecting and Correcting for Label Shift with Black Box Predictors.** ICML 2018；[正式页面](https://proceedings.mlr.press/v80/lipton18a.html)。区分 label prior shift 与 detector/generator conditional shift；prior 情景不是实际 flux 测量，也不能代替系统效应评价。
 
+<a id="m6"></a>**M6. M. Li, E. Yumer, D. Ramanan, Budgeted Training: Rethinking Deep Neural Network Training Under Resource Constraints.** ICLR2020；[arXiv:1905.04753v4](https://arxiv.org/abs/1905.04753)，[PDF](https://arxiv.org/pdf/1905.04753)。2026-11-15读取摘要与§3.1–3.2，abstract/PDF均HTTP200，访问记录见`R1/audit/literature_stage264/retrieval.json`。
+
+论文按迭代预算`t/T`定义budget-aware schedule，指出直接截短原schedule与按新预算重新参数化是不同实验，cosine也属于其budget-aware家族。用于R2明确D0/D1/D2的总updates、fresh初始化及LR轨迹；PINPOINT首批仍保留原warm-up/cosine，linear只作另行预定候选，不把其图像任务结果当成本项目性能结论。R1的wall-based控制同时改变曝光与schedule，后续需将这两个因素分别报告。
+
 ## 5. 预训练的候选与优先级
 
 **S1. Multi-Scale Neighborhood Occupancy Masked Autoencoder for Self-Supervised Learning in LiDAR Point Clouds (NOMAE).** CVPR 2025；[正式页面](https://openaccess.thecvf.com/content/CVPR2025/html/Abdelsamad_Multi-Scale_Neighborhood_Occupancy_Masked_Autoencoder_for_Self-Supervised_Learning_in_LiDAR_CVPR_2025_paper.html)。保留多尺度正/负 occupancy query 的思想；孤立低 occupancy 结构可能是 PINPOINT 信号，不能照搬忽略 isolated points 的规则。

@@ -112,6 +112,10 @@ R1的B1 seed42使用T4/FP32，新增seed使用H100 MIG/BF16；seed波动含实�
 
 B1计算控制说明增加曝光与改变wall-based schedule可以显著改变逐类取舍。D1/D2使用明确的update/exposure schedule，逐窗口保留NLL、AP/ROC、概率分布和e/μ/NC recall；低occupancy组使用原accepted计数定义。必要的低维readout/logit-bias诊断在Train-inner或Tune内按family交叉拟合，Cal-A/Cut-B/Confirm继续封存。
 
+首批设计具体为：同一族/任务固定输入、初始化方式、loss、batch、sampler、selected LR、AdamW和正则化；D0/D1/D2从fresh初始化，按各自预定总updates定义5% warm-up及cosine、保留5% LR floor，wall仅用于成本/deadline。D1扩展完整schedule，不能机械续接D0的低LR尾部。该预算归一化思路参考[M6](05_literature.md#m6)，不据此预设linear优于本项目cosine。
+
+现有sampler保留各mixed-shard window的尾批，D1/D2同曝光不保证精确同updates。提交前从冻结清单实算U，保存batch-size分布、LR轨迹及`sum(lr)`；首批D2−D1明确称同曝光比较。精确fixed-update控制需要另列实际停止步数/曝光，不能同时宣称固定passes、固定曝光及精确同updates。每75k非τ Train曝光评价同一4k Tune screen，终点评价完整40k Tune并保留固定预算checkpoint；best-screen checkpoint单列。新D0还需匹配实际数值配方。详见[stage264](../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md)，300k的U与运行成本尚未测量。
+
 按R1实测wall线性估算，B1在1g MIG完成D1+D2的T3/T4四项约需10.087 device-hours；B2在H100 NVL约13.406 h，两族直接全跑约23.493 h，尚未含新D0、300k转换、失败及额外profile。它们来自不同设备，属于排期估算，不能当FLOP等效成本；300k的实际I/O和训练wall尚未测量。原R2的18 h规划应采用分批执行：完整R1后先冻结最有实际收益的一族（当前优先B1），完成D1/D2并补数值配方匹配的D0；第二族只在首批结果能回答一个尚未解决的问题且实际剩余预算支持时追加相应控制。保持现有可运行分区，不为达到估算吞吐等待整卡；实际设备较慢时缩小下一批矩阵并重新计时。
 
 ## 5. R3–R6：按证据逐步增加结构

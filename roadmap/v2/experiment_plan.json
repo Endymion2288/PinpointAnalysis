@@ -329,6 +329,16 @@
       "planned_device_hours": 18,
       "status": "pending",
       "execution_policy": "Freeze after complete R1; first run D1/D2 for one selected family (currently B1 priority), with precision-matched D0; add only question-driven second-family controls if the measured remaining budget supports them; no R2 training started",
+      "optimization_design": {
+        "status": "design_only_not_implemented_or_run",
+        "fixed_within_family_task": ["input", "architecture", "initialization policy", "loss", "batch", "sampler", "selected LR", "AdamW", "regularization", "actual precision"],
+        "schedule": "fresh D0/D1/D2; progress by prescribed total optimizer updates; 5 percent warmup and cosine to existing 5 percent LR floor; wall only for accounting/deadline",
+        "D1_D2_primary_contrast": "same label exposures, more unique rows; mixed-shard tails can change update count, so do not call it exactly fixed updates",
+        "pre_submit_measurements": ["sampler U for each frozen pool", "batch-size distribution", "LR trace and sum(lr)", "actual precision", "throughput and operation wall projection"],
+        "development_windows": "same fixed 4k Tune screen every75k non-tau Train exposures; full40k Tune at prescribed endpoint; fixed-budget and best-screen checkpoints reported separately",
+        "reference": "05_literature.md#m6",
+        "report": "../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md"
+      },
       "illustrative_D1_D2_cost_projection": {
         "source": "actual R1 four-pass operation wall for B1 seed17 and B2 seed42",
         "B1_1g_MIG_T3_T4_hours": 10.08676280040003,
