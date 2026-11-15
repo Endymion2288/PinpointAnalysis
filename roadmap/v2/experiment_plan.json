@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "completed_R0_R1_R2_eight_models_with_triggered_sampling_control_running",
+  "status": "completed_R0_R1_R2_pending_R3_R7",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R2 prescribed8 models and16 checkpoint views/128 pairs complete; post-hoc grouped readout complete; mandatory same-prefix final-pass sampling control running after systematic last-pass bias; R2 scientific decision and acceptance pending; Cal-A/Cut-B/Confirm sealed",
+  "implementation_status": "R0/R1/R2 complete; R2 eight models,16 views,128 pairs,11 domains and conditional final-pass sampling control delivered;198 acceptance checks pass;39 terminal allocations; R3-R7 not started; Cal-A/Cut-B/Confirm sealed",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -271,7 +271,7 @@
     "native": "matched native/coarse three-seed practical task gain or equivalent quality at significantly lower cost",
     "objects": "improved fake-efficiency-coverage and all-event classification, including failures",
     "subclasses": "improved merged four-class/tau performance and non-inferior common three-class quality",
-    "scope": "Frozen before R1 Tune access; actual per-comparison development decisions recorded in r1_results.json; independent Confirm and final multiplicity control remain R7"
+    "scope": "Frozen before R1 Tune access; actual per-comparison development decisions in r1_results.json and r2_results.json; independent Confirm and final multiplicity control remain R7"
   },
   "stages": [
     {
@@ -356,12 +356,12 @@
       "depends_on": [
         "R1"
       ],
-      "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
+      "work": "100k/300k unique data versus4/12 passes; triggered weight-decay and same-prefix final-pass order controls; explicit convergence,capacity and conditional1M decisions",
       "planned_device_hours": 18,
-      "status": "eight_models_complete_triggered_sampling_control_running",
-      "execution_policy": "B1 fresh D0/D1/D2 matched BF16 recipe; four concurrent D0/D1 fits in Kubeflow H100 MIG3g47gb and two D2 fits in HTCondor H100 MIG2g24gb; conditional expansions follow measured curves and costs",
+      "status": "complete",
+      "execution_policy": "completed one B1 family on heterogeneous compatible allocations; four concurrent D0/D1 fits in Kubeflow MIG3g47gb,two D2 fits in Condor MIG2g24gb,necessary regularization/replay controls; full,shared and MIG devices remain eligible by expected completion time",
       "optimization_design": {
-        "status": "fixed_exposure_fits_and_regularization_complete_order_effect_under_test",
+        "status": "complete_fixed_exposure_fits_regularization_and_conditional_order_control",
         "fixed_within_family_task": [
           "input",
           "architecture",
@@ -399,20 +399,154 @@
       "execution_record": "r2_execution.json",
       "progress_review": "r2_progress_review.json",
       "next_decision_contract": "09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流",
-      "measured_result": "r2_regularization_review.json",
-      "progress_report": "../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md"
+      "measured_result": "r2_results.json",
+      "progress_report": "../../workbook/2026-11-15_stage284_r2_final_results.md",
+      "final_report": "../../workbook/2026-11-15_stage284_r2_final_results.md",
+      "measured_progress": "8 models;16 views;128 paired contrasts;11 domains;8 endpoint grouped OOF readouts and Train gaps;conditional replay3 views/8 pairs with exact original-probability reproduction;198 acceptance checks;all39 allocation records terminal",
+      "acceptance": {
+        "status": "complete",
+        "passed": 198,
+        "failed": [],
+        "models": 8,
+        "checkpoint_views": 16,
+        "pairs": 128,
+        "scope": "R2 prescribed delivery and explicit scientific decision; global optimality is not established by delivery",
+        "Cal_A_Cut_B_Confirm_payload_read": false
+      },
+      "independent_reviews": {
+        "main_points": 3976,
+        "main_core_intervals": 1808,
+        "replay_points": 1026,
+        "replay_core_intervals": 115,
+        "unit_tests": 24
+      },
+      "resource_progress": {
+        "snapshot_UTC": "2026-11-15T13:30:44.765704+00:00",
+        "allocation_device_hours": 7.475833333333334,
+        "allocated_CPU_core_hours": 116.64999999999999,
+        "terminal_cost": true,
+        "allocation_records": 39,
+        "active_or_unresolved": [],
+        "device_hours_by_model_or_partition": {
+          "NVIDIA H100L-2-24C MIG 2g.24gb": 4.026111111111112,
+          "NVIDIA H100L-1-12C MIG 1g.12gb": 0.1738888888888889,
+          "NVIDIA A100-PCIE-40GB": 0.06166666666666667,
+          "NVIDIA H100 NVL MIG 3g.47gb": 3.214166666666667
+        },
+        "interactive_operation_hours_lower_bound": 0.17765723452153098,
+        "rejected_before_allocation": 1,
+        "interpretation": "all heterogeneous batch allocation costs including failures,probes,recovery; count each allocation once for concurrent independent models; not FLOP equivalent; complete interactive allocation overhead unmeasured"
+      },
+      "actual_batch_device_hours": 7.475833333333334,
+      "actual_allocated_CPU_core_hours": 116.64999999999999,
+      "scientific_decision": "retain raw fixed D2 T3/T4 endpoints; more unique beats current repeated recipe,but D2-D0 BA3 and tau point gains are below practical targets; neither convergence nor capacity sufficiency established; defer D3/1M/width32 this batch; next M0 fresh D2 T4 all-pass shuffle before independent geometry contrasts",
+      "selected_reference": {
+        "T3": {
+          "name": "b1_d2_t3_s42",
+          "checkpoint": "exposure.pt",
+          "BA3": 0.5709666666666667,
+          "NLL3": 0.8558668029296831
+        },
+        "T4": {
+          "name": "b1_d2_t4_s42",
+          "checkpoint": "exposure.pt",
+          "BA3_conditional": 0.5712666666666667,
+          "NLL3_conditional": 0.8490304835167802,
+          "BA4": 0.45765,
+          "NLL4": 1.1662331782395368
+        },
+        "policy": "原八模型固定endpoint内的开发参考；own-task best-screen次比较保留；不同任务的逐类取舍单列，不以Tune调整后概率替代raw参考。",
+        "next_stage": "R3 M0先验证D2 T4全程重混；仅在实际有效时采用新配方及匹配baseline，然后相位诊断与B1首层stride4→2单因素控制；原生关系独立本族配对。R4对象质量、R5条件τ、R6胜出encoder定向训练、R7独立确认按证据启动。"
+      },
+      "conditional_extensions": {
+        "D1WD": {
+          "status": "complete",
+          "learning_change": "AdamW decay .01→.1 only",
+          "conclusion": "两个任务改善D1终点并缩小gap，但仍落后D0；只测一个系数，未建立最佳正则化。"
+        },
+        "final_pass_sampling": {
+          "status": "complete",
+          "parent": "b1_d1wd_t4_s42 end of pass11",
+          "conclusion": "同prefix末轮重混BA3+1.276667 pp [.810168,1.803464]、NLL3−.049451098；原顺序全部概率精确复现保存终点。顺序影响已建立，稀疏macro AUROC与τ效率增益区间仍跨零；重混后BA3=.562533/NLL3=.865668，尚未超过D2原始参考。该单prefix诊断不等同fresh12轮全程重混。",
+          "paired_all_domain": {
+            "BA3": {
+              "difference_a_minus_b": 0.01276666666666082,
+              "95pct": [
+                0.008101682120957354,
+                0.018034636527007066
+              ]
+            },
+            "NLL3": {
+              "difference_a_minus_b": -0.0494510983706683,
+              "95pct": [
+                -0.05191788733265842,
+                -0.04703508579654325
+              ]
+            },
+            "macro_AP3": {
+              "difference_a_minus_b": 0.0031405721218811244,
+              "95pct": [
+                0.0017199360662496943,
+                0.004475272481973431
+              ]
+            },
+            "macro_AUROC3": {
+              "difference_a_minus_b": 0.002604028333333175,
+              "95pct": [
+                0.001509130543861828,
+                0.0037937883424387308
+              ]
+            },
+            "tau_eff_1pct": {
+              "difference_a_minus_b": 0.0010999999999996637,
+              "95pct": [
+                -0.003164261341150856,
+                0.004249896872618419
+              ]
+            }
+          },
+          "reproduction": {
+            "probability_max_absolute_difference": 0.0,
+            "probability_mean_absolute_difference": 0.0,
+            "four_class_prediction_agreement": 1.0,
+            "interpretation": "compare original replay with the saved endpoint before attributing the remixed-original contrast to sampling; no independent training-seed uncertainty"
+          }
+        },
+        "D3_300k12": "本批不追加：原D1的长重复路径已恶化，D2尚未证明稳定plateau；没有证据保证三倍预算划算。",
+        "D4_1M": "本批不追加：相对D0的净共同BA和τ点效应均低于既定实用目标；优先定位稀疏局部路径，后续以实际收益及独立资源计划重新触发。",
+        "width32": "本批不追加：未满足稳定Train/Tune双侧停滞触发；容量仍为开放问题。",
+        "second_native_family": "移至R3独立本族关系控制，先profile并使用匹配训练参照；不为填满GPU扩矩阵。",
+        "fresh_all_pass_global_shuffle": "留下一批R3的首个配方控制M0：fresh D2 T4、300k×4，仅改变全程事件混合，保持原每update batch大小、总U/LR/曝光；复用顺序缓存profile后先执行一项，再按共同BA/NLL、逐类/稀疏排序、τ与成本选择G1参照。原R2固定endpoint仍作为明确参考，采样收益与结构收益分开。"
+      }
     },
     {
       "id": "R3",
       "depends_on": [
         "R2"
       ],
-      "work": "B1 stride and sampling-phase control first; native-family G1a before G1b geometry anchors and G1c retrained late fusion; separate within-family controls; winner native/100um/1mm",
+      "work": "M0 fresh D2 T4 all-pass global shuffle first; G0 phase and G1 B1 stride4-to2 separately; G2 native-family pre-compression relations with within-family control; G3 necessary seed and resolution replication before optional anchors/late-fusion combinations",
       "work_items": [
         "W07"
       ],
       "planned_device_hours": 20,
-      "status": "pending"
+      "status": "pending",
+      "entry_batch": {
+        "status": "planned_pending_submission_freeze",
+        "id": "M0",
+        "task": "T4",
+        "seed": 42,
+        "fresh": true,
+        "frozen_pool_events": 300000,
+        "passes": 4,
+        "cnn_width": 16,
+        "batch_size": 8,
+        "weight_decay": 0.01,
+        "total_updates": 150117,
+        "change": "all-pass label-independent global event reshuffling only",
+        "fixed": "D2 input,per-update batch sizes,optimizer recipe,precision,total updates,LR trajectory and exposures",
+        "preflight": "allocation-local transformed cache input equivalence; timing; aggregate RAM/VRAM and full-validation peak",
+        "decision": "pair against original R2 D2 raw endpoint for all/sparse BA,NLL,per-class ranking,recalls,tau and cost; adopt if effective,then necessary T3; use same sampling on both sides of G1 and keep sampling versus geometry gains separate"
+      }
     },
     {
       "id": "R4",
@@ -480,7 +614,8 @@
       "supervised_exposures": {
         "T3": 300000,
         "T4": 400000
-      }
+      },
+      "status": "complete"
     },
     {
       "id": "D1",
@@ -494,7 +629,8 @@
       "supervised_exposures": {
         "T3": 900000,
         "T4": 1200000
-      }
+      },
+      "status": "complete"
     },
     {
       "id": "D2",
@@ -508,7 +644,8 @@
       "supervised_exposures": {
         "T3": 900000,
         "T4": 1200000
-      }
+      },
+      "status": "complete"
     },
     {
       "id": "D3",
@@ -522,7 +659,9 @@
       "supervised_exposures": {
         "T3": 2700000,
         "T4": 3600000
-      }
+      },
+      "status": "deferred_after_R2_review",
+      "R2_decision": "本批不追加：原D1的长重复路径已恶化，D2尚未证明稳定plateau；没有证据保证三倍预算划算。"
     },
     {
       "id": "D4",
@@ -536,12 +675,14 @@
       "supervised_exposures": {
         "T3": 3000000,
         "T4": 4000000
-      }
+      },
+      "status": "deferred_after_R2_review",
+      "R2_decision": "本批不追加：相对D0的净共同BA和τ点效应均低于既定实用目标；优先定位稀疏局部路径，后续以实际收益及独立资源计划重新触发。"
     }
   ],
   "resources": {
     "planned_total_device_hours": 80,
-    "status": "R0 and R1 measured; R1 batch45.708889 h exceeds18 h planning envelope; original80 h total requires question-driven reallocation before further batches; R2-R7 planned60 h cannot all fit unchanged",
+    "status": "R0/R1/R2 terminal; cumulative R0 upper bound plus R1/R2 batch54.269577 heterogeneous device-hours; original80h nominal remainder25.730423 before full interactive overhead; original R3-R7 42h matrix must be replanned as measured small batches with R7 reserve",
     "estimated_calendar_weeks": [
       6,
       10
@@ -592,8 +733,22 @@
     "R1_interactive_operation_hours_lower_bound": 0.3255333065249336,
     "R0_recorded_upper_bound_plus_R1_batch_hours": 46.79374353474368,
     "nominal_original_plan_remainder_before_R1_interactive_hours": 33.20625646525632,
-    "remaining_policy": "first B1 fresh D0/D1/D2; actual throughput,I/O,validation and startup measurements before each batch; prioritize concrete unanswered questions; no requirement for same GPU model or whole card",
-    "independent_model_concurrency": "profile aggregate operation throughput and full-validation RAM/VRAM on an obtained allocation; share compressed staging; independent model/optimizer/checkpoint; count allocation once; never fill released slots with unmotivated experiments"
+    "remaining_policy": "M0 fresh D2 T4 global shuffle then separately controlled geometry batches; measure input supply,validation,startup and full RAM/VRAM peak on obtained resources; no fixed GPU model or whole-card requirement; defer low-value expansions and reserve R7 confirmation",
+    "independent_model_concurrency": "profile aggregate operation throughput and full-validation RAM/VRAM on an obtained allocation; share compressed staging; independent model/optimizer/checkpoint; count allocation once; never fill released slots with unmotivated experiments",
+    "R2_actual_batch_device_hours": 7.475833333333334,
+    "R2_CPU_allocation_core_hours": 116.64999999999999,
+    "R2_cost_breakdown_by_device_or_partition": {
+      "NVIDIA H100L-2-24C MIG 2g.24gb": 4.026111111111112,
+      "NVIDIA H100L-1-12C MIG 1g.12gb": 0.1738888888888889,
+      "NVIDIA A100-PCIE-40GB": 0.06166666666666667,
+      "NVIDIA H100 NVL MIG 3g.47gb": 3.214166666666667
+    },
+    "R2_allocation_records": 39,
+    "R2_active_or_unresolved": [],
+    "R2_interactive_operation_hours_lower_bound": 0.17765723452153098,
+    "R0_recorded_upper_bound_plus_R1_R2_batch_hours": 54.26957686807702,
+    "nominal_original_plan_remainder_before_complete_R1_R2_interactive_hours": 25.730423131922983,
+    "historical_resource_fields": "R0_recorded_upper_bound_plus_R1_batch_hours and nominal_original_plan_remainder_before_R1_interactive_hours preserve pre-R2 accounting; use the R1_R2 fields for current totals"
   },
   "required_learning_evidence": [
     "real small-sample fitting",
@@ -604,14 +759,14 @@
     "fix learning failures and retrain before physics conclusions"
   ],
   "unmeasured": [
-    "converged supervised performance and data/capacity scaling at300k/1M",
-    "gains from new R3-R6 geometry,object,specialist and targeted SSL designs",
+    "converged supervised performance and capacity sufficiency at300k; beyond300k/1M data scaling",
+    "fresh full-pass global-shuffle performance and new R3-R6 geometry,object,specialist,targeted SSL gains",
     "strict original collaboration replication on matched event identities,tracker features and cuts",
     "real calibrated hardware systematic envelope",
     "physical flux and tau yield",
-    "R2-R7 architecture-specific device/CPU costs and larger-pool throughput",
+    "R3-R7 architecture-specific device/CPU costs and beyond300k throughput",
     "same-device eager versus compiled gain",
-    "complete R1 interactive allocation overhead"
+    "complete R1/R2 interactive allocation overhead"
   ],
   "references": {
     "evidence": "01_evidence_review.md",
@@ -624,13 +779,15 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage284_r2_final_results.md",
     "R1_measured": "r1_results.json",
     "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
     "research_decisions": "09_decisions_and_handoff.md",
     "R2_progress": "r2_progress_review.json",
     "additional_tau_sources": "source_update_stage278.json",
-    "R2_regularization": "r2_regularization_review.json"
+    "R2_regularization": "r2_regularization_review.json",
+    "R2_measured": "r2_results.json",
+    "R2_workbook": "../../workbook/2026-11-15_stage284_r2_final_results.md"
   },
   "work_item_status": {
     "W01": "complete",
@@ -643,5 +800,5 @@
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
   "last_updated": "2026-11-15",
-  "latest_evidence_stage": 283
+  "latest_evidence_stage": 284
 }

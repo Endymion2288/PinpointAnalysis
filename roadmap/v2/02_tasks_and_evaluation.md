@@ -4,6 +4,8 @@
 
 本文效果门槛已在R1前冻结，样本分配由R0冻结；已有detector-proxy与样本接受状态继续有效。[R1最终验收](../../workbook/2026-11-15_stage274_r1_final_results.md)已完成真实T3/T4、三seed和同计算比较，未打开Cal-A/Cut-B/Confirm。B1的τ研究门槛通过，T3相对HGB的实用BA增益及相对B4的μ非劣未通过；保留四类并继续优化三类质量。T3T/T4D的概率/loss已有测试，训练效果留R5测量。
 
+[R2最终验收](../../workbook/2026-11-15_stage284_r2_final_results.md)已完成8模型及必要顺序控制、198项检查。D2真实T3/conditional T4的BA3为57.0967%/57.1267%，τ在1% FPR效率6.05%；相对D0的τ点增量.940000 pp低于1 pp门槛。类别和晋级合同保持不变，逐类取舍、收敛及独立确认仍待后续研究。
+
 ## 1. 四种任务的精确定义
 
 | ID | Outputs | Training labels | Required evaluation |

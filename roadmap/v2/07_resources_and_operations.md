@@ -4,6 +4,8 @@
 
 2026-11-15 R1最终状态：122条allocation全部终态，`active_or_unresolved=[]`；batch成本45.708889异构device-hours和307.181111 allocated CPU core-hours，452项验收通过。失败、探针、迁移前已运行部分均保留成本；历史SSL .635321 h单列，交互操作另有.325533 h已记录下界。[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)给出完整账本口径；下文迁移记录说明当时的调度选择。
 
+R2最终状态（2026-11-15 13:30:44 UTC）：39条allocation全部终态，`active_or_unresolved=[]`，7.475833异构device-hours、116.65 allocated CPU core-hours，198项验收通过；另一次提交拒绝未产生allocation。交互operation下界.177657 h另列，完整交互allocation开销未测量。R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h；后续按实测小批次重排并保留R7。[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)为最终口径；下文R1/R2运行实例保留为历史操作证据。
+
 ## 1. 软件兼容性与精度
 
 当前环境固定为CVMFS `LCG_108_cuda/x86_64-el9-gcc13-opt`，Python3.12、Torch2.7.1/CUDA12.5。2026-11-14实测`torch.cuda.get_arch_list()`为：
@@ -48,7 +50,7 @@ V100本身支持FP32；本次失败的原因是LCG108的Torch二进制没有SM70
 
 ## 3. Kubeflow
 
-沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据曾过期，R1最终账本使用已保存的终态证据。R2开始时访问已恢复，当前`pinpoint-r2-d01-k3`实际运行于H100 NVL MIG 3g.47gb，最多四个独立训练进程；不再将历史过期状态当成当前不可用。后续凭据实际失效时再提醒用户登录。
+沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据曾过期，R1最终账本使用已保存的终态证据。R2开始时访问已恢复，`pinpoint-r2-d01-k3`已在H100 NVL MIG 3g.47gb完成最多四个独立训练进程，后续正则化与顺序控制也已完成；最终账本采用live查询。不将历史过期状态当成当前不可用，后续凭据实际失效时再提醒用户登录。
 
 H100整卡和MIG使用相同`nvidia.com/gpu.product`，但resource分别为`nvidia.com/gpu`与`nvidia.com/mig-3g.47gb`。CERN按flavor注入CPU/RAM，GPU Job不能额外手填CPU/RAM。先对真实Pod模板做server dry-run；Job对象dry-run不足以证明Pod准入。namespace当前配额与scheduler events决定可用性，归档的历史配额不是实时空闲量。
 
@@ -84,6 +86,6 @@ python -m analysis.flavour.v2.r1.accounting --root "$R1_ROOT"
 
 `resources.json`按GPU型号/分区分别列出allocation和CPU core-hours，包含启动、编译、失败和恢复。记录仍运行的任务时明确为截至该时点成本，不标为最终成本。MIG device-hour不折成整卡hour。18 R1/80总device-hours是规划额度，按实测预测调整候选数量与后续矩阵，不因预算数字而宣称未完成实验已有结论。
 
-R1全部screen、四pass、必要三seed、10项同计算控制、压力对照及终态验收已完成。45.708889 h为原18 h规划的2.539倍，不能把原80 h总额减去阶段计划值后照常执行剩余矩阵。R2先做一族D0/D1/D2，profile实际I/O、吞吐、验证和启动开销后分批执行；R2–R7的工作与成本重排见[执行路线](04_execution_plan.md)。
+R1全部screen、四pass、必要三seed、10项同计算控制、压力对照及终态验收已完成。45.708889 h为原18 h规划的2.539倍，不能把原80 h总额减去阶段计划值后照常执行剩余矩阵。R2已完成一族D0/D1/D2及必要控制；R3从M0全程重混控制开始，后续工作与成本重排见[执行路线](04_execution_plan.md)。
 
-R2已实际测试单allocation内1/2/4/1并发：H100 MIG 3g.47gb的aggregate operation吞吐分别190.04/257.97/311.40/190.88 events/s，四并行比单进程约高63%，见[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。这是多个独立模型共享一次staging的实测，并非单模型data parallel。CPU、RAM、worker和完整validation峰值决定可用并行度；已有任务完成时不为了维持四进程再增加没有科学问题的新任务。当前Condor另一MIG双并行执行D2。所有allocation各计一次，异构device-hours只作资源记账。
+R2已实际测试单allocation内1/2/4/1并发：H100 MIG 3g.47gb的aggregate operation吞吐分别190.04/257.97/311.40/190.88 events/s，四并行比单进程约高63%，见[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。这是多个独立模型共享一次staging的实测，并非单模型data parallel。CPU、RAM、worker和完整validation峰值决定可用并行度；已有任务完成时不为了维持四进程再增加没有科学问题的新任务。Condor另一MIG上的D2双并行也已完成。所有allocation各计一次，异构device-hours只作资源记账。

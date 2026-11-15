@@ -1,13 +1,13 @@
 # 研究结论与下一批实验决策
 
-**已有改进成立；现有模型尚未达到已验证的最佳效果。近期保留四类研究，交付三类结果；先完成训练规模研究，再针对局部几何信息设计结构。**本文将资料审查、已经完成的对照和后续决策放在同一入口。详细证据、模型和评价定义分别见[01](01_evidence_review.md)、[03](03_models_and_physics.md)和[02](02_tasks_and_evaluation.md)。
+**已有改进成立；现有模型尚未达到已验证的最佳效果。R2已完成，保留四类研究和真实三类交付；下一批先控制采样顺序，再检验局部几何信息路径。**本文将资料审查、已经完成的对照和后续决策放在同一入口。详细证据、模型和评价定义分别见[01](01_evidence_review.md)、[03](03_models_and_physics.md)和[02](02_tasks_and_evaluation.md)。
 
 ## 1. 对目前结果的判断
 
 | Question | Evidence | Decision |
 | --- | --- | --- |
 | 是否比旧方法有改进？ | S6独立test上MAE−Scratch的BA增量为+0.3354 pp，区间不跨零；tracker增量明确。新R1同输入对照中B1优于当前B4的总体BA和τ工作点 | 保留这些成果；区分旧独立test与新Tune开发比较 |
-| 当前复杂模型是否最好？ | R1三seed的B1 T3 BA3=56.5633%，B4为54.3922%；B1相对B4的μ recall非劣没有通过。所有seed42四pass主模型末轮NLL仍下降 | 当前预算优先选B1做规模研究；不以四pass排名决定结构上限 |
+| 当前复杂模型是否最好？ | R1三seed的B1 T3 BA3=56.5633%，B4为54.3922%；R2 B1 D2 T3/conditional T4为57.0967%/57.1267%，均未建立收敛或容量上限 | D2两个固定endpoint作为下一批参考；不把已测最强配方称为全局最优 |
 | 降成三类是否能解决困难？ | 同allocation等时比较中，B1 T3−T4 conditional的BA3差为+.064 pp，区间跨零；B2为−.313 pp，NLL3均更差 | 三类作为合作组交付；研究主线继续保留四类 |
 | τ是否应当放弃？ | B1三seed在开发集1% FPR处的平均τ效率为5.0200%，比B4高2.423 pp；绝对效率仍低，尚无新独立确认 | 保留有实测增益的四类分支，优先研究可见拓扑和低背景工作点 |
 | 能否直接增加更多类别？ | 旧flat6在特定10k标签配方下损害τ AP；另一个配方在一个工作点有小幅收益 | 先做条件衰变辅助头；进一步细分须有标签、可见性和合并后任务收益支持 |
@@ -16,7 +16,7 @@
 
 ## 2. 最需要解决的设计问题
 
-优先级最高的是训练饱和与有效信息路径。监督规模仅完成100k四类pool的四pass主比较，而复杂编码器先按同plane窗口和canonical region压缩，再通过有限query/latent融合。保留全部输入通道并不等于短轨、窗口边界和跨plane方向关系能够有效影响输出。B1虽然目前较强，1mm投影与累计stride32也可能限制稀疏局部特征，须实际消融验证。
+优先级最高的是优化顺序、训练饱和与有效信息路径。R2已完成100k/300k与4/12 passes对照，并确认一个固定prefix的末轮顺序效应；更大数据和容量上限仍未建立。复杂编码器先按同plane窗口和canonical region压缩，再通过有限query/latent融合。保留全部输入通道并不等于短轨、窗口边界和跨plane方向关系能够有效影响输出。B1虽然目前较强，1mm投影与累计stride32也可能限制稀疏局部特征，须实际消融验证。
 
 对象重建是另一个已测弱点：旧近邻轨段purity约2.0%–5.4%，primary双轨vertex只有29/806匹配。因此，旧raw+object增量很小不能否定重建路线。下一轮先检查候选关联与整轨质量，再增加对象分类头。方向目标也应先在局部轨迹层验证，当前event-level方向回归尚不能支撑可靠missing-pT。
 
@@ -34,35 +34,29 @@
 
 ## 3. 当前批次：完成R2并作一次有依据的分流
 
-已冻结B1 seed42的fresh D0=100k×4、D1=100k×12、D2=300k×4，各有T3/T4。T3使用对应pool的全部非τ事件，D1/D2在T3上均为900k曝光、T4上均为1.2M曝光；尾批造成小量update差，不能称精确fixed-update比较。各自按完整updates定义warm-up/cosine，D1不是从已退火的D0机械续训。
+R2完整交付包括B1 seed42的fresh D0=100k×4、D1=100k×12、D2=300k×4及两个D1WD控制，共8模型、16个endpoint/best-screen视图、128配对、11域；另有同prefix末轮的两次重放和8项配对。198项验收通过，全部allocation终态。完整数值、科学决策和成本见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)与[结果JSON](r2_results.json)。
 
-先完成12个endpoint/best-screen视图、72项配对、11个域、共同Train gap、最后三个screen的变化、分支健康与终态成本。主比较使用预定endpoint；best-screen单列，因为不同预算的选点机会数不同。低occupancy终点同时读回AP/AUROC、预测类比例、e/μ/NC取舍和固定FPR效率。先比较D1−D0，再比较D2−D1，最后解释T3−T4。
+T3使用对应四类pool的全部非τ事件；D1/D2在T3上均为900k曝光、T4上均为1.2M曝光。尾批造成小量update差，不能称精确fixed-update。各模型fresh初始化，按完整updates定义warm-up/cosine；endpoint是主比较，own-task minimum screen NLL是次比较，不混合选点机会数。
 
-| Observed outcome | Next minimal experiment | Question answered |
+| Question | Actual evidence | Decision |
 | --- | --- | --- |
-| D1优于D0，最后窗口仍改善且没有明显Train/Tune恶化 | fresh D3=300k×12，只做必要T3/T4对 | 当前更长曝光在较大数据上是否继续有效？ |
-| D2优于D1，D1已有过拟合迹象 | 优先增加unique数据；1M前先由实际吞吐、存储与成本冻结独立小计划 | 更多新事件是否优于反复训练100k？ |
-| D1/D2都稳定停滞，Train与Tune均不够好 | width16→32，配同数据/曝光基线及真实拟合/profile | 容量是否限制当前表示？ |
-| Train很好，Tune变差 | 一项正则化或符合探测器的augmentation控制 | 是否是泛化而非容量问题？ |
-| 全域排序好、某类argmax差 | 按physical family交叉拟合低维bias诊断，保留未调整概率 | 当前表示有多少可恢复的决策偏移？ |
-| 低occupancy排序也弱 | 优先R3局部路径与关系控制 | 哪种测量结构没有被有效利用？ |
-| B1规模收益小，原生结构仍有未解决问题 | B2或B3择一，匹配训练配方并先profile | 排名是否依赖短预算或表示？ |
+| 新数据还是重复旧数据？ | T3 D2−D1 BA3 +3.927 pp [3.381,4.439]；D2−D0仅+.447 pp [.078,.815]，且e/NC recall下降 | 当前配方更多unique有益；相对D0未达2 pp实用门槛，不自动扩1M |
+| 更强正则化是否解决长训练？ | D1WD−D1的T3/conditional T4 BA3 +1.443/+1.247 pp，gap缩小；两个固定终点仍低于D0 | 单个系数改善成立，未建立最佳正则化或长重复训练优势 |
+| 末轮偏移是否只是猜测？ | 固定第11轮prefix，原顺序概率精确复现；重混末轮BA3 +1.277 pp [.810,1.803]、NLL3−.049451 | 顺序效应成立。下一批M0先测fresh D2 T4全程重混，采样与结构收益分别配对；不能将本控制称为fresh12轮结果 |
+| 稀疏分离是否已恢复？ | D2 T3稀疏μ AUROC=.5483、T4=.5518；末轮重混稀疏macro AUROC差区间跨零，recall大量再分配 | 稀疏表示仍优先，不能用μ recall上升替代净分离改善 |
+| 应否只做三类？ | D2 T3−conditional T4 BA3 −.030 pp [−.393,.341]，T3 NLL更差；μ/NC仍有取舍 | 交付真实T3并保留T4，未建立所有逐类非劣 |
+| τ增益是否足够？ | D2 T4在1% FPR效率6.05%；对D0增加.940 pp [.419,1.566] | 正效应成立，点值低于1 pp门槛；保留研究，不宣布独立确认或直接增加flat类别 |
+| 是否已经收敛/容量充分？ | 八模型均未达到连续三窗口NLL变化<.001；D1退化、D2仍波动；width16真实32-event拟合通过 | 当前批次完成不等于充分收敛。D3/width32/1M不在本批扩展，容量和规模上限仍开放 |
 
-这张表允许多种现象同时存在；每次只增加能区分当前假设的一小批。任何单seed开发收益都先保留其区间和成本，再决定是否补seeds17/2026。R2初始六模型尚未完成，不预先选定D3、1M或第二族。
+后续参考固定为`b1_d2_t3_s42/exposure.pt`和`b1_d2_t4_s42/exposure.pt`，共同BA3分别57.0967%/57.1267%，T4 BA4=45.7650%。这指本批已测原始endpoint内的参考，不称全局最优。所有区间条件于已拟合seed42，未估计训练seed与pool抽样变化；Tune是开发资料，Cal-A/Cut-B/Confirm继续封存。
 
-[stage280](../../workbook/2026-11-15_stage280_r2_repetition_overfit_and_regularization.md)记录随后形成的D1终点：T3/conditional T4 BA3为53.17%/53.73%，均低于D0；T3共同Train BA3=69.63%、NLL=.627而Tune NLL=1.144，支持过拟合分流。已启动fresh D1WD T3，只改变weight decay .01→.1；具体理由、精确预算和单任务执行见[合同](configs/r2/d1wd_reason.md)。该扩展与尚在运行的D2并行，原六模型主比较保留；正式交付扩为七模型、14视图、96配对。D3/1M/第二族仍未冻结。
-
-随后T4完整Train gap也显示过拟合，已按相同系数补上对应T4控制，见[stage281](../../workbook/2026-11-15_stage281_r2_four_class_regularization_and_diagnostics.md)。当前实际矩阵为8模型、16视图、128配对；上一段七模型为当时的启动次序。正式图新增Train/Tune gap及稀疏μ排序，收敛摘要用四个screen点计算三个连续窗口变化。D1WD两项控制仍在运行，尚未形成最终正则化结论。
-
-更多unique的三类结果已形成，见[stage282](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md)：D2−D1的BA3为+3.927 pp [3.381,4.439]，D2−D0则为+.447 pp [.078,.815]，后者低于2 pp实用门槛且e/NC recall下降。D2稀疏μ AUROC约.548，稀疏BA和固定FPR效率未出现已建立的净改善。全局bias仍未提高BA；温度改善NLL但不改变argmax。数据收益成立，尚不能自动决定1M或宣布容量/表示达到上限。D2 T4与两个D1WD终点仍是当前完整R2的必要依赖。
-
-[stage283](../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md)随后完成全部8模型、16视图/128配对，独立points/core 3,976/1,808项通过。D2 T4共同BA3=57.1267%，τ效率6.05%；τ相对D0增加.940 pp [.419,1.566]，仍低于1 pp点值门槛。D1WD改善原D1但固定终点仍弱于D0；这两个模型的global bias分别恢复.78/1.25 pp BA，不能沿用D0/D2结果宣称所有readout无效。四个D1/D1WD模型的末轮e偏移与末段约3∶1的e/μ组成相符，已触发同prefix的末轮顺序控制；原八模型比较保留，完整R2须等待该诊断和科学判断。合同、完整实测及资源见[紧凑证据](r2_regularization_review.json)。
+D0/D2两个global bias没有净BA改善；D1WD T3/T4分别恢复.78/1.25 pp。正温度改善部分NLL但保持argmax。这个低维诊断区分置信度、决策偏移与表示限制，不排除更一般readout，也不代替R7校准。前序记录见[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)、[stage282](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md)和[stage283](../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md)。
 
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |
 | --- | --- | --- |
-| R3: measured relations | 以R2胜出配方为共同基线。B1先检验首层stride4→2及相位敏感性；原生族单独检验压缩前跨窗口/跨plane几何边，随后才测geometry anchors和late fusion | 同输入、曝光及HPO；主任务、逐类/occupancy和成本配对。最有价值改变补三seed，再做native/100μm/1mm |
+| R3: measured relations | M0先检验D2 T4全程重混，冻结采样配方；B1再检验首层stride4→2及相位；原生族单独检验压缩前跨窗口/跨plane几何边 | 采样与结构分别配对；主任务、逐类/occupancy和成本。最有价值改变补三seed，再做native/100μm/1mm |
 | R4: objects and tracker | 增加真实station spacing、方向相容与测量不确定度；多候选关联/robust fit控制，再择一learned edge或instance方案；raw路径覆盖全部事件 | candidate recall、整轨efficiency/fake/duplicate/coverage、vertex与方向残差均报告；raw+object增益包含重建失败事件 |
 | R5: tau and labels | 先flat4、tau gate+conditional3、conditional decay辅助；优先τhad specialist，τe/τμ按混淆推进；完整非τ背景及prompt lepton识别一起评估 | 合并后τ工作点改善，共同三类非劣；分支与inclusive效率分别报告；不使用truth路由 |
 | R6: targeted learning | 仅在胜出encoder上追加一项连续性/局部监督或topology MAE；同总计算监督为控制；加入已接受幅度的readout训练扰动 | 下游实际收益或数据效率成立；名义与未见扰动pattern同时评价，不以pretext loss下降晋级 |
@@ -76,12 +70,12 @@ R5分两条物理路径。OPERA支持在可见母轨/次级顶点上结合1h/3h�
 
 ## 5. 资源和完成标准
 
-资源优先顺序由预计完成时间决定，HTCondor与Kubeflow并用，接受异构GPU、共享设备和MIG。当前实际以H100 NVL MIG 3g.47gb四进程、H100L MIG 2g.24gb双进程执行首批，单卡四进程profile提高了总吞吐。并行度须结合真实输入、RAM、显存和完整validation峰值选择；不以占满进程数代替有效训练吞吐。同卡进程共享一次输入staging，各模型独立optimizer/checkpoint，成本按allocation计一次。
+资源优先顺序由预计完成时间决定，HTCondor与Kubeflow并用，接受异构GPU、共享设备和MIG。R2首批已实际使用H100 NVL MIG 3g.47gb四进程、H100L MIG 2g.24gb双进程，单卡四进程profile提高了总吞吐。并行度须结合真实输入、RAM、显存和完整validation峰值选择；不以占满进程数代替有效训练吞吐。同卡进程共享一次输入staging，各模型独立optimizer/checkpoint，成本按allocation计一次。
 
 数值配方按对照保持清楚即可，无需等待同型号或整卡。T4的FP32、A100/H100的BF16和V100兼容构建都可按实测使用；若改变精度/软件配方则补必要基线。当前LCG108没有SM70内核，这是该软件构建的限制。运行中的有效训练继续完成；排队副本的迁移保留单writer和实际成本记录。
 
-R1实际batch成本45.708889异构device-hours，已超过原18 h规划，因此后续不照搬原全矩阵。R2先完成一族；再按吞吐与实际效果重排R3–R7，保留最终确认所需资源。没有实测收益的复杂分支暂缓，不把整个项目交付绑定在τ成功或全部候选训练完成上。
+R1实际batch成本45.708889异构device-hours，已超过原18 h规划；R2一族及必要控制实际7.475833 h、116.65 allocated CPU core-hours，39条allocation全部终态。按R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h，交互完整allocation开销仍未测量。后续按实测小批次重排，保留R7确认资源。没有实测收益的复杂分支暂缓，不把项目交付绑定在τ成功或全部候选训练完成上。
 
 统一晋级值沿用[02](02_tasks_and_evaluation.md#6-统计设计与晋级门槛)：三类ΔBA3至少2 pp并满足NLL/逐类约束；τ在1%背景工作点Δ效率至少1 pp、区间支持正效应且共同三类非劣。更小收益如实记录，用成本与科学问题决定是否追加。最终交付至少包含合作组三类对照、保留/暂缓τ的证据、已选模型的完整概率与工作点、新独立确认、可复现配置和资源账本。
 
-旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1已完成，R2首批执行中，R3–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。
+旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1/R2已完成，R3–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。

@@ -1,12 +1,12 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0、R1已完成，R2首批六模型正在执行。**R1完整交付41模型、133项配对、21项三seed平均配对、11域和55条压力路径；452项验收全部通过，独立nominal/core-interval/stress检查分别通过2,557/2,512/5,666项。最终数值、统计口径及成本见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
+**R0、R1、R2已完成，R3尚未启动。**R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
 
-本轮B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56.3044%，τ效率在1% FPR下为5.0200%。相对B4的τ效率增益2.423 pp [1.941,2.977]满足预定τ研究门槛；T3相对HGB的1.973333 pp低于2 pp实用门槛，相对B4则未满足μ recall非劣。完整交付不等于全部科学门槛通过。
+R1三seed比较中B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56.3044%，τ效率在1% FPR下为5.0200%。相对B4的τ效率增益2.423 pp [1.941,2.977]满足预定τ研究门槛；T3相对HGB的1.973333 pp低于2 pp实用门槛，相对B4则未满足μ recall非劣。完整交付不等于全部科学门槛通过。
 
-三类化没有稳定改善共同任务：B1/B2等时compute T3−T4 conditional的BA3分别为+.064 pp [−.179,+.302]和−.313 pp [−.514,−.113]，NLL3均更差，μ改善伴随e/NC损失。所有seed42主网络四pass末轮NLL仍下降。下一步先以B1的fresh D0/D1/D2分开检查训练配方、unique数据与重复曝光；原生B2作为问题驱动的第二族，R3再做表示单因素。
+三类化没有稳定改善共同任务：R1 B1/B2等时compute T3−T4 conditional的BA3分别为+.064 pp [−.179,+.302]和−.313 pp [−.514,−.113]，NLL3均更差，μ改善伴随e/NC损失。R2 D2的对应BA3差为−.030 pp [−.393,.341]，仍有逐类取舍。下一批先控制fresh D2 T4的全程事件混合，再检验B1局部降采样与原生族压缩前关系，分别使用匹配参照。
 
-R1已记录终态batch成本45.708889异构device-hours、307.181111 CPU core-hours，超过18 h规划；所有allocation终态，历史SSL和交互下界单列。后续按实际成本分批选最小矩阵，不直接照搬原80 h总规划的余下60 h实验。资源继续以尽快开始、兼容即可为原则，接受不同GPU、共享设备和MIG。
+R1终态batch成本45.708889异构device-hours、307.181111 CPU core-hours；R2为7.475833 h、116.65 core-hours，均已终态。历史SSL和交互下界单列。按R0上界+R1/R2 batch累计54.269577 h，后续按实际成本分批选最小矩阵，保留R7资源。资源继续以尽快开始、兼容即可为原则，接受不同GPU、共享设备和MIG。
 
 本文件与[experiment_plan.json](experiment_plan.json)记录研究合同及状态。W01–W06/W08已完成，W07为R3待实现；R1入口为`analysis.flavour.v2.r1`，规格JSON不能直接传给旧CLI。原始审查见stage237，R0见stage238，R1中期过程见stages239–273，最终状态以stage274为准；不修改历史报告形成时的结果。
 
@@ -16,8 +16,8 @@ R1已记录终态batch成本45.708889异构device-hours、307.181111 CPU core-ho
 | --- | --- | --- | --- |
 | R0（完成） | Completed 2026-11-14 | 使用记录、v2 manifests、loader/transform/profile、实际架构元数据 | 73项最终读回与81项测试通过；Confirm保持封存 |
 | R1（完成） | Completed 2026-11-15 | B0–B4 T3/T4、三seed扩展、同计算及合作组域 | 41模型、133配对、21平均配对、55压力路径；452项验收通过 |
-| R2 | Week 2–3 | unique data / passes / capacity 小矩阵 | 明确仍在改善、过拟合或资源受限；选择收敛参考配方 |
-| R3 | Week 3–5 | G1a/G1b/G1c，最佳结构的 native/coarse | 几何关系/压缩单因素收益；三 seed 前两名确认；梯度及内部健康 |
+| R2（完成） | Completed 2026-11-15 | unique data / passes、正则化和末轮顺序控制 | 198项验收；D2参考，收敛/容量仍开放，条件1M/加宽暂缓 |
+| R3 | Week 3–5 | M0采样，G0相位/G1降采样，G2原生关系，G3必要复现 | 采样/结构单因素收益；最有价值改变三seed确认；梯度、内部健康和成本 |
 | R4 | Week 4–6 | Tracking/vertex/association，raw/object 融合 | 对象 fake–efficiency–coverage 与全事件分类净增益 |
 | R5 | Week 5–7 | T4 / T3T / T4D，τ specialists / charm negatives | 固定 FPR 的 inclusive/branch 结果、三类非劣及四类投入决策 |
 | R6 | Week 6–8 | 定向预训练、同总计算监督控制、条件鲁棒训练 | 胜过强监督的实际效果或数据效率/鲁棒性优势 |
@@ -78,9 +78,9 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 ## 4. R2：用小矩阵确定训练规模
 
-执行状态（2026-11-15）：300k Train+40k Tune身份及PE守恒核对通过，D0/D1/D2共六份精确sampler preflight已冻结。BF16三/四类真实拟合均100%，中途恢复与连续训练参数差值为0。Kubeflow H100 MIG 3g.47gb最多四并行执行D0/D1，HTCondor H100 MIG 2g.24gb双并行执行D2；完整批次科学结果尚未产出。配置、实算U和后续验收见[r2_execution.json](r2_execution.json)、[configs/r2](configs/r2/campaign.json)及[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。[最新只读快照](r2_progress_review.json)与[stage278](../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md)补充已完成模型和低occupancy排序，原六份配置不变。
+最终状态（2026-11-15）：R2完成8模型、16视图/128配对、11域、共同Train gap和五折readout；另完成两次同prefix末轮顺序重放/8配对。198项验收通过，39条allocation全部终态，实际7.475833异构device-hours、116.65 allocated CPU core-hours。BF16三/四类真实拟合100%，中途恢复参数差值0；末轮原顺序全部预测概率精确复现。数据、合同与结果见[r2_execution.json](r2_execution.json)、[configs/r2](configs/r2/campaign.json)、[最终证据](r2_results.json)和[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)。
 
-根据R1最终四pass与三seed结果，首批优先B1一族；B2为原生第二族候选，先profile并按明确问题决定是否扩展。B4保留R1 D0及逐类共同参考；是否追加其长训练由前两族的实测问题和费用决定，不自动运行三族全矩阵。B3末轮仍明显改善，若B2的规模收益有限且资源支持，再考虑其长训练控制。优先在seed42做：
+根据R1最终结果，R2只运行B1一族及有实际触发证据的正则化/顺序控制。参考选D2 T3/T4原始endpoint；B2/B3留R3本族关系对照，B4保留R1共同参考，没有自动扩大多族矩阵。已执行和条件分流如下：
 
 表中N是冻结四类pool的事件数；T4实际监督N个unique labels，T3使用其中3N/4个非τlabels。D1/D2的总曝光在T4均为1.2M，在T3均为0.9M，标签预算按真正训练的行数报告。
 
@@ -89,8 +89,9 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 | D0 | 100k | 4 | fresh、实际精度与新update schedule匹配；R1另作历史参照 |
 | D1 | 100k | 12 | 同数据更长曝光；重新定义完整 schedule，不从已退火到最低 LR 的尾部机械续跑 |
 | D2 | 300k | 4 | 与 D1 约相同总曝光，更多 unique events |
-| D3 | 300k | 12 | D1/D2 仍改善且预算支持时执行 |
-| D4 | 1M | 4 起 | 300k 有实际收益后，仅对最强配方扩展 |
+| D1WD | 100k | 12 | T3/T4均完成；仅AdamW weight decay .01→.1，改善D1但终点仍弱于D0 |
+| D3 | 300k | 12 | 本批不执行；D1恶化，D2未建立稳定plateau，三倍曝光价值未建立 |
+| D4 | 1M | 4 起 | 本批不执行；D2相对D0的BA/τ点值低于实用门槛，后续需新证据及独立资源计划 |
 
 固定 updates 的比较对齐 sampler、batch、warm-up/update schedule，分别保留 actual exposures；固定 passes 的比较回答增加数据后训练成本与质量。两种比较各自说明改变因素，不能只报一条随 N 同时改变曝光的曲线。
 
@@ -98,7 +99,7 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 先完成首批固定预算终点，不因中间recall波动提前选择配方。D1−D0区分当前schedule下的更长训练，D2−D1区分同曝光下更多unique事件；若D1/D2仍改善才考虑D3，若更多unique明显有益再为1M单独计时，若Train/Tune均停滞再用width32检查容量。排序较好而argmax差时做family交叉拟合bias诊断；低occupancy排序本身也弱时优先局部路径。[09 §3](09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流)给出完整分流表。endpoint是主比较，best-screen是次比较，不混合两种选点策略或将screen次数不同造成的选择效应称为数据规模增益。
 
-D0完整Tune和readout诊断见[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)。原始评价之外，正式R2交付还要求所有endpoint复用同一五折、两个global bias与正温度对照；完整AP/AUROC经独立sklearn核对。容量扩展必须通过实际width/family匹配的真实拟合检查。合同与当前D0数值在[r2_readout_review.json](r2_readout_review.json)，不把其中两个模型的局部完成状态作为完整R2完成。
+D0 readout合同见[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)，全部8 endpoint已复用同一五折、两个global bias和正温度，完整AP/AUROC经独立sklearn核对。D0/D2的bias无净BA收益，D1WD则恢复部分末端偏移；温度保持argmax。完整数值见[r2_results.json](r2_results.json)。容量扩展仍必须通过实际width/family匹配的真实拟合检查。
 
 容量对照按实际模型选择一个加宽版本：B1为793,674参数，可先将width16增为32；B2为199,882参数，可先将dim64增为128。实际参数、吞吐和显存由实现/profile生成，不把不同族都称为0.9M，也不直接把所有族扩到3–4M。只有学习曲线显示容量限制且收益足够，才继续扩大。先选择数据/训练，再扩大SSL。
 
@@ -108,24 +109,25 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 
 首批设计具体为：同一族/任务固定输入、初始化方式、loss、batch、sampler、selected LR、AdamW和正则化；D0/D1/D2从fresh初始化，按各自预定总updates定义5% warm-up及cosine、保留5% LR floor，wall仅用于成本/deadline。D1扩展完整schedule，不能机械续接D0的低LR尾部。该预算归一化思路参考[M6](05_literature.md#m6)，不据此预设linear优于本项目cosine。
 
-现有sampler保留各mixed-shard window的尾批，D1/D2同曝光不保证精确同updates。提交前从冻结清单实算U，保存batch-size分布、LR轨迹及`sum(lr)`；首批D2−D1明确称同曝光比较。精确fixed-update控制需要另列实际停止步数/曝光，不能同时宣称固定passes、固定曝光及精确同updates。每75k非τ Train曝光评价同一4k Tune screen，终点评价完整40k Tune并保留固定预算checkpoint；best-screen checkpoint单列。新D0匹配实际数值配方。设计见[stage264](../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md)；已实算300k的T3/T4 U为112630/150117，冻结记录见[r2_execution.json](r2_execution.json)，完整运行成本仍待终态统计。
+现有sampler保留各mixed-shard window的尾批，D1/D2同曝光不保证精确同updates。提交前从冻结清单实算U，保存batch-size分布、LR轨迹及`sum(lr)`；D2−D1称同曝光比较。精确fixed-update控制需要另列实际停止步数/曝光，不能同时宣称固定passes、固定曝光及精确同updates。每75k非τ曝光评价同一4k screen，终点和best-screen分别评价完整40k Tune。300k的T3/T4实际U=112630/150117，终态预算与成本均已核对；设计见[stage264](../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md)，实测在[r2_results.json](r2_results.json)。
 
-[stage271](../../workbook/2026-11-15_stage271_r1_sampling_metadata_review.md)的24种metadata重放不支持大段单类别训练：single-class batch均少于.3%。Two-shard窗口仍有类比例自相关，少数缺类窗口每轮最多覆盖T3的6.24%或T4的7.923%事件；分类影响未测量。R2 preflight同时保存窗口/滚动类频率及末段组成，检查head/logit偏移是否对应局部先验。只有出现模型证据，才追加一个同事件、曝光、batch-size序列、updates与LR的重混控制，先profile其I/O；不因metadata差异自动扩矩阵或重写R1结论。
+[stage271](../../workbook/2026-11-15_stage271_r1_sampling_metadata_review.md)的metadata重放不支持大段单类别训练，局部类比例仍有相关性。R2实际出现末轮偏移后执行同prefix控制：原顺序全部概率精确复现；重混末轮BA3+1.277 pp [.810,1.803]，稀疏AUROC和τ工作点差值仍跨零。这个控制证明一个prefix上的顺序效应，不能重写R1为“无效训练”，也不能代表fresh全程重混。后续M0先测fresh D2，采样与结构改变分别配对。
 
-按R1实测wall线性估算，B1在1g MIG完成D1+D2的T3/T4四项约需10.087 device-hours；B2在H100 NVL约13.406 h，两族直接全跑约23.493 h，尚未含新D0、300k转换、失败及额外profile。它们来自不同设备，属于排期估算，不能当FLOP等效成本；300k的实际I/O和训练wall尚未测量。原R2的18 h规划应采用分批执行：首批冻结最有实际收益的B1一族，完成D1/D2并补数值配方匹配的D0；第二族只在首批结果能回答一个尚未解决的问题且实际剩余预算支持时追加相应控制。保持现有可运行分区，不为达到估算吞吐等待整卡；实际设备较慢时缩小下一批矩阵并重新计时。
+原R1线性排期估算中，B1 D1+D2四项约10.087 h、B2约13.406 h，两族23.493异构device-hours，未含D0/转换/失败。实际R2的一族八模型、必要重放和全部辅助开销为7.475833 h；不同设备与并发条件下，不以估算差当作FLOP收益。后续继续按已获设备、I/O、完整validation峰值和科学问题冻结小批次，不等待整卡或同型号。
 
 ## 5. R3–R6：按证据逐步增加结构
 
 ### R3：几何关系与压缩
 
-以R2配方固定训练和输入，从B1的stride4→2及相位诊断开始，先测额外计算与稀疏信号保留。原生路线优先G1a（压缩前跨窗口/跨层边），使用本族共同baseline；其后按结果决定G1b（显式几何anchors）和G1c（重训去除latent、late fusion）。不同族的结构干预分别配对，不能将跨族输入表示/训练变化归于单一关系层。G1a/G1b均有独立收益时再组合。只对最佳两者做三seed，再仅对最佳结构进行native/100μm/1mm三点配对；不一次启动完整矩阵。
+先以M0控制采样配方，再固定训练和输入做B1的stride4→2及相位诊断，测额外计算与稀疏信号保留。原生路线优先G1a（压缩前跨窗口/跨层边），使用本族共同baseline；其后按结果决定G1b（显式几何anchors）和G1c（重训去除latent、late fusion）。不同族干预分别配对，不能将跨族输入/训练变化归于单一关系层。G1a/G1b均有独立收益时再组合。只对最有价值改变补三seed，再仅对最佳结构进行native/100μm/1mm三点配对。
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
-首个小批次按以下顺序执行，R2的最终参考和成本形成后再冻结配置；这里是实施计划，尚未训练R3模型。
+首个小批次按以下顺序执行，R2已选D2两个固定endpoint；R3配置在提交前另行冻结，目前尚未训练R3模型。
 
 | Work | Controlled change | Required evidence / next decision |
 | --- | --- | --- |
+| M0: full-pass sampling | fresh D2 T4，300k×4、width16、AdamW .01、batch8；仅改每pass的事件混合，逐update沿用原D2 batch大小、总U=150117及LR轨迹 | allocation-local transformed cache先核对输入/峰值；与R2 D2 raw endpoint配对全域/稀疏/逐类/τ及成本。只在实际有效时采用新配方，再补必要T3；G1两侧使用相同采样，采样收益单列 |
 | G0: sampling phase | 在固定Train小样本上使用保留全部测量的padding改变卷积采样相位；记录绝对几何及边界支持 | 单点、短线和真实响应的中间激活/输出；PE及channel计数守恒。相位敏感只能提出表示假设，不当作分类净收益 |
 | G1: B1 local retention | 同一1mm投影、width16、seed42和输入；仅首层stride4→2，累计stride32→16，fresh训练 | 先32-event真实拟合、分支梯度与完整validation峰值，再同unique/曝光/LR对照。报告全域、逐类、低occupancy AP/AUROC和τ工作点及额外成本 |
 | G2: native relations | 使用本族匹配训练参照，只在压缩前加入跨窗口/跨plane测量边；保留bar区间和真实z spacing | 候选关系覆盖、边数尾部、传播可达性与实际训练增益。单列相对本族参照和相对B1的效果，不能将跨族差值解释为纯几何边收益 |
@@ -165,13 +167,13 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 
 ## 7. 资源与运行规则
 
-原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0、R1已有终态成本，R2已进入执行，其终态成本待统计；R3–R7尚未启动；表中的剩余矩阵需要按实际结果分批重排：
+原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3–R7尚未启动；剩余矩阵须按实际结果分批重排：
 
 | Stage | Planned device-hours ceiling |
 | --- | ---: |
 | R0 microbench / fit gates (complete; actual upper bound 1.085 h) | 2 |
 | R1 baselines / selection (complete; actual batch 45.709 h) | 18 |
-| R2 scaling | 18 |
+| R2 scaling (complete; actual batch 7.476 h) | 18 |
 | R3 geometry | 20 |
 | R4 objects | 8 |
 | R5 tau | 8 |
@@ -179,7 +181,7 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 | R7 inference / confirmation | 2 |
 | Total | 80 |
 
-R1实际batch成本45.708889 h，CPU307.181111 core-hours，122条allocation均终态；已计全部失败、探针和迁移。交互操作下界另有.325533 h，复用历史SSL .635321 h单列。按既有R0上界与R1 batch口径累计46.793744 h，原80 h规划的名义余量33.206256 h，还未计R1交互完整开销；不能再默认执行后续原计划合计60 h。首批R2只选一族D0/D1/D2，后续阶段按实测收益和剩余成本重排。1M 扩展或大规模新模拟超出首轮范围时，先由已测吞吐生成独立资源计划。不同 MIG/整卡型号分别计 allocation；模型计算效率尽量在相同设备和并发条件下比较，不把 MIG 小时当整卡等效 FLOPs。
+R1 batch45.708889 h、CPU307.181111 core-hours，122条allocation终态；R2 batch7.475833 h、CPU116.65 core-hours，39条allocation终态，另有一次提交拒绝未产生allocation。按R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h；R1/R2交互operation下界.325533/.177657 h另列，完整交互allocation开销未测量，历史SSL .635321 h也单列。不能照搬后续原42 h全矩阵。按实测小批次并保留R7资源；1M或大规模新模拟先形成独立资源计划。不同MIG/整卡分别记账，不将device-hours当FLOP等效。
 
 R0实际：A100 allocation 0.746667 h，H100 allocation 0.162500 h，交互T4含失败尝试上界0.175688 h，合计上界 **1.084855 device-hours**；HTCondor allocated CPU **7.686667 core-hours**、实际进程CPU **1.544444 h**。八条已提交作业均终止，一次站点拒绝未产生allocation。2 h规划额度内已包含失败与编译；GPU小时按型号分别记录，不作FLOP等效相加。
 
@@ -214,4 +216,4 @@ python roadmap/tools/review_current_results.py \
   --output /eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/current_results_review.json
 ```
 
-它只读取历史摘要、validation scores和training histories。R1模型命令与提交见stages239–243及[资源执行说明](07_resources_and_operations.md)；最终模型排名与预算配对已测量；训练收敛仍待R2，不由短screen或四pass排名推断。
+它只读取历史摘要、validation scores和training histories。R1模型命令与提交见stages239–243及[资源执行说明](07_resources_and_operations.md)；R2最终复核命令见stage284。两阶段模型排名与预算配对已测量，训练收敛仍未建立。

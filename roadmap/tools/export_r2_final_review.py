@@ -84,18 +84,25 @@ def export(root):
         'selected_endpoint_pairs': pairs,
         'decision': decision,
         'acceptance': {key: value for key, value in acceptance.items() if key != 'checks'},
-        'resources': {key: resources[key] for key in [
-            'UTC', 'device_hours', 'allocated_CPU_core_hours',
-            'device_hours_by_model_or_partition', 'active_or_unresolved',
-            'interactive_operation_lower_bound_device_hours',
-            'heterogeneous_device_hours_are_not_FLOP_equivalent',
-        ]},
+        'resources': {
+            **{key: resources[key] for key in [
+                'UTC', 'device_hours', 'allocated_CPU_core_hours',
+                'device_hours_by_model_or_partition', 'active_or_unresolved',
+                'interactive_operation_lower_bound_device_hours',
+                'heterogeneous_device_hours_are_not_FLOP_equivalent',
+            ]},
+            'allocation_records': len(resources['allocations']),
+            'rejected_before_allocation_count': len(resources['rejected_before_allocation']),
+            'terminal_cost': not resources['active_or_unresolved'],
+            'full_allocation_ledger': str(root/'resources.json'),
+        },
         'Cal_A_Cut_B_Confirm_payload_read': False,
     }
     if (root/'sampling/acceptance.json').exists():
         result['conditional_sampling_replay'] = {
             'contract': read(root/'sampling/contract.json'),
             'acceptance': read(root/'sampling/acceptance.json'),
+            'reproduction': read(root/'sampling/reproduction.json'),
             'models': {name: {domain: {
                 task: task_summary(row[task]) for task in ['T3', 'T4'] if row.get(task)
             } for domain, row in values.items() if domain in ['all', 'occupancy_0_100']}

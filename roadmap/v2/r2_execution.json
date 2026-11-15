@@ -1,5 +1,5 @@
 {
-  "status": "eight_models_complete_mandatory_sampling_replay_running_not_R2_complete",
+  "status": "complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2",
   "contracts": "configs/r2/campaign.json",
   "measured_preflight": [
@@ -201,6 +201,17 @@
         "b1_d1wd_t4_s42"
       ],
       "status_at_snapshot": "complete"
+    },
+    {
+      "name": "pinpoint-r2-sampling-k5",
+      "backend": "Kubeflow",
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "parallel": 1,
+      "models": [
+        "same-prefix original final-pass replay",
+        "same-prefix global-random final-pass replay"
+      ],
+      "status_at_snapshot": "complete"
     }
   ],
   "gates": {
@@ -224,16 +235,15 @@
       "independent_core_checks": 1020,
       "scope": "Train-only synthetic validation, not generalization"
     },
-    "unit_tests_passed": 8
+    "unit_tests_passed": 24,
+    "initial_unit_tests_passed": 8,
+    "final_acceptance_passed": 198,
+    "saved_endpoint_original_replay_probability_max_absolute_difference": 0.0
   },
-  "pending": [
-    "conditional final-pass sampling replay and independent evaluation",
-    "evidence-based reference and R3/data/capacity decisions",
-    "all allocation terminal accounting, figures and complete R2 acceptance"
-  ],
+  "pending": [],
   "Cal_A_Cut_B_Confirm_payload_read": false,
-  "last_progress_UTC": "2026-11-15T13:16:21.419459+00:00",
-  "latest_stage_report": "../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md",
+  "last_progress_UTC": "2026-11-15T13:30:44.765704+00:00",
+  "latest_stage_report": "../../workbook/2026-11-15_stage284_r2_final_results.md",
   "intermediate_screen_progress": [
     {
       "name": "b1_d0_t3_s42",
@@ -344,7 +354,8 @@
       "status": "complete",
       "BA3": 0.5665,
       "NLL3": 0.8713217931394454,
-      "exposures": 300000
+      "exposures": 300000,
+      "updates": 37550
     },
     {
       "name": "b1_d0_t4_s42",
@@ -352,6 +363,7 @@
       "BA3": 0.5653333333333334,
       "NLL3": 0.864586107166903,
       "exposures": 400000,
+      "updates": 50051,
       "BA4": 0.44784999999999997,
       "NLL4": 1.185567840583845,
       "tau_eff_at_1pct_FPR": 0.0511
@@ -361,7 +373,8 @@
       "status": "complete",
       "BA3": 0.5317,
       "NLL3": 1.1437383627193056,
-      "exposures": 900000
+      "exposures": 900000,
+      "updates": 112645
     },
     {
       "name": "b1_d1_t4_s42",
@@ -369,6 +382,7 @@
       "BA3": 0.5373,
       "NLL3": 1.0151061500828702,
       "exposures": 1200000,
+      "updates": 150153,
       "BA4": 0.4237,
       "NLL4": 1.3371618730916606,
       "tau_eff_at_1pct_FPR": 0.0438
@@ -378,7 +392,8 @@
       "status": "complete",
       "BA3": 0.5709666666666667,
       "NLL3": 0.8558668029296828,
-      "exposures": 900000
+      "exposures": 900000,
+      "updates": 112630
     },
     {
       "name": "b1_d2_t4_s42",
@@ -386,6 +401,7 @@
       "BA3": 0.5712666666666667,
       "NLL3": 0.8490304835167811,
       "exposures": 1200000,
+      "updates": 150117,
       "BA4": 0.45765,
       "NLL4": 1.1662331782395383,
       "tau_eff_at_1pct_FPR": 0.0605
@@ -395,7 +411,8 @@
       "status": "complete",
       "BA3": 0.5461333333333334,
       "NLL3": 0.9627102523931469,
-      "exposures": 900000
+      "exposures": 900000,
+      "updates": 112645
     },
     {
       "name": "b1_d1wd_t4_s42",
@@ -403,6 +420,7 @@
       "BA3": 0.5497666666666666,
       "NLL3": 0.915119484303838,
       "exposures": 1200000,
+      "updates": 150153,
       "BA4": 0.436075,
       "NLL4": 1.2260662648240297,
       "tau_eff_at_1pct_FPR": 0.0529
@@ -420,7 +438,7 @@
     "readout_endpoint_models": 8
   },
   "conditional_sampling_replay": {
-    "status": "running",
+    "status": "complete",
     "backend": "Kubeflow",
     "job": "pinpoint-r2-sampling-k5",
     "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
@@ -429,6 +447,141 @@
     "actual_tail_updates_per_variant": 12513,
     "same_events_batch_sizes_updates_LR": true,
     "reason": "configs/r2/sampling_tail_reason.md",
-    "supplemental_to_original_eight_model_matrix": true
-  }
+    "supplemental_to_original_eight_model_matrix": true,
+    "completed_UTC": "2026-11-15T13:23:49+00:00",
+    "views_including_saved_endpoint": 3,
+    "pairs": 8,
+    "independent_points": 1026,
+    "independent_core_intervals": 115,
+    "reproduction": {
+      "probability_max_absolute_difference": 0.0,
+      "probability_mean_absolute_difference": 0.0,
+      "four_class_prediction_agreement": 1.0,
+      "interpretation": "compare original replay with the saved endpoint before attributing the remixed-original contrast to sampling; no independent training-seed uncertainty"
+    },
+    "evaluation_Condor_cluster": "1582992.0",
+    "evaluation_status": "complete",
+    "result": "r2_results.json",
+    "scope": "one fixed Tune-selected prefix at end of pass11; not fresh all-pass reshuffling or independent confirmation"
+  },
+  "final_results": "r2_results.json",
+  "acceptance": {
+    "status": "complete",
+    "passed": 198,
+    "failed": [],
+    "models": 8,
+    "checkpoint_views": 16,
+    "pairs": 128,
+    "scope": "R2 prescribed delivery and explicit scientific decision; global optimality is not established by delivery",
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "resource_summary": {
+    "snapshot_UTC": "2026-11-15T13:30:44.765704+00:00",
+    "allocation_device_hours": 7.475833333333334,
+    "allocated_CPU_core_hours": 116.64999999999999,
+    "terminal_cost": true,
+    "allocation_records": 39,
+    "active_or_unresolved": [],
+    "device_hours_by_model_or_partition": {
+      "NVIDIA H100L-2-24C MIG 2g.24gb": 4.026111111111112,
+      "NVIDIA H100L-1-12C MIG 1g.12gb": 0.1738888888888889,
+      "NVIDIA A100-PCIE-40GB": 0.06166666666666667,
+      "NVIDIA H100 NVL MIG 3g.47gb": 3.214166666666667
+    },
+    "interactive_operation_hours_lower_bound": 0.17765723452153098,
+    "rejected_before_allocation": 1,
+    "interpretation": "all heterogeneous batch allocation costs including failures,probes,recovery; count each allocation once for concurrent independent models; not FLOP equivalent; complete interactive allocation overhead unmeasured"
+  },
+  "scientific_decision": {
+    "status": "reviewed",
+    "source": "r2_results.json",
+    "selected_reference": {
+      "T3": {
+        "name": "b1_d2_t3_s42",
+        "checkpoint": "exposure.pt",
+        "BA3": 0.5709666666666667,
+        "NLL3": 0.8558668029296831
+      },
+      "T4": {
+        "name": "b1_d2_t4_s42",
+        "checkpoint": "exposure.pt",
+        "BA3_conditional": 0.5712666666666667,
+        "NLL3_conditional": 0.8490304835167802,
+        "BA4": 0.45765,
+        "NLL4": 1.1662331782395368
+      },
+      "policy": "原八模型固定endpoint内的开发参考；own-task best-screen次比较保留；不同任务的逐类取舍单列，不以Tune调整后概率替代raw参考。",
+      "next_stage": "R3 M0先验证D2 T4全程重混；仅在实际有效时采用新配方及匹配baseline，然后相位诊断与B1首层stride4→2单因素控制；原生关系独立本族配对。R4对象质量、R5条件τ、R6胜出encoder定向训练、R7独立确认按证据启动。"
+    },
+    "conclusion": "more unique data beats the realized repeated-pool recipe; stronger weight decay and one-prefix final-pass remix recover some loss; convergence,capacity sufficiency and global optimality remain unestablished",
+    "conditional_extensions": {
+      "D1WD": {
+        "status": "complete",
+        "learning_change": "AdamW decay .01→.1 only",
+        "conclusion": "两个任务改善D1终点并缩小gap，但仍落后D0；只测一个系数，未建立最佳正则化。"
+      },
+      "final_pass_sampling": {
+        "status": "complete",
+        "parent": "b1_d1wd_t4_s42 end of pass11",
+        "conclusion": "同prefix末轮重混BA3+1.276667 pp [.810168,1.803464]、NLL3−.049451098；原顺序全部概率精确复现保存终点。顺序影响已建立，稀疏macro AUROC与τ效率增益区间仍跨零；重混后BA3=.562533/NLL3=.865668，尚未超过D2原始参考。该单prefix诊断不等同fresh12轮全程重混。",
+        "paired_all_domain": {
+          "BA3": {
+            "difference_a_minus_b": 0.01276666666666082,
+            "95pct": [
+              0.008101682120957354,
+              0.018034636527007066
+            ]
+          },
+          "NLL3": {
+            "difference_a_minus_b": -0.0494510983706683,
+            "95pct": [
+              -0.05191788733265842,
+              -0.04703508579654325
+            ]
+          },
+          "macro_AP3": {
+            "difference_a_minus_b": 0.0031405721218811244,
+            "95pct": [
+              0.0017199360662496943,
+              0.004475272481973431
+            ]
+          },
+          "macro_AUROC3": {
+            "difference_a_minus_b": 0.002604028333333175,
+            "95pct": [
+              0.001509130543861828,
+              0.0037937883424387308
+            ]
+          },
+          "tau_eff_1pct": {
+            "difference_a_minus_b": 0.0010999999999996637,
+            "95pct": [
+              -0.003164261341150856,
+              0.004249896872618419
+            ]
+          }
+        },
+        "reproduction": {
+          "probability_max_absolute_difference": 0.0,
+          "probability_mean_absolute_difference": 0.0,
+          "four_class_prediction_agreement": 1.0,
+          "interpretation": "compare original replay with the saved endpoint before attributing the remixed-original contrast to sampling; no independent training-seed uncertainty"
+        }
+      },
+      "D3_300k12": "本批不追加：原D1的长重复路径已恶化，D2尚未证明稳定plateau；没有证据保证三倍预算划算。",
+      "D4_1M": "本批不追加：相对D0的净共同BA和τ点效应均低于既定实用目标；优先定位稀疏局部路径，后续以实际收益及独立资源计划重新触发。",
+      "width32": "本批不追加：未满足稳定Train/Tune双侧停滞触发；容量仍为开放问题。",
+      "second_native_family": "移至R3独立本族关系控制，先profile并使用匹配训练参照；不为填满GPU扩矩阵。",
+      "fresh_all_pass_global_shuffle": "留下一批R3的首个配方控制M0：fresh D2 T4、300k×4，仅改变全程事件混合，保持原每update batch大小、总U/LR/曝光；复用顺序缓存profile后先执行一项，再按共同BA/NLL、逐类/稀疏排序、τ与成本选择G1参照。原R2固定endpoint仍作为明确参考，采样收益与结构收益分开。"
+    }
+  },
+  "next_stage": {
+    "id": "R3",
+    "status": "not_started",
+    "first_work": "M0 fresh D2 T4 all-pass global reshuffling; retain per-update batch sizes,U=150117 and LR trajectory; input-equivalence/profile before training",
+    "then": "G0 phase; G1 B1 stride4-to2; G2 within-native-family pre-compression relations; G3 necessary seed and resolution replication",
+    "contract": "04_execution_plan.md#r3几何关系与压缩"
+  },
+  "allocations_scope": "primary training allocations below; all39 terminal allocation records are in source_root/resources.json, referenced by r2_results.json resources",
+  "historical_screen_snapshot_scope": "intermediate_screen_progress preserves the stage278 fixed4k screen snapshot; status_at_snapshot is historical,not current execution state; use final_results for full40k endpoints"
 }

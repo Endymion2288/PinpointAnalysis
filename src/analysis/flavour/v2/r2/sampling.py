@@ -333,6 +333,15 @@ def evaluate(root, workers=4):
     write_json(destination/'independent_core_intervals.json', core)
     if points['failed'] or core['failed']:
         raise ValueError('independent sampling replay review failed')
+    saved = frames['parent_endpoint'][['p0', 'p1', 'p2', 'p3']].to_numpy()
+    reproduced = frames['original'][['p0', 'p1', 'p2', 'p3']].to_numpy()
+    reproduction = {
+        'probability_max_absolute_difference': float(np.max(np.abs(saved-reproduced))),
+        'probability_mean_absolute_difference': float(np.mean(np.abs(saved-reproduced))),
+        'four_class_prediction_agreement': float(np.mean(saved.argmax(1)==reproduced.argmax(1))),
+        'interpretation': 'compare original replay with the saved endpoint before attributing the remixed-original contrast to sampling; no independent training-seed uncertainty',
+    }
+    write_json(folder/'reproduction.json', reproduction)
     check = {'status': 'complete', 'models': 3, 'pairs': len(pairs),
         'independent_points': points['passed'], 'independent_core_intervals': core['passed'],
         'all_frozen_identities': True, 'same_prefix_events_batch_sizes_LR': True,
