@@ -31,7 +31,7 @@ G0使用R2 D2 T4固定endpoint及256个真实Train事件、7个synthetic点/短�
 
 M0仍在Kubeflow H100 NVL MIG 3g.47gb训练，读回checkpoint已达499780/1200000曝光、训练秒1201.2848；最终指标未测量。新G2拟合/profile为Condor `1582994.0`；候选图审计为`1582995.0`。两者状态以终态资源表为准。
 
-权威G4源码核对：`PixelSD.cc`对同channel后续hit只累加能量，保留首贡献者trackID；因此审计明确称recorded-first-contributor recall，不称完整真实关联效率。accepted geometry有15个pixel、96个scint plane、108个tungsten中心；silicon/tungsten/scint厚度10/5/5 mm。`DetectorConstruction.cc:ComputeZPositions`给出不均匀z布置。当前G2 prototype尚未加入材料积分特征，其作用未测量。
+权威G4源码核对：`PixelSD.cc`对同channel后续hit只累加能量，保留首贡献者trackID；因此审计明确称recorded-first-contributor recall，不称完整真实关联效率。accepted geometry有15个pixel、96个scint plane、108个tungsten中心。原记录曾将silicon header10与另两种厚度一起写成mm；后续源码单位复核更正为silicon10 μm=0.010 mm、tungsten/scint均5 mm，详细修复与重验见stage289。`DetectorConstruction.cc:ComputeZPositions`给出不均匀z布置。当前G2 prototype尚未加入材料积分特征，其作用未测量。
 
 新增文献[M10](../roadmap/v2/05_literature.md#m10)官方摘要已联网核对。33项R1/R2/R3相关tests通过，包括原生control精确输出、匹配backbone初始化、新关系真实梯度、跨event索引隔离、skip-plane和bar mask。命令：
 

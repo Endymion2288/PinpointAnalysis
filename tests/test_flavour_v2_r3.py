@@ -1,6 +1,9 @@
 """R3 interventions preserve event and optimizer-budget contracts."""
 
 from types import SimpleNamespace
+import json
+from pathlib import Path
+import tempfile
 import unittest
 
 import numpy as np
@@ -14,6 +17,8 @@ from analysis.flavour.v2.r3.models import build_model, relation_features, Preloc
 from analysis.flavour.v2.r3.relations import candidate_edges
 from analysis.flavour.v2.r3.data import collate
 from analysis.flavour.v2.r3.phase import phase_forward
+from analysis.flavour.v2.r3.accept import gate_matches
+from analysis.flavour.v2.r3.evaluate import configuration
 
 
 class GlobalOrderTests(unittest.TestCase):
@@ -147,9 +152,10 @@ class NativeRelationTests(unittest.TestCase):
         geometry={k:[0.,30.] for k in ['tungsten_Zpos','pixel_Zpos','scint_Zpos']}
         geometry.update(tungsten_thickness=5.,silicon_thickness=10.,scint_thickness=5.)
         layer=PrelocalRelations(16,(.0208,.0228),geometry)
+        self.assertTrue(all(torch.isfinite(v).all() for v in layer.state_dict().values()))
         depths=layer.nominal_depths(torch.tensor([-10.,0.,10.,30.,50.]))
         torch.testing.assert_close(depths[:,0],torch.tensor([0.,2.5,5.,7.5,10.]))
-        torch.testing.assert_close(depths[:,1],torch.tensor([0.,5.,10.,15.,20.]))
+        torch.testing.assert_close(depths[:,1],torch.tensor([0.,.005,.010,.015,.020]),rtol=2e-4,atol=1e-6)
 
     def test_native_control_is_exact_and_relations_receive_gradient(self):
         torch.set_num_threads(1)
@@ -166,6 +172,32 @@ class NativeRelationTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(logits).all())
         self.assertGreater(float(related.backbone.relations.message[0].weight.grad.norm()),0.)
         self.assertGreater(float(related.backbone.relations.gate.grad.abs()),0.)
+
+
+class DeliveryContractTests(unittest.TestCase):
+    def test_learning_gate_rejects_different_stride_and_relation_geometry(self):
+        base={'family':'B1','task':'T4','precision':'BF16_encoder_FP32_head','cnn_width':16,
+            'image':{'height':32,'width':32}}
+        gate={'status':'complete','config':base}
+        self.assertTrue(gate_matches(gate,base))
+        self.assertFalse(gate_matches(gate,{**base,'cnn_first_stride':2}))
+        native={'family':'B2','task':'T4','precision':'BF16_encoder_FP32_head','dim':64,
+            'native_relation_adapter':True,'native_relations':True,'relation_plane_policy':'modality_visible'}
+        self.assertFalse(gate_matches({'status':'complete','config':native},{**native,'relation_material_context':True}))
+
+    def test_evaluation_requires_unique_candidates_and_resolved_pair_names(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root=Path(scratch);experiment=root/'candidate';experiment.mkdir()
+            (experiment/'config.json').write_text(json.dumps(dict(family='B1',task='T4',seed=42,design='G1')))
+            contract=root/'contract.json'
+            value={'experiments':[{'id':'a','path':str(experiment)}],
+                'contrasts':[dict(a='a',b='missing',domains=['all'],reason='negative_fixture')]}
+            contract.write_text(json.dumps(value))
+            with self.assertRaises(ValueError):configuration(root,contract)
+            value['contrasts'][0]['b']='a';contract.write_text(json.dumps(value))
+            self.assertEqual(len(configuration(root,contract)['models']),2)
+            value['experiments']*=2;contract.write_text(json.dumps(value))
+            with self.assertRaises(ValueError):configuration(root,contract)
 
 
 if __name__=='__main__':

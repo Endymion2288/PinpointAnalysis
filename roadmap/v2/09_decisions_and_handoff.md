@@ -52,6 +52,8 @@ T3使用对应四类pool的全部非τ事件；D1/D2在T3上均为900k曝光、T
 
 D0/D2两个global bias没有净BA改善；D1WD T3/T4分别恢复.78/1.25 pp。正温度改善部分NLL但保持argmax。这个低维诊断区分置信度、决策偏移与表示限制，不排除更一般readout，也不代替R7校准。前序记录见[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)、[stage282](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md)和[stage283](../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md)。
 
+R3进行中：M0的BA3+0.383 pp，但共同μ recall−4.08 pp、稀疏μ−14.816 pp，τ无增益，不采用全程重混；G1以原D2采样独立检验stride，G2使用本族匹配控制。实时证据见[r3_execution.json](r3_execution.json)，完整R3尚未完成。
+
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |
@@ -78,4 +80,4 @@ R1实际batch成本45.708889异构device-hours，已超过原18 h规划；R2一�
 
 统一晋级值沿用[02](02_tasks_and_evaluation.md#6-统计设计与晋级门槛)：三类ΔBA3至少2 pp并满足NLL/逐类约束；τ在1%背景工作点Δ效率至少1 pp、区间支持正效应且共同三类非劣。更小收益如实记录，用成本与科学问题决定是否追加。最终交付至少包含合作组三类对照、保留/暂缓τ的证据、已选模型的完整概率与工作点、新独立确认、可复现配置和资源账本。
 
-旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1/R2已完成，R3的M0已开始训练，R4–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。
+旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1/R2已完成，R3的M0已完成且不采用新采样，G1正式训练及G2资源/学习验证在执行；R4–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。

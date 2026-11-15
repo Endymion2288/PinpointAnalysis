@@ -43,8 +43,10 @@ class PrelocalRelations(nn.Module):
             for centers,thickness,name in [('tungsten_Zpos','tungsten_thickness','tungsten'),
                     ('pixel_Zpos','silicon_thickness','silicon'),('scint_Zpos','scint_thickness','scintillator')]:
                 z=torch.tensor(sorted(geometry[centers]),dtype=torch.float32)
-                width=float(geometry[thickness])
-                self.register_buffer(name+'_left',torch.cat([z-width/2,z.new_tensor([float('inf')])]))
+                # AnalysisManager::FillGeometryOutput writes silicon in um,
+                # all nominal z and the other slab thicknesses in mm.
+                width=float(geometry[thickness])*(.001 if name=='silicon' else 1.)
+                self.register_buffer(name+'_left',torch.cat([z-width/2,z.new_tensor([torch.finfo(z.dtype).max])]))
                 self.register_buffer(name+'_right',z+width/2)
                 self.register_buffer(name+'_integral',torch.arange(len(z)+1,dtype=torch.float32)*width)
                 self.materials.append((name,width))

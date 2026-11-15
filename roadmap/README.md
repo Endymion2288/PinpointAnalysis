@@ -1,6 +1,6 @@
 # PINPOINT 下一轮模型优化路线图（v2）
 
-更新：2026-11-15。最初独立审查基线为Git `37dd763`、workbook stage236的S0–S6；新R1最终评价源码为`4567ab8`。旧计划已归档，新版设计、R0、R1和R2已完成。R2交付八模型及必要的末轮采样顺序控制，198项验收全部通过。R3的M0已在Kubeflow MIG开始训练，预算/缓存及实际恢复通过；R3完整结果待形成，见[stage285](../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md)和[执行状态](v2/r3_execution.json)。R4–R7尚未启动。先读[研究结论与下一批决策](v2/09_decisions_and_handoff.md)，再按下表进入详细证据。
+更新：2026-11-15。最初独立审查基线为Git `37dd763`、workbook stage236的S0–S6；新R1最终评价源码为`4567ab8`。旧计划已归档，新版设计、R0、R1和R2已完成。R2交付八模型及必要的末轮采样顺序控制，198项验收全部通过。R3的M0已完成：全程重混的BA3小幅提高，但μ质量约束不通过，因此保留原采样。G0和候选图审计已完成，G1正式stride对照在Kubeflow MIG训练，G2正在完整资源与修订单位后的学习验证；R3尚未完成，见[stage288](../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)和[执行状态](v2/r3_execution.json)。R4–R7尚未启动。先读[研究结论与下一批决策](v2/09_decisions_and_handoff.md)，再按下表进入详细证据。
 
 **当前结论：保留四类研究，同时交付真实三类基线；先优化训练配方和数据规模，再检验几何关系与局部信息损失。现有模型取得了可复核改进，尚未达到已知最佳效果。**
 
@@ -19,7 +19,7 @@ R1的41/41模型、133项配对、21项三seed平均配对、11个评价域和55
 
 简化为三类没有稳定改善共同任务。同allocation等时预算下，B1 compute T3−T4 conditional的BA3为+.064 pp [−.179,+.302]，B2为−.313 pp [−.514,−.113]；两者NLL3均更差。B1/B2的μ recall改善同时伴随e/NC损失。四pass末轮NLL仍下降，不能把当前排名当作收敛上限；B2−B3排名差+.220 pp的区间也跨零。μ分数排序与argmax取舍不同，见[专项读回](v2/r1_muon_decision_review.json)。
 
-R2研究B1一族：fresh **D0=100k×4、D1=100k×12、D2=300k×4**及两个D1WD控制，共8模型/16视图/128配对、11域、Train gap和五折readout。D2 T3相对同曝光D1的BA3提高3.927 pp，相对D0仅+.447 pp [.078,.815]；稀疏BA没有改善、μ AUROC仍约.548。D2 T4的共同BA3=57.1267%、BA4=45.7650%、τ效率6.05%，后者相对D0增加.940 pp [.419,1.566]，仍小于1 pp门槛。增强weight decay改善D1，但终点仍落后D0。固定第11轮prefix的末轮原顺序精确复现保存概率，重混使BA3提高1.277 pp [.810,1.803]、NLL3降低.049451；稀疏排序和τ增益区间仍跨零。八模型均未建立plateau。见[最终报告stage284](../workbook/2026-11-15_stage284_r2_final_results.md)、[最终结果](v2/r2_results.json)和[执行状态](v2/r2_execution.json)。下一批M0先检验fresh D2 T4全程重混，再分别检验B1 stride/相位与原生跨层关系；采样和架构收益独立配对，具体工单见[04](v2/04_execution_plan.md)。
+R2研究B1一族：fresh **D0=100k×4、D1=100k×12、D2=300k×4**及两个D1WD控制，共8模型/16视图/128配对、11域、Train gap和五折readout。D2 T3相对同曝光D1的BA3提高3.927 pp，相对D0仅+.447 pp [.078,.815]；稀疏BA没有改善、μ AUROC仍约.548。D2 T4的共同BA3=57.1267%、BA4=45.7650%、τ效率6.05%，后者相对D0增加.940 pp [.419,1.566]，仍小于1 pp门槛。增强weight decay改善D1，但终点仍落后D0。固定第11轮prefix的末轮原顺序精确复现保存概率，重混使BA3提高1.277 pp [.810,1.803]、NLL3降低.049451；稀疏排序和τ增益区间仍跨零。八模型均未建立plateau。见[最终报告stage284](../workbook/2026-11-15_stage284_r2_final_results.md)、[最终结果](v2/r2_results.json)和[执行状态](v2/r2_execution.json)。M0已完成且未通过逐类约束，后续保留原采样，分别检验B1 stride与原生跨层关系；采样和架构收益独立配对，具体工单见[04](v2/04_execution_plan.md)。
 
 R1终态122条allocation共45.708889个异构device-hours、307.181111 CPU core-hours，超过原18 h规划；R2的39条allocation全部终态，共**7.475833个异构device-hours、116.65 CPU core-hours**。均包含失败、探针和迁移，当前无未决allocation。按R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h，完整交互allocation开销尚未测量；交互operation下界与历史SSL另列。后续按实测小批次重排，保留R7确认资源。
 

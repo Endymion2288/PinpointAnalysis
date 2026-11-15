@@ -91,7 +91,7 @@ def extend(root, design, mixing, cache_workers, reason):
             'reference_experiment':str(root/'experiments/b1_m0_t4_s42') if mixing=='global' else str(r2/'experiments/b1_d2_t4_s42'),
             'scientific_change':'first convolution stride4 to2 only; total stride32 to16'}]
     elif design=='G2':
-        base=json.loads((root/'configs/probe_b2_relation_t4_s42_c3.json').read_text())
+        base=json.loads((root/'configs/probe_b2_relation_t4_s42_c5.json').read_text())
         candidates=[]
         for variant in ['control','relations','global_ablation']:
             name=f'b2_g2_{variant}_t4_s42'

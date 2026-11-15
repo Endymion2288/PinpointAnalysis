@@ -70,8 +70,8 @@
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
-  "unit_tests_passed": 35,
-  "latest_stage_report": "../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md",
+  "unit_tests_passed": 37,
+  "latest_stage_report": "../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md",
   "pending": [
     "M0 fixed endpoint and independent paired evaluation;adopt/reject mixing",
     "G0 phase diagnosis",
@@ -159,7 +159,16 @@
       "T4_relation_NLL": 0.018145566806197166
     },
     "candidate_audit_status": "running",
-    "kubeflow_rejected": "server Pod dry-run: namespace GPU units limit1 includes existing M0 MIG; no allocation created"
+    "kubeflow_rejected": "server Pod dry-run: namespace GPU units limit1 includes existing M0 MIG; no allocation created",
+    "material_unit_correction": {
+      "raw_silicon_thickness_um": 10.0,
+      "silicon_thickness_mm": 0.01,
+      "corrected_revision": 3,
+      "evidence": "G4 AnalysisManager.cc line708 divides silicon thickness by um; tungsten/scint headers are mm; utils/geometry.py and s6/truth_geometry.py agree",
+      "learning_gates": "1583003.0_running",
+      "old_revision2_learning_is_diagnostic_only": true,
+      "profile_scope": "same shape and operations, revised units require corrected learning; current profile remains compute/memory evidence for that execution graph"
+    }
   },
   "delivery_implementation": {
     "evaluation_contract": "configs/r3/m0_evaluation.json",
@@ -206,5 +215,19 @@
     "steps": 160,
     "accuracy": 1.0,
     "NLL": 0.025631815195083618
+  },
+  "readability_B1_reference": {
+    "status": "complete",
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/probes/b1_reference_c1/results.json",
+    "Train_events": 4000,
+    "Tune_events": 40000,
+    "recipe": "Train-only scaler + logistic C1",
+    "common_BA3": {
+      "local": 0.4498333333333333,
+      "regional": 0.4822666666666666,
+      "global": 0.5028,
+      "tracker": 0.4152666666666667
+    },
+    "scope": "conditional T3 from independently fitted T4 readout; readability, not branch utility"
   }
 }

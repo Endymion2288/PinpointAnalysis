@@ -28,15 +28,21 @@ def candidate_edges(nodes, groups, pixel_width_xy_mm=(.0208,.0228), same_k=4,
     # Trees are per observed plane and measurement signature. The two bar
     # signatures never create a point constraint in their unmeasured axis.
     buckets={}
+    source_groups={}
+    plane_sources={}
     for plane in planes:
+        source_plane=np.flatnonzero(valid&(z==plane))
+        plane_sources[plane]=source_plane
         for signature in [(True,True),(True,False),(False,True)]:
-            ix=np.flatnonzero(valid&(z==plane)&np.all(measured==signature,axis=1))
-            if len(ix):buckets[(plane,signature)]=ix
+            ix=source_plane[np.all(measured[source_plane]==signature,axis=1)]
+            if len(ix):
+                buckets[(plane,signature)]=ix
+                source_groups[(plane,signature)]=ix
     degrees=np.zeros(len(nodes),dtype='int32')
     cross_degrees=np.zeros(len(nodes),dtype='int32')
     trees={}
     for pi,plane in enumerate(planes):
-        source_plane=np.flatnonzero(valid&(z==plane))
+        source_plane=plane_sources[plane]
         candidates=[(plane,same_k)]
         if plane_policy=='all_visible':
             candidates.extend((planes[pi+offset],2 if abs(offset)==1 else 1)
@@ -55,8 +61,8 @@ def candidate_edges(nodes, groups, pixel_width_xy_mm=(.0208,.0228), same_k=4,
             same_plane=target_plane==plane
             proposals=36 if same_plane else 8
             for source_signature in [(True,True),(True,False),(False,True)]:
-                source=source_plane[np.all(measured[source_plane]==source_signature,axis=1)]
-                if not len(source):continue
+                source=source_groups.get((plane,source_signature))
+                if source is None:continue
                 candidate_indices=[];candidate_scores=[]
                 for target_signature in [(True,True),(True,False),(False,True)]:
                     target=buckets.get((target_plane,target_signature))
