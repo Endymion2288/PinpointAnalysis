@@ -31,6 +31,9 @@ def run(root):
     def check(name,passed):checks.append({'name':name,'passed':bool(passed)})
     check('explicit_R3_completion_contract',contract['stage']=='R3' and contract['status']=='frozen')
     names=contract['formal_models']
+    campaign=read(root/'campaign.json')
+    expected=campaign.get('formal_models',campaign['initial_models'])
+    check('complete_campaign_model_matrix',set(names)==set(expected) and len(names)==len(expected))
     check('unique_formal_model_matrix',len(set(names))==len(names) and len(names)>=5)
     recipes=[read(root/'configs'/f'{name}.json') for name in names]
     check('M0_full_mixing_in_matrix',any(c.get('design')=='M0' for c in recipes))
@@ -38,6 +41,8 @@ def run(root):
     check('G2_within_family_control_in_matrix',any(c['family'] in ['B2','B3'] and c.get('native_relation_adapter') and not c.get('native_relations') for c in recipes))
     check('G2_prelocal_relations_in_matrix',any(c.get('native_relations') and not c.get('native_global_ablation') for c in recipes))
     check('retrained_global_ablation_in_matrix',any(c.get('native_global_ablation') for c in recipes))
+    if any(c.get('design')=='C1' for c in recipes):
+        check('compact_sensor_row_model_in_matrix',any(c.get('sensor_row_image') for c in recipes))
     gates=[read(p) for p in (root/'fit').glob('**/B*_T*.json')]
     tune=pd.read_parquet(root/'data/catalog.parquet',filters=[('split','=','validation')])
     delivery=[]
@@ -100,7 +105,7 @@ def run(root):
         check(evidence['name'],record['status']==evidence.get('status','complete'))
     decision=read(root/'decision.json')
     for name in ['sampling','local_retention','native_relations','information_available_used_useful',
-            'seed_resolution_anchor_fusion','selected_models','remaining_limits']:
+            'seed_resolution_anchor_fusion','compact_sensor_rows','selected_models','remaining_limits']:
         check('scientific_'+name,bool(decision.get(name)))
     check('scientific_decision_reviewed',decision['status']=='reviewed')
     resources=read(root/'resources.json')

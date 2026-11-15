@@ -113,6 +113,8 @@ def main():
     parser.add_argument("--deadline-seconds", type=int, default=28800)
     parser.add_argument("--min-capability", type=float, default=7.5,
                         help="Minimum CUDA capability; LCG108 Torch kernels require at least SM75")
+    parser.add_argument("--allow-backfill",action="store_true",
+                        help="Also accept site-advertised opportunistic backfill slots")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     root = args.root.resolve()
@@ -166,6 +168,7 @@ def main():
     if args.gpu:
         requirement = gpu_requirement(args.min_capability, args.gpu_model, args.min_gpu_memory_mb)
         content += ["request_gpus = 1", "require_gpus = " + requirement]
+    if args.allow_backfill:content.append('+AllowBackfillSlot = true')
     content.append("queue 1")
     path = directory / "job.sub"
     path.write_text("\n".join(content) + "\n")
@@ -179,6 +182,7 @@ def main():
                 "cpus": args.cpus, "gpu": args.gpu,
                 "requested_minimum_capability": args.min_capability,
                 "requested_minimum_GPU_memory_MiB": args.min_gpu_memory_mb,
+                "allow_backfill":args.allow_backfill,
                 "LCG108_Torch_kernel_minimum_capability": 7.5,
                 "missing_GPU_capability_policy": "known NVIDIA H100 MIG is SM90; actual CUDA startup probe still required",
                 "stdout": response.stdout, "stderr": response.stderr,

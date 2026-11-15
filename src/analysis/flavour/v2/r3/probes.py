@@ -121,7 +121,7 @@ def main():
         rows=selected[selected.label.ne(2)] if config['task']=='T3' else selected
         # A native control ignores edge tensors, so it can share the exact
         # raw-node inputs and candidate cache with its relation counterpart.
-        input_config={**config,'cache_workers':args.cache_workers}
+        input_config={**config,'cache_workers':args.cache_workers,'cache_storage':'mmap'}
         if config['family'] in ['B2','B3']:input_config['build_relations']=True
         signature={k:input_config.get(k) for k in ['family','task','image','native_pixel_pitch_mm','relation_plane_policy','drop_modality']}
         if cached_signature!=signature:
