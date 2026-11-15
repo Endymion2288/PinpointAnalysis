@@ -200,7 +200,7 @@
       "independent_core_checks": 1020,
       "scope": "Train-only synthetic validation, not generalization"
     },
-    "unit_tests_passed": 7
+    "unit_tests_passed": 8
   },
   "pending": [
     "fixed-budget endpoints and best-screen full40k Tune",
@@ -210,50 +210,75 @@
     "allocation accounting and final R2 acceptance"
   ],
   "Cal_A_Cut_B_Confirm_payload_read": false,
-  "last_progress_UTC": "2026-11-15T10:20:01.643762+00:00",
-  "latest_stage_report": "../../workbook/2026-11-15_stage276_r2_monitoring_and_delivery_protocol.md",
+  "last_progress_UTC": "2026-11-15T10:51:48.885896+00:00",
+  "latest_stage_report": "../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md",
   "intermediate_screen_progress": [
     {
       "name": "b1_d0_t3_s42",
-      "screen_non_tau_exposures": 150000,
-      "screen_NLL3": 0.8997482290922917,
-      "screen_BA3": 0.5593333333333333,
-      "scope": "intermediate fixed4k Tune; not endpoint"
+      "status_at_snapshot": "complete",
+      "screen_non_tau_exposures": 300000,
+      "screen_NLL3": 0.879377553711149,
+      "screen_BA3": 0.5693333333333334,
+      "low_mu_recall": 0.08363636363636363,
+      "low_mu_AP": 0.345856034840739,
+      "low_mu_AUROC": 0.5501683501683502,
+      "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     },
     {
       "name": "b1_d0_t4_s42",
-      "screen_non_tau_exposures": 75000,
-      "screen_NLL3": 0.9309998502036299,
-      "screen_BA3": 0.5396666666666666,
-      "scope": "intermediate fixed4k Tune; not endpoint"
+      "status_at_snapshot": "running",
+      "screen_non_tau_exposures": 300000,
+      "screen_NLL3": 0.8729061141575402,
+      "screen_BA3": 0.5713333333333334,
+      "low_mu_recall": 0.08,
+      "low_mu_AP": 0.34546515084274526,
+      "low_mu_AUROC": 0.5507866544230181,
+      "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     },
     {
       "name": "b1_d1_t3_s42",
-      "screen_non_tau_exposures": 150000,
-      "screen_NLL3": 0.9110099953434264,
-      "screen_BA3": 0.558,
-      "scope": "intermediate fixed4k Tune; not endpoint"
+      "status_at_snapshot": "running",
+      "screen_non_tau_exposures": 300000,
+      "screen_NLL3": 0.9079204441413176,
+      "screen_BA3": 0.5356666666666666,
+      "low_mu_recall": 0.8727272727272727,
+      "low_mu_AP": 0.37693350227800043,
+      "low_mu_AUROC": 0.5684113865932048,
+      "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     },
     {
       "name": "b1_d1_t4_s42",
-      "screen_non_tau_exposures": 150000,
-      "screen_NLL3": 0.9118765348210606,
-      "screen_BA3": 0.546,
-      "scope": "intermediate fixed4k Tune; not endpoint"
+      "status_at_snapshot": "running",
+      "screen_non_tau_exposures": 300000,
+      "screen_NLL3": 0.8766331960412987,
+      "screen_BA3": 0.5576666666666666,
+      "low_mu_recall": 0.48,
+      "low_mu_AP": 0.3495280577529546,
+      "low_mu_AUROC": 0.5426385062748699,
+      "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     },
     {
       "name": "b1_d2_t3_s42",
-      "screen_non_tau_exposures": 150007,
-      "screen_NLL3": 0.9103045684082379,
-      "screen_BA3": 0.5506666666666666,
-      "scope": "intermediate fixed4k Tune; not endpoint"
+      "status_at_snapshot": "running",
+      "screen_non_tau_exposures": 300004,
+      "screen_NLL3": 0.8824353772978449,
+      "screen_BA3": 0.5566666666666666,
+      "low_mu_recall": 0.18181818181818182,
+      "low_mu_AP": 0.3542722929049054,
+      "low_mu_AUROC": 0.5468197122742577,
+      "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     },
     {
       "name": "b1_d2_t4_s42",
-      "screen_non_tau_exposures": 75005,
-      "screen_NLL3": 0.9178363168759284,
-      "screen_BA3": 0.538,
-      "scope": "intermediate fixed4k Tune; not endpoint"
+      "status_at_snapshot": "running",
+      "screen_non_tau_exposures": 225000,
+      "screen_NLL3": 0.8872531677423029,
+      "screen_BA3": 0.5539999999999999,
+      "low_mu_recall": 0.38181818181818183,
+      "low_mu_AP": 0.35709536901579503,
+      "low_mu_AUROC": 0.5553841444750536,
+      "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     }
-  ]
+  ],
+  "progress_review": "r2_progress_review.json"
 }

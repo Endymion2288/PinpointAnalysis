@@ -1,0 +1,999 @@
+{
+  "UTC": "2026-11-15T10:51:48.885896+00:00",
+  "status": "descriptive_progress_snapshot_not_R2_acceptance",
+  "scope": "Initial six models; fixed4k reused Tune screens; no new inference or fitting",
+  "source_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2",
+  "tune_screen": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/data/tune_screen.parquet",
+  "low_occupancy_definition": "accepted pixel+bar+tracker channels < 100; includes empty events",
+  "low_raw_counts_e_mu_tau_NC": [
+    285,
+    275,
+    342,
+    309
+  ],
+  "common_non_tau_events": 869,
+  "mu_AP_prevalence_reference": 0.31645569620253167,
+  "ranking_metrics_source": "Stored history only; AP/AUROC not independently recomputed",
+  "arithmetic_checks_passed": 162,
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "models": [
+    {
+      "name": "b1_d0_t3_s42",
+      "design": "D0",
+      "task": "T3",
+      "seed": 42,
+      "status_at_snapshot": "complete",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d0_t3_s42/manifest.json",
+      "last_recorded_counters": {
+        "updates": 37550,
+        "training_exposures": 300000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          0,
+          100000
+        ],
+        "train_seconds": 3127.7131329735275,
+        "validation_seconds": 501.22335492959246,
+        "data_wait_seconds": 36.04784767027013,
+        "lr_sum": 5.9006056578636645
+      },
+      "history": [
+        {
+          "non_tau_exposures": 75000,
+          "updates": 9388,
+          "lr": 0.00026995444964981324,
+          "all_NLL3": 0.9332691187433716,
+          "all_BA3": 0.5166666666666667,
+          "low_NLL3": 1.0938151821239521,
+          "low_BA3": 0.3358729863788627,
+          "low_recall_e_mu_NC": [
+            0.031578947368421054,
+            0.07636363636363637,
+            0.8996763754045307
+          ],
+          "low_mu_AP": 0.3355469741111777,
+          "low_mu_AUROC": 0.5281297826752372,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.07710011507479862,
+          "low_mu_precision": 0.31343283582089554,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              9.0,
+              25.0,
+              251.0
+            ],
+            [
+              8.0,
+              21.0,
+              246.0
+            ],
+            [
+              10.0,
+              21.0,
+              278.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 150000,
+          "updates": 18775,
+          "lr": 0.0001692738102721298,
+          "all_NLL3": 0.8997482290922917,
+          "all_BA3": 0.5593333333333333,
+          "low_NLL3": 1.0871322995106578,
+          "low_BA3": 0.38682667244752067,
+          "low_recall_e_mu_NC": [
+            0.08421052631578947,
+            0.48727272727272725,
+            0.5889967637540453
+          ],
+          "low_mu_AP": 0.35844208053092486,
+          "low_mu_AUROC": 0.5650688705234159,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.4361334867663982,
+          "low_mu_precision": 0.35356200527704484,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              24.0,
+              137.0,
+              124.0
+            ],
+            [
+              18.0,
+              134.0,
+              123.0
+            ],
+            [
+              19.0,
+              108.0,
+              182.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 225000,
+          "updates": 28161,
+          "lr": 6.1003535489852965e-05,
+          "all_NLL3": 0.880548671284563,
+          "all_BA3": 0.5716666666666667,
+          "low_NLL3": 1.0728769589234104,
+          "low_BA3": 0.38858074872382486,
+          "low_recall_e_mu_NC": [
+            0.3543859649122807,
+            0.10909090909090909,
+            0.7022653721682848
+          ],
+          "low_mu_AP": 0.35155868292343984,
+          "low_mu_AUROC": 0.5580961126415672,
+          "low_mu_efficiency_at_1pct_FPR": 0.01818181818181818,
+          "low_mu_predicted_fraction": 0.09781357882623705,
+          "low_mu_precision": 0.35294117647058826,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              101.0,
+              22.0,
+              162.0
+            ],
+            [
+              94.0,
+              30.0,
+              151.0
+            ],
+            [
+              59.0,
+              33.0,
+              217.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 300000,
+          "updates": 37550,
+          "lr": 1.4999999999999999e-05,
+          "all_NLL3": 0.879377553711149,
+          "all_BA3": 0.5693333333333334,
+          "low_NLL3": 1.0769664443639537,
+          "low_BA3": 0.39594782779248794,
+          "low_recall_e_mu_NC": [
+            0.4666666666666667,
+            0.08363636363636363,
+            0.6375404530744336
+          ],
+          "low_mu_AP": 0.345856034840739,
+          "low_mu_AUROC": 0.5501683501683502,
+          "low_mu_efficiency_at_1pct_FPR": 0.007272727272727273,
+          "low_mu_predicted_fraction": 0.07710011507479862,
+          "low_mu_precision": 0.34328358208955223,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              133.0,
+              17.0,
+              135.0
+            ],
+            [
+              115.0,
+              23.0,
+              137.0
+            ],
+            [
+              85.0,
+              27.0,
+              197.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "b1_d0_t4_s42",
+      "design": "D0",
+      "task": "T4",
+      "seed": 42,
+      "status_at_snapshot": "running",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d0_t4_s42/manifest.json",
+      "last_recorded_counters": {
+        "updates": 50051,
+        "training_exposures": 400000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          100000,
+          100000
+        ],
+        "train_seconds": 3563.2211672626436,
+        "validation_seconds": 82.91016774764284,
+        "data_wait_seconds": 42.38944667344913,
+        "lr_sum": 7.865059679070895
+      },
+      "history": [
+        {
+          "non_tau_exposures": 75000,
+          "updates": 12515,
+          "lr": 0.00026994384748360806,
+          "all_NLL3": 0.9309998502036299,
+          "all_BA3": 0.5396666666666666,
+          "low_NLL3": 1.0938426352877608,
+          "low_BA3": 0.3758310751872325,
+          "low_recall_e_mu_NC": [
+            0.30526315789473685,
+            0.14909090909090908,
+            0.6731391585760518
+          ],
+          "low_mu_AP": 0.3338162833854685,
+          "low_mu_AUROC": 0.5186776859504132,
+          "low_mu_efficiency_at_1pct_FPR": 0.01090909090909091,
+          "low_mu_predicted_fraction": 0.12888377445339472,
+          "low_mu_precision": 0.36607142857142855,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              87.0,
+              33.0,
+              165.0
+            ],
+            [
+              77.0,
+              41.0,
+              157.0
+            ],
+            [
+              63.0,
+              38.0,
+              208.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 150000,
+          "updates": 25028,
+          "lr": 0.00016924879021839424,
+          "all_NLL3": 0.8908486797866393,
+          "all_BA3": 0.5586666666666668,
+          "low_NLL3": 1.0840183880538656,
+          "low_BA3": 0.387728072756177,
+          "low_recall_e_mu_NC": [
+            0.10175438596491228,
+            0.38181818181818183,
+            0.6796116504854369
+          ],
+          "low_mu_AP": 0.3396262001522618,
+          "low_mu_AUROC": 0.534159779614325,
+          "low_mu_efficiency_at_1pct_FPR": 0.02909090909090909,
+          "low_mu_predicted_fraction": 0.31645569620253167,
+          "low_mu_precision": 0.38181818181818183,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              29.0,
+              93.0,
+              163.0
+            ],
+            [
+              19.0,
+              105.0,
+              151.0
+            ],
+            [
+              22.0,
+              77.0,
+              210.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 225000,
+          "updates": 37540,
+          "lr": 6.0976985856265154e-05,
+          "all_NLL3": 0.8798227770918381,
+          "all_BA3": 0.5593333333333333,
+          "low_NLL3": 1.0778473241903221,
+          "low_BA3": 0.396092968520153,
+          "low_recall_e_mu_NC": [
+            0.4666666666666667,
+            0.05818181818181818,
+            0.6634304207119741
+          ],
+          "low_mu_AP": 0.353694993216358,
+          "low_mu_AUROC": 0.5671564126109581,
+          "low_mu_efficiency_at_1pct_FPR": 0.01818181818181818,
+          "low_mu_predicted_fraction": 0.05178365937859609,
+          "low_mu_precision": 0.35555555555555557,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              133.0,
+              11.0,
+              141.0
+            ],
+            [
+              115.0,
+              16.0,
+              144.0
+            ],
+            [
+              86.0,
+              18.0,
+              205.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 300000,
+          "updates": 50051,
+          "lr": 1.4999999999999999e-05,
+          "all_NLL3": 0.8729061141575402,
+          "all_BA3": 0.5713333333333334,
+          "low_NLL3": 1.080923798020476,
+          "low_BA3": 0.4080440583659797,
+          "low_recall_e_mu_NC": [
+            0.4807017543859649,
+            0.08,
+            0.6634304207119741
+          ],
+          "low_mu_AP": 0.34546515084274526,
+          "low_mu_AUROC": 0.5507866544230181,
+          "low_mu_efficiency_at_1pct_FPR": 0.007272727272727273,
+          "low_mu_predicted_fraction": 0.0759493670886076,
+          "low_mu_precision": 0.3333333333333333,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              137.0,
+              19.0,
+              129.0
+            ],
+            [
+              114.0,
+              22.0,
+              139.0
+            ],
+            [
+              79.0,
+              25.0,
+              205.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "b1_d1_t3_s42",
+      "design": "D1",
+      "task": "T3",
+      "seed": 42,
+      "status_at_snapshot": "running",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d1_t3_s42/manifest.json",
+      "last_recorded_counters": {
+        "updates": 37550,
+        "training_exposures": 300000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          0,
+          100000
+        ],
+        "train_seconds": 3125.7171066873707,
+        "validation_seconds": 96.26196023193188,
+        "data_wait_seconds": 34.98099122638814,
+        "lr_sum": 9.7852067182491
+      },
+      "history": [
+        {
+          "non_tau_exposures": 75000,
+          "updates": 9388,
+          "lr": 0.00029913512151780777,
+          "all_NLL3": 0.9237387288230501,
+          "all_BA3": 0.545,
+          "low_NLL3": 1.0926509141968985,
+          "low_BA3": 0.37495238537650394,
+          "low_recall_e_mu_NC": [
+            0.23859649122807017,
+            0.05454545454545454,
+            0.8317152103559871
+          ],
+          "low_mu_AP": 0.32582783751534744,
+          "low_mu_AUROC": 0.5002632384450566,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.04372842347525892,
+          "low_mu_precision": 0.39473684210526316,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              68.0,
+              10.0,
+              207.0
+            ],
+            [
+              58.0,
+              15.0,
+              202.0
+            ],
+            [
+              39.0,
+              13.0,
+              257.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 150000,
+          "updates": 18775,
+          "lr": 0.0002895254045781092,
+          "all_NLL3": 0.9110099953434264,
+          "all_BA3": 0.558,
+          "low_NLL3": 1.0888731228720223,
+          "low_BA3": 0.3911889461812814,
+          "low_recall_e_mu_NC": [
+            0.06315789473684211,
+            0.3563636363636364,
+            0.7540453074433657
+          ],
+          "low_mu_AP": 0.33799746832722677,
+          "low_mu_AUROC": 0.5294031221303949,
+          "low_mu_efficiency_at_1pct_FPR": 0.01090909090909091,
+          "low_mu_predicted_fraction": 0.30609896432681244,
+          "low_mu_precision": 0.3684210526315789,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              18.0,
+              101.0,
+              166.0
+            ],
+            [
+              12.0,
+              98.0,
+              165.0
+            ],
+            [
+              9.0,
+              67.0,
+              233.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 225000,
+          "updates": 28161,
+          "lr": 0.00026995509205973657,
+          "all_NLL3": 0.8907003801058554,
+          "all_BA3": 0.5630000000000001,
+          "low_NLL3": 1.07961130436517,
+          "low_BA3": 0.3779580165476946,
+          "low_recall_e_mu_NC": [
+            0.28771929824561404,
+            0.10181818181818182,
+            0.7443365695792881
+          ],
+          "low_mu_AP": 0.3407650226734418,
+          "low_mu_AUROC": 0.541028466483012,
+          "low_mu_efficiency_at_1pct_FPR": 0.01090909090909091,
+          "low_mu_predicted_fraction": 0.10241657077100115,
+          "low_mu_precision": 0.3146067415730337,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              82.0,
+              33.0,
+              170.0
+            ],
+            [
+              79.0,
+              28.0,
+              168.0
+            ],
+            [
+              51.0,
+              28.0,
+              230.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 300000,
+          "updates": 37550,
+          "lr": 0.0002418901526021193,
+          "all_NLL3": 0.9079204441413176,
+          "all_BA3": 0.5356666666666666,
+          "low_NLL3": 1.0923550437098575,
+          "low_BA3": 0.3633896450452403,
+          "low_recall_e_mu_NC": [
+            0.0912280701754386,
+            0.8727272727272727,
+            0.1262135922330097
+          ],
+          "low_mu_AP": 0.37693350227800043,
+          "low_mu_AUROC": 0.5684113865932048,
+          "low_mu_efficiency_at_1pct_FPR": 0.014545454545454545,
+          "low_mu_predicted_fraction": 0.8423475258918297,
+          "low_mu_precision": 0.32786885245901637,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              26.0,
+              240.0,
+              19.0
+            ],
+            [
+              16.0,
+              240.0,
+              19.0
+            ],
+            [
+              18.0,
+              252.0,
+              39.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "b1_d1_t4_s42",
+      "design": "D1",
+      "task": "T4",
+      "seed": 42,
+      "status_at_snapshot": "running",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d1_t4_s42/manifest.json",
+      "last_recorded_counters": {
+        "updates": 50051,
+        "training_exposures": 400000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          100000,
+          100000
+        ],
+        "train_seconds": 3561.96047093533,
+        "validation_seconds": 82.83227132959291,
+        "data_wait_seconds": 41.41856231726706,
+        "lr_sum": 13.042941085009591
+      },
+      "history": [
+        {
+          "non_tau_exposures": 75000,
+          "updates": 12515,
+          "lr": 0.0002991346611218547,
+          "all_NLL3": 0.930151167787208,
+          "all_BA3": 0.5393333333333334,
+          "low_NLL3": 1.0953262902750027,
+          "low_BA3": 0.387405377226532,
+          "low_recall_e_mu_NC": [
+            0.34035087719298246,
+            0.11636363636363636,
+            0.7055016181229773
+          ],
+          "low_mu_AP": 0.3253573737605307,
+          "low_mu_AUROC": 0.5059381695745332,
+          "low_mu_efficiency_at_1pct_FPR": 0.01090909090909091,
+          "low_mu_predicted_fraction": 0.09666283084004602,
+          "low_mu_precision": 0.38095238095238093,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              97.0,
+              23.0,
+              165.0
+            ],
+            [
+              87.0,
+              32.0,
+              156.0
+            ],
+            [
+              62.0,
+              29.0,
+              218.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 150000,
+          "updates": 25028,
+          "lr": 0.0002895234361325034,
+          "all_NLL3": 0.9118765348210606,
+          "all_BA3": 0.546,
+          "low_NLL3": 1.0940397847061027,
+          "low_BA3": 0.3744007267359337,
+          "low_recall_e_mu_NC": [
+            0.0912280701754386,
+            0.32,
+            0.7119741100323624
+          ],
+          "low_mu_AP": 0.33943869450601744,
+          "low_mu_AUROC": 0.5244077134986226,
+          "low_mu_efficiency_at_1pct_FPR": 0.025454545454545455,
+          "low_mu_predicted_fraction": 0.27502876869965476,
+          "low_mu_precision": 0.3682008368200837,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              26.0,
+              86.0,
+              173.0
+            ],
+            [
+              21.0,
+              88.0,
+              166.0
+            ],
+            [
+              24.0,
+              65.0,
+              220.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 225000,
+          "updates": 37540,
+          "lr": 0.00026995059490892234,
+          "all_NLL3": 0.8949026375793085,
+          "all_BA3": 0.5556666666666666,
+          "low_NLL3": 1.0807954694927904,
+          "low_BA3": 0.39287034886421707,
+          "low_recall_e_mu_NC": [
+            0.21052631578947367,
+            0.29818181818181816,
+            0.6699029126213593
+          ],
+          "low_mu_AP": 0.3510129465142037,
+          "low_mu_AUROC": 0.5479706152433426,
+          "low_mu_efficiency_at_1pct_FPR": 0.007272727272727273,
+          "low_mu_predicted_fraction": 0.2508630609896433,
+          "low_mu_precision": 0.3761467889908257,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              60.0,
+              77.0,
+              148.0
+            ],
+            [
+              49.0,
+              82.0,
+              144.0
+            ],
+            [
+              43.0,
+              59.0,
+              207.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 300000,
+          "updates": 50051,
+          "lr": 0.0002418952093777932,
+          "all_NLL3": 0.8766331960412987,
+          "all_BA3": 0.5576666666666666,
+          "low_NLL3": 1.081826713054468,
+          "low_BA3": 0.3690387781752115,
+          "low_recall_e_mu_NC": [
+            0.11578947368421053,
+            0.48,
+            0.511326860841424
+          ],
+          "low_mu_AP": 0.3495280577529546,
+          "low_mu_AUROC": 0.5426385062748699,
+          "low_mu_efficiency_at_1pct_FPR": 0.025454545454545455,
+          "low_mu_predicted_fraction": 0.45109321058688145,
+          "low_mu_precision": 0.336734693877551,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              33.0,
+              137.0,
+              115.0
+            ],
+            [
+              36.0,
+              132.0,
+              107.0
+            ],
+            [
+              28.0,
+              123.0,
+              158.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "b1_d2_t3_s42",
+      "design": "D2",
+      "task": "T3",
+      "seed": 42,
+      "status_at_snapshot": "running",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t3_s42/manifest.json",
+      "last_recorded_counters": {
+        "updates": 37546,
+        "training_exposures": 300004,
+        "non_tau_exposures": 300004,
+        "exposure_by_class": [
+          99449,
+          100747,
+          0,
+          99808
+        ],
+        "train_seconds": 2795.792601387424,
+        "validation_seconds": 101.31560239207465,
+        "data_wait_seconds": 62.889933580940124,
+        "lr_sum": 9.784145625841225
+      },
+      "history": [
+        {
+          "non_tau_exposures": 75004,
+          "updates": 9388,
+          "lr": 0.00029913454608044296,
+          "all_NLL3": 0.9269869573443422,
+          "all_BA3": 0.5363333333333334,
+          "low_NLL3": 1.0862709689609695,
+          "low_BA3": 0.4031187707426849,
+          "low_recall_e_mu_NC": [
+            0.512280701754386,
+            0.27636363636363637,
+            0.42071197411003236
+          ],
+          "low_mu_AP": 0.3477194460708973,
+          "low_mu_AUROC": 0.5328068564432201,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.2336018411967779,
+          "low_mu_precision": 0.37438423645320196,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              146.0,
+              49.0,
+              90.0
+            ],
+            [
+              117.0,
+              76.0,
+              82.0
+            ],
+            [
+              101.0,
+              78.0,
+              130.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 150007,
+          "updates": 18773,
+          "lr": 0.0002895246173260758,
+          "all_NLL3": 0.9103045684082379,
+          "all_BA3": 0.5506666666666666,
+          "low_NLL3": 1.0885473650330915,
+          "low_BA3": 0.3798417491212586,
+          "low_recall_e_mu_NC": [
+            0.20350877192982456,
+            0.3890909090909091,
+            0.5469255663430421
+          ],
+          "low_mu_AP": 0.340681208091009,
+          "low_mu_AUROC": 0.5373308846036119,
+          "low_mu_efficiency_at_1pct_FPR": 0.007272727272727273,
+          "low_mu_predicted_fraction": 0.35903337169159955,
+          "low_mu_precision": 0.34294871794871795,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              58.0,
+              117.0,
+              110.0
+            ],
+            [
+              50.0,
+              107.0,
+              118.0
+            ],
+            [
+              52.0,
+              88.0,
+              169.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 225000,
+          "updates": 28159,
+          "lr": 0.00026995059516565556,
+          "all_NLL3": 0.8974330767752564,
+          "all_BA3": 0.5566666666666668,
+          "low_NLL3": 1.0817404623293767,
+          "low_BA3": 0.38696045792622186,
+          "low_recall_e_mu_NC": [
+            0.24210526315789474,
+            0.26181818181818184,
+            0.656957928802589
+          ],
+          "low_mu_AP": 0.3396184747887864,
+          "low_mu_AUROC": 0.5429384756657484,
+          "low_mu_efficiency_at_1pct_FPR": 0.007272727272727273,
+          "low_mu_predicted_fraction": 0.23705408515535098,
+          "low_mu_precision": 0.34951456310679613,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              69.0,
+              69.0,
+              147.0
+            ],
+            [
+              67.0,
+              72.0,
+              136.0
+            ],
+            [
+              41.0,
+              65.0,
+              203.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 300004,
+          "updates": 37546,
+          "lr": 0.0002418867807288397,
+          "all_NLL3": 0.8824353772978449,
+          "all_BA3": 0.5566666666666666,
+          "low_NLL3": 1.0755555872812408,
+          "low_BA3": 0.3925881193126977,
+          "low_recall_e_mu_NC": [
+            0.32280701754385965,
+            0.18181818181818182,
+            0.6731391585760518
+          ],
+          "low_mu_AP": 0.3542722929049054,
+          "low_mu_AUROC": 0.5468197122742577,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.1622554660529344,
+          "low_mu_precision": 0.3546099290780142,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              92.0,
+              45.0,
+              148.0
+            ],
+            [
+              83.0,
+              50.0,
+              142.0
+            ],
+            [
+              55.0,
+              46.0,
+              208.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "b1_d2_t4_s42",
+      "design": "D2",
+      "task": "T4",
+      "seed": 42,
+      "status_at_snapshot": "running",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t4_s42/manifest.json",
+      "last_recorded_counters": {
+        "updates": 37530,
+        "training_exposures": 300000,
+        "non_tau_exposures": 225000,
+        "exposure_by_class": [
+          75000,
+          75000,
+          75000,
+          75000
+        ],
+        "train_seconds": 2685.706271889154,
+        "validation_seconds": 77.9589921789593,
+        "data_wait_seconds": 52.194441363506485,
+        "lr_sum": 9.830625847312966
+      },
+      "history": [
+        {
+          "non_tau_exposures": 75005,
+          "updates": 12521,
+          "lr": 0.00029913154939729774,
+          "all_NLL3": 0.9178363168759284,
+          "all_BA3": 0.538,
+          "low_NLL3": 1.0882804257935517,
+          "low_BA3": 0.3818817712123794,
+          "low_recall_e_mu_NC": [
+            0.04912280701754386,
+            0.46545454545454545,
+            0.6310679611650486
+          ],
+          "low_mu_AP": 0.34708391113420234,
+          "low_mu_AUROC": 0.5424793388429752,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.42117376294591485,
+          "low_mu_precision": 0.34972677595628415,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              14.0,
+              128.0,
+              143.0
+            ],
+            [
+              6.0,
+              128.0,
+              141.0
+            ],
+            [
+              4.0,
+              110.0,
+              195.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 150001,
+          "updates": 25178,
+          "lr": 0.00028933835740465013,
+          "all_NLL3": 0.8965213414964093,
+          "all_BA3": 0.5576666666666666,
+          "low_NLL3": 1.0911996907412747,
+          "low_BA3": 0.3883499274812509,
+          "low_recall_e_mu_NC": [
+            0.4245614035087719,
+            0.1709090909090909,
+            0.56957928802589
+          ],
+          "low_mu_AP": 0.33768179999434894,
+          "low_mu_AUROC": 0.5360269360269361,
+          "low_mu_efficiency_at_1pct_FPR": 0.0036363636363636364,
+          "low_mu_predicted_fraction": 0.15535097813578827,
+          "low_mu_precision": 0.34814814814814815,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              121.0,
+              44.0,
+              120.0
+            ],
+            [
+              110.0,
+              47.0,
+              118.0
+            ],
+            [
+              89.0,
+              44.0,
+              176.0
+            ]
+          ]
+        },
+        {
+          "non_tau_exposures": 225000,
+          "updates": 37530,
+          "lr": 0.0002699525225889861,
+          "all_NLL3": 0.8872531677423029,
+          "all_BA3": 0.5539999999999999,
+          "low_NLL3": 1.084128524208723,
+          "low_BA3": 0.37692923099157133,
+          "low_recall_e_mu_NC": [
+            0.05964912280701754,
+            0.38181818181818183,
+            0.6893203883495146
+          ],
+          "low_mu_AP": 0.35709536901579503,
+          "low_mu_AUROC": 0.5553841444750536,
+          "low_mu_efficiency_at_1pct_FPR": 0.007272727272727273,
+          "low_mu_predicted_fraction": 0.35097813578826237,
+          "low_mu_precision": 0.3442622950819672,
+          "low_confusion_counts_e_mu_NC": [
+            [
+              17.0,
+              116.0,
+              152.0
+            ],
+            [
+              19.0,
+              105.0,
+              151.0
+            ],
+            [
+              12.0,
+              84.0,
+              213.0
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

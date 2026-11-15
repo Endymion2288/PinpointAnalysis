@@ -78,7 +78,7 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 ## 4. R2：用小矩阵确定训练规模
 
-执行状态（2026-11-15）：300k Train+40k Tune身份及PE守恒核对通过，D0/D1/D2共六份精确sampler preflight已冻结。BF16三/四类真实拟合均100%，中途恢复与连续训练参数差值为0。Kubeflow H100 MIG 3g.47gb四并行执行D0/D1，HTCondor H100 MIG 2g.24gb双并行执行D2；完整科学结果尚未产出。配置、实算U和后续验收见[r2_execution.json](r2_execution.json)、[configs/r2](configs/r2/campaign.json)及[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。
+执行状态（2026-11-15）：300k Train+40k Tune身份及PE守恒核对通过，D0/D1/D2共六份精确sampler preflight已冻结。BF16三/四类真实拟合均100%，中途恢复与连续训练参数差值为0。Kubeflow H100 MIG 3g.47gb最多四并行执行D0/D1，HTCondor H100 MIG 2g.24gb双并行执行D2；完整批次科学结果尚未产出。配置、实算U和后续验收见[r2_execution.json](r2_execution.json)、[configs/r2](configs/r2/campaign.json)及[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。[最新只读快照](r2_progress_review.json)与[stage278](../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md)补充已完成模型和低occupancy排序，原六份配置不变。
 
 根据R1最终四pass与三seed结果，首批优先B1一族；B2为原生第二族候选，先profile并按明确问题决定是否扩展。B4保留R1 D0及逐类共同参考；是否追加其长训练由前两族的实测问题和费用决定，不自动运行三族全矩阵。B3末轮仍明显改善，若B2的规模收益有限且资源支持，再考虑其长训练控制。优先在seed42做：
 
@@ -95,6 +95,8 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 固定 updates 的比较对齐 sampler、batch、warm-up/update schedule，分别保留 actual exposures；固定 passes 的比较回答增加数据后训练成本与质量。两种比较各自说明改变因素，不能只报一条随 N 同时改变曝光的曲线。
 
 收敛参考：每隔固定 label exposures 评价 Tune，连续三个 evaluation windows 的 NLL 变化小于 0.001 且主指标没有实际改善时，进入 plateau 检查；记录 train/Tune gap。这个规则是停止计算的工程启发式，不是物理信息饱和证明。出现过拟合先调整正则化/augmentation，在相同 HPO 额度下比较。
+
+先完成首批固定预算终点，不因中间recall波动提前选择配方。D1−D0区分当前schedule下的更长训练，D2−D1区分同曝光下更多unique事件；若D1/D2仍改善才考虑D3，若更多unique明显有益再为1M单独计时，若Train/Tune均停滞再用width32检查容量。排序较好而argmax差时做family交叉拟合bias诊断；低occupancy排序本身也弱时优先局部路径。[09 §3](09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流)给出完整分流表。endpoint是主比较，best-screen是次比较，不混合两种选点策略或将screen次数不同造成的选择效应称为数据规模增益。
 
 容量对照按实际模型选择一个加宽版本：B1为793,674参数，可先将width16增为32；B2为199,882参数，可先将dim64增为128。实际参数、吞吐和显存由实现/profile生成，不把不同族都称为0.9M，也不直接把所有族扩到3–4M。只有学习曲线显示容量限制且收益足够，才继续扩大。先选择数据/训练，再扩大SSL。
 
@@ -114,7 +116,7 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 
 ### R3：几何关系与压缩
 
-以 R2 配方固定训练和输入，先执行 G1a（跨窗口/跨层边）、G1b（显式几何 anchors）、G1c（重训去除 latent、late fusion）与共同 baseline，seed42。若 G1a/G1b 有独立收益，再组合；否则保留更简单模型。对最佳两者做三 seed，随后仅对最佳结构进行 native/100μm/1mm 三点配对。
+以R2配方固定训练和输入，从B1的stride4→2及相位诊断开始，先测额外计算与稀疏信号保留。原生路线优先G1a（压缩前跨窗口/跨层边），使用本族共同baseline；其后按结果决定G1b（显式几何anchors）和G1c（重训去除latent、late fusion）。不同族的结构干预分别配对，不能将跨族输入表示/训练变化归于单一关系层。G1a/G1b均有独立收益时再组合。只对最佳两者做三seed，再仅对最佳结构进行native/100μm/1mm三点配对；不一次启动完整矩阵。
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
@@ -127,6 +129,8 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 ### R5：τ 与类别数
 
 使用最佳共同 backbone，先比较 flat T4、T3T、T4D；条件头 λ 从 `{0, 0.1, 0.3}` 的 train-inner 小扫描选择。τhad specialist 优先，τe/τmu 随局部可见性和混淆证据推进。对 specialist 做共同三类非劣和全非 τ 的背景评价；hard-negative replay 和 pAUC 最多各一项独立对照。
+
+可见衰变拓扑与未分辨衰变点的运动学分开设计：[H7/H8](05_literature.md#h7)分别提供OPERA和NOMAD依据。前者同时检查charm、强子再相互作用、大角度μ散射及prompt lepton漏识别；后者先完成可测方向/动量的resolution–coverage。had1/had3细分须先核对直接daughter、最终charged prong与重建track标签定义，保留条件辅助及unknown mask，不直接由当前直接prong计数启动七类softmax。
 
 量化每种拓扑的 eligible/observed/reconstructed/selected 分母，单列 charm 背景；计算几何/占用共同支持后的 paired 效应。当前 S6 的高 occupancy 诊断只用作提出假设，新开发集验证后才据此改变采样/模型。
 

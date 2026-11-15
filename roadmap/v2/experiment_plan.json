@@ -386,7 +386,8 @@
         ],
         "development_windows": "same fixed 4k Tune screen every75k non-tau Train exposures; full40k Tune at prescribed endpoint; fixed-budget and best-screen checkpoints reported separately",
         "reference": "05_literature.md#m6",
-        "report": "../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md"
+        "report": "../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md",
+        "checkpoint_comparison": "endpoint primary; own-task best-screen secondary; do not mix policies or selection opportunity counts"
       },
       "illustrative_D1_D2_cost_projection": {
         "source": "actual R1 four-pass operation wall for B1 seed17 and B2 seed42",
@@ -395,14 +396,16 @@
         "sum_heterogeneous_device_hours": 23.4930518633168,
         "scope": "linear planning estimate; not measured R2 wall or FLOP equivalence; excludes new D0, 300k conversion, failures and added profiles"
       },
-      "execution_record": "r2_execution.json"
+      "execution_record": "r2_execution.json",
+      "progress_review": "r2_progress_review.json",
+      "next_decision_contract": "09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流"
     },
     {
       "id": "R3",
       "depends_on": [
         "R2"
       ],
-      "work": "G1a sparse cross-window/cross-plane, G1b geometry anchors, G1c retrained late fusion; winner native/100um/1mm",
+      "work": "B1 stride and sampling-phase control first; native-family G1a before G1b geometry anchors and G1c retrained late fusion; separate within-family controls; winner native/100um/1mm",
       "work_items": [
         "W07"
       ],
@@ -429,7 +432,12 @@
         "R4 objects only if quality supports use"
       ],
       "planned_device_hours": 8,
-      "status": "pending"
+      "status": "pending",
+      "physical_paths": [
+        "resolvable decay topology and explicit charm/hadron-reinteraction/large-angle-muon-scattering backgrounds",
+        "unresolved-vertex observable kinematics conditional on direction/momentum resolution and coverage"
+      ],
+      "subclass_gate": "conditional decay auxiliary first; before had1/had3 validate direct-daughter versus final-charged-prong versus reconstructed-track labels and visible support; preserve coarse tau mass and unknown masks"
     },
     {
       "id": "R6",
@@ -563,7 +571,7 @@
         "sm_90",
         "compute_90"
       ],
-      "below_SM80": "FP32/eager fallback after actual CUDA startup probe",
+      "below_SM80": "General FP32/eager after real probe; fixed BF16 scientific contrasts use an explicit matched FP32 recipe and D0 rather than silently falling back",
       "other_architectures": "verify real CUDA forward/backward; capability ordering alone is insufficient",
       "matched_compute": "same obtained allocation for paired task budgets; heterogeneous hours are separate resource costs"
     },
@@ -582,7 +590,8 @@
     "R1_interactive_operation_hours_lower_bound": 0.3255333065249336,
     "R0_recorded_upper_bound_plus_R1_batch_hours": 46.79374353474368,
     "nominal_original_plan_remainder_before_R1_interactive_hours": 33.20625646525632,
-    "remaining_policy": "first B1 fresh D0/D1/D2; actual throughput,I/O,validation and startup measurements before each batch; prioritize concrete unanswered questions; no requirement for same GPU model or whole card"
+    "remaining_policy": "first B1 fresh D0/D1/D2; actual throughput,I/O,validation and startup measurements before each batch; prioritize concrete unanswered questions; no requirement for same GPU model or whole card",
+    "independent_model_concurrency": "profile aggregate operation throughput and full-validation RAM/VRAM on an obtained allocation; share compressed staging; independent model/optimizer/checkpoint; count allocation once; never fill released slots with unmotivated experiments"
   },
   "required_learning_evidence": [
     "real small-sample fitting",
@@ -613,9 +622,12 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md",
     "R1_measured": "r1_results.json",
-    "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md"
+    "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
+    "research_decisions": "09_decisions_and_handoff.md",
+    "R2_progress": "r2_progress_review.json",
+    "additional_tau_sources": "source_update_stage278.json"
   },
   "work_item_status": {
     "W01": "complete",
@@ -627,5 +639,6 @@
     "W07": "pending",
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
-  "last_updated": "2026-11-15"
+  "last_updated": "2026-11-15",
+  "latest_evidence_stage": 278
 }

@@ -1,6 +1,6 @@
 # PINPOINT 下一轮模型优化路线图（v2）
 
-更新：2026-11-15。最初独立审查基线为Git `37dd763`、workbook stage236的S0–S6；新R1最终评价源码为`4567ab8`。旧计划已归档，新版设计、R0和R1已完成；R2首批六模型正在执行，R3–R7尚未启动。
+更新：2026-11-15。最初独立审查基线为Git `37dd763`、workbook stage236的S0–S6；新R1最终评价源码为`4567ab8`。旧计划已归档，新版设计、R0和R1已完成；R2首批六模型正在执行，R3–R7尚未启动。先读[研究结论与下一批决策](v2/09_decisions_and_handoff.md)，再按下表进入详细证据。
 
 **当前结论：保留四类研究，同时交付真实三类基线；先优化训练配方和数据规模，再检验几何关系与局部信息损失。现有模型取得了可复核改进，尚未达到已知最佳效果。**
 
@@ -19,7 +19,7 @@ R1的41/41模型、133项配对、21项三seed平均配对、11个评价域和55
 
 简化为三类没有稳定改善共同任务。同allocation等时预算下，B1 compute T3−T4 conditional的BA3为+.064 pp [−.179,+.302]，B2为−.313 pp [−.514,−.113]；两者NLL3均更差。B1/B2的μ recall改善同时伴随e/NC损失。四pass末轮NLL仍下降，不能把当前排名当作收敛上限；B2−B3排名差+.220 pp的区间也跨零。μ分数排序与argmax取舍不同，见[专项读回](v2/r1_muon_decision_review.json)。
 
-R2正在执行B1一族：fresh **D0=100k×4、D1=100k×12、D2=300k×4**，匹配实际精度和明确的update-normalized schedule，分开检验更多unique事件与更多重复曝光。六项updates、尾批及LR轨迹已实算，300k数据准备与BF16真实学习/恢复门槛已通过；Kubeflow四并行、HTCondor双并行使用异构MIG。状态见[r2_execution.json](v2/r2_execution.json)和[stage275](../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。完成真实评价后再按结果追加第二族或容量；R3检验stride/相位、高分辨局部残差和显式跨层关系。完整工单与验收见[04](v2/04_execution_plan.md)。
+R2正在执行B1一族：fresh **D0=100k×4、D1=100k×12、D2=300k×4**，匹配实际精度和明确的update-normalized schedule，分开检验更多unique事件与更多重复曝光。六项updates、尾批及LR轨迹已实算，300k数据准备与BF16真实学习/恢复门槛已通过；Kubeflow四并行、HTCondor双并行使用异构MIG。批次状态见[r2_execution.json](v2/r2_execution.json)，最新只读快照见[r2_progress_review.json](v2/r2_progress_review.json)和[stage278](../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md)。低occupancy μ不仅argmax随训练波动，该域目前的AUROC也只有约.50–.57；全域排序改善不能替代局部信息检查。完成真实终点评价后再决定第二族或容量；R3检验stride/相位、高分辨局部残差和显式跨层关系。完整工单与验收见[04](v2/04_execution_plan.md)。
 
 R1终态122条allocation共**45.708889个异构device-hours、307.181111 CPU core-hours**，包含失败、探针和迁移，超过原18 h规划；所有batch allocation均终态。历史SSL .635321 h单列，交互操作另有.325533 h已记录下界。原80 h总规划须按实际成本重新分批，不能直接执行剩余完整矩阵。
 
@@ -47,9 +47,10 @@ R1终态122条allocation共**45.708889个异构device-hours、307.181111 CPU cor
 | [03：模型与物理设计](v2/03_models_and_physics.md) | 跨层稀疏关系、raw/object 双路径、异构融合、τ/charm 与方向任务 |
 | [04：执行路线与实验工单](v2/04_execution_plan.md) | R0–R7 依赖、最小实验矩阵、资源安排、首批具体工作和交付标准 |
 | [05：文献依据](v2/05_literature.md) | 本地资料及本次联网核对的论文、采用理由、适用边界 |
-| [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加至stage274的入口 |
+| [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加至stage278的入口 |
 | [07：GPU 与后端执行](v2/07_resources_and_operations.md) | 减少排队、共享/MIG、实际软件兼容性、单任务写入与成本 |
 | [08：R1 合作组三类对照](v2/08_r1_collaboration.md) | 已测量域表、输入/训练差异及原研究复现所需具体资料 |
+| [09：研究结论与下一批决策](v2/09_decisions_and_handoff.md) | 对已有改进、最优性和类别数的判断；R2分流、R3–R7顺序、τ两条物理路径与资源安排 |
 | [实验规格](v2/experiment_plan.json) | 可解析的设计合同；需实现对应 runner 后才能提交，不能直接传给旧 CLI |
 
 ## 研究路线与决策

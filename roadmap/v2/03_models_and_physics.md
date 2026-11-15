@@ -38,7 +38,7 @@ B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel
 | Sampling phase / filtering | 先以单点、短线和真实Train响应检查栅格相位敏感性，再决定是否加入降采样前滤波[P5] | 记录映射与边界，不把探测器整体平移当物理对称性；滤波可能削弱孤立信号，收益待测 |
 | Sparse local residual | 在投影融合前保留轻量的高分辨率局部方向/邻接路径，与现有totals skip分开 | 使用全部accepted响应，记录短结构经过聚合的保留率；局部稀疏卷积不能自行连接相隔很远的plane[P6] |
 
-每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，保留已冻结R1合同及结果，尚未启动R2/R3训练。
+每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，保留已冻结R1合同及结果；R2首批已在训练，R3尚未启动。
 
 [stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)补充了同结构的有效训练对照：B1 seed42 fresh计算控制在391,633次曝光、wall-based schedule下，低occupancy μ多识别879个，域内recall差+31.38 pp [29.53,33.04]；同组e/NC分别少识别703/367个，全域BA反而下降0.493 pp。全空事件仍全部判NC。结构和投影相同，预算与schedule共同改变，说明训练配方和决策取舍必须与压缩假设一起排查。R2先跟踪逐类概率、recall与AP/ROC；必要时在Train-inner或Tune内按family交叉拟合低维logit-bias/冻结readout诊断，检验固定表示的可读性。该诊断不打开Cal-A，也不重写R1排名。
 
@@ -54,6 +54,8 @@ B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel
 T3 μ的1% FPR效率逐seed增益均为正：+5.36/+4.32/+4.87 pp；argmax recall差为+1.37/−6.91/−1.69 pp。B1/B4 T3平均μ AP为.6483/.6000，AUROC为.7591/.7278。这些是同Tune的post-hoc开发读回，区间条件于三个已拟合seed及实际设备/精度，不能当成种子总体区间。
 
 因此R2的决策诊断应在保留原始概率的同时，检查类间offset/决策规则、逐类排序和训练schedule；当前尚不能把μ argmax损失认定为不可逆投影信息缺失。各类fixed-cut选择不构成互斥的三类输出，需另定义多cut冲突/拒判及coverage，不能把单类效率增益写成已经修复argmax。R1预设μ非劣条件仍未通过，不因新增指标改写晋级规则。
+
+R2固定screen的[新增读回](r2_progress_review.json)也显示，低occupancy子域本身的μ AUROC目前约.50–.57，不能把本节全域排序结论外推到该子域。终点评价须同时检查局部排序、预测类比例和e/NC取舍；低维bias仅诊断决策部分，高分辨残差与几何关系负责检验缺少的可用特征。
 
 ## 3. 优先架构 G1：显式几何与跨层稀疏关系
 
@@ -164,6 +166,14 @@ gate 由观测质量和概率决定，允许 soft routing，使 poor-reconstruct
 先比较 CE/BCE 基线和单一 τ branch 权重。低 FPR specialist 若仍受整体 CE 目标限制，再用 pAUC 或 hard-negative replay [M2]：以训练集 prompt/charm/hadronic fake 为难背景，保持随机背景成分和重要性权重。小 batch 内不能稳定估计 0.1% 尾部，需跨 batch train-only buffer 或大批 score bank，按 epoch 更新；不能把 validation 失败事件回流训练。
 
 charm 通过真 labels 做诊断和监督，通过观测 topology 做输入。条件 decay 与 charm/secondary 关联应优先落到 local/object tokens；每次只增加一种辅助，测共享梯度方向和分类负迁移。更多辅助 loss 未通过真实任务收益时，保留相应诊断，不继续堆叠。
+
+### 5.4 可见拓扑与未分辨衰变点分别研究
+
+OPERA最终分析[H7]按1h/3h/e/μ的可见衰变形态使用topology与kinematics，再训练各道BDT；其背景明确包括漏识别primary μ的charm、强子再相互作用和大角度μ散射。这支持本项目先改进候选、prompt lepton识别与对象质量，再研究hadronic子型。上述背景在本项目中的贡献和tag覆盖尚未测量，后续先盘点已有truth支持；未标注事件保留为unknown。
+
+NOMAD[H8]的τ衰变点无法空间分开，采用完整可见末态运动学及其相关性识别τ。因此PINPOINT应保留两条路径：可分辨轨迹/顶点的局部拓扑，及未分辨衰变点的观测运动学。第二条先在tracker方向、动量proxy、可见系统和接受度上验证resolution–coverage；缺少量测能力时不能直接把truth missing-pT加入模型，也不能把无kink当作无信息。两条路径均与raw backbone配对，推理路由只使用观测质量。
+
+进一步拆分had1/had3前，区分tau tree直接charged daughters、经共振展开的最终charged prongs、可见prongs和重建tracks。现有`tau_direct_prongs`只实现第一种计数；其与其他定义的一致性尚未测量。先补label/coverage诊断及条件辅助，只有合并四类或τ工作点改善且共同三类非劣时，才增加正式子类。
 
 ## 6. 回归与方向目标的改造
 

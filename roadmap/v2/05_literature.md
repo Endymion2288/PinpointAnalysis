@@ -1,6 +1,6 @@
 # 文献核对与对 PINPOINT 的采用决定
 
-检索日期：2026-11-14。使用期刊/会议正式页面、arXiv、INSPIRE 文献索引与作者代码；网页/PDF 提取与查询记录位于 `/eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/`。[初次来源记录](source_review.json)保存原27个外部论文/软件链接的题名与访问结果，全部HTTP200（PDG复用已提取PDF）。[追加核对](source_update_stage244.json)记录核心论文再次访问、tracking文献检索及Exa.TrkX补充。本文把资料与实验决定连接起来，论文benchmark数字只说明原任务。
+检索日期：2026-11-14至15。使用期刊/会议正式页面、arXiv、INSPIRE 文献索引与作者代码；网页/PDF 提取与查询记录位于 `/eos/home-x/xcheng/FASER/Pinpoint/results/roadmap_review_2026-11-14/`。[初次来源记录](source_review.json)保存原27个外部论文/软件链接的题名与访问结果，全部HTTP200（PDG复用已提取PDF）。[追加核对](source_update_stage244.json)记录核心论文再次访问、tracking文献检索及Exa.TrkX补充；[stage278来源](source_update_stage278.json)补充OPERA/NOMAD的τ识别物理路径。本文把资料与实验决定连接起来，论文benchmark数字只说明原任务。
 
 本轮方法重点：FASERCal Methods/Supplement；NuGraph2 context-aware 的输入、辅助头与结果；Object Condensation 编码/损失；OGM 的分支梯度机制；pAUC 的目标、采样与 mini-batch 误差。其余条目核对摘要/官方页面，用于设计筛选。正式采用代码时固定 revision 并补读相应实现。
 
@@ -69,6 +69,14 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 <a id="h6"></a>**H6. X. Ju et al. (Exa.TrkX), Performance of a geometric deep learning pipeline for HL-LHC particle tracking.** *Eur. Phys. J. C* 81, 876 (2021)；[arXiv:2103.06995](https://arxiv.org/abs/2103.06995)，[DOI](https://doi.org/10.1140/epjc/s10052-021-09675-8)。追加核对arXiv摘要、INSPIRE期刊元数据及摘要。
 
 其候选构造、筛选和GNN关联分开评价的流程，为R4提供比mutual-nearest-only更合适的参考。PINPOINT首先测物理gate的candidate recall与边数尾部，再用learned edge filtering/GNN，最后给完整track efficiency/fake/duplicate/coverage；不以edge accuracy替代轨迹质量。原TrackML性能和近线性规模结论不直接外推到PINPOINT shower，也不能照用围绕束流碰撞点的origin/方向约束。实现时需补读其图构造和评估定义。
+
+<a id="h7"></a>**H7. OPERA Collaboration, Final Results of the OPERA Experiment on ντ Appearance in the CNGS Neutrino Beam.** *Phys. Rev. Lett.* 120, 211801 (2018)；[arXiv:1804.04912](https://arxiv.org/abs/1804.04912)，[DOI](https://doi.org/10.1103/PhysRevLett.120.211801)，关联[Erratum](https://doi.org/10.1103/PhysRevLett.121.139901)。2026-11-15通过INSPIRE核对发表记录，下载arXiv PDF并抽读PDF p2–3的Event selection和Analysis strategy；不引用其显著性数值。arXiv摘要/PDF和INSPIRE均HTTP200，PDF444,435bytes。
+
+分析按1h/3h/e/μ衰变形态预选并训练各道BDT，使用拓扑、运动学与prompt lepton识别；背景包括charm、强子再相互作用和大角度μ散射。采用其分道和背景检查思路，PINPOINT的候选、标签覆盖与效率全部重新测量。OPERA的emulsion、能区、顶点采样与PINPOINT不同，不移用其kink cut、分辨率或选择效率。had1/had3细分先区分最终prongs与当前直接daughter计数。
+
+<a id="h8"></a>**H8. NOMAD Collaboration, Final NOMAD results on νμ→ντ and νe→ντ oscillations including a new search for ντ appearance using hadronic τ decays.** *Nucl. Phys. B* 611, 3–39 (2001)；[arXiv:hep-ex/0106102](https://arxiv.org/abs/hep-ex/0106102)，[DOI](https://doi.org/10.1016/S0550-3213(01)00339-X)。2026-11-15通过INSPIRE核对发表记录，下载arXiv PDF并抽读PDF p4的Introduction、p8的likelihood构造及hadronic selection片段；摘要/PDF和INSPIRE均HTTP200，PDF751,604bytes。
+
+论文明确说明空间分辨率不足以分开τ衰变点，依靠可见末态运动学、候选隔离及相关性完成识别。它支持为无可分辨kink的事件保留运动学分支，不能证明PINPOINT已经有相同的能量/动量测量能力。先检验tracker和局部对象的方向/动量resolution–coverage、可见系统与接受度，再与raw分类做配对；当前弱event-level方向回归不满足这一前提。两篇全文、摘录和访问记录保存在`R2/audit/literature_stage278/`。
 
 ## 4. 优化目标、模态竞争与统计
 

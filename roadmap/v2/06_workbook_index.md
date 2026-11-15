@@ -326,3 +326,7 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 272 | [r1 B2 main tasks complete](../../workbook/2026-11-15_stage272_r1_b2_main_tasks_complete.md) |
 | 273 | [r1 core interval readback](../../workbook/2026-11-15_stage273_r1_core_interval_readback.md) |
 | 274 | [R1完整基线、三类/四类比较及最终验收](../../workbook/2026-11-15_stage274_r1_final_results.md) |
+| 275 | [R2首批执行、精确预算与异构GPU并行验证](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md) |
+| 276 | [R2开发窗口、评价与交付协议](../../workbook/2026-11-15_stage276_r2_monitoring_and_delivery_protocol.md) |
+| 277 | [R2恢复元数据、预测复用与依赖调度](../../workbook/2026-11-15_stage277_r2_recovery_provenance_and_dependencies.md) |
+| 278 | [研究结论整理、τ物理路线与R2稀疏μ进展读回](../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md) |
