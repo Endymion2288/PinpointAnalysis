@@ -342,3 +342,10 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 288 | [R3全程重混结论与原生候选图实测](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md) |
 | 289 | [R3材料单位修正与独立分支可读性](../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md) |
 | 290 | [完整路线整理、文献复核与修正单位后的学习验收](../../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md) |
+| 291 | [R3组批等价加速及紧凑图像screen](../../workbook/2026-11-15_stage291_r3_collation_and_compact_screen.md) |
+| 292 | [R3正式启动与sensor映射核对](../../workbook/2026-11-15_stage292_r3_formal_launch_and_sensor_validation.md) |
+| 293 | [R3资源选择与实际健康范围](../../workbook/2026-11-15_stage293_r3_resource_choice_and_health_scope.md) |
+| 294 | [R3紧凑图像完整质量及匹配成本](../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md) |
+| 295 | [R3完整合同、实际恢复及全Tune重算](../../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md) |
+| 296 | [R3固定五折输出诊断与共享最终probe](../../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md) |
+| 297 | [R3首层stride正式终点与后备资源](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md) |

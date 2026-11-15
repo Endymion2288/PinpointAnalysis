@@ -1,7 +1,7 @@
 {
-  "status": "M0_C1_evaluated_G1_G2_running_R3_not_complete",
+  "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T16:58:43.032873+00:00",
+  "UTC": "2026-11-15T17:36:40.601490+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -71,9 +71,9 @@
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 43,
-  "latest_stage_report": "../../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md",
   "pending": [
-    "G1 fixed-exposure endpoint and full Tune comparison against matched D2 stride4",
+    "G1 full-Tune checkpoint readback and frozen feature probes on acquired Kubeflow MIG",
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
     "evidence-triggered seed,resolution,anchor/fusion choices",
@@ -382,7 +382,7 @@
     "completion_contract": "configs/r3/completion_contract.json"
   },
   "G1_formal": {
-    "status": "running",
+    "status": "complete",
     "job": "pinpoint-r3-g1-k1",
     "pod": "pinpoint-r3-g1-k1-r26ns",
     "flavor": "h100-47gb",
@@ -396,7 +396,199 @@
       "maximum_parameter_delta": 0.0,
       "same_exact_probability_and_exposure_tables": true,
       "actual_Tune_used": false
-    }
+    },
+    "counters": {
+      "updates": 150117,
+      "training_exposures": 1200000,
+      "non_tau_exposures": 900000,
+      "exposure_by_class": [
+        300000,
+        300000,
+        300000,
+        300000
+      ],
+      "train_seconds": 8456.192747558467,
+      "validation_seconds": 429.2011688859202,
+      "data_wait_seconds": 52.67866085167043,
+      "lr_sum": 23.589806175917317
+    },
+    "wall_seconds": 9008.477519595996,
+    "scientific_result": {
+      "status": "reviewed",
+      "UTC": "2026-11-15T17:36:40.601490+00:00",
+      "model": "b1_g1_stride2_t4_s42",
+      "reference": "R2 b1_d2_t4_s42",
+      "adopt_stride2": false,
+      "reason": "No overall BA3 or tau efficiency gain; electron recall loss violates the unchanged quality guard.",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.0003333333333332966,
+          "95pct": [
+            -0.0036574447793804254,
+            0.0035325054471661553
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.001430214914383554,
+          "95pct": [
+            -0.0007612424440814862,
+            0.0036217393880947214
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": -0.0011874186688225485,
+          "95pct": [
+            -0.0027119402885125514,
+            0.0007748517292098013
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": -0.0006899049999996576,
+          "95pct": [
+            -0.0019213820846458313,
+            0.0009164676025047606
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.014299999999999313,
+          "95pct": [
+            -0.02048137528552333,
+            -0.007672817595527644
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.017599999999999172,
+          "95pct": [
+            0.010177014408654544,
+            0.024930962576259937
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.0042999999999998595,
+          "95pct": [
+            -0.01015970813903296,
+            0.0017946450788639782
+          ]
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": -0.0008000000000000576,
+          "95pct": [
+            -0.0051532132062551235,
+            0.004239616590285516
+          ]
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": 0.0015000000000000568,
+          "95pct": [
+            -0.002645751007136051,
+            0.005129417455911131
+          ]
+        },
+        "NLL4": {
+          "difference_a_minus_b": 0.0015289897187567014,
+          "95pct": [
+            -0.0004675162482809469,
+            0.00346255893398043
+          ]
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.0024999999999998634,
+          "95pct": [
+            -0.00531439345937903,
+            0.012852422213792567
+          ]
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.004900000000000439,
+          "95pct": [
+            -0.00971704134808541,
+            0.01876632908384246
+          ]
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.0038999999999997925,
+          "95pct": [
+            -0.01086341437742925,
+            0.003497775413025019
+          ]
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0009000000000000813,
+          "95pct": [
+            -0.02241540839623715,
+            0.012389559416173904
+          ]
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.0007999999999999674,
+          "95pct": [
+            -0.006584604053609661,
+            0.007618011665110528
+          ]
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.005300000000000478,
+          "95pct": [
+            -0.00880537296309205,
+            0.01579518431571253
+          ]
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0035999999999998256,
+          "95pct": [
+            -0.005573810052473977,
+            0.014244383619263024
+          ]
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": -0.01729999999999915,
+          "95pct": [
+            -0.026733923755366762,
+            0.007729117657060179
+          ]
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": -0.007599999999999607,
+          "95pct": [
+            -0.017628667209996583,
+            0.003842826818037269
+          ]
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": -0.005399999999999738,
+          "95pct": [
+            -0.01785653156470634,
+            0.003932460139400745
+          ]
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0024999999999998634,
+          "95pct": [
+            -0.009211615710039775,
+            0.01620212593762302
+          ]
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": -0.012799999999999367,
+          "95pct": [
+            -0.027817761733055845,
+            0.006393731558920737
+          ]
+        },
+        "BA4": {
+          "difference_a_minus_b": -0.0008249999999997981,
+          "95pct": [
+            -0.004216019606752494,
+            0.002421649621485886
+          ]
+        }
+      },
+      "scope": "tested stride intervention only, development Tune, paired physical-block intervals conditional on fitted seed42; no hardware information-limit claim",
+      "matched_seed_extension": false,
+      "Cal_A_Cut_B_Confirm_payload_read": false
+    },
+    "health": "health/g1_c1/results.json",
+    "full_readability": "pending probes/g1_c1/results.json"
   },
   "G2_candidate_audit": {
     "status": "complete",
@@ -690,5 +882,12 @@
       "checkpoint_readback_Tune_events": 40000,
       "checkpoint_readback_max_probability_delta": 0.0
     }
+  },
+  "replacement_resource": {
+    "job": "pinpoint-r3-g2-k3",
+    "flavor": "h100-47gb",
+    "status": "allocated_profiling_single_and_parallel3_before_decision",
+    "previous_whole_candidate": "pinpoint-r3-g2-k2 terminal; no scheduling observed,98s lifecycle upper bound counted",
+    "old_G2_writers_continue": true
   }
 }

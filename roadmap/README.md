@@ -14,6 +14,7 @@
 | R1, matched-time T3 vs conditional T4 | B1共同BA3差+0.064 pp，区间跨零；B2为−0.313 pp；两族T3 NLL3均更差 | 删除τ没有稳定改善共同任务，困难不限于第四类 |
 | R2, data/exposure study | D2=300k×4的T3/conditional T4 BA3=57.0967%/57.1267%；T4 BA4=45.7650%，τ效率6.05% | 更多unique数据有益；相对D0的增量仍小，收敛和容量上限未建立 |
 | R3 M0, full-pass reshuffling | 对D2，BA3 +0.383 pp，但μ recall −4.08 pp，稀疏μ −14.816 pp；τ无增益 | 不采用该采样替换，后续几何实验保留原采样 |
+| R3 G1, first stride 4→2 | 对D2，BA3 −0.033 pp [−0.366,+0.353]，μ recall +1.76 pp、e recall −1.43 pp；τ无收益 | 当前干预不晋级，原生关系与对象路径另行检验 |
 | R3 C1, compact sensor rows | 对D0，BA3 +0.137 pp [−0.213,+0.504]，e recall −3.42 pp；同设备训练吞吐2.723倍 | 当前配方不晋级；成本优势保留为后续质量恢复动机 |
 
 BA为balanced accuracy；pp为百分点。R1/R2/R3使用新Tune40k开发集，表中τ效率均在该开发集1% FPR处评价；它们与S6独立test分别解释。三seed数值为单模型指标均值；R2/R3为seed42，事件区间不代表训练seed总体波动。与合作组原研究完全匹配后的净增益仍未测量，已完成的同类方法对照及差异见[08](v2/08_r1_collaboration.md)。
@@ -48,7 +49,7 @@ flowchart TD
 | R0 | 新分区、真实模型元数据、缓存等价和真实小样本学习 | 已完成；Cal-A40k/Cut-B160k/Confirm200k继续封存 |
 | R1 | HGB、ResNet、ParticleNet、ParT、分层模型，同输入T3/T4和必要三seed/等时控制 | 已完成41模型；452项验收通过，四类继续研究 |
 | R2 | 100k×4、100k×12、300k×4及有依据的正则化/顺序控制 | 已完成8模型和末轮控制；198项验收通过，D2为后续参考 |
-| R3 | M0采样、G0相位、G1首层stride4→2、G2压缩前原生几何关系 | M0/G0/C1及候选审计完成；G1和G2正式训练中。C1不晋级；只对有价值改变补seed/粒度 |
+| R3 | M0采样、G0相位、G1首层stride4→2、G2压缩前原生几何关系 | M0/G0/G1/C1及候选审计完成；三个G2正式训练中。M0/G1/C1不晋级；只对有价值改变补seed/粒度 |
 | R4 | 多候选tracking、vertex、tracker spacing/方向，raw/object双路径 | 先验收candidate recall和整轨fake–efficiency–coverage，再测全事件分类增量 |
 | R5 | flat4、分解头、条件decay与τhad specialist；charm等背景 | 以inclusiveτ工作点和共同三类质量决定继续四类、细分或近期三类交付 |
 | R6 | 胜出encoder上的一种定向局部监督/预训练，加held-out响应条件 | 与同总计算监督控制比较；实际下游或鲁棒性收益成立后再扩展 |
@@ -56,7 +57,7 @@ flowchart TD
 
 R4–R6由前序证据触发，不要求先完成全部候选才能交付三类结果。未建立学习、对象覆盖或下游收益的分支先定位原因；有效负结果也形成明确决策。完整最小矩阵、实施工单、触发与停止条件见[04](v2/04_execution_plan.md)，当前科学判断集中在[09](v2/09_decisions_and_handoff.md)。
 
-R3最新执行状态见[r3_execution.json](v2/r3_execution.json)。新增材料特征已按G4源码修正：silicon header的10使用μm，换算为0.010 mm；W/scintillator厚度使用mm。修正后的五项真实学习检查全部通过，正式G2分类收益尚未测量。候选图、M0与G1不依赖该厚度特征。单位修正见[stage289](../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)，最终整理和学习读回见[stage290](../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md)。C1完整质量/成本见[stage294](../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)，六模型交付合同与独立读回见[stage295](../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md)，固定五折输出诊断见[stage296](../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)。
+R3最新执行状态见[r3_execution.json](v2/r3_execution.json)。新增材料特征已按G4源码修正：silicon header的10使用μm，换算为0.010 mm；W/scintillator厚度使用mm。修正后的五项真实学习检查全部通过，正式G2分类收益尚未测量。候选图、M0与G1不依赖该厚度特征。单位修正见[stage289](../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)，最终整理和学习读回见[stage290](../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md)。C1完整质量/成本见[stage294](../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)，六模型交付合同与独立读回见[stage295](../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md)，固定五折输出诊断见[stage296](../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)，G1完整配对负决定及资源切换见[stage297](../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)。
 
 ## 资源与阅读入口
 

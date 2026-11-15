@@ -117,7 +117,7 @@ def endpoint_figures(root,path):
             ax.axvline(0,color='gray',lw=1)
             ax.axvline(-1,color='red',ls='--',lw=1,label='1 pp loss guard')
             ax.set(xlabel='Recall difference (pp)',yticks=range(3),yticklabels=['Electron','Muon','NC'],
-                title='All Tune' if pair['domain']=='all' else 'Pixel occupancy 0–100')
+                title='All Tune' if pair['domain']=='all' else 'Accepted channels < 100')
             ax.grid(axis='x',alpha=.2)
         fig.suptitle(model_label(row['a'])+' minus '+model_label(row['b'])+
             '\nFixed endpoints; paired block 95% intervals; red dashed: 1 pp recall-loss guard',fontsize=10)
@@ -153,7 +153,7 @@ def readability(root,paths):
     branches=['local','regional','global','tracker']
     fig,axes=plt.subplots(1,2,figsize=(12,4.4))
     for ax,domain,title in [(axes[0],'all','All Tune'),
-            (axes[1],'occupancy_0_100','Pixel occupancy 0–100')]:
+            (axes[1],'occupancy_0_100','Accepted channels < 100')]:
         for name,model in models.items():
             values=[100*model['reports'][branch][domain]['T3']['BA']
                 if branch in model['reports'] else np.nan for branch in branches]
