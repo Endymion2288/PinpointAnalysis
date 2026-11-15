@@ -89,7 +89,8 @@ def screen_diagnostics(metadata, indices, probability, logits):
     return result
 
 
-def run(args):
+def run(args, *, dataset_factory=R1Dataset, loader_factory=make_loader,
+        model_factory=build_model, group_factory=branch_groups):
     started = time.perf_counter()
     config = json.loads(args.config.read_text())
     torch.zeros(1, device='cuda:0').sum().item()
@@ -126,8 +127,8 @@ def run(args):
         else:
             staging = stage_shards(paths, Path(scratch)/'native', workers=3)
             os.environ['PINPOINT_NATIVE_SHARD_ROOT'] = str(Path(scratch)/'native')
-        train = R1Dataset(data_root,'train',config,cache_dir=scratch)
-        train_loader, sampler, offset = make_loader(train,config,True)
+        train = dataset_factory(data_root,'train',config,cache_dir=scratch)
+        train_loader, sampler, offset = loader_factory(train,config,True)
         profile = config.get('profile',False)
         if profile:
             total_updates = config.get('profile_updates',256)
@@ -139,14 +140,14 @@ def run(args):
             if trace['total_updates']!=expected['total_updates'] or trace['total_exposures']!=expected['total_exposures']:
                 raise ValueError('runtime sampler differs from frozen preflight')
             total_updates = trace['total_updates']
-            tune = R1Dataset(data_root,'validation',config,cache_dir=scratch)
-            small = R1Dataset(data_root,'validation',config,cache_dir=scratch)
+            tune = dataset_factory(data_root,'validation',config,cache_dir=scratch)
+            small = dataset_factory(data_root,'validation',config,cache_dir=scratch)
             subset(small,pd.read_parquet(Path(config['tune_screen'])))
-            screen_loader,_,_ = make_loader(small,config,False)
-            full_loader,_,_ = make_loader(tune,config,False)
-        model = build_model(config).cuda()
+            screen_loader,_,_ = loader_factory(small,config,False)
+            full_loader,_,_ = loader_factory(tune,config,False)
+        model = model_factory(config).cuda()
         optimizer = torch.optim.AdamW(model.parameters(),lr=config['learning_rate'],weight_decay=config['weight_decay'])
-        groups = branch_groups(model)
+        groups = group_factory(model)
         activations = Activations(model)
         watch = {n:params[0][1] for n,params in groups.items()}
         counts = np.zeros(len(train),dtype='uint16')
@@ -158,6 +159,8 @@ def run(args):
             'parameters':sum(p.numel() for p in model.parameters()),'staging':staging,'sampler':trace,
             'history':[],'health':[],'rolling_train':[],'attempts':[],
             'Cal_A_Cut_B_Confirm_payload_read':False}
+        if hasattr(train, 'cache_audit'):
+            record['training_cache'] = train.cache_audit
         start_epoch, start_batch, best = 0,0,float('inf')
         if args.resume:
             state = torch.load(resume,map_location='cpu',weights_only=False)

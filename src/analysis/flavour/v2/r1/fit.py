@@ -43,7 +43,8 @@ def gradients(groups):
             for name, params in groups.items()}
 
 
-def run(args):
+def run(args, *, config_transform=None, model_factory=build_model,
+        group_factory=branch_groups, dataset_factory=R1Dataset, collate_fn=collate):
     torch.set_num_threads(1)
     pa.set_cpu_count(1)
     output = args.root/'fit'/args.attempt
@@ -61,18 +62,20 @@ def run(args):
             if args.dim is not None:
                 config['dim'] = args.dim
             config['precision'] = 'BF16_encoder_FP32_head' if args.bf16 else 'FP32'
+            if config_transform is not None:
+                config = config_transform(config)
             with tempfile.TemporaryDirectory(prefix='pinpoint-r1-fit-') as scratch:
-                data = R1Dataset(args.r0/'micro_data', 'train', config, cache_dir=scratch)
+                data = dataset_factory(args.r0/'micro_data', 'train', config, cache_dir=scratch)
                 rows = selected if task != 'T3' else selected[selected.label.ne(2)]
                 positions = fit_event_positions(rows, data.metadata)
                 # Interleave labels so every fit batch contains each class.
                 positions = positions.reshape(-1, 8).T.reshape(-1)
                 items = [data[int(i)] for i in positions]
-                batches = [collate(items[i:i+args.batch_size]) for i in range(0, len(items), args.batch_size)]
+                batches = [collate_fn(items[i:i+args.batch_size]) for i in range(0, len(items), args.batch_size)]
                 data.native.close()
                 started = time.perf_counter()
-                model = build_model(config).cuda()
-                groups = branch_groups(model)
+                model = model_factory(config).cuda()
+                groups = group_factory(model)
                 activations = Activations(model)
                 watch = {name: params[0][1] for name, params in groups.items()}
                 optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.)

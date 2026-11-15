@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "completed_R0_R1_R2_pending_R3_R7",
+  "status": "completed_R0_R1_R2_R3_M0_running",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0/R1/R2 complete; R2 eight models,16 views,128 pairs,11 domains and conditional final-pass sampling control delivered;198 acceptance checks pass;39 terminal allocations; R3-R7 not started; Cal-A/Cut-B/Confirm sealed",
+  "implementation_status": "R3 M0 frozen and running after exact cache/global-order recovery gate; G0/G1/G2 and evidence-triggered G3 pending; R3 not complete; Cal-A/Cut-B/Confirm sealed",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -529,9 +529,9 @@
         "W07"
       ],
       "planned_device_hours": 20,
-      "status": "pending",
+      "status": "M0_running_not_complete",
       "entry_batch": {
-        "status": "planned_pending_submission_freeze",
+        "status": "frozen_and_running",
         "id": "M0",
         "task": "T4",
         "seed": 42,
@@ -546,7 +546,9 @@
         "fixed": "D2 input,per-update batch sizes,optimizer recipe,precision,total updates,LR trajectory and exposures",
         "preflight": "allocation-local transformed cache input equivalence; timing; aggregate RAM/VRAM and full-validation peak",
         "decision": "pair against original R2 D2 raw endpoint for all/sparse BA,NLL,per-class ranking,recalls,tau and cost; adopt if effective,then necessary T3; use same sampling on both sides of G1 and keep sampling versus geometry gains separate"
-      }
+      },
+      "execution_record": "r3_execution.json",
+      "progress_report": "../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md"
     },
     {
       "id": "R4",
@@ -779,7 +781,7 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage284_r2_final_results.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md",
     "R1_measured": "r1_results.json",
     "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
     "research_decisions": "09_decisions_and_handoff.md",
@@ -787,7 +789,8 @@
     "additional_tau_sources": "source_update_stage278.json",
     "R2_regularization": "r2_regularization_review.json",
     "R2_measured": "r2_results.json",
-    "R2_workbook": "../../workbook/2026-11-15_stage284_r2_final_results.md"
+    "R2_workbook": "../../workbook/2026-11-15_stage284_r2_final_results.md",
+    "R3_execution": "r3_execution.json"
   },
   "work_item_status": {
     "W01": "complete",
@@ -800,5 +803,5 @@
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
   "last_updated": "2026-11-15",
-  "latest_evidence_stage": 284
+  "latest_evidence_stage": 285
 }

@@ -1,4 +1,4 @@
-# 工作记录索引：S0–S6与v2至stage284
+# 工作记录索引：S0–S6与v2至stage285
 
 本索引共 236 份既有报告，按原阶段保留。标题来自原文件；本轮全量编目并提取结论，重点证据另见[独立评估](01_evidence_review.md)。索引不表示重新执行全部实验。
 
@@ -336,3 +336,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 282 | [R2更多unique数据的实测收益、区间与稀疏域限制](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md) |
 | 283 | [R2八模型正则化结果与固定prefix末轮顺序控制](../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md) |
 | 284 | [R2完整结果、顺序效应、198项验收与下一批科学决策](../../workbook/2026-11-15_stage284_r2_final_results.md) |
+| 285 | [R3合同、M0执行与实际恢复验证](../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md) |

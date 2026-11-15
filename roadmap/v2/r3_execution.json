@@ -1,0 +1,52 @@
+{
+  "status": "M0_running_R3_not_complete",
+  "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
+  "UTC": "2026-11-15T14:04:19.541105+00:00",
+  "campaign": "configs/r3/campaign.json",
+  "first_config": "configs/r3/b1_m0_t4_s42.json",
+  "M0": {
+    "backend": "Kubeflow",
+    "job": "pinpoint-r3-m0-k1",
+    "pod": "pinpoint-r3-m0-k1-ht9wc",
+    "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+    "preflight": {
+      "total_updates": 150117,
+      "total_exposures": 1200000,
+      "non_tau_exposures": 900000,
+      "unique_events": 300000,
+      "passes": 4,
+      "same_original_batch_sizes": true,
+      "lr_sum": 23.589806175917296
+    },
+    "actual_runner_integrity": {
+      "status": "complete",
+      "maximum_parameter_delta": 0.0,
+      "same_exact_probability_and_exposure_tables": true,
+      "precision": "BF16_encoder_FP32_head",
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "scope": "32 frozen Train rows with synthetic validation; tests actual cache,global sampler,screen,checkpoint and recovery",
+      "actual_Tune_used": false,
+      "Cal_A_Cut_B_Confirm_payload_read": false
+    },
+    "training_cache": {
+      "events": 300000,
+      "array_bytes": 10425150000,
+      "seconds": 145.58327495492995,
+      "scattered_exact_input_checks": 32,
+      "storage": "allocation-local transformed arrays; no persistent EOS tensor cache"
+    },
+    "scientific_result": "not yet measured"
+  },
+  "unit_tests_passed": 29,
+  "latest_stage_report": "../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md",
+  "pending": [
+    "M0 fixed endpoint and independent paired evaluation;adopt/reject mixing",
+    "G0 phase diagnosis",
+    "G1 matched stride control,real fit,throughput and full-validation peaks",
+    "G2 native pre-compression relations with matched within-family control,candidate coverage and tails",
+    "local/regional/global readability,gradients and retrained ablation",
+    "evidence-triggered seed/resolution/anchor/fusion choices",
+    "final scientific decision,terminal accounting,figures and acceptance"
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}
