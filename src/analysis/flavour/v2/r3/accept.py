@@ -117,6 +117,10 @@ def run(root):
     for evaluation in contract['evaluations']:
         folder=root/evaluation['output'];config=configuration(root,root/evaluation['contract'])
         result=read(folder/'results.json')
+        core_sizes={'evaluation_m0':(4,8),'evaluation_geometry':(12,48),'evaluation_c1':(4,8)}
+        if evaluation['output'] in core_sizes:
+            models,pairs=core_sizes[evaluation['output']]
+            check(evaluation['output']+'_complete_core_matrix_size',len(config['models'])==models and len(config['pairs'])==pairs)
         check(evaluation['output']+'_complete_exact_models',result['status']=='complete'
             and set(result['models'])=={e['name'] for e in config['models']})
         check(evaluation['output']+'_all_domains',all(set(r)==DOMAINS for r in result['models'].values()))

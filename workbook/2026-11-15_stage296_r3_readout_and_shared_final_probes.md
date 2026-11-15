@@ -10,6 +10,8 @@
 
 扩展现有group入口：原生训练组完成后，可在同一allocation内使用同一份只读Train/Tune mmap做完整特征probe与checkpoint概率重算。probe使用共同Train4k子集的native index映射读取full缓存，保留完整Tune；共享缓存已经存在时不再次tokenize/build candidates。该post-fit路径只在显式启用时执行，训练本身的配置、曝光和checkpoint不变。共享数组的确定性与子集映射已由先前真实runner恢复验证。
 
+同步总入口、模型设计和当前决策文档中的C1状态，保留原历史阶段报告；验收另明确检查M0/geometry/C1核心矩阵分别为4/12/4视图、8/48/8配对，防止以缺项但内部自洽的合同替代完整交付。
+
 ## 详细数据
 
 输出根为`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/`。CPU任务1583020.0完成，合同及结果为`readout/early_c1/{contract,results}.json`。
