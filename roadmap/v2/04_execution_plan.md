@@ -14,6 +14,8 @@ B4主任务三seed均已完成，见[stage253](../../workbook/2026-11-15_stage25
 
 B1投影控制与合作组条件域见[stage254](../../workbook/2026-11-15_stage254_r1_projection_controls_and_domains.md)：B1 T3−HGB的BA3差+2.03 pp，[+1.57,+2.52]；相对B4的μ recall低6.91 pp。Tracker重训BA增益+3.93 pp，主要来自NC。B1已在冻结规则下必然进入前两名，两个必要seed已提前提交；完整排名和另一族扩展继续等待B3，不改变选择规则。
 
+45/55条件路径与μ损失定位见[stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)：B1−B4在channel数<100的μ recall差−24.24 pp，[−25.76,−22.41]；1,000–4,999时为+4.59 pp。低occupancy贡献全域μ差−6.79 pp；4,580项独立条件核算通过。后续几何/融合对照需保留这一逐类分层，完整排名仍待B3。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |

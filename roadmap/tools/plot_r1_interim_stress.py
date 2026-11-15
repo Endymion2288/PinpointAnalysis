@@ -1,4 +1,4 @@
-"""Plot the first completed R1 condition comparisons on frozen Tune events."""
+"""Plot completed R1 condition comparisons on frozen Tune events."""
 
 import argparse
 import json
@@ -13,11 +13,13 @@ import numpy as np
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True, help='R1 results root')
+    parser.add_argument('--interim', default='stress_seed42', help='Completed folder under R1/interim')
     args = parser.parse_args()
-    root = args.root/'interim/stress_seed42'
+    root = args.root/'interim'/args.interim
     reports = json.loads((root/'evaluation/stress_results.json').read_text())['models']
     entries = json.loads((root/'evaluation_config.json').read_text())['models']
-    colors = {'B0': 'tab:gray', 'B4': 'tab:blue', 'B4-MAE': 'tab:purple'}
+    colors = {'B0': 'tab:gray', 'B1': 'tab:red', 'B2': 'tab:orange',
+              'B4': 'tab:blue', 'B4-MAE': 'tab:purple'}
     labels = [f"{e['family']} / {e['task']}" for e in entries]
     figure, axes = plt.subplots(2, 3, figsize=(15, 8), constrained_layout=True)
     for row, column, condition, title in [
