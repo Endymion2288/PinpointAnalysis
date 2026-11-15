@@ -1,10 +1,10 @@
 # R1 三类合作组对照
 
-**R1已实现真实三类重训及相同事件上的四类条件三类评价。当前B1/B4/HGB三seed、B1/B4同allocation等时预算及seed42投影控制已测量；41模型的最终交付仍在运行。本页给出可核对的对照口径和已完成的域表。**
+**R1已完成真实三类重训及相同事件上的四类条件评价。完整41模型、133配对、21项三seed平均配对、11域及452项验收均通过。本页交付W08的三类同类方法对照；原合作组研究的严格复现所缺输入另列。** 最终证据见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)及[r1_results.json](r1_results.json)。
 
 ## 已完成的对照范围
 
-所有R1模型使用相同accepted readout、Train100k四类池及Tune40k。T3实际监督75k unique非τ事件，每个事件曝光4次；T4监督100k事件，包含完全相同的75k非τ事件且曝光4次。Tune的三类评价使用相同30k非τ事件，四类模型的条件概率为`p(e,mu,NC)/(1-p(tau))`。另将10k真τ输入T3统计污染，未把τ重标成NC。
+所有R1模型使用相同accepted readout、Train100k四类池及Tune40k。神经网络主T3实际监督75k unique非τ事件，每个事件曝光4次；主T4监督100k事件，包含完全相同的75k非τ事件且曝光4次。HGB共用相同unique事件，boosting预算另列。Compute T3另按本族T4操作wall配对，实际曝光分别报告。Tune的三类评价使用相同30k非τ事件，四类模型的条件概率为`p(e,mu,NC)/(1-p(tau))`。另将10k真τ输入T3统计污染，未把τ重标成NC。
 
 R1的benchmark三类prior为1/3、1/3、1/3。几何域内重新等类加权；人数、raw confusion与weighted confusion分别保留。工作点在该开发域的raw scores上描述性选取，非Cal-A/Cut-B冻结工作点。完整uncalibrated ROC/PR、固定1%/0.1% FPR及80%/90% purity效率与coverage由R1评估文件提供。
 
@@ -41,13 +41,15 @@ R1的benchmark三类prior为1/3、1/3、1/3。几何域内重新等类加权；�
 | Large | B4 T3 | 66.158 | .9029 / .8246 / .7997 | 42.95 / 21.96 / 12.80 |
 | Large | HGB T3 | 66.199 | .8978 / .8223 / .7969 | 42.74 / 24.03 / 8.89 |
 
-来源：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/projection_controls/evaluation/results.json`；已独立核算的配对区间及解释见[stage254](../../workbook/2026-11-15_stage254_r1_projection_controls_and_domains.md)。固定purity的开发效率受尾部统计和阈值选择影响，表中零或较低效率不表示所有阈值的分类能力都相同。
+来源：`/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/evaluation/results.json`及[r1_results.json](r1_results.json)的域表；18行126个数值已再次与最终输出核对。原配对区间及解释见[stage254](../../workbook/2026-11-15_stage254_r1_projection_controls_and_domains.md)。固定purity的开发效率受尾部统计和阈值选择影响，表中零或较低效率不表示所有阈值的分类能力都相同。
 
 上述18行的126个实测数值已逐项核对；另对B1/B4/HGB三seed的18模型、11域从预测独立读回1,185项，包含raw/weighted confusion与固定purity效率/coverage，全部通过，见[stage261](../../workbook/2026-11-15_stage261_r1_collaboration_and_count_audit.md)。
 
 全域三seed的较稳健结论见[stage259](../../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)：B1真实T3平均BA3为56.563%，T4 conditional为56.304%；相对HGB的T3平均增益1.9733 pp，低于预设2 pp实用门槛。对B4的T3平均增益2.1711 pp，同时μ recall下降2.410 pp，未满足逐类非劣。不能只凭平均BA宣布全面优于基线。
 
 [stage263](../../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md)的三seed同allocation等时预算结果：B1 compute T3平均BA3为56.369%，相对T4 conditional只高.064 pp [−.179,+.302]，NLL更差.008444；e/μ/NC recall差为−.627/+6.583/−5.763 pp。B4 compute T3的BA3为54.674%，相对其T4高.188 pp [−.072,+.413]。24模型56配对、1,431项独立读回通过；增加三类重复曝光没有消除逐类取舍。这里比较的是本allocation fresh T4对应的操作wall，设备、实际精度与逐seed波动见[紧凑结果](r1_b1_three_seed_compute.json)。
+
+最终结果补齐B2：T3/T4 conditional/compute T3的三seed BA3为55.0689/55.3911/55.0778%；compute−T4为−.313 pp [−.514,−.113]、NLL3 +.006649 [.005003,.008099]。B3 seed42 compute为55.3700%，相对T4高.080 pp但区间跨零。三类化未稳定改善共同任务，继续保留四类研究；R1的wall-based schedule与曝光同时变化，不单独归因于重复曝光。最终10项compute预算误差均在±5%内。
 
 ## 与合作组原报告的逐项关系
 
@@ -71,6 +73,6 @@ R1的benchmark三类prior为1/3、1/3、1/3。几何域内重新等类加权；�
 1. 获得原研究train/validation/test的事件身份及family映射、生产/geometry/readout版本和完整选择实现，先核对分母及重叠，不用Tune替代原validation。
 2. 获得每类权重/先验、每个效率–purity点的score/cut、网络和训练配置、tracker特征定义。能取得原权重时先做固定权重读回，否则在同事件上从scratch重训并报告复现范围。
 3. 按原分离图像尺寸与12维tracker构建adapter，与R1统一accepted-response版本另做配对；分别改变表示、容量或训练长度。原pixel removal按同配方实际重训，保留固定权重压力诊断供解释。
-4. 在现有R1同输入比较后，R2先检查B1与B2数据/曝光/容量及收敛；R3再检验投影stride和稀疏局部信息路径。未得到原研究输入不阻塞这些已定义的模型改进。
+4. 在现有R1同输入比较后，R2先以B1的fresh D0/D1/D2检查数据、曝光和训练配方；B2按实际问题和费用追加。R3再检验投影stride和稀疏局部信息路径。未得到原研究输入不阻塞这些已定义的模型改进。
 
-完整41模型结果、最终同计算表和资源关闭尚未测量；完成后更新本页及W08状态。Cal-A/Cut-B/Confirm继续封存。
+W08的R1对照已完成；严格原研究复现仍依赖上述原始输入。41模型完整结果和同计算表已交付，122条allocation全部终态，batch成本45.708889异构device-hours。Cal-A/Cut-B/Confirm继续封存；R2训练尚未启动。

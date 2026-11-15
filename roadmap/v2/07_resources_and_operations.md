@@ -2,6 +2,8 @@
 
 **优先使用能够尽快启动、满足实际软件与显存要求的设备。**HTCondor、Kubeflow、不同GPU型号、平台提供的共享设备和MIG均可使用。科学比较通过相同事件、曝光记录和同allocation内配对实现。旧S2的固定整卡H100合同属于历史阶段，不是v2的提交要求。
 
+2026-11-15 R1最终状态：122条allocation全部终态，`active_or_unresolved=[]`；batch成本45.708889异构device-hours和307.181111 allocated CPU core-hours，452项验收通过。失败、探针、迁移前已运行部分均保留成本；历史SSL .635321 h单列，交互操作另有.325533 h已记录下界。[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)给出完整账本口径；下文迁移记录说明当时的调度选择。
+
 ## 1. 软件兼容性与精度
 
 当前环境固定为CVMFS `LCG_108_cuda/x86_64-el9-gcc13-opt`，Python3.12、Torch2.7.1/CUDA12.5。2026-11-14实测`torch.cuda.get_arch_list()`为：
@@ -42,11 +44,11 @@ V100本身支持FP32；本次失败的原因是LCG108的Torch二进制没有SM70
 
 [stage262](../../workbook/2026-11-15_stage262_r1_muon_working_points_and_time_handoff.md)已完成seed17的下一次迁移：1582928 profile为64.545 events/s，按当时余量预计节省1.993 h；旧1582921确认eviction/abort及history状态3、2,829 s全部计费，归档后才release新H100 NVL writer。seed2026继续2g有效训练，新候选尚在排队；不因seed17获得较大设备而让另一seed停止工作。
 
-[stage265](../../workbook/2026-11-15_stage265_r1_b2_remaining_time_handoff.md)中seed2026候选1582929也已获配H100 NVL，实测82.757 events/s；以旧195,813次曝光的当时进度计算，预计节省2.336 h。旧1582922确认终态与eviction/abort、5,245 s全部计费后归档，04:53 UTC才release新writer。两项B2在新资源继续，当前没有Idle候选；最终wall收益与全部模型仍待完成。
+[stage265](../../workbook/2026-11-15_stage265_r1_b2_remaining_time_handoff.md)中seed2026候选1582929也已获配H100 NVL，实测82.757 events/s；以旧195,813次曝光的当时进度计算，预计节省2.336 h。旧1582922确认终态与eviction/abort、5,245 s全部计费后归档，04:53 UTC才release新writer。最终1582928/1582929均status4、Exit0，完整allocation分别14,182/11,914 s，各5 CPU，所含T4/T3/compute均交付。未运行旧allocation剩余反事实，不能把预计节省写成实测迁移收益。
 
 ## 3. Kubeflow
 
-沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据过期，已提醒用户重新登录。当前没有active Kubeflow allocation，继续由Condor推进训练。
+沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据过期，已提醒用户重新登录。全部R1 Kubeflow任务已有保存的终态Pod/Job证据，最终账本使用cached模式，无active allocation；后续有有效登录时继续参与资源调度。
 
 H100整卡和MIG使用相同`nvidia.com/gpu.product`，但resource分别为`nvidia.com/gpu`与`nvidia.com/mig-3g.47gb`。CERN按flavor注入CPU/RAM，GPU Job不能额外手填CPU/RAM。先对真实Pod模板做server dry-run；Job对象dry-run不足以证明Pod准入。namespace当前配额与scheduler events决定可用性，归档的历史配额不是实时空闲量。
 
@@ -82,4 +84,4 @@ python -m analysis.flavour.v2.r1.accounting --root "$R1_ROOT"
 
 `resources.json`按GPU型号/分区分别列出allocation和CPU core-hours，包含启动、编译、失败和恢复。记录仍运行的任务时明确为截至该时点成本，不标为最终成本。MIG device-hour不折成整卡hour。18 R1/80总device-hours是规划额度，按实测预测调整候选数量与后续矩阵，不因预算数字而宣称未完成实验已有结论。
 
-R1全部screen完成；完整四pass、真实seed重复、同计算配对、压力对照和终态验收仍在执行，完成后以实际报告更新。R2–R7的研究工作按[执行路线](04_execution_plan.md)推进。
+R1全部screen、四pass、必要三seed、10项同计算控制、压力对照及终态验收已完成。45.708889 h为原18 h规划的2.539倍，不能把原80 h总额减去阶段计划值后照常执行剩余矩阵。R2先做一族D0/D1/D2，profile实际I/O、吞吐、验证和启动开销后分批执行；R2–R7的工作与成本重排见[执行路线](04_execution_plan.md)。

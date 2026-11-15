@@ -1,18 +1,31 @@
 # PINPOINT 下一轮模型优化路线图（v2）
 
-日期：2026-11-14。审查基线：Git `37dd763`，截至 workbook stage236 的 S0–S6。独立审查与新版设计已完成；R0 完成，R1 短预算筛查完成，完整训练和配对比较正在执行。R2–R7 的效果尚未测量。
+更新：2026-11-15。最初独立审查基线为Git `37dd763`、workbook stage236的S0–S6；新R1最终评价源码为`4567ab8`。旧计划已归档，新版设计、R0和R1已完成；R2–R7尚未执行。
 
-**当前执行状态：R0 完成，R1 正在执行。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm，排除1,560,122个历史使用family。R0验收完成；R1八项真实学习门槛、B0三seed、16项screen和seed42四pass主任务完成。冻结排名为B1、B2、B3、B4，平均共同BA3分别为56.5567%、55.3950%、55.1750%、54.5133%；B1/B2与参考B4扩三seed。55条压力路径的400次统计及5,666项独立读回完成，完整nominal比较仍在执行。见[stage258](../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)、[排名](v2/r1_architecture_ranking.json)与[B1同结构控制](v2/r1_b1_compute_controls.json)。Cal-A/Cut-B/Confirm继续封存。
+**当前结论：保留四类研究，同时交付真实三类基线；先优化训练配方和数据规模，再检验几何关系与局部信息损失。现有模型取得了可复核改进，尚未达到已知最佳效果。**
 
-B1三seed同allocation等时预算比较已完成：compute T3相对T4 conditional的BA3仅高0.064 pp [−0.179,+0.302]，NLL3更差0.008444；μ recall提高6.583 pp，同时e/NC下降0.627/5.763 pp。B4增加重复曝光有小幅收益，B1未显示同样趋势。训练、决策和表示机制需要分别检查，R2将更多unique与更多重复曝光分开。见[stage263](../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md)与[同计算结果](v2/r1_b1_three_seed_compute.json)。四pass排名没有建立收敛；B2/B3仅相差0.220 pp，不作已确认的架构优势解释。06:05 UTC尚未关闭的R1 allocation已达41.7093 device-hours，超过18 h规划，最终成本待所有作业终态。
+R1的41/41模型、133项配对、21项三seed平均配对、11个评价域和55条压力路径已交付，452项最终验收全部通过。独立概率/计数、核心区间和压力读回分别通过2,557/2,512/5,666项。完整证据见[最终报告stage274](../workbook/2026-11-15_stage274_r1_final_results.md)与[最终结果JSON](v2/r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
 
-[B1三seed结果](v2/r1_b1_three_seed.json)进一步支持保留四类主线：相对B4的τ1%效率增益为2.423 pp [1.941,2.977]；共同曝光下真实T3相对T4 conditional的BA3增益为0.259 pp [0.042,0.479]，但NLL更差且有e/NC取舍。B1 T3相对HGB平均增加1.973 pp，未达预设2 pp实用值，对B4则未满足μ非劣。见[stage259](../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)。B1/B4三seed及B3 compute已完成，当前39/41最终模型complete；B3预算偏差−.158%、51项独立读回通过，见[stage268](../workbook/2026-11-15_stage268_r1_b3_compute_complete.md)。B2 seed17 T4的24项身份/曝光/指标/健康读回也通过，conditional BA3为55.170%，见[stage269](../workbook/2026-11-15_stage269_r1_b2_t4_seed17_readback.md)。B2 T4三seed已齐备，conditional BA3均值55.3911%，见[stage270](../workbook/2026-11-15_stage270_r1_b2_four_class_seeds_complete.md)。B2真实T3三seed也已齐备、均值55.0689%，新模型40项独立读回通过，见[stage272](../workbook/2026-11-15_stage272_r1_b2_main_tasks_complete.md)。仅剩B2两seed的compute，完整统计与验收仍待完成。
+| Family | Seeds | T3 BA3 (%) | T4 conditional BA3 (%) | T4 BA4 (%) | Tau efficiency at 1% FPR (%) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| B0 HGB | 3 | 54.5900 | 54.5300 | 43.1025 | 2.8300 |
+| B1 ResNet | 3 | 56.5633 | 56.3044 | 44.5733 | 5.0200 |
+| B2 ParticleNet adaptation | 3 | 55.0689 | 55.3911 | 43.3658 | 2.9933 |
+| B3 Geometry ParT | 1 | 55.0600 | 55.2900 | 43.2775 | 2.7000 |
+| B4 revision3 Scratch | 3 | 54.3922 | 54.4867 | 42.3217 | 2.5967 |
+| B4-MAE reference | 1 | — | 54.7200 | 43.0325 | 2.4100 |
 
-[μ工作点读回](v2/r1_muon_decision_review.json)补充：B1相对B4的T3 argmax μ recall虽低2.410 pp，1% FPR效率却高4.850 pp [4.057,5.823]，三个seed均为正；这两种决策需分别评价，原非劣门槛仍未通过。见[stage262](../workbook/2026-11-15_stage262_r1_muon_working_points_and_time_handoff.md)。
+表为单模型指标的seed均值，使用新Tune40k；共同三类使用相同30k非τ事件。不是ensemble，也不是独立Confirm结果。B1相对B4的τ效率增加2.423 pp [1.941,2.977]，满足预设τ研究门槛；绝对效率仍低。B1 T3相对HGB增加**1.973333 pp**，精确值低于2 pp实用门槛；相对B4虽高2.171 pp，μ argmax recall低2.410 pp，逐类非劣未通过。
+
+简化为三类没有稳定改善共同任务。同allocation等时预算下，B1 compute T3−T4 conditional的BA3为+.064 pp [−.179,+.302]，B2为−.313 pp [−.514,−.113]；两者NLL3均更差。B1/B2的μ recall改善同时伴随e/NC损失。四pass末轮NLL仍下降，不能把当前排名当作收敛上限；B2−B3排名差+.220 pp的区间也跨零。μ分数排序与argmax取舍不同，见[专项读回](v2/r1_muon_decision_review.json)。
+
+下一步R2优先B1一族：fresh **D0=100k×4、D1=100k×12、D2=300k×4**，匹配实际精度和明确的update-normalized schedule，分开检验更多unique事件与更多重复曝光。先实算updates、尾批、LR轨迹和成本，再按结果追加第二族或容量；R3检验stride/相位、高分辨局部残差和显式跨层关系。完整工单与验收见[04](v2/04_execution_plan.md)。
+
+R1终态122条allocation共**45.708889个异构device-hours、307.181111 CPU core-hours**，包含失败、探针和迁移，超过原18 h规划；所有batch allocation均终态。历史SSL .635321 h单列，交互操作另有.325533 h已记录下界。原80 h总规划须按实际成本重新分批，不能直接执行剩余完整矩阵。
 
 资源安排采用**尽快启动、兼容即可**的原则：HTCondor 与 Kubeflow 并用，接受不同 GPU、平台提供的共享设备和 MIG。当前 LCG108/Torch2.7.1 包含 SM75 起的内核，T4 使用 FP32，A100/H100 可使用 BF16；V100 的 SM70 启动失败属于本构建兼容性问题。具体操作、同计算比较口径和失败恢复见[资源执行说明](v2/07_resources_and_operations.md)。
 
-**结论：已经取得可复核的小幅改进，尚无证据表明现有方法达到最佳效果。下一步先建立可与合作组对齐的三类强基线，并行保留四类主线；优先解决同输入架构比较、跨层几何关系和训练规模问题，再决定扩大预训练或采用更多类别。**
+以下为新版设计形成时的S6历史证据，与本次R1开发集结果分别解释。
 
 独立 test 上，MAE3 ensemble 的四类 balanced accuracy 为 **43.5226%**，相对同为 100k 监督标签的 Scratch 增加 **0.3354 个百分点**；τ 在冻结 validation 1% 背景阈值下效率 **3.5556%**，实际 test FPR **1.2080%**。这些结果支持预训练收益，绝对性能仍不足以支持高纯 τ 分析。两者监督协议匹配，MAE 另有预训练成本。当前所有 accepted samples、split 和 detector-proxy 继续作为有效研究基础。
 
@@ -20,7 +33,7 @@ B1三seed同allocation等时预算比较已完成：compute T3相对T4 condition
 
 - 六模型均以第 4/4 轮为 best，末轮 NLL 继续下降 **0.00203–0.00779**，训练饱和未建立。
 - 100k 监督标签、100k SSL 语料和约 0.898M 参数构成当前主模型规模；没有完成 300k/1M 监督训练的饱和研究。
-- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是S6条件诊断；R1实际三类重训的B1/B4三seed与同计算结果见stage259/263，完整R1交付仍待完成。
+- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是S6条件诊断；R1实际三类重训及最终预算配对见stage274，不能将两批不同评价事件直接解释为净增益。
 - 记录中的 data-wait/总耗时为 **31.16%–46.64%**。先提升数据供给，可把更多计算用于长训练和有效模型比较。
 
 数值、统计口径和代码证据见[独立评估](v2/01_evidence_review.md)及[复核 JSON](v2/current_results_review.json)。
@@ -34,7 +47,7 @@ B1三seed同allocation等时预算比较已完成：compute T3相对T4 condition
 | [03：模型与物理设计](v2/03_models_and_physics.md) | 跨层稀疏关系、raw/object 双路径、异构融合、τ/charm 与方向任务 |
 | [04：执行路线与实验工单](v2/04_execution_plan.md) | R0–R7 依赖、最小实验矩阵、资源安排、首批具体工作和交付标准 |
 | [05：文献依据](v2/05_literature.md) | 本地资料及本次联网核对的论文、采用理由、适用边界 |
-| [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加记录入口 |
+| [06：完整工作记录索引](v2/06_workbook_index.md) | S0–S6的236份历史记录与v2追加至stage274的入口 |
 | [07：GPU 与后端执行](v2/07_resources_and_operations.md) | 减少排队、共享/MIG、实际软件兼容性、单任务写入与成本 |
 | [08：R1 合作组三类对照](v2/08_r1_collaboration.md) | 已测量域表、输入/训练差异及原研究复现所需具体资料 |
 | [实验规格](v2/experiment_plan.json) | 可解析的设计合同；需实现对应 runner 后才能提交，不能直接传给旧 CLI |
@@ -60,7 +73,7 @@ flowchart TD
 | Stage | Main question | Deliverable / decision |
 | --- | --- | --- |
 | R0（已完成） | 哪些事件仍可用于新的独立确认？现有训练瓶颈在哪里？ | 分区冻结、真实结构、同事件缓存等价、32-event fit及10k profile通过 |
-| R1（执行中） | 三类任务做到什么程度？四类是否损害共同三类任务？ | 16项screen完成；完整同输入强基线、合作组对照、τ 混入矩阵待交付 |
+| R1（已完成） | 三类任务做到什么程度？四类是否损害共同三类任务？ | 41模型完整交付；B1本轮最强，三类化未稳定改善共同任务，保留四类研究 |
 | R2 | 数据、曝光、容量中哪个限制性能？ | 100k→300k→1M 条件扩展；4→12→收敛的学习曲线 |
 | R3 | 显式跨层关系能否把细粒度转为有效收益？ | 几何稀疏图、边界通信、原生/粗粒度配对和三 seed 确认 |
 | R4 | 能否重建有用对象，而不是引入大量假关联？ | Track/vertex/association 的效率–fake–coverage 与 raw/object 分类对照 |
@@ -68,7 +81,7 @@ flowchart TD
 | R6 | 预训练和鲁棒训练能否超过强监督基线？ | 定向 MAE/局部监督、同总计算监督控制、held-out 条件 |
 | R7 | 候选是否在新事件和系统变化下保持收益？ | 冻结独立确认、概率与工作点、物理条件和完整报告 |
 
-R1 和 R2 是下一步首要交付；R3 是优先架构改进；R4–R6 由前序证据触发。R0表明短训练宜先用native、2 workers、共享local staging与bounded decoded LRU；H100编译模式的packed+bucket虽有8.20%热态吞吐收益，构建成本约需13个pass摊平，不直接作为4-pass默认值。局部32-slot利用率仅8.83%，后续单独检验变长执行和窗口设计。预计主线6–10周及80 device-hours仍是排期/预算建议，各新架构需重新计时，见[执行计划](v2/04_execution_plan.md)。
+R2是下一步首要交付；R3是优先架构改进；R4–R6由前序证据触发。R0表明短训练宜先用native、2 workers、共享local staging与bounded decoded LRU；H100编译模式的packed+bucket虽有8.20%热态吞吐收益，构建成本约需13个pass摊平，不直接作为4-pass默认值。局部32-slot利用率仅8.83%，后续单独检验变长执行和窗口设计。原6–10周及80 device-hours为规划建议，R1实际超出阶段额度；后续采用一族优先、问题驱动的小批次，按实测重新计时。
 
 ## 历史计划与结果
 

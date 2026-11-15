@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "design_with_completed_R0_and_R1_full_training_in_progress_not_runner_config",
+  "status": "design_with_completed_R0_R1_and_pending_R2_R7_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 complete; R1 seed42 ranking and paired ranking uncertainty complete; B1/B4/B0 three-seed main tasks and B1/B4 same-allocation compute complete (24 models/56 pairs/1431 independent checks); B3 compute complete with51 independent raw/health checks; B2 T3/T4 all three seeds complete; final two T3 readbacks add40 independent checks; 55 stress paths/400 draws/5666 checks complete;39 of41 final models complete; B2 two compute controls running; final evaluation and acceptance pending",
+  "implementation_status": "R0 and R1 complete; 41 models,133 pairs,21 mean-seed pairs,11 domains,55 stress paths;452 delivery checks passed; independent nominal/core/stress reviews2557/2512/5666 passed; Cal-A/Cut-B/Confirm sealed; R2-R7 training not started",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -124,10 +124,10 @@
     "measured_result": "r0_results.json"
   },
   "fairness": {
-    "architectures": "same accepted observations including tracker, same events and HPO allowance; architecture-specific LR tuning",
+    "architectures": "same accepted observations including tracker and same events; equal LR candidate count and screen rules,architecture-specific tuning; actual device,precision and runtime recorded; cross-family HPO not FLOP equivalent",
     "task_comparisons": [
-      "matched non-tau event exposure, extra tau cost reported",
-      "matched total device compute, unique data and exposures reported"
+      "matched non-tau event exposure, extra tau cost and task-selected recipes reported",
+      "same-allocation total operation-wall budget within each family and seed; heterogeneous devices are not FLOP equivalent; wall schedule and exposures both change"
     ],
     "initialization": "Scratch for main architecture ranking; MAE reference with incremental pretraining cost",
     "report_costs": [
@@ -271,7 +271,7 @@
     "native": "matched native/coarse three-seed practical task gain or equivalent quality at significantly lower cost",
     "objects": "improved fake-efficiency-coverage and all-event classification, including failures",
     "subclasses": "improved merged four-class/tau performance and non-inferior common three-class quality",
-    "scope": "proposed resource allocation criteria; freeze before new Tune access, not measured gains"
+    "scope": "Frozen before R1 Tune access; actual per-comparison development decisions recorded in r1_results.json; independent Confirm and final multiplicity control remain R7"
   },
   "stages": [
     {
@@ -301,18 +301,23 @@
         "W08"
       ],
       "planned_device_hours": 18,
-      "status": "in_progress",
-      "progress_report": "../../workbook/2026-11-15_stage272_r1_b2_main_tasks_complete.md",
-      "measured_progress": "seed42 ranking and pointwise intervals complete; B1/B4/B0 three-seed tasks and B1/B4 compute complete (24 models/56 pairs/1431 independent checks); B1 compute T3 minus T4 BA3 +0.06444 pp with interval crossing zero and NLL3 +0.008443592; substantial mu/NC recall tradeoff remains; B1 T4 tau criteria pass versus B4/HGB; B1 T3 practical BA3 gain versus HGB and mu argmax noninferiority versus B4 do not pass; B3 compute complete with wall error-0.15759percent and51 raw/health checks; B2 T3/T4 all three seeds complete with mean BA3 0.5506888889/0.5539111111; final two T3 readbacks add40 independent checks;39 of41 models complete; B2 two seeds running after measured remaining-time handoffs; final41-model133-pair21-mean-pair acceptance pending",
+      "status": "complete",
+      "progress_report": "../../workbook/2026-11-15_stage274_r1_final_results.md",
+      "measured_progress": "complete41/41 models;133 paired contrasts and21 three-seed mean contrasts;11 domains;55 stress paths with400 draws;452 acceptance checks; independent nominal/core/stress2557/2512/5666 checks; no active or unresolved allocation; B1 tau development criteria pass versus B0/B4; T3 practical BA gain versus HGB and mu recall noninferiority versus B4 fail; four-class research retained",
       "interim_results": "r1_interim_b4.json",
       "ranking_result": "r1_architecture_ranking.json",
       "interim_training_control": "r1_b1_compute_controls.json",
       "resource_progress": {
-        "snapshot_UTC": "2026-11-15T06:05:43Z",
-        "allocation_device_hours_so_far": 41.70930179450247,
+        "snapshot_UTC": "2026-11-15T08:22:02.463057+00:00",
+        "allocation_device_hours": 45.70888888888889,
+        "allocated_CPU_core_hours": 307.18111111111114,
         "planning_envelope_exceeded": true,
-        "terminal_cost": false,
-        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; all aborted1g/2g attempts and replacement probes included; B3 allocation terminal26802s; B2 two seeds running and no Idle candidate"
+        "terminal_cost": true,
+        "allocation_records": 122,
+        "active_or_unresolved": [],
+        "interactive_operation_hours_lower_bound": 0.3255333065249336,
+        "historical_SSL_operation_hours_separate": 0.6353213871233553,
+        "interpretation": "all heterogeneous batch allocation costs including failed,aborted,probe and migrated attempts; not FLOP equivalent; complete interactive allocation overhead unmeasured; historical SSL not new R1 expenditure"
       },
       "three_seed_B1_result": "r1_b1_three_seed.json",
       "ranking_uncertainty": "r1_ranking_uncertainty.json",
@@ -320,7 +325,31 @@
       "muon_decision_review": "r1_muon_decision_review.json",
       "three_seed_compute_result": "r1_b1_three_seed_compute.json",
       "occupancy_seed_readback": "r1_occupancy_seeds.json",
-      "B3_complete_compute": "r1_b3_compute_control.json"
+      "B3_complete_compute": "r1_b3_compute_control.json",
+      "measured_result": "r1_results.json",
+      "final_report": "../../workbook/2026-11-15_stage274_r1_final_results.md",
+      "evaluation_source_commit": "4567ab8",
+      "actual_batch_device_hours": 45.70888888888889,
+      "actual_allocated_CPU_core_hours": 307.18111111111114,
+      "acceptance": {
+        "passed": 452,
+        "failed": [],
+        "independent_reviews": {
+          "independent_review": {
+            "passed": 2557,
+            "failed": []
+          },
+          "independent_stress_review": {
+            "passed": 5666,
+            "failed": []
+          },
+          "independent_core_intervals": {
+            "passed": 2512,
+            "failed": []
+          }
+        }
+      },
+      "scientific_decision": "retain four-class research and deliver real three-class baseline; B1 priority for fresh R2 D0/D1/D2; no convergence or global optimum established"
     },
     {
       "id": "R2",
@@ -330,13 +359,31 @@
       "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
       "planned_device_hours": 18,
       "status": "pending",
-      "execution_policy": "Freeze after complete R1; first run D1/D2 for one selected family (currently B1 priority), with precision-matched D0; add only question-driven second-family controls if the measured remaining budget supports them; no R2 training started",
+      "execution_policy": "Design only after completed R1; first profile and freeze B1 fresh D0/D1/D2 with matched actual precision and update-normalized schedule; add only question-driven second-family controls if measured remaining budget supports them; no R2 training started",
       "optimization_design": {
         "status": "design_only_not_implemented_or_run",
-        "fixed_within_family_task": ["input", "architecture", "initialization policy", "loss", "batch", "sampler", "selected LR", "AdamW", "regularization", "actual precision"],
+        "fixed_within_family_task": [
+          "input",
+          "architecture",
+          "initialization policy",
+          "loss",
+          "batch",
+          "sampler",
+          "selected LR",
+          "AdamW",
+          "regularization",
+          "actual precision"
+        ],
         "schedule": "fresh D0/D1/D2; progress by prescribed total optimizer updates; 5 percent warmup and cosine to existing 5 percent LR floor; wall only for accounting/deadline",
         "D1_D2_primary_contrast": "same label exposures, more unique rows; mixed-shard tails can change update count, so do not call it exactly fixed updates",
-        "pre_submit_measurements": ["sampler U for each frozen pool", "batch-size distribution", "LR trace and sum(lr)", "window and rolling class proportions and terminal composition; add remix control only after model evidence", "actual precision", "throughput and operation wall projection"],
+        "pre_submit_measurements": [
+          "sampler U for each frozen pool",
+          "batch-size distribution",
+          "LR trace and sum(lr)",
+          "window and rolling class proportions and terminal composition; add remix control only after model evidence",
+          "actual precision",
+          "throughput and operation wall projection"
+        ],
         "development_windows": "same fixed 4k Tune screen every75k non-tau Train exposures; full40k Tune at prescribed endpoint; fixed-budget and best-screen checkpoints reported separately",
         "reference": "05_literature.md#m6",
         "report": "../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md"
@@ -483,7 +530,7 @@
   ],
   "resources": {
     "planned_total_device_hours": 80,
-    "status": "R0 measured within 2 device-hours; R1-R7 remain a planning envelope",
+    "status": "R0 and R1 measured; R1 batch45.708889 h exceeds18 h planning envelope; original80 h total requires question-driven reallocation before further batches; R2-R7 planned60 h cannot all fit unchanged",
     "estimated_calendar_weeks": [
       6,
       10
@@ -518,7 +565,23 @@
       "below_SM80": "FP32/eager fallback after actual CUDA startup probe",
       "other_architectures": "verify real CUDA forward/backward; capability ordering alone is insufficient",
       "matched_compute": "same obtained allocation for paired task budgets; heterogeneous hours are separate resource costs"
-    }
+    },
+    "R1_actual_batch_device_hours": 45.70888888888889,
+    "R1_CPU_allocation_core_hours": 307.18111111111114,
+    "R1_cost_breakdown_by_device_or_partition": {
+      "NVIDIA H100L-2-24C MIG 2g.24gb": 2.3275,
+      "NVIDIA H100 NVL": 14.335,
+      "NVIDIA A100-PCIE-40GB": 14.829444444444443,
+      "Tesla V100-PCIE-32GB": 0.06333333333333332,
+      "NVIDIA H100L-1-12C MIG 1g.12gb": 7.073333333333334,
+      "Tesla T4": 4.298611111111111,
+      "NVIDIA H100 NVL MIG 3g.47gb": 2.685833333333334,
+      "h100-47gb": 0.09583333333333334
+    },
+    "R1_interactive_operation_hours_lower_bound": 0.3255333065249336,
+    "R0_recorded_upper_bound_plus_R1_batch_hours": 46.79374353474368,
+    "nominal_original_plan_remainder_before_R1_interactive_hours": 33.20625646525632,
+    "remaining_policy": "first B1 fresh D0/D1/D2; actual throughput,I/O,validation and startup measurements before each batch; prioritize concrete unanswered questions; no requirement for same GPU model or whole card"
   },
   "required_learning_evidence": [
     "real small-sample fitting",
@@ -529,13 +592,14 @@
     "fix learning failures and retrain before physics conclusions"
   ],
   "unmeasured": [
-    "actual retrained T3 gain",
-    "new architectures gain",
-    "training saturation at 300k/1M",
+    "converged supervised performance and data/capacity scaling at300k/1M",
+    "gains from new R3-R6 geometry,object,specialist and targeted SSL designs",
+    "strict original collaboration replication on matched event identities,tracker features and cuts",
     "real calibrated hardware systematic envelope",
     "physical flux and tau yield",
-    "R1-R7 architecture-specific device/CPU costs and larger-pool throughput",
-    "same-device eager versus compiled gain"
+    "R2-R7 architecture-specific device/CPU costs and larger-pool throughput",
+    "same-device eager versus compiled gain",
+    "complete R1 interactive allocation overhead"
   ],
   "references": {
     "evidence": "01_evidence_review.md",
@@ -548,16 +612,19 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-14_stage244_roadmap_delivery_and_gpu_compatibility.md"
+    "latest_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
+    "R1_measured": "r1_results.json",
+    "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md"
   },
   "work_item_status": {
     "W01": "complete",
     "W02": "complete",
     "W03": "complete",
-    "W04": "implemented_and_unit_tested; full_evaluation_pending",
-    "W05": "adapters_implemented_and_real_learning_gates_passed",
-    "W06": "all_screens_complete; full_training_and_evaluation_in_progress",
+    "W04": "complete_R1_T3_T4_evaluation;T3T_T4D_probability_loss_tested_training_pending_R5",
+    "W05": "complete_R1_adapters_real_fits_and_model_health",
+    "W06": "complete_R1_screens_full_training_seed_expansion_and_evaluation",
     "W07": "pending",
-    "W08": "in_progress"
-  }
+    "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
+  },
+  "last_updated": "2026-11-15"
 }

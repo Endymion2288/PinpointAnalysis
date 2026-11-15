@@ -1,10 +1,12 @@
 # 当前结果的独立评估与系统性审查
 
-**现有方法有进步，但最优性没有建立。最有价值的下一步是补齐公平基线和训练饱和研究，并直接建模跨层测量关系。τ 暂时采用独立研究分支，同时把三类任务推进到可与合作组比较的水平。**
+**现有方法有进步，但最优性没有建立。R1已补齐同输入基线和真实三类重训；下一步先做训练饱和与数据规模研究，再检验跨层测量关系。保留四类研究，同时交付三类基线。**
+
+2026-11-15更新：[R1最终报告](../../workbook/2026-11-15_stage274_r1_final_results.md)完成41模型、133配对、21项三seed平均配对和452项验收。B1 T3 BA3=56.5633%，T4 conditional=56.3044%，τ效率在1% FPR下为5.0200%；相对B4的τ增益2.423 pp [1.941,2.977]满足研究门槛。B1 T3对HGB的1.973333 pp低于预设2 pp，对B4的μ recall非劣也未通过。三类化未稳定改善共同任务，所有seed42四pass主模型末轮NLL仍下降。后续结论与原S6独立test分开，完整开发结果见[r1_results.json](r1_results.json)。
 
 审查基准为 `37dd763`，覆盖 236 份工作记录的全量编目与结论摘录、14 份旧路线图、5 份本地 PDF（80 页）、FASERCal 本地 TeX、阶段结果 JSON、当前数据表示/模型/损失/评价代码。重点证据核对范围为 stages 03–07、41–55、65、75、80–87、90、145、163、167、170、177、181–183、189、194、196、199–205、206、219、231–236；其余记录用于追踪执行与故障演变。没有逐项重跑 236 份报告中的实验。完整记录入口见[索引](06_workbook_index.md)。
 
-本轮新增计算只读取已有摘要、六个 revision 3 主模型的 history/manifest 和各 10k validation 预测。复核工具为 [review_current_results.py](../tools/review_current_results.py)，结果为 [current_results_review.json](current_results_review.json)。没有新增训练或重新选择 S6 test 工作点。
+初次stage237审查的新增计算只读取已有摘要、六个revision3主模型的history/manifest和各10k validation预测，工具为[review_current_results.py](../tools/review_current_results.py)，结果为[current_results_review.json](current_results_review.json)。该初次审查没有新增训练或重新选择S6 test工作点；其后R0/R1执行与新Tune结果记录于stages238–274。
 
 ## 1. 已成立的改进及其幅度
 
@@ -40,7 +42,7 @@ S4 的低标签收益比 100k 更大：最终 seed42 五初始化矩阵中，MAE
 
 同一 MAE3 ensemble 在全部四类 validation 上 BA=0.434300；pixel-centered 四类 BA=0.584691。类别数、分母和先验同时变化，不能把两列差解释成三类重训的净收益。
 
-**事实：**去除 τ 后，全域的 e/μ/NC 区分仍有较大提升空间。**判断：**项目的低性能不只由 τ 引入，接受度、输入关系、训练规模和基线设计都需要推进。**未测量：**同预算实际三类重训相对条件三类的增益、与合作组事件完全匹配后的模型差异。
+**事实：**去除τ后，全域e/μ/NC区分仍有较大提升空间，低性能不只由τ引入。初次审查时尚缺实际T3重训；R1现已完成：同allocation等时T3相对T4 conditional，B1的ΔBA3为+.064 pp [−.179,+.302]，B2为−.313 pp [−.514,−.113]，两者NLL3均更差。与合作组原事件完全匹配后的模型差异仍未测量。
 
 空响应也不能解释全部差距：S6 test 仅 18,852/724,441 个事件完全为空；主模型从全域 BA=0.435226 到 active 域 BA=0.438654，只改变约 0.00343。较高的 pixel-centered 表现提示需要研究几何/可见性，但不能把所有 active 事件的困难归为无响应。R1 应同时给 presence/occupancy 简单基线、模态增量和条件域分母。
 
@@ -59,9 +61,11 @@ S4 的低标签收益比 100k 更大：最终 seed42 五初始化矩阵中，MAE
 
 ## 4. 已确认的设计不足
 
-### A1. 同输入最强架构排名仍缺失
+### A1. 同输入架构比较已补齐，收敛后的排名仍未知
 
 修复 S3 中，pixel+bar-only 的 fresh ParT 三 seed macro AP=0.45434，高于 multiscale native 的 0.43843；加 tracker 的 multiscale 为 0.46338。后一比较同时改变硬件输入，不能证明分层 backbone 优于 ParT。S2 ParticleNet+tracker 的 BA 点值也说明它值得重新进入同输入竞争。应给 CNN/ResNet、ParticleNet、ParT 和当前 backbone 相同三个模态、相同事件及相同调参额度。
+
+R1已按此完成B0–B4比较：B1在当前配方下最强，B2/B3的四pass排名差区间跨零；四pass末轮仍改善。已测结果约束当前预算下的实际选择，不能说明任一结构达到了上限。R2先处理训练与数据，R3再解释关系或压缩缺口。
 
 ### A2. 关系建模与“保留全部通道”之间有缺口
 

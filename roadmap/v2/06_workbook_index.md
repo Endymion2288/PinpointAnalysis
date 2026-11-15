@@ -1,4 +1,4 @@
-# 截至 stage236 的完整工作记录索引
+# 工作记录索引：S0–S6与v2至stage274
 
 本索引共 236 份既有报告，按原阶段保留。标题来自原文件；本轮全量编目并提取结论，重点证据另见[独立评估](01_evidence_review.md)。索引不表示重新执行全部实验。
 
@@ -325,3 +325,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 271 | [r1 sampling metadata review](../../workbook/2026-11-15_stage271_r1_sampling_metadata_review.md) |
 | 272 | [r1 B2 main tasks complete](../../workbook/2026-11-15_stage272_r1_b2_main_tasks_complete.md) |
 | 273 | [r1 core interval readback](../../workbook/2026-11-15_stage273_r1_core_interval_readback.md) |
+| 274 | [R1完整基线、三类/四类比较及最终验收](../../workbook/2026-11-15_stage274_r1_final_results.md) |

@@ -1,8 +1,8 @@
 # 模型改进与物理信息利用设计
 
-**首选改进是在现有有效编码器上增加真实几何邻接和跨层连续性，并建立简单而强的同输入基线。对象重建与预训练随后服务已识别的具体信息缺口。**
+**R1已建立同输入基线，本轮B1 ResNet最强。下一步先分开检验训练配方与数据规模，再增加真实几何邻接、跨层连续性和高分辨局部路径。对象重建与预训练随后服务已识别的信息缺口。**
 
-B0–B4基线已在R1实现，新增关系、对象及专家结构仍为待检验方案。论文编号见[文献表](05_literature.md)；实测范围以各阶段报告为准。
+B0–B4基线的41模型完整比较与452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)。三类化没有稳定改善共同任务，B1/B2 compute的μ改善伴随e/NC损失，训练收敛未建立。新增关系、对象及专家结构仍为待检验方案；论文编号见[文献表](05_literature.md)。
 
 ## 1. 应保留的现有成果
 
@@ -26,7 +26,7 @@ B0–B4基线已在R1实现，新增关系、对象及专家结构仍为待检�
 
 ### 2.1 R1发现的稀疏μ问题与后续对照
 
-[stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)实测：seed42的B1 T3相对B4，channel数<100的μ recall差为−24.24 pp，CI95[−25.76,−22.41]；该组对全域μ差贡献−6.79 pp。241个全空μ事件的正确差为0，损失来自有响应的稀疏事件。三seed重现程度仍待最终R1结果；occupancy与几何/接受度相关，当前未识别因果机制。
+[stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)实测：seed42的B1 T3相对B4，channel数<100的μ recall差为−24.24 pp，CI95[−25.76,−22.41]；该组对全域μ差贡献−6.79 pp。241个全空μ事件的正确差为0，损失来自有响应的稀疏事件。三seed读回现已完成，见下段；occupancy与几何/接受度相关，当前未识别因果机制。
 
 [stage266](../../workbook/2026-11-15_stage266_r1_occupancy_three_seed_readback.md)已完成18模型三seed原始预测读回、1,980项核对：T3低occupancy μ差为−11.46/−24.24/−12.03 pp，均值−15.91 pp，对全域贡献−4.457 pp；T4 conditional同样三个seed均负。B1同结构compute−main T3在该域的μ差均正，平均+16.48 pp，e/NC却分别−10.19/−8.33 pp，不能宣布逐类问题修复。B1/B4 compute各用本族T4预算，跨族不是共同计算控制。点估计与seed SD见[读回结果](r1_occupancy_seeds.json)；没有新增事件或seed总体区间。训练/决策和压缩因素继续分开验证。
 
@@ -38,7 +38,7 @@ B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel
 | Sampling phase / filtering | 先以单点、短线和真实Train响应检查栅格相位敏感性，再决定是否加入降采样前滤波[P5] | 记录映射与边界，不把探测器整体平移当物理对称性；滤波可能削弱孤立信号，收益待测 |
 | Sparse local residual | 在投影融合前保留轻量的高分辨率局部方向/邻接路径，与现有totals skip分开 | 使用全部accepted响应，记录短结构经过聚合的保留率；局部稀疏卷积不能自行连接相隔很远的plane[P6] |
 
-每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，不改动正在执行的R1合同，也未启动R2/R3训练。
+每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，保留已冻结R1合同及结果，尚未启动R2/R3训练。
 
 [stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)补充了同结构的有效训练对照：B1 seed42 fresh计算控制在391,633次曝光、wall-based schedule下，低occupancy μ多识别879个，域内recall差+31.38 pp [29.53,33.04]；同组e/NC分别少识别703/367个，全域BA反而下降0.493 pp。全空事件仍全部判NC。结构和投影相同，预算与schedule共同改变，说明训练配方和决策取舍必须与压缩假设一起排查。R2先跟踪逐类概率、recall与AP/ROC；必要时在Train-inner或Tune内按family交叉拟合低维logit-bias/冻结readout诊断，检验固定表示的可读性。该诊断不打开Cal-A，也不重写R1排名。
 
