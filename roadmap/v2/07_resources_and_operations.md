@@ -93,3 +93,7 @@ R2已实际测试单allocation内1/2/4/1并发：H100 MIG 3g.47gb的aggregate op
 R3当前的实测选择见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)：3g.47gb三并行的各worker仅22.61/22.10/23.77 events/s，没有比三个独立1g更快；双并行为32.40/31.43 events/s。故只迁移control/relations，消融保留原1g，先确认旧writer终态再恢复100k checkpoint。计入准备/验证/丢失工作和余量后预计提前41.9min，10%吞吐惩罚下仍预计提前22.2min；这些是完成时间预测，不是已测反事实收益。两项新卡实际恢复均参数差0，全部正式分类终点尚未齐备。
 
 R3的后续CPU工作可与已获GPU上的最终probe重叠：运行`python -m analysis.flavour.v2.r3.finish --root "$R3_ROOT" --watch`。该进程每30s检查冻结completion contract、manifest与两个非空预测表；依赖完成后通过统一submit入口动态选择兼容且负载较低的schedd，分别提交8CPU/12GB评价、2CPU/6GB健康与科学review。相同attempt不会重复提交，失败需检查后创建新attempt；单observer文件锁防止并发观察者重复提交。轮询不读取事件payload。实际运行证据在`runtime/r3_finish_dependencies.json`，完整R3仍由scientific decisions、图审查、全部终态账本和accept决定。
+
+[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)实测另一兼容allocation：A100上no-global的两段Train10k profile为66.20/66.55 events/s，高于原1g约25.60。计入完整准备线性估计、恢复检查、验证和余量后，先确认原1583010.0终态及10,943s全量计费，再从200k checkpoint切换到1583024.0；至少19,758条已记录但未保存曝光重放，最终有效预算仍400k。新卡确定性恢复参数差0、概率/曝光表逐位一致，正式新缓存准备中。原Kubeflow双模型继续运行。
+
+同次查询的“Unclaimed H100/H200”不能解释为当前用户可立即使用：所查`b9pgpun015/801/802`的`SCond_vo_filter`要求BE/ATS accounting groups，当前提交组为CMS/Zurich；另一Unclaimed A100处于已过ShutdownTime的staged drain。应同时查看原始`Start/Requirements`、`SCond_vo_filter`、`InStagedDrain/ShutdownTime`和实际job group，再解释queue匹配。未获配的双模型探针1583025.0据此移除，NumJobStarts0、allocation0。此为当次实时策略证据，后续需重新查询，不硬编码型号或历史可用性。

@@ -550,8 +550,8 @@
       },
       "execution_record": "r3_execution.json",
       "progress_report": "../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md",
-      "measured_progress": "M0/G0/G1/C1 and Train1024 candidate audit complete; M0/G1/C1 not promoted; five corrected native learning gates and full Tune resource/recovery gates complete; native control/relations resume100k checkpoints as Kubeflow3g47gb pair, no-global continues original Condor1g12gb; all three target100k x4; final G2 quality and complete R3 acceptance pending",
-      "latest_report": "../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md",
+      "measured_progress": "M0/G0/G1/C1 and Train1024 candidate audit complete; M0/G1/C1 not promoted; corrected native learning/resource/recovery gates pass; Kubeflow3g47gb control/relations both saved200k and optimizing; no-global original1g terminal, resumes200k on acquired A100 with exact new-device recovery verified and cache preparing; all three target100k x4; final G2 quality and full R3 acceptance pending",
+      "latest_report": "../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md",
       "next_conditional_screen": {
         "representation": "compact sensor-row images with explicit physical z/spacing",
         "status": "complete_C1_not_promoted_class_quality_failed",
@@ -826,11 +826,11 @@
     "nominal_original_plan_remainder_before_complete_R1_R2_interactive_hours": 25.730423131922983,
     "historical_resource_fields": "R0_recorded_upper_bound_plus_R1_batch_hours and nominal_original_plan_remainder_before_R1_interactive_hours preserve pre-R2 accounting; use the R1_R2 fields for current totals",
     "R3_snapshot": {
-      "UTC": "2026-11-15T18:19:15.210743+00:00",
-      "device_hours": 13.229062129656475,
-      "allocated_CPU_core_hours": 142.09650541702905,
+      "UTC": "2026-11-15T19:03:11.259528+00:00",
+      "device_hours": 14.88945160402192,
+      "allocated_CPU_core_hours": 165.19039949059487,
       "active_or_unresolved": [
-        "r3_g2_ablation_c9",
+        "r3_g2_ablation_c10",
         "pinpoint-r3-g2-k4"
       ],
       "terminal_cost": false
@@ -865,7 +865,7 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md",
     "R1_measured": "r1_results.json",
     "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
     "research_decisions": "09_decisions_and_handoff.md",
@@ -888,5 +888,5 @@
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
   "last_updated": "2026-11-15",
-  "latest_evidence_stage": 302
+  "latest_evidence_stage": 303
 }

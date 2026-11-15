@@ -1,4 +1,4 @@
-# 工作记录索引：S0–S6与v2至stage302
+# 工作记录索引：S0–S6与v2至stage303
 
 本索引共 236 份既有报告，按原阶段保留。标题来自原文件；本轮全量编目并提取结论，重点证据另见[独立评估](01_evidence_review.md)。索引不表示重新执行全部实验。
 
@@ -354,3 +354,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 300 | [R3按终点依赖并行提交CPU评价](../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md) |
 | 301 | [R3机器计划同步与完整交付范围核对](../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md) |
 | 302 | [R3全部晋级指标的独立区间复核](../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md) |
+| 303 | [R3消融A100恢复与实际GPU池准入](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md) |

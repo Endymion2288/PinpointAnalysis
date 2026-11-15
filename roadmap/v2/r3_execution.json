@@ -1,7 +1,7 @@
 {
   "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T18:38:38.618974+00:00",
+  "UTC": "2026-11-15T19:04:27.436196+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -71,7 +71,7 @@
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 47,
-  "latest_stage_report": "../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md",
   "pending": [
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
@@ -691,16 +691,16 @@
     "revision": 3
   },
   "resource_snapshot": {
-    "UTC": "2026-11-15T18:19:15.210743+00:00",
-    "device_hours": 13.229062129656475,
+    "UTC": "2026-11-15T19:03:11.259528+00:00",
+    "device_hours": 14.88945160402192,
     "active_or_unresolved": [
-      "r3_g2_ablation_c9",
+      "r3_g2_ablation_c10",
       "pinpoint-r3-g2-k4"
     ],
     "terminal_cost": false
   },
   "G2_formal": {
-    "status": "two_resumed_on_Kubeflow_plus_ablation_on_original_Condor_all_optimizing",
+    "status": "Kubeflow_pair_optimizing_saved200k_A100_ablation_recovery_passed_preparing_cache",
     "models": [
       "b2_g2_control_t4_s42",
       "b2_g2_relations_t4_s42",
@@ -743,7 +743,7 @@
     "full_training_results_measured": false,
     "current_allocations": {
       "control_and_relations": "pinpoint-r3-g2-k4",
-      "global_ablation": "1583010.0"
+      "global_ablation": "1583024.0"
     },
     "replacement_recovery": [
       {
@@ -758,6 +758,14 @@
         "name": "g2_k4_c1",
         "status": "complete",
         "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "actual_Tune_used": false
+      },
+      {
+        "name": "g2_ablation_c10_c0",
+        "status": "complete",
+        "GPU": "NVIDIA A100-PCIE-40GB",
         "maximum_parameter_delta": 0.0,
         "same_exact_probability_and_exposure_tables": true,
         "actual_Tune_used": false
@@ -780,7 +788,12 @@
       }
     },
     "prefix_health": "audit/native_prefix_health_stage299.json",
-    "latest_metadata_evidence": "audit/live_stage300.json"
+    "latest_metadata_evidence": "audit/resource_handoff_stage303.json",
+    "initial_allocation_metadata": "clusters and GPU preserve the initial three1g launch; use current_allocations/current_GPU for live placement",
+    "current_GPU": {
+      "control_and_relations": "NVIDIA H100 NVL MIG 3g.47gb",
+      "global_ablation": "NVIDIA A100-PCIE-40GB"
+    }
   },
   "collation": {
     "status": "complete",
@@ -1079,5 +1092,52 @@
       }
     },
     "original_scope_and_thresholds_unchanged": true
+  },
+  "ablation_A100_handoff": {
+    "UTC": "2026-11-15T19:04:27.436196+00:00",
+    "status": "ablation_new_GPU_recovery_passed_formal_cache_preparation_pair_optimizing",
+    "ablation": {
+      "allocation_id": "1583024.0",
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "profile_rates": [
+        66.199456037489,
+        66.55483303097205
+      ],
+      "saved_exposures": 200000,
+      "resume_effective_target": 400000,
+      "previous_id": "1583010.0",
+      "previous_status": 3,
+      "previous_allocation_seconds": 10943.0,
+      "replayed_exposure_lower_bound": 19758,
+      "decision": "audit/native_migration_decision_c10.json",
+      "writer_proof": "audit/g2_ablation_c10_writer_handoff.json",
+      "release": "runtime/g2_ablation_c10.release.json",
+      "recovery": {
+        "status": "complete",
+        "GPU": "NVIDIA A100-PCIE-40GB",
+        "maximum_parameter_delta": 0.0,
+        "same_exact_probability_and_exposure_tables": true,
+        "actual_Tune_used": false
+      },
+      "formal_cache_preparation_status": "in_progress"
+    },
+    "pair_probe": {
+      "id": "1583025.0",
+      "JobStatus": 3,
+      "NumJobStarts": 0,
+      "allocation_seconds": 0.0,
+      "decision": "audit/pair_c11_eligibility_decision.json",
+      "existing_Kubeflow_writer_continues": true
+    },
+    "Cal_A_Cut_B_Confirm_payload_read": false,
+    "resource_snapshot": {
+      "UTC": "2026-11-15T19:03:11.259528+00:00",
+      "device_hours": 14.88945160402192,
+      "active_or_unresolved": [
+        "r3_g2_ablation_c10",
+        "pinpoint-r3-g2-k4"
+      ],
+      "terminal_cost": false
+    }
   }
 }
