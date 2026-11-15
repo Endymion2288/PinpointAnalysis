@@ -1,0 +1,109 @@
+{
+  "status": "complete",
+  "UTC": "2026-11-15T05:20:10.736340+00:00",
+  "passed": 51,
+  "failed": [],
+  "models": [
+    {
+      "name": "final_b3_t3_s42",
+      "BA3_independent": 0.5506,
+      "NLL3_independent": 0.8973010021764704,
+      "NLL3_recorded": 0.8973010021699029,
+      "recall_e_mu_NC": [
+        0.5968,
+        0.4821,
+        0.5729
+      ],
+      "unique_train_events": 75000,
+      "training_exposures": 300000,
+      "minimum_exposures": 4,
+      "maximum_exposures": 4,
+      "updates": 37550,
+      "wall_seconds": 7660.921688280068,
+      "health_samples": 39,
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "allocation_id": "1582880.0",
+      "precision": "BF16_encoder_FP32_head"
+    },
+    {
+      "name": "final_b3_t4_s42",
+      "BA3_independent": 0.5529000000000001,
+      "NLL3_independent": 0.893036942000075,
+      "NLL3_recorded": 0.893036942025528,
+      "recall_e_mu_NC": [
+        0.608,
+        0.4814,
+        0.5693
+      ],
+      "unique_train_events": 100000,
+      "training_exposures": 400000,
+      "minimum_exposures": 4,
+      "maximum_exposures": 4,
+      "updates": 50051,
+      "wall_seconds": 9510.19322981406,
+      "health_samples": 52,
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "allocation_id": "1582880.0",
+      "precision": "BF16_encoder_FP32_head"
+    },
+    {
+      "name": "compute_b3_t3_s42",
+      "BA3_independent": 0.5537,
+      "NLL3_independent": 0.8898837586363709,
+      "NLL3_recorded": 0.8898837578325156,
+      "recall_e_mu_NC": [
+        0.5684,
+        0.5547,
+        0.538
+      ],
+      "unique_train_events": 75000,
+      "training_exposures": 383610,
+      "minimum_exposures": 5,
+      "maximum_exposures": 6,
+      "updates": 48014,
+      "wall_seconds": 9495.205675111152,
+      "health_samples": 50,
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "allocation_id": "1582880.0",
+      "precision": "BF16_encoder_FP32_head"
+    }
+  ],
+  "allocation": [
+    {
+      "ClusterId": 1582880,
+      "ExitCode": 0,
+      "JobStatus": 4,
+      "NumJobStarts": 1,
+      "RemoteWallClockTime": 26802.0,
+      "RequestCpus": 4
+    }
+  ],
+  "scope": "B3 completed task and compute raw/health audit; full paired intervals and final R1 acceptance pending",
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/audit/b3_complete_stage268.json",
+  "point_contrasts": [
+    {
+      "a": "compute_b3_t3_s42",
+      "b": "final_b3_t3_s42",
+      "BA3_difference": 0.0030999999999999917,
+      "NLL3_difference": -0.00741724433738733,
+      "recall_e_mu_NC_differences": [
+        -0.02839999999999998,
+        0.0726,
+        -0.03489999999999993
+      ]
+    },
+    {
+      "a": "compute_b3_t3_s42",
+      "b": "final_b3_t4_s42",
+      "BA3_difference": 0.0007999999999999119,
+      "NLL3_difference": -0.0031531841930123594,
+      "recall_e_mu_NC_differences": [
+        -0.03959999999999997,
+        0.07329999999999998,
+        -0.031299999999999994
+      ]
+    }
+  ],
+  "uncertainty": "no new paired intervals or seed-population inference; final400-draw R1 evaluation pending"
+}

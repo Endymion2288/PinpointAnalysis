@@ -4,7 +4,7 @@
   "status": "design_with_completed_R0_and_R1_full_training_in_progress_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 complete; R1 seed42 ranking and paired ranking uncertainty complete; B1/B4/B0 three-seed main tasks and B1/B4 same-allocation compute complete (24 models/56 pairs/1431 independent checks); 55 stress paths/400 draws/5666 checks complete; 34 of 41 final models complete; B2 expanded seeds/compute and B3 compute running; final evaluation and acceptance pending",
+  "implementation_status": "R0 complete; R1 seed42 ranking and paired ranking uncertainty complete; B1/B4/B0 three-seed main tasks and B1/B4 same-allocation compute complete (24 models/56 pairs/1431 independent checks); B3 compute complete with51 independent raw/health checks; 55 stress paths/400 draws/5666 checks complete;35 of41 final models complete; B2 expanded seeds/compute running; final evaluation and acceptance pending",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -302,24 +302,25 @@
       ],
       "planned_device_hours": 18,
       "status": "in_progress",
-      "progress_report": "../../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md",
-      "measured_progress": "seed42 ranking and pointwise intervals complete; B1/B4/B0 three-seed tasks and B1/B4 compute complete (24 models/56 pairs/1431 independent checks); B1 compute T3 minus T4 BA3 +0.06444 pp with interval crossing zero and NLL3 +0.008443592; substantial mu/NC recall tradeoff remains; B1 T4 tau criteria pass versus B4/HGB; B1 T3 practical BA3 gain versus HGB and mu argmax noninferiority versus B4 do not pass; 34 of 41 models complete; B2 remaining-time handoffs and B3 compute in progress; final41-model133-pair acceptance pending",
+      "progress_report": "../../workbook/2026-11-15_stage268_r1_b3_compute_complete.md",
+      "measured_progress": "seed42 ranking and pointwise intervals complete; B1/B4/B0 three-seed tasks and B1/B4 compute complete (24 models/56 pairs/1431 independent checks); B1 compute T3 minus T4 BA3 +0.06444 pp with interval crossing zero and NLL3 +0.008443592; substantial mu/NC recall tradeoff remains; B1 T4 tau criteria pass versus B4/HGB; B1 T3 practical BA3 gain versus HGB and mu argmax noninferiority versus B4 do not pass; B3 compute complete with wall error-0.15759percent and51 raw/health checks;35 of41 models complete; B2 two seeds running after measured remaining-time handoffs; final41-model133-pair21-mean-pair acceptance pending",
       "interim_results": "r1_interim_b4.json",
       "ranking_result": "r1_architecture_ranking.json",
       "interim_training_control": "r1_b1_compute_controls.json",
       "resource_progress": {
-        "snapshot_UTC": "2026-11-15T04:54:09Z",
-        "allocation_device_hours_so_far": 38.92016795463032,
+        "snapshot_UTC": "2026-11-15T05:19:23Z",
+        "allocation_device_hours_so_far": 40.16326258222262,
         "planning_envelope_exceeded": true,
         "terminal_cost": false,
-        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; all aborted1g/2g attempts and replacement probes included; B2 two seeds migrated after measured remaining-time checks; three GPU allocations active and no Idle candidate"
+        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; all aborted1g/2g attempts and replacement probes included; B3 allocation terminal26802s; B2 two seeds running and no Idle candidate"
       },
       "three_seed_B1_result": "r1_b1_three_seed.json",
       "ranking_uncertainty": "r1_ranking_uncertainty.json",
       "collaboration_report": "08_r1_collaboration.md",
       "muon_decision_review": "r1_muon_decision_review.json",
       "three_seed_compute_result": "r1_b1_three_seed_compute.json",
-      "occupancy_seed_readback": "r1_occupancy_seeds.json"
+      "occupancy_seed_readback": "r1_occupancy_seeds.json",
+      "B3_complete_compute": "r1_b3_compute_control.json"
     },
     {
       "id": "R2",
