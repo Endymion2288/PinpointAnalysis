@@ -200,7 +200,7 @@
       "independent_core_checks": 1020,
       "scope": "Train-only synthetic validation, not generalization"
     },
-    "unit_tests_passed": 6
+    "unit_tests_passed": 7
   },
   "pending": [
     "fixed-budget endpoints and best-screen full40k Tune",
@@ -209,5 +209,51 @@
     "conditional D3/D4/width/native-family decision",
     "allocation accounting and final R2 acceptance"
   ],
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "last_progress_UTC": "2026-11-15T10:20:01.643762+00:00",
+  "latest_stage_report": "../../workbook/2026-11-15_stage276_r2_monitoring_and_delivery_protocol.md",
+  "intermediate_screen_progress": [
+    {
+      "name": "b1_d0_t3_s42",
+      "screen_non_tau_exposures": 150000,
+      "screen_NLL3": 0.8997482290922917,
+      "screen_BA3": 0.5593333333333333,
+      "scope": "intermediate fixed4k Tune; not endpoint"
+    },
+    {
+      "name": "b1_d0_t4_s42",
+      "screen_non_tau_exposures": 75000,
+      "screen_NLL3": 0.9309998502036299,
+      "screen_BA3": 0.5396666666666666,
+      "scope": "intermediate fixed4k Tune; not endpoint"
+    },
+    {
+      "name": "b1_d1_t3_s42",
+      "screen_non_tau_exposures": 150000,
+      "screen_NLL3": 0.9110099953434264,
+      "screen_BA3": 0.558,
+      "scope": "intermediate fixed4k Tune; not endpoint"
+    },
+    {
+      "name": "b1_d1_t4_s42",
+      "screen_non_tau_exposures": 150000,
+      "screen_NLL3": 0.9118765348210606,
+      "screen_BA3": 0.546,
+      "scope": "intermediate fixed4k Tune; not endpoint"
+    },
+    {
+      "name": "b1_d2_t3_s42",
+      "screen_non_tau_exposures": 150007,
+      "screen_NLL3": 0.9103045684082379,
+      "screen_BA3": 0.5506666666666666,
+      "scope": "intermediate fixed4k Tune; not endpoint"
+    },
+    {
+      "name": "b1_d2_t4_s42",
+      "screen_non_tau_exposures": 75005,
+      "screen_NLL3": 0.9178363168759284,
+      "screen_BA3": 0.538,
+      "scope": "intermediate fixed4k Tune; not endpoint"
+    }
+  ]
 }

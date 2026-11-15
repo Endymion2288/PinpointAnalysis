@@ -56,6 +56,8 @@ def configuration(root, complete_only=False):
         for design in ['d0','d1','d2']:
             for domain in ['all','pixel_centered','large_scintillator','occupancy_0_100']:
                 add(f'b1_{design}_t3_s42',f'b1_{design}_t4_s42','T3_minus_conditional_T4',kind,domain)
+        for pair in campaign.get('extension_pairs',[]):
+            for domain in pair['domains']:add(pair['a'],pair['b'],pair['reason'],kind,domain)
     return {'models':models,'pairs':pairs,'endpoint_primary':True,
         'best_screen_secondary':'minimum own-task NLL on fixed screen; no full-Tune checkpoint selection',
         'seed_scope':'single matched seed42; event bootstrap does not estimate training-seed variability'}

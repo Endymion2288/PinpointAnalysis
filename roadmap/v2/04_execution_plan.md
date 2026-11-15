@@ -100,11 +100,11 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 R1的B1 seed42使用T4/FP32，新增seed使用H100 MIG/BF16；seed波动含实际执行差异。R2沿用尽早启动的设备政策，每个配对固定数值配方；若运行时fallback改变精度，补相应D0控制或单列配方，不能把旧异精度D0直接解释为纯数据/曝光效应。无需等待同一GPU型号。
 
-B1计算控制说明增加曝光与改变wall-based schedule可以显著改变逐类取舍。D1/D2使用明确的update/exposure schedule，逐窗口保留NLL、AP/ROC、概率分布和e/μ/NC recall；低occupancy组使用原accepted计数定义。必要的低维readout/logit-bias诊断在Train-inner或Tune内按family交叉拟合，Cal-A/Cut-B/Confirm继续封存。
+B1计算控制说明增加曝光与改变wall-based schedule可以显著改变逐类取舍。D1/D2使用明确的update/exposure schedule，逐窗口保留NLL、AP/ROC、概率分布和e/μ/NC recall；低occupancy组使用原accepted计数定义。必要的低维readout/logit-bias诊断在Train-inner或Tune内按family交叉拟合，Cal-A/Cut-B/Confirm继续封存。根据[M7](05_literature.md#m7)，全局平衡pool的frequency logit adjustment仅加共同常数；若仍有排序与argmax分歧，先检验交叉拟合bias可恢复量，不直接引入long-tail loss，正scalar temperature保留argmax不变对照。
 
 首批设计具体为：同一族/任务固定输入、初始化方式、loss、batch、sampler、selected LR、AdamW和正则化；D0/D1/D2从fresh初始化，按各自预定总updates定义5% warm-up及cosine、保留5% LR floor，wall仅用于成本/deadline。D1扩展完整schedule，不能机械续接D0的低LR尾部。该预算归一化思路参考[M6](05_literature.md#m6)，不据此预设linear优于本项目cosine。
 
-现有sampler保留各mixed-shard window的尾批，D1/D2同曝光不保证精确同updates。提交前从冻结清单实算U，保存batch-size分布、LR轨迹及`sum(lr)`；首批D2−D1明确称同曝光比较。精确fixed-update控制需要另列实际停止步数/曝光，不能同时宣称固定passes、固定曝光及精确同updates。每75k非τ Train曝光评价同一4k Tune screen，终点评价完整40k Tune并保留固定预算checkpoint；best-screen checkpoint单列。新D0还需匹配实际数值配方。详见[stage264](../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md)，300k的U与运行成本尚未测量。
+现有sampler保留各mixed-shard window的尾批，D1/D2同曝光不保证精确同updates。提交前从冻结清单实算U，保存batch-size分布、LR轨迹及`sum(lr)`；首批D2−D1明确称同曝光比较。精确fixed-update控制需要另列实际停止步数/曝光，不能同时宣称固定passes、固定曝光及精确同updates。每75k非τ Train曝光评价同一4k Tune screen，终点评价完整40k Tune并保留固定预算checkpoint；best-screen checkpoint单列。新D0匹配实际数值配方。设计见[stage264](../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md)；已实算300k的T3/T4 U为112630/150117，冻结记录见[r2_execution.json](r2_execution.json)，完整运行成本仍待终态统计。
 
 [stage271](../../workbook/2026-11-15_stage271_r1_sampling_metadata_review.md)的24种metadata重放不支持大段单类别训练：single-class batch均少于.3%。Two-shard窗口仍有类比例自相关，少数缺类窗口每轮最多覆盖T3的6.24%或T4的7.923%事件；分类影响未测量。R2 preflight同时保存窗口/滚动类频率及末段组成，检查head/logit偏移是否对应局部先验。只有出现模型证据，才追加一个同事件、曝光、batch-size序列、updates与LR的重混控制，先profile其I/O；不因metadata差异自动扩矩阵或重写R1结论。
 

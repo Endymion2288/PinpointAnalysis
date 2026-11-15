@@ -92,6 +92,10 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 
 论文按迭代预算`t/T`定义budget-aware schedule，指出直接截短原schedule与按新预算重新参数化是不同实验，cosine也属于其budget-aware家族。用于R2明确D0/D1/D2的总updates、fresh初始化及LR轨迹；PINPOINT首批仍保留原warm-up/cosine，linear只作另行预定候选，不把其图像任务结果当成本项目性能结论。R1的wall-based控制同时改变曝光与schedule，后续需将这两个因素分别报告。
 
+<a id="m7"></a>**M7. A. K. Menon et al., Long-tail Learning via Logit Adjustment.** ICLR2021；[arXiv:2007.07314v2](https://arxiv.org/abs/2007.07314)，[PDF](https://arxiv.org/pdf/2007.07314)。2026-11-15读取摘要、§3–4.1及式(7)–(9)，abstract/PDF均HTTP200，PDF1,402,421bytes；原文和访问记录位于`R2/audit/literature_stage276/`。
+
+论文将balanced error的Bayes决策写成`argmax(logit_y−log(prior_y))`，并讨论概率校准前提。当前PINPOINT训练pool全局平衡，按全局label frequency作这个平移是共同常数，不能解释或修复低occupancy μ argmax损失。不能因存在mixed-window类比例波动就直接套用long-tail loss。若R2终点仍有排序较好而argmax差的证据，使用按physical family分组的Tune交叉拟合、低维logit-bias诊断，检验decision/readout部分可恢复的量；正scalar temperature另作argmax不变的对照。该诊断不用于宣称物理信息增加，也不替代R7独立Cal-A/Cut-B。
+
 ## 5. 预训练的候选与优先级
 
 **S1. Multi-Scale Neighborhood Occupancy Masked Autoencoder for Self-Supervised Learning in LiDAR Point Clouds (NOMAE).** CVPR 2025；[正式页面](https://openaccess.thecvf.com/content/CVPR2025/html/Abdelsamad_Multi-Scale_Neighborhood_Occupancy_Masked_Autoencoder_for_Self-Supervised_Learning_in_LiDAR_CVPR_2025_paper.html)。保留多尺度正/负 occupancy query 的思想；孤立低 occupancy 结构可能是 PINPOINT 信号，不能照搬忽略 isolated points 的规则。

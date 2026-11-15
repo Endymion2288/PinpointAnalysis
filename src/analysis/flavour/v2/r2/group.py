@@ -41,8 +41,12 @@ def main():
         if configs[0]['bf16']:command.append('--bf16')
         subprocess.run(command,check=True)
     if args.real_fit:
+        families=sorted({c['family'] for c in configs})
+        if len(families)!=1 or len({c.get('cnn_width',16) for c in configs})!=1 or len({c.get('dim',96) for c in configs})!=1:
+            raise ValueError('real-fit group requires one family/width/dim recipe')
         command=[sys.executable,'-m','analysis.flavour.v2.r1.fit','--root',str(args.root),
-            '--r0',r0,'--attempt',args.name,'--families','B1']
+            '--r0',r0,'--attempt',args.name,'--families',*families,
+            '--cnn-width',str(configs[0].get('cnn_width',16)),'--dim',str(configs[0].get('dim',96))]
         if configs[0]['bf16']:command.append('--bf16')
         subprocess.run(command,check=True)
     started=time.perf_counter()

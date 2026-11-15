@@ -57,6 +57,9 @@ def run(args):
             config = recipe(args.r0, family, task, compile_local=args.compile_local)
             if family == 'B1':
                 config['cnn_variant'] = args.cnn_variant
+                config['cnn_width'] = args.cnn_width
+            if args.dim is not None:
+                config['dim'] = args.dim
             config['precision'] = 'BF16_encoder_FP32_head' if args.bf16 else 'FP32'
             with tempfile.TemporaryDirectory(prefix='pinpoint-r1-fit-') as scratch:
                 data = R1Dataset(args.r0/'micro_data', 'train', config, cache_dir=scratch)
@@ -160,6 +163,8 @@ def main():
     parser.add_argument('--compile-local', action='store_true')
     parser.add_argument('--bf16', action='store_true')
     parser.add_argument('--cnn-variant', choices=['resnet', 'base'], default='resnet')
+    parser.add_argument('--cnn-width', type=int, default=16)
+    parser.add_argument('--dim', type=int)
     run(parser.parse_args())
 
 

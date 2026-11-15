@@ -1,4 +1,5 @@
 import unittest
+import json
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -11,6 +12,7 @@ from analysis.flavour.s2.dataset import SpatialBatchSampler
 from analysis.flavour.v2.r1.interval_review import domain_mask
 from analysis.flavour.v2.r1.evaluate import scalar_summary, SCALARS
 from analysis.flavour.v2.r2.evaluate import configuration, domains
+from analysis.flavour.v2.r2.campaign import extend
 from analysis.flavour.v2.r2.schedule import learning_rate, sampler_trace
 from analysis.flavour.v2.r2.train import OffsetSampler
 
@@ -88,6 +90,35 @@ class ScalingBudgetTests(unittest.TestCase):
         self.assertTrue(np.isnan(value[SCALARS.index('recall_mu')]))
         self.assertTrue(np.isnan(value[SCALARS.index('tau_eff_1pct')]))
         self.assertEqual(value[SCALARS.index('BA3')],1.)
+
+    def test_conditional_extension_requires_finished_reference_and_preserves_it(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            names=[]
+            for task in ['T3','T4']:
+                name=f'b1_d2_{task.lower()}_s42'
+                names.append(name)
+                write_json(root/'configs'/f'{name}.json',{'name':name,'family':'B1','task':task,'seed':42,
+                    'design':'D2','passes':4,'data_root':'frozen300k','pool_events':300000,'tune_screen':'fixed4k',
+                    'validation_non_tau_exposures':75000,'initialization':'scratch','bf16':True,'precision':'BF16_encoder_FP32_head'})
+            write_json(root/'campaign.json',{'initial_models':names})
+            reason=root/'reason.md'
+            reason.write_text('Measured reference still improves; extend its prescribed exposure budget.')
+            with self.assertRaisesRegex(ValueError,'reference endpoints'):
+                extend(root,'D3','D2',reason,passes=12)
+            for name in names:write_json(root/'experiments'/name/'manifest.json',{'status':'complete'})
+            extend(root,'D3','D2',reason,passes=12)
+            result=configuration(root)
+            self.assertEqual(len(result['models']),8)
+            self.assertEqual(len(result['pairs']),32)
+            for name in names:
+                old=json.loads((root/'configs'/f'{name}.json').read_text())
+                new=json.loads((root/'configs'/f'{name.replace("_d2_","_d3_")}.json').read_text())
+                self.assertEqual(old['passes'],4)
+                self.assertEqual(new['passes'],12)
+                self.assertEqual(new['initialization'],'scratch')
+                self.assertEqual(new['data_root'],old['data_root'])
+                self.assertEqual(new['precision'],old['precision'])
 
 
 if __name__=='__main__':
