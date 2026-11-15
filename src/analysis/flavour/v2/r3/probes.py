@@ -148,11 +148,13 @@ def main():
         if cached_signature!=signature:
             cached=None
             train=R3Dataset(Path(campaign['r1'])/'data','train',input_config,cache_dir=scratch.name)
-            subset(train,rows);train.cache_inputs()
+            subset(train,rows)
+            if train.items is None:train.cache_inputs()
             tune=R3Dataset(Path(campaign['r1'])/'data','validation',input_config,cache_dir=scratch.name)
-            tune.cache_inputs()
+            if tune.items is None:tune.cache_inputs()
             cached=(train,tune);cached_signature=signature
             write_json(output/'input_cache.json',{'Train':train.cache_audit,'Tune':tune.cache_audit,
+                'Train_probe_events':len(train),'Tune_probe_events':len(tune),
                 'scope':'allocation-local exact arrays reused for matched frozen-feature probes; not persisted'})
         train,tune=cached
         model=build_model(config).cuda()

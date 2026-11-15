@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--release-timeout',type=float,default=600.)
     parser.add_argument('--completed-probes',type=Path,nargs='*',default=[])
     parser.add_argument('--probe-attempt')
+    parser.add_argument('--final-probe-attempt')
     args=parser.parse_args()
     if args.completed_probes and not args.probe_attempt:parser.error('completed probes require a unique probe attempt')
     configs=[json.loads(p.read_text()) for p in args.configs]
@@ -96,10 +97,12 @@ def main():
         if manifest['allocation_id'] not in previous:
             raise ValueError('formal model now belongs to a writer absent from the terminal proof')
     record.update(status='released',release=release);write_json(path,record)
-    subprocess.run([sys.executable,'-m','analysis.flavour.v2.r2.group','--root',str(args.root),
+    command=[sys.executable,'-m','analysis.flavour.v2.r2.group','--root',str(args.root),
         '--name',args.attempt,'--configs',*map(str,args.configs),'--parallel',str(args.parallel),
         '--smoke','--share-r3-inputs','--cache-workers',str(args.cache_workers),
-        '--train-module','analysis.flavour.v2.r3.train'],check=True)
+        '--train-module','analysis.flavour.v2.r3.train']
+    if args.final_probe_attempt:command+=['--post-r3-probe-attempt',args.final_probe_attempt]
+    subprocess.run(command,check=True)
     finish_probe()
     record['status']='complete';write_json(path,record)
 

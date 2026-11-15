@@ -27,11 +27,15 @@ def main():
     parser.add_argument('--share-r3-inputs',action='store_true',
         help='Build exact allocation-local mmap Train/Tune arrays once for native R3 models')
     parser.add_argument('--cache-workers',type=int,default=4)
+    parser.add_argument('--post-r3-probe-attempt',
+        help='After completed R3 fits, reuse this allocation and its exact Train/Tune mmap arrays for final probes')
     parser.add_argument('--train-module',default='analysis.flavour.v2.r2.train',
         choices=['analysis.flavour.v2.r2.train','analysis.flavour.v2.r3.train'])
     args=parser.parse_args()
     if args.share_r3_inputs and args.train_module!='analysis.flavour.v2.r3.train':
         parser.error('shared R3 transformed inputs require the R3 runner')
+    if args.post_r3_probe_attempt and not (args.share_r3_inputs and args.train_module=='analysis.flavour.v2.r3.train'):
+        parser.error('post-fit R3 probes require the R3 runner and shared transformed inputs')
     configs=[json.loads(p.read_text()) for p in args.configs]
     if len({c['data_root'] for c in configs})!=1:
         raise ValueError('shared staging group requires one exact observation corpus')
@@ -71,6 +75,7 @@ def main():
     record_path=args.root/'groups'/f'{args.name}.json'
     write_json(record_path,record)
     parent=os.environ.get('PINPOINT_V2_SCRATCH','/tmp')
+    post_code=0
     with tempfile.TemporaryDirectory(prefix='r2-group-',dir=parent) as scratch:
         paths=sorted(p for p in (Path(configs[0]['data_root'])/'shards').iterdir() if (p/'observations.parquet').exists())
         stage=stage_shards(paths,Path(scratch)/'native',workers=3)
@@ -135,10 +140,19 @@ def main():
             record['wall_seconds']=time.perf_counter()-started
             write_json(record_path,record)
             if live:time.sleep(5)
+        if args.post_r3_probe_attempt and not any(r.get('exit_code',0) for r in record['completed']):
+            record['post_r3_probes']={'status':'running','attempt':args.post_r3_probe_attempt,
+                'shared_transformed_inputs':True,'count_as_separate_allocation':False}
+            write_json(record_path,record)
+            post_code=subprocess.run([sys.executable,'-m','analysis.flavour.v2.r3.probes',
+                '--root',str(args.root),'--experiments',*[str(args.root/'experiments'/c['name']) for c in configs],
+                '--attempt',args.post_r3_probe_attempt,'--cache-workers',str(args.cache_workers)],env=env).returncode
+            record['post_r3_probes'].update(status='complete' if post_code==0 else 'failed',exit_code=post_code)
     failed=[r for r in record['completed'] if r.get('exit_code',0)]
-    record.update(status='failed' if failed else 'complete',wall_seconds=time.perf_counter()-started)
+    record.update(status='failed' if failed or post_code else 'complete',wall_seconds=time.perf_counter()-started)
     write_json(record_path,record)
     if failed:raise RuntimeError('scaling child failed; inspect its log and saved progress')
+    if post_code:raise RuntimeError('post-fit R3 probe failed; completed model endpoints retained')
 
 
 if __name__=='__main__':
