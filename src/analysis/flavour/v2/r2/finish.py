@@ -45,8 +45,14 @@ def advance(root,submitter=submit):
     result=json.loads(reports[0].read_text())
     expected={name+'_'+kind for name in names for kind in ['endpoint','best_screen']}
     if set(result['models'])!=expected:return False
-    submitter(root,f'r2_figures_{matrix_tag}_a1','analysis.flavour.v2.r2.plots',[],cpus=2,memory='6GB')
     ready=all(complete(root/'gap'/name/kind/'report.json') for name in names for kind in ['endpoint','best_screen'])
+    if ready:
+        submitter(root,f'r2_readout_{matrix_tag}_a1','analysis.flavour.v2.r2.readout',
+            ['run'],cpus=2,memory='6GB')
+        path=root/'readout/results.json'
+        if not complete(path) or set(json.loads(path.read_text())['models'])!=set(names):
+            return False
+        submitter(root,f'r2_figures_{matrix_tag}_a1','analysis.flavour.v2.r2.plots',[],cpus=2,memory='6GB')
     write_json(root/'runtime/finish_dependencies.json',{'status':'dependencies_ready' if ready else 'waiting_Train_gaps',
         'models':names,'scope':'batch delivery only; interpretation, conditional expansion, figures terminal check, accounting and acceptance remain'})
     return ready

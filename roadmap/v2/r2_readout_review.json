@@ -1,0 +1,1780 @@
+{
+  "status": "D0_readout_complete_R2_initial_matrix_running",
+  "stage": 279,
+  "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2",
+  "contract": {
+    "status": "frozen",
+    "UTC": "2026-11-15T11:17:40.016814+00:00",
+    "scope": "Tune development diagnostic; base model selection already used Tune; no independent performance claim",
+    "motivation": "R1 and R2 D0 screens show class decision shifts and weak low-occupancy muon ranking",
+    "models": "each completed campaign endpoint; best-screen predictions remain raw in primary evaluation",
+    "folds": {
+      "chunks": 6845,
+      "resampling_blocks": 6845,
+      "accepted_family_links_used": true,
+      "multi_chunk_blocks": 0,
+      "blocks_by_class_signature": {
+        "(0,)": 866,
+        "(1,)": 3796,
+        "(2,)": 648,
+        "(3,)": 1535
+      },
+      "fold_class_counts": [
+        [
+          2000,
+          2000,
+          2000,
+          2000
+        ],
+        [
+          2000,
+          2000,
+          2000,
+          2000
+        ],
+        [
+          2000,
+          2000,
+          2000,
+          2000
+        ],
+        [
+          2000,
+          2000,
+          2000,
+          2000
+        ],
+        [
+          2000,
+          2000,
+          2000,
+          2000
+        ]
+      ],
+      "folds": 5,
+      "seed": 20261117
+    },
+    "task": "common e/mu/NC, true taus excluded from fitting and evaluation",
+    "input": "log of stored conditional probabilities, clipped at 1e-15",
+    "variants": [
+      "raw",
+      "positive_scalar_temperature",
+      "two_global_class_biases"
+    ],
+    "bias_anchor": "NC=0",
+    "bias_bounds": [
+      -3.0,
+      3.0
+    ],
+    "bias_l2": 0.001,
+    "temperature_inverse_bounds": [
+      0.05,
+      20.0
+    ],
+    "objective": "fit-fold class-balanced mean NLL",
+    "hyperparameter_selection": "one fixed setting, no scan; no occupancy-dependent parameters",
+    "assessment": "held-out predictions from five family-connected-chunk folds; report all domains and each fold",
+    "intervals": "not estimated for fitted readout; primary raw-model intervals remain in evaluation/",
+    "interpretation": "measures recoverable decision bias; added bias can change multiclass rankings; no added detector information",
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "independent_score_checks": 994,
+  "fold_family_integrity": true,
+  "fold_chunk_integrity": true,
+  "development_only": true,
+  "models": {
+    "b1_d0_t3_s42": {
+      "fits": [
+        {
+          "fold": 0,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.1466463934545775,
+            0.007156961943724842,
+            0.0
+          ],
+          "inverse_temperature": 0.7972534271928327,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8665957082991927,
+            "gradient": [
+              -7.917340828084152e-13,
+              -7.252796296145793e-12
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 1,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.14332885995327285,
+            0.007079865171296802,
+            0.0
+          ],
+          "inverse_temperature": 0.7901130653739235,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8717894390113651,
+            "gradient": [
+              -8.875305004818479e-13,
+              -7.572315377410129e-12
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 2,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.14241088272394817,
+            0.009071401878283548,
+            0.0
+          ],
+          "inverse_temperature": 0.7937271203734282,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8706187879282878,
+            "gradient": [
+              -1.234940182883934e-12,
+              -9.412463562334444e-12
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 3,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.1392079770209497,
+            -0.00041087629003303997,
+            0.0
+          ],
+          "inverse_temperature": 0.7988719877814126,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8678209092203742,
+            "gradient": [
+              -2.49920689612132e-13,
+              -3.779893325941753e-12
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 4,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.15477377982856858,
+            0.013489639521391851,
+            0.0
+          ],
+          "inverse_temperature": 0.7909010912846234,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8725819974777058,
+            "gradient": [
+              -1.4842252047623378e-12,
+              -1.1372588402619e-11
+            ],
+            "at_bound": false
+          }
+        }
+      ],
+      "domains": {
+        "all": {
+          "raw": {
+            "BA": 0.5665,
+            "NLL": 0.8713217931394454,
+            "macro_AP": 0.6562790670949399,
+            "macro_AUROC": 0.7696070524999999,
+            "per_class": [
+              {
+                "recall": 0.627,
+                "AP": 0.7127727958310955,
+                "AUROC": 0.815223495,
+                "eff_FPR_0.01": 0.2123,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8685927987098694,
+                "purity_FPR_0.01": 0.913904433921653,
+                "coverage_FPR_0.01": 0.07743333333333334,
+                "eff_FPR_0.001": 0.055,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9801408648490906,
+                "purity_FPR_0.001": 0.9649122807017544,
+                "coverage_FPR_0.001": 0.019,
+                "eff_purity_0.8": 0.3989,
+                "coverage_purity_0.8": 0.1662,
+                "eff_purity_0.9": 0.237,
+                "coverage_purity_0.9": 0.08776666666666667
+              },
+              {
+                "recall": 0.5016,
+                "AP": 0.6481748121991763,
+                "AUROC": 0.7589280825,
+                "eff_FPR_0.01": 0.1802,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8210756182670593,
+                "purity_FPR_0.01": 0.9000999000999002,
+                "coverage_FPR_0.01": 0.06673333333333334,
+                "eff_FPR_0.001": 0.0788,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9762949347496033,
+                "purity_FPR_0.001": 0.9752475247524752,
+                "coverage_FPR_0.001": 0.026933333333333333,
+                "eff_purity_0.8": 0.2646,
+                "coverage_purity_0.8": 0.11023333333333334,
+                "eff_purity_0.9": 0.1802,
+                "coverage_purity_0.9": 0.0667
+              },
+              {
+                "recall": 0.5709,
+                "AP": 0.6078895932545479,
+                "AUROC": 0.73466958,
+                "eff_FPR_0.01": 0.1352,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.809634268283844,
+                "purity_FPR_0.01": 0.8711340206185567,
+                "coverage_FPR_0.01": 0.05173333333333333,
+                "eff_FPR_0.001": 0.0497,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9553501605987549,
+                "purity_FPR_0.001": 0.9613152804642167,
+                "coverage_FPR_0.001": 0.017233333333333333,
+                "eff_purity_0.8": 0.1937,
+                "coverage_purity_0.8": 0.08066666666666666,
+                "eff_purity_0.9": 0.1074,
+                "coverage_purity_0.9": 0.039733333333333336
+              }
+            ],
+            "events": 30000,
+            "raw_counts": [
+              10000,
+              10000,
+              10000
+            ],
+            "weighted_prior": [
+              0.3333333333333333,
+              0.3333333333333333,
+              0.3333333333333333
+            ],
+            "weighted_counts": [
+              10000.0,
+              10000.0,
+              10000.0
+            ],
+            "confusion_counts": [
+              [
+                6270.0,
+                1191.0,
+                2539.0
+              ],
+              [
+                2055.0,
+                5016.0,
+                2929.0
+              ],
+              [
+                2056.0,
+                2235.0,
+                5709.0
+              ]
+            ],
+            "Neff": 30000.0,
+            "argmax_raw_counts": [
+              10381,
+              8442,
+              11177
+            ]
+          },
+          "positive_scalar_temperature": {
+            "BA": 0.5665,
+            "NLL": 0.8646014214149388,
+            "macro_AP": 0.6565957860245831,
+            "macro_AUROC": 0.7697408516666666,
+            "per_class": [
+              {
+                "recall": 0.627,
+                "AP": 0.7129629871805151,
+                "AUROC": 0.8152916125,
+                "eff_FPR_0.01": 0.2151,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7956221838472278,
+                "purity_FPR_0.01": 0.9149298170991068,
+                "coverage_FPR_0.01": 0.07836666666666667,
+                "eff_FPR_0.001": 0.0545,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9526056285064689,
+                "purity_FPR_0.001": 0.9646017699115044,
+                "coverage_FPR_0.001": 0.018833333333333334,
+                "eff_purity_0.8": 0.3982,
+                "coverage_purity_0.8": 0.1657,
+                "eff_purity_0.9": 0.2372,
+                "coverage_purity_0.9": 0.08783333333333333
+              },
+              {
+                "recall": 0.5016,
+                "AP": 0.6484415711915461,
+                "AUROC": 0.759090225,
+                "eff_FPR_0.01": 0.1813,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7543111415085735,
+                "purity_FPR_0.01": 0.9006458022851466,
+                "coverage_FPR_0.01": 0.0671,
+                "eff_FPR_0.001": 0.0782,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9477929632079332,
+                "purity_FPR_0.001": 0.9750623441396509,
+                "coverage_FPR_0.001": 0.026733333333333335,
+                "eff_purity_0.8": 0.2628,
+                "coverage_purity_0.8": 0.1094,
+                "eff_purity_0.9": 0.1844,
+                "coverage_purity_0.9": 0.06826666666666667
+              },
+              {
+                "recall": 0.5709,
+                "AP": 0.6083827997016882,
+                "AUROC": 0.7348407175,
+                "eff_FPR_0.01": 0.1361,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7424973134345871,
+                "purity_FPR_0.01": 0.8718770019218449,
+                "coverage_FPR_0.01": 0.052033333333333334,
+                "eff_FPR_0.001": 0.0495,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.911169513358773,
+                "purity_FPR_0.001": 0.9611650485436893,
+                "coverage_FPR_0.001": 0.017166666666666667,
+                "eff_purity_0.8": 0.1958,
+                "coverage_purity_0.8": 0.08156666666666666,
+                "eff_purity_0.9": 0.1106,
+                "coverage_purity_0.9": 0.040933333333333335
+              }
+            ],
+            "events": 30000,
+            "raw_counts": [
+              10000,
+              10000,
+              10000
+            ],
+            "weighted_prior": [
+              0.3333333333333333,
+              0.3333333333333333,
+              0.3333333333333333
+            ],
+            "weighted_counts": [
+              10000.0,
+              10000.0,
+              10000.0
+            ],
+            "confusion_counts": [
+              [
+                6270.0,
+                1191.0,
+                2539.0
+              ],
+              [
+                2055.0,
+                5016.0,
+                2929.0
+              ],
+              [
+                2056.0,
+                2235.0,
+                5709.0
+              ]
+            ],
+            "Neff": 30000.0,
+            "argmax_raw_counts": [
+              10381,
+              8442,
+              11177
+            ]
+          },
+          "two_global_class_biases": {
+            "BA": 0.5616333333333333,
+            "NLL": 0.8698945452877263,
+            "macro_AP": 0.6564008668292062,
+            "macro_AUROC": 0.7695714166666666,
+            "per_class": [
+              {
+                "recall": 0.7551,
+                "AP": 0.7128743054131963,
+                "AUROC": 0.8152276775,
+                "eff_FPR_0.01": 0.2126,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8835836986096952,
+                "purity_FPR_0.01": 0.9140154772141015,
+                "coverage_FPR_0.01": 0.07753333333333333,
+                "eff_FPR_0.001": 0.0543,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9829186620327414,
+                "purity_FPR_0.001": 0.9644760213143873,
+                "coverage_FPR_0.001": 0.018766666666666668,
+                "eff_purity_0.8": 0.3986,
+                "coverage_purity_0.8": 0.16606666666666667,
+                "eff_purity_0.9": 0.2367,
+                "coverage_purity_0.9": 0.08766666666666667
+              },
+              {
+                "recall": 0.4889,
+                "AP": 0.6482613798176913,
+                "AUROC": 0.75885492,
+                "eff_FPR_0.01": 0.1804,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8187578565738742,
+                "purity_FPR_0.01": 0.9001996007984032,
+                "coverage_FPR_0.01": 0.0668,
+                "eff_FPR_0.001": 0.0786,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9762492756776212,
+                "purity_FPR_0.001": 0.9751861042183623,
+                "coverage_FPR_0.001": 0.026866666666666667,
+                "eff_purity_0.8": 0.2631,
+                "coverage_purity_0.8": 0.1096,
+                "eff_purity_0.9": 0.1825,
+                "coverage_purity_0.9": 0.06756666666666666
+              },
+              {
+                "recall": 0.4409,
+                "AP": 0.608066915256731,
+                "AUROC": 0.7346316525,
+                "eff_FPR_0.01": 0.1357,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8029315596639154,
+                "purity_FPR_0.01": 0.8715478484264612,
+                "coverage_FPR_0.01": 0.0519,
+                "eff_FPR_0.001": 0.0486,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.954354766251834,
+                "purity_FPR_0.001": 0.9604743083003953,
+                "coverage_FPR_0.001": 0.016866666666666665,
+                "eff_purity_0.8": 0.1948,
+                "coverage_purity_0.8": 0.08116666666666666,
+                "eff_purity_0.9": 0.1074,
+                "coverage_purity_0.9": 0.039766666666666665
+              }
+            ],
+            "events": 30000,
+            "raw_counts": [
+              10000,
+              10000,
+              10000
+            ],
+            "weighted_prior": [
+              0.3333333333333333,
+              0.3333333333333333,
+              0.3333333333333333
+            ],
+            "weighted_counts": [
+              10000.0,
+              10000.0,
+              10000.0
+            ],
+            "confusion_counts": [
+              [
+                7551.0,
+                1049.0,
+                1400.0
+              ],
+              [
+                3185.0,
+                4889.0,
+                1926.0
+              ],
+              [
+                3421.0,
+                2170.0,
+                4409.0
+              ]
+            ],
+            "Neff": 30000.0,
+            "argmax_raw_counts": [
+              14157,
+              8108,
+              7735
+            ]
+          }
+        },
+        "occupancy_0_100": {
+          "raw": {
+            "BA": 0.3940081882085482,
+            "NLL": 1.078160481946589,
+            "macro_AP": 0.4015144359531984,
+            "macro_AUROC": 0.5700776059444682,
+            "per_class": [
+              {
+                "recall": 0.41871423763042787,
+                "AP": 0.3788553833594951,
+                "AUROC": 0.5693669150045763,
+                "eff_FPR_0.01": 0.013126893301918786,
+                "actual_FPR_0.01": 0.009852674827808203,
+                "threshold_FPR_0.01": 0.47182151675224304,
+                "purity_FPR_0.01": 0.39981713460444146,
+                "coverage_FPR_0.01": 0.010944080985845043,
+                "eff_FPR_0.001": 0.001682935038707536,
+                "actual_FPR_0.001": 0.0008677489411114365,
+                "threshold_FPR_0.001": 0.5273281335830688,
+                "purity_FPR_0.001": 0.4923118509663374,
+                "coverage_FPR_0.001": 0.0011394776403101314,
+                "eff_purity_0.8": 0.0003365870077415072,
+                "coverage_purity_0.8": 0.00011219566924716704,
+                "eff_purity_0.9": 0.0003365870077415072,
+                "coverage_purity_0.9": 0.00011219566924716704
+              },
+              {
+                "recall": 0.10317743662977233,
+                "AP": 0.39735651359042784,
+                "AUROC": 0.5457419458656504,
+                "eff_FPR_0.01": 0.03998571938593277,
+                "actual_FPR_0.01": 0.009848636487149984,
+                "threshold_FPR_0.01": 0.5112175941467285,
+                "purity_FPR_0.01": 0.6699684081620547,
+                "coverage_FPR_0.01": 0.019894330786744463,
+                "eff_FPR_0.001": 0.020706890396286568,
+                "actual_FPR_0.001": 0.0009988582879239174,
+                "threshold_FPR_0.001": 0.7793481945991516,
+                "purity_FPR_0.001": 0.912012721545914,
+                "coverage_FPR_0.001": 0.007568202324044943,
+                "eff_purity_0.8": 0.027490182077828742,
+                "coverage_purity_0.8": 0.01138840933636542,
+                "eff_purity_0.9": 0.021777936451266904,
+                "coverage_purity_0.9": 0.008035959646912151
+              },
+              {
+                "recall": 0.6601328903654443,
+                "AP": 0.4283314109096723,
+                "AUROC": 0.5951239569631779,
+                "eff_FPR_0.01": 0.03986710963455245,
+                "actual_FPR_0.01": 0.009950225739208523,
+                "threshold_FPR_0.01": 0.6393751502037048,
+                "purity_FPR_0.01": 0.6670359119924153,
+                "coverage_FPR_0.01": 0.019922520370989617,
+                "eff_FPR_0.001": 0.012292358803986977,
+                "actual_FPR_0.001": 0.0008823242071909835,
+                "threshold_FPR_0.001": 0.8359874486923218,
+                "purity_FPR_0.001": 0.8744648567814586,
+                "coverage_FPR_0.001": 0.004685669072789566,
+                "eff_purity_0.8": 0.02724252491694416,
+                "coverage_purity_0.8": 0.011287463282378974,
+                "eff_purity_0.9": 0.010631229235880625,
+                "coverage_purity_0.9": 0.0038939489823140465
+              }
+            ],
+            "events": 8782,
+            "raw_counts": [
+              2971,
+              2801,
+              3010
+            ],
+            "weighted_prior": [
+              0.33333333333332926,
+              0.3333333333333426,
+              0.33333333333332815
+            ],
+            "weighted_counts": [
+              2927.3333333332807,
+              2927.3333333333976,
+              2927.3333333332707
+            ],
+            "confusion_counts": [
+              [
+                1225.7161449567839,
+                186.2221474251086,
+                1515.3950409513882
+              ],
+              [
+                1103.6287040342968,
+                302.03474949422684,
+                1521.6698798048737
+              ],
+              [
+                816.9302325581308,
+                177.97408637873733,
+                1932.4290143964026
+              ]
+            ],
+            "Neff": 8773.398274039673,
+            "argmax_raw_counts": [
+              3140,
+              661,
+              4981
+            ]
+          },
+          "positive_scalar_temperature": {
+            "BA": 0.3940081882085482,
+            "NLL": 1.0765590290657197,
+            "macro_AP": 0.40188863380784395,
+            "macro_AUROC": 0.5702333203705355,
+            "per_class": [
+              {
+                "recall": 0.41871423763042787,
+                "AP": 0.37886370691617716,
+                "AUROC": 0.5690197442223586,
+                "eff_FPR_0.01": 0.01279030629417728,
+                "actual_FPR_0.01": 0.009852674827808203,
+                "threshold_FPR_0.01": 0.4424644388176915,
+                "purity_FPR_0.01": 0.3936004958305288,
+                "coverage_FPR_0.01": 0.010831885316597878,
+                "eff_FPR_0.001": 0.001682935038707536,
+                "actual_FPR_0.001": 0.0008677489411114365,
+                "threshold_FPR_0.001": 0.4862072384139243,
+                "purity_FPR_0.001": 0.4923118509663374,
+                "coverage_FPR_0.001": 0.0011394776403101314,
+                "eff_purity_0.8": 0.0003365870077415072,
+                "coverage_purity_0.8": 0.00011219566924716704,
+                "eff_purity_0.9": 0.0003365870077415072,
+                "coverage_purity_0.9": 0.00011219566924716704
+              },
+              {
+                "recall": 0.10317743662977233,
+                "AP": 0.39821514857194346,
+                "AUROC": 0.5467021339712306,
+                "eff_FPR_0.01": 0.041056765440913114,
+                "actual_FPR_0.01": 0.009846455940089866,
+                "threshold_FPR_0.01": 0.4780679680739373,
+                "purity_FPR_0.01": 0.6758351196485823,
+                "coverage_FPR_0.01": 0.020249892440364507,
+                "eff_FPR_0.001": 0.020349875044626455,
+                "actual_FPR_0.001": 0.0009988582879239174,
+                "threshold_FPR_0.001": 0.7189701921467674,
+                "purity_FPR_0.001": 0.9106070752600688,
+                "coverage_FPR_0.001": 0.007449197206824904,
+                "eff_purity_0.8": 0.02998928953944955,
+                "coverage_purity_0.8": 0.01244583649540004,
+                "eff_purity_0.9": 0.022134951802927016,
+                "coverage_purity_0.9": 0.00815496476413219
+              },
+              {
+                "recall": 0.6601328903654443,
+                "AP": 0.42858704593541125,
+                "AUROC": 0.5949780829180176,
+                "eff_FPR_0.01": 0.03920265780730991,
+                "actual_FPR_0.01": 0.009960439911167834,
+                "threshold_FPR_0.01": 0.5839176154850151,
+                "purity_FPR_0.01": 0.6630634664129533,
+                "coverage_FPR_0.01": 0.01970784587654831,
+                "eff_FPR_0.001": 0.012624584717608248,
+                "actual_FPR_0.001": 0.0008823242071909835,
+                "threshold_FPR_0.001": 0.7616646386328809,
+                "purity_FPR_0.001": 0.8773632758469357,
+                "coverage_FPR_0.001": 0.004796411043996654,
+                "eff_purity_0.8": 0.026245847176080347,
+                "coverage_purity_0.8": 0.010836232251537669,
+                "eff_purity_0.9": 0.010631229235880625,
+                "coverage_purity_0.9": 0.0036559387478739655
+              }
+            ],
+            "events": 8782,
+            "raw_counts": [
+              2971,
+              2801,
+              3010
+            ],
+            "weighted_prior": [
+              0.33333333333332926,
+              0.3333333333333426,
+              0.33333333333332815
+            ],
+            "weighted_counts": [
+              2927.3333333332807,
+              2927.3333333333976,
+              2927.3333333332707
+            ],
+            "confusion_counts": [
+              [
+                1225.7161449567839,
+                186.2221474251086,
+                1515.3950409513882
+              ],
+              [
+                1103.6287040342968,
+                302.03474949422684,
+                1521.6698798048737
+              ],
+              [
+                816.9302325581308,
+                177.97408637873733,
+                1932.4290143964026
+              ]
+            ],
+            "Neff": 8773.398274039673,
+            "argmax_raw_counts": [
+              3140,
+              661,
+              4981
+            ]
+          },
+          "two_global_class_biases": {
+            "BA": 0.3821582840190987,
+            "NLL": 1.0795392635081624,
+            "macro_AP": 0.40151156576133173,
+            "macro_AUROC": 0.5697120781474087,
+            "per_class": [
+              {
+                "recall": 0.7660720296196516,
+                "AP": 0.37885648749049666,
+                "AUROC": 0.5692211696096763,
+                "eff_FPR_0.01": 0.013126893301918796,
+                "actual_FPR_0.01": 0.0098526748278082,
+                "threshold_FPR_0.01": 0.5068254953302251,
+                "purity_FPR_0.01": 0.39981713460444146,
+                "coverage_FPR_0.01": 0.010944080985845043,
+                "eff_FPR_0.001": 0.002019522046449045,
+                "actual_FPR_0.001": 0.0008677489411114361,
+                "threshold_FPR_0.001": 0.5612237096841943,
+                "purity_FPR_0.001": 0.5378192618975759,
+                "coverage_FPR_0.001": 0.0012516733095572982,
+                "eff_purity_0.8": 0.0003365870077415075,
+                "coverage_purity_0.8": 0.00011219566924716704,
+                "eff_purity_0.9": 0.0003365870077415075,
+                "coverage_purity_0.9": 0.00011219566924716704
+              },
+              {
+                "recall": 0.08139950017850554,
+                "AP": 0.3972258848290661,
+                "AUROC": 0.5449691430025153,
+                "eff_FPR_0.01": 0.04034273473759285,
+                "actual_FPR_0.01": 0.00984645594008987,
+                "threshold_FPR_0.01": 0.49942920562044446,
+                "purity_FPR_0.01": 0.671979682245156,
+                "coverage_FPR_0.01": 0.020011882205924425,
+                "eff_FPR_0.001": 0.02070689039628655,
+                "actual_FPR_0.001": 0.0009988582879239176,
+                "threshold_FPR_0.001": 0.777976497907313,
+                "purity_FPR_0.001": 0.912012721545914,
+                "coverage_FPR_0.001": 0.007568202324044943,
+                "eff_purity_0.8": 0.032131381649410214,
+                "coverage_purity_0.8": 0.01338425853721462,
+                "eff_purity_0.9": 0.022134951802927,
+                "coverage_purity_0.9": 0.00815496476413219
+              },
+              {
+                "recall": 0.29900332225913895,
+                "AP": 0.4284523249644324,
+                "AUROC": 0.5949459218300347,
+                "eff_FPR_0.01": 0.04019933554817374,
+                "actual_FPR_0.01": 0.009960439911167832,
+                "threshold_FPR_0.01": 0.623301762639141,
+                "purity_FPR_0.01": 0.6686492272263576,
+                "coverage_FPR_0.01": 0.02004007179016958,
+                "eff_FPR_0.001": 0.012292358803986984,
+                "actual_FPR_0.001": 0.0008823242071909834,
+                "threshold_FPR_0.001": 0.8274423948887837,
+                "purity_FPR_0.001": 0.8744648567814586,
+                "coverage_FPR_0.001": 0.004685669072789566,
+                "eff_purity_0.8": 0.027906976744186716,
+                "coverage_purity_0.8": 0.011621142894040315,
+                "eff_purity_0.9": 0.01063122923588063,
+                "coverage_purity_0.9": 0.003774943865094006
+              }
+            ],
+            "events": 8782,
+            "raw_counts": [
+              2971,
+              2801,
+              3010
+            ],
+            "weighted_prior": [
+              0.33333333333332904,
+              0.33333333333334286,
+              0.333333333333328
+            ],
+            "weighted_counts": [
+              2927.3333333332785,
+              2927.3333333334,
+              2927.3333333332694
+            ],
+            "confusion_counts": [
+              [
+                2242.5481880398847,
+                114.29507461011974,
+                570.490070683274
+              ],
+              [
+                2053.627275972932,
+                238.2834701892173,
+                635.4225871712506
+              ],
+              [
+                1916.868438538153,
+                135.18250276854954,
+                875.282392026567
+              ]
+            ],
+            "Neff": 8773.398274039673,
+            "argmax_raw_counts": [
+              6212,
+              483,
+              2087
+            ]
+          }
+        }
+      },
+      "convergence": {
+        "last_three_screen_exposures": [
+          150000,
+          225000,
+          300000
+        ],
+        "last_three_own_task_NLL": [
+          0.8997482290922917,
+          0.880548671284563,
+          0.879377553711149
+        ],
+        "last_three_common_BA": [
+          0.5593333333333333,
+          0.5716666666666667,
+          0.5693333333333334
+        ],
+        "adjacent_tail_NLL_differences": [
+          -0.01919955780772864,
+          -0.0011711175734140378
+        ],
+        "last_window_NLL_change": -0.0011711175734140378,
+        "tail_all_NLL_changes_below_0p001": false,
+        "tail_BA_range": 0.012333333333333307,
+        "Train_Tune_gaps": {
+          "endpoint": {
+            "T3": {
+              "NLL": {
+                "Train": 0.8334180299419058,
+                "Tune": 0.8713217931394462,
+                "Tune_minus_Train": 0.03790376319754041
+              },
+              "BA": {
+                "Train": 0.573,
+                "Tune": 0.5665,
+                "Tune_minus_Train": -0.00649999999999995
+              }
+            }
+          },
+          "best_screen": {
+            "T3": {
+              "NLL": {
+                "Train": 0.8334180299419058,
+                "Tune": 0.8713217931394462,
+                "Tune_minus_Train": 0.03790376319754041
+              },
+              "BA": {
+                "Train": 0.573,
+                "Tune": 0.5665,
+                "Tune_minus_Train": -0.00649999999999995
+              }
+            }
+          }
+        },
+        "scope": "three screen points give two differences; engineering plateau aid, no asymptotic convergence claim"
+      }
+    },
+    "b1_d0_t4_s42": {
+      "fits": [
+        {
+          "fold": 0,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.07145968521566848,
+            0.07267494350265166,
+            0.0
+          ],
+          "inverse_temperature": 0.8396033789942332,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8608802001875754,
+            "gradient": [
+              -5.231281588198144e-10,
+              -1.3126940362343572e-09
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 1,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.06794887331844673,
+            0.07027382865033957,
+            0.0
+          ],
+          "inverse_temperature": 0.8312833509427672,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8662671663769995,
+            "gradient": [
+              3.1038507267849846e-13,
+              -3.6602123242024387e-13
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 2,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.06696770561376657,
+            0.07530342980177826,
+            0.0
+          ],
+          "inverse_temperature": 0.8328289978643533,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8656783191974589,
+            "gradient": [
+              -5.5246744096290774e-11,
+              2.629760875749211e-11
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 3,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.0676427721866526,
+            0.0676609816866953,
+            0.0
+          ],
+          "inverse_temperature": 0.8428631302762039,
+          "bias_health": {
+            "success": true,
+            "iterations": 5,
+            "objective": 0.8616592787039457,
+            "gradient": [
+              -3.835534904684775e-10,
+              -9.682047186286135e-10
+            ],
+            "at_bound": false
+          }
+        },
+        {
+          "fold": 4,
+          "fit_class_counts": [
+            8000,
+            8000,
+            8000
+          ],
+          "held_class_counts": [
+            2000,
+            2000,
+            2000
+          ],
+          "bias_e_mu_NC": [
+            0.07919678971614405,
+            0.07833220463709713,
+            0.0
+          ],
+          "inverse_temperature": 0.8338665904784679,
+          "bias_health": {
+            "success": true,
+            "iterations": 6,
+            "objective": 0.8661207851602588,
+            "gradient": [
+              -5.185030861289868e-10,
+              -1.15794030250806e-09
+            ],
+            "at_bound": false
+          }
+        }
+      ],
+      "domains": {
+        "all": {
+          "raw": {
+            "BA": 0.5653333333333334,
+            "NLL": 0.864586107166903,
+            "macro_AP": 0.6574702790603101,
+            "macro_AUROC": 0.7706720183333333,
+            "per_class": [
+              {
+                "recall": 0.6443,
+                "AP": 0.7158356179600595,
+                "AUROC": 0.8174408575,
+                "eff_FPR_0.01": 0.2192,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8679593205451965,
+                "purity_FPR_0.01": 0.9163879598662207,
+                "coverage_FPR_0.01": 0.07973333333333334,
+                "eff_FPR_0.001": 0.052,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9802754521369934,
+                "purity_FPR_0.001": 0.9629629629629629,
+                "coverage_FPR_0.001": 0.018,
+                "eff_purity_0.8": 0.3981,
+                "coverage_purity_0.8": 0.16586666666666666,
+                "eff_purity_0.9": 0.2567,
+                "coverage_purity_0.9": 0.09506666666666666
+              },
+              {
+                "recall": 0.4648,
+                "AP": 0.646973389779531,
+                "AUROC": 0.758149485,
+                "eff_FPR_0.01": 0.1804,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7828818559646606,
+                "purity_FPR_0.01": 0.9001996007984032,
+                "coverage_FPR_0.01": 0.0668,
+                "eff_FPR_0.001": 0.0804,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9527075886726379,
+                "purity_FPR_0.001": 0.9757281553398058,
+                "coverage_FPR_0.001": 0.027466666666666667,
+                "eff_purity_0.8": 0.2656,
+                "coverage_purity_0.8": 0.11063333333333333,
+                "eff_purity_0.9": 0.181,
+                "coverage_purity_0.9": 0.06703333333333333
+              },
+              {
+                "recall": 0.5869,
+                "AP": 0.6096018294413399,
+                "AUROC": 0.7364257125,
+                "eff_FPR_0.01": 0.1335,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8293426036834717,
+                "purity_FPR_0.01": 0.8697068403908795,
+                "coverage_FPR_0.01": 0.051166666666666666,
+                "eff_FPR_0.001": 0.0501,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9562070369720459,
+                "purity_FPR_0.001": 0.9616122840690979,
+                "coverage_FPR_0.001": 0.017366666666666666,
+                "eff_purity_0.8": 0.1992,
+                "coverage_purity_0.8": 0.083,
+                "eff_purity_0.9": 0.1044,
+                "coverage_purity_0.9": 0.03866666666666667
+              }
+            ],
+            "events": 30000,
+            "raw_counts": [
+              10000,
+              10000,
+              10000
+            ],
+            "weighted_prior": [
+              0.3333333333333333,
+              0.3333333333333333,
+              0.3333333333333333
+            ],
+            "weighted_counts": [
+              10000.0,
+              10000.0,
+              10000.0
+            ],
+            "confusion_counts": [
+              [
+                6443.0,
+                990.0,
+                2567.0
+              ],
+              [
+                2198.0,
+                4648.0,
+                3154.0
+              ],
+              [
+                2156.0,
+                1975.0,
+                5869.0
+              ]
+            ],
+            "Neff": 30000.0,
+            "argmax_raw_counts": [
+              10797,
+              7613,
+              11590
+            ]
+          },
+          "positive_scalar_temperature": {
+            "BA": 0.5653333333333334,
+            "NLL": 0.8605339534712173,
+            "macro_AP": 0.6577295725820309,
+            "macro_AUROC": 0.7708739133333333,
+            "per_class": [
+              {
+                "recall": 0.6443,
+                "AP": 0.7160035880791205,
+                "AUROC": 0.8175368175,
+                "eff_FPR_0.01": 0.2177,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8165202325826995,
+                "purity_FPR_0.01": 0.9158603281447202,
+                "coverage_FPR_0.01": 0.07923333333333334,
+                "eff_FPR_0.001": 0.0524,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9602543920548546,
+                "purity_FPR_0.001": 0.9632352941176471,
+                "coverage_FPR_0.001": 0.018133333333333335,
+                "eff_purity_0.8": 0.4004,
+                "coverage_purity_0.8": 0.16683333333333333,
+                "eff_purity_0.9": 0.2574,
+                "coverage_purity_0.9": 0.0953
+              },
+              {
+                "recall": 0.4648,
+                "AP": 0.6475464064299882,
+                "AUROC": 0.758617145,
+                "eff_FPR_0.01": 0.1811,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7330644346143765,
+                "purity_FPR_0.01": 0.9005469915464943,
+                "coverage_FPR_0.01": 0.06703333333333333,
+                "eff_FPR_0.001": 0.0797,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.922081616530992,
+                "purity_FPR_0.001": 0.9755201958384333,
+                "coverage_FPR_0.001": 0.02723333333333333,
+                "eff_purity_0.8": 0.266,
+                "coverage_purity_0.8": 0.1108,
+                "eff_purity_0.9": 0.1825,
+                "coverage_purity_0.9": 0.06756666666666666
+              },
+              {
+                "recall": 0.5869,
+                "AP": 0.609638723236984,
+                "AUROC": 0.7364677775,
+                "eff_FPR_0.01": 0.1328,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7783946541793549,
+                "purity_FPR_0.01": 0.8691099476439791,
+                "coverage_FPR_0.01": 0.05093333333333333,
+                "eff_FPR_0.001": 0.0488,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9252094221751035,
+                "purity_FPR_0.001": 0.9606299212598425,
+                "coverage_FPR_0.001": 0.016933333333333335,
+                "eff_purity_0.8": 0.199,
+                "coverage_purity_0.8": 0.08283333333333333,
+                "eff_purity_0.9": 0.1045,
+                "coverage_purity_0.9": 0.0387
+              }
+            ],
+            "events": 30000,
+            "raw_counts": [
+              10000,
+              10000,
+              10000
+            ],
+            "weighted_prior": [
+              0.3333333333333333,
+              0.3333333333333333,
+              0.3333333333333333
+            ],
+            "weighted_counts": [
+              10000.0,
+              10000.0,
+              10000.0
+            ],
+            "confusion_counts": [
+              [
+                6443.0,
+                990.0,
+                2567.0
+              ],
+              [
+                2198.0,
+                4648.0,
+                3154.0
+              ],
+              [
+                2156.0,
+                1975.0,
+                5869.0
+              ]
+            ],
+            "Neff": 30000.0,
+            "argmax_raw_counts": [
+              10797,
+              7613,
+              11590
+            ]
+          },
+          "two_global_class_biases": {
+            "BA": 0.5643666666666666,
+            "NLL": 0.8641346448440608,
+            "macro_AP": 0.6576127319672053,
+            "macro_AUROC": 0.7706965716666666,
+            "per_class": [
+              {
+                "recall": 0.6855,
+                "AP": 0.7159941543716556,
+                "AUROC": 0.8174495625,
+                "eff_FPR_0.01": 0.2197,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8722583393178014,
+                "purity_FPR_0.01": 0.9165623696287025,
+                "coverage_FPR_0.01": 0.0799,
+                "eff_FPR_0.001": 0.0527,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9811490548598069,
+                "purity_FPR_0.001": 0.9634369287020109,
+                "coverage_FPR_0.001": 0.018233333333333334,
+                "eff_purity_0.8": 0.3992,
+                "coverage_purity_0.8": 0.16633333333333333,
+                "eff_purity_0.9": 0.2569,
+                "coverage_purity_0.9": 0.09513333333333333
+              },
+              {
+                "recall": 0.4849,
+                "AP": 0.6471635000747016,
+                "AUROC": 0.758221905,
+                "eff_FPR_0.01": 0.1813,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.7908469374784133,
+                "purity_FPR_0.01": 0.9006458022851466,
+                "coverage_FPR_0.01": 0.0671,
+                "eff_FPR_0.001": 0.081,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9550160115377986,
+                "purity_FPR_0.001": 0.9759036144578314,
+                "coverage_FPR_0.001": 0.027666666666666666,
+                "eff_purity_0.8": 0.2657,
+                "coverage_purity_0.8": 0.1107,
+                "eff_purity_0.9": 0.1818,
+                "coverage_purity_0.9": 0.06733333333333333
+              },
+              {
+                "recall": 0.5227,
+                "AP": 0.6096805414552585,
+                "AUROC": 0.7364182475,
+                "eff_FPR_0.01": 0.133,
+                "actual_FPR_0.01": 0.01,
+                "threshold_FPR_0.01": 0.8196210487310654,
+                "purity_FPR_0.01": 0.869281045751634,
+                "coverage_FPR_0.01": 0.051,
+                "eff_FPR_0.001": 0.0499,
+                "actual_FPR_0.001": 0.001,
+                "threshold_FPR_0.001": 0.9531740473350772,
+                "purity_FPR_0.001": 0.9614643545279383,
+                "coverage_FPR_0.001": 0.0173,
+                "eff_purity_0.8": 0.1991,
+                "coverage_purity_0.8": 0.0829,
+                "eff_purity_0.9": 0.1042,
+                "coverage_purity_0.9": 0.038566666666666666
+              }
+            ],
+            "events": 30000,
+            "raw_counts": [
+              10000,
+              10000,
+              10000
+            ],
+            "weighted_prior": [
+              0.3333333333333333,
+              0.3333333333333333,
+              0.3333333333333333
+            ],
+            "weighted_counts": [
+              10000.0,
+              10000.0,
+              10000.0
+            ],
+            "confusion_counts": [
+              [
+                6855.0,
+                1126.0,
+                2019.0
+              ],
+              [
+                2566.0,
+                4849.0,
+                2585.0
+              ],
+              [
+                2598.0,
+                2175.0,
+                5227.0
+              ]
+            ],
+            "Neff": 30000.0,
+            "argmax_raw_counts": [
+              12019,
+              8150,
+              9831
+            ]
+          }
+        },
+        "occupancy_0_100": {
+          "raw": {
+            "BA": 0.391755920947054,
+            "NLL": 1.0783305299877037,
+            "macro_AP": 0.40162460448150367,
+            "macro_AUROC": 0.5689048931212392,
+            "per_class": [
+              {
+                "recall": 0.40659710535173404,
+                "AP": 0.3752881907026678,
+                "AUROC": 0.5639198486145505,
+                "eff_FPR_0.01": 0.01279030629417728,
+                "actual_FPR_0.01": 0.009865069546827632,
+                "threshold_FPR_0.01": 0.471812903881073,
+                "purity_FPR_0.01": 0.3933004650349141,
+                "coverage_FPR_0.01": 0.01084014846261083,
+                "eff_FPR_0.001": 0.0006731740154830144,
+                "actual_FPR_0.001": 0.0008677489411114365,
+                "threshold_FPR_0.001": 0.5157984495162964,
+                "purity_FPR_0.001": 0.279479333039987,
+                "coverage_FPR_0.001": 0.0008028906325686303,
+                "eff_purity_0.8": 0.0006731740154830144,
+                "coverage_purity_0.8": 0.00022439133849433407,
+                "eff_purity_0.9": 0.0006731740154830144,
+                "coverage_purity_0.9": 0.00022439133849433407
+              },
+              {
+                "recall": 0.09425205283826955,
+                "AP": 0.3952096368381983,
+                "AUROC": 0.5439018773089903,
+                "eff_FPR_0.01": 0.045340949660834455,
+                "actual_FPR_0.01": 0.009855178128330347,
+                "threshold_FPR_0.01": 0.4901033341884613,
+                "purity_FPR_0.01": 0.6970029121066537,
+                "coverage_FPR_0.01": 0.021683768639165314,
+                "eff_FPR_0.001": 0.02070689039628656,
+                "actual_FPR_0.001": 0.0009988582879239176,
+                "threshold_FPR_0.001": 0.743436872959137,
+                "purity_FPR_0.001": 0.912012721545914,
+                "coverage_FPR_0.001": 0.007568202324044943,
+                "eff_purity_0.8": 0.033559443056050686,
+                "coverage_purity_0.8": 0.013973928373382032,
+                "eff_purity_0.9": 0.021420921099606784,
+                "coverage_purity_0.9": 0.007916954529692112
+              },
+              {
+                "recall": 0.6744186046511584,
+                "AP": 0.43437598590364496,
+                "AUROC": 0.5988929534401769,
+                "eff_FPR_0.01": 0.0438538205980077,
+                "actual_FPR_0.01": 0.009833003095134322,
+                "threshold_FPR_0.01": 0.6384877562522888,
+                "purity_FPR_0.01": 0.6903957837319107,
+                "coverage_FPR_0.01": 0.02117327559609187,
+                "eff_FPR_0.001": 0.01760797342192731,
+                "actual_FPR_0.001": 0.0008414675193537436,
+                "threshold_FPR_0.001": 0.8406989574432373,
+                "purity_FPR_0.001": 0.9127601977821962,
+                "coverage_FPR_0.001": 0.006430302820211478,
+                "eff_purity_0.8": 0.027242524916944164,
+                "coverage_purity_0.8": 0.01118207706110468,
+                "eff_purity_0.9": 0.01760797342192731,
+                "coverage_purity_0.9": 0.006430302820211478
+              }
+            ],
+            "events": 8782,
+            "raw_counts": [
+              2971,
+              2801,
+              3010
+            ],
+            "weighted_prior": [
+              0.33333333333332926,
+              0.3333333333333427,
+              0.3333333333333281
+            ],
+            "weighted_counts": [
+              2927.3333333332807,
+              2927.3333333333985,
+              2927.3333333332703
+            ],
+            "confusion_counts": [
+              [
+                1190.2452597329548,
+                189.17805452709445,
+                1547.9100190732315
+              ],
+              [
+                1094.2227775794588,
+                275.9071760085672,
+                1557.2033797453728
+              ],
+              [
+                799.4245847175999,
+                153.66068660022154,
+                1974.2480620154486
+              ]
+            ],
+            "Neff": 8773.398274039673,
+            "argmax_raw_counts": [
+              3077,
+              614,
+              5091
+            ]
+          },
+          "positive_scalar_temperature": {
+            "BA": 0.391755920947054,
+            "NLL": 1.0769192540171355,
+            "macro_AP": 0.4019093021878965,
+            "macro_AUROC": 0.5691156349731715,
+            "per_class": [
+              {
+                "recall": 0.40659710535173404,
+                "AP": 0.37556752544951816,
+                "AUROC": 0.5641952937226844,
+                "eff_FPR_0.01": 0.013126893301918786,
+                "actual_FPR_0.01": 0.009865069546827634,
+                "threshold_FPR_0.01": 0.44847475116117913,
+                "purity_FPR_0.01": 0.3995154870920968,
+                "coverage_FPR_0.01": 0.010952344131857998,
+                "eff_FPR_0.001": 0.0006731740154830144,
+                "actual_FPR_0.001": 0.0008677489411114365,
+                "threshold_FPR_0.001": 0.48516743265659273,
+                "purity_FPR_0.001": 0.279479333039987,
+                "coverage_FPR_0.001": 0.0008028906325686303,
+                "eff_purity_0.8": 0.0006731740154830144,
+                "coverage_purity_0.8": 0.00022439133849433407,
+                "eff_purity_0.9": 0.0006731740154830144,
+                "coverage_purity_0.9": 0.00022439133849433407
+              },
+              {
+                "recall": 0.09425205283826955,
+                "AP": 0.3955951036919793,
+                "AUROC": 0.5444393425062856,
+                "eff_FPR_0.01": 0.04391288825419402,
+                "actual_FPR_0.01": 0.009852997581270229,
+                "threshold_FPR_0.01": 0.46882201947714003,
+                "purity_FPR_0.01": 0.6902492765637491,
+                "coverage_FPR_0.01": 0.021206294472245077,
+                "eff_FPR_0.001": 0.019992859692966335,
+                "actual_FPR_0.001": 0.0009988582879239176,
+                "threshold_FPR_0.001": 0.6983348957106811,
+                "purity_FPR_0.001": 0.9091557878507792,
+                "coverage_FPR_0.001": 0.007330192089604863,
+                "eff_purity_0.8": 0.03605855051767149,
+                "coverage_purity_0.8": 0.014919159863169483,
+                "eff_purity_0.9": 0.019992859692966335,
+                "coverage_purity_0.9": 0.007219450118397776
+              },
+              {
+                "recall": 0.6744186046511584,
+                "AP": 0.43456527742219186,
+                "AUROC": 0.5987122686905446,
+                "eff_FPR_0.01": 0.044518272425250235,
+                "actual_FPR_0.01": 0.009833003095134324,
+                "threshold_FPR_0.01": 0.5893059381173172,
+                "purity_FPR_0.01": 0.6936008846017611,
+                "coverage_FPR_0.01": 0.02139475953850604,
+                "eff_FPR_0.001": 0.0166112956810635,
+                "actual_FPR_0.001": 0.0008516816913130535,
+                "threshold_FPR_0.001": 0.7885026358696087,
+                "purity_FPR_0.001": 0.9069945349950181,
+                "coverage_FPR_0.001": 0.006104886354563088,
+                "eff_purity_0.8": 0.028239202657807976,
+                "coverage_purity_0.8": 0.011752313209166023,
+                "eff_purity_0.9": 0.0166112956810635,
+                "coverage_purity_0.9": 0.005985881237343048
+              }
+            ],
+            "events": 8782,
+            "raw_counts": [
+              2971,
+              2801,
+              3010
+            ],
+            "weighted_prior": [
+              0.33333333333332926,
+              0.3333333333333427,
+              0.3333333333333281
+            ],
+            "weighted_counts": [
+              2927.3333333332807,
+              2927.3333333333985,
+              2927.3333333332703
+            ],
+            "confusion_counts": [
+              [
+                1190.2452597329548,
+                189.17805452709445,
+                1547.9100190732315
+              ],
+              [
+                1094.2227775794588,
+                275.9071760085672,
+                1557.2033797453728
+              ],
+              [
+                799.4245847175999,
+                153.66068660022154,
+                1974.2480620154486
+              ]
+            ],
+            "Neff": 8773.398274039673,
+            "argmax_raw_counts": [
+              3077,
+              614,
+              5091
+            ]
+          },
+          "two_global_class_biases": {
+            "BA": 0.38984268249986354,
+            "NLL": 1.077302521748821,
+            "macro_AP": 0.4018064927387117,
+            "macro_AUROC": 0.5687679379990788,
+            "per_class": [
+              {
+                "recall": 0.5281050151464136,
+                "AP": 0.37526757732912797,
+                "AUROC": 0.5636931984243372,
+                "eff_FPR_0.01": 0.012453719286435766,
+                "actual_FPR_0.01": 0.009865069546827634,
+                "threshold_FPR_0.01": 0.48060328831453725,
+                "purity_FPR_0.01": 0.3869554464028914,
+                "coverage_FPR_0.01": 0.010727952793363662,
+                "eff_FPR_0.001": 0.0006731740154830141,
+                "actual_FPR_0.001": 0.0008677489411114366,
+                "threshold_FPR_0.001": 0.5247032261766181,
+                "purity_FPR_0.001": 0.279479333039987,
+                "coverage_FPR_0.001": 0.0008028906325686303,
+                "eff_purity_0.8": 0.0006731740154830141,
+                "coverage_purity_0.8": 0.00022439133849433407,
+                "eff_purity_0.9": 0.0006731740154830141,
+                "coverage_purity_0.9": 0.00022439133849433407
+              },
+              {
+                "recall": 0.10853266690467402,
+                "AP": 0.39526712433107986,
+                "AUROC": 0.5435778250484417,
+                "eff_FPR_0.01": 0.043912888254194045,
+                "actual_FPR_0.01": 0.009852997581270225,
+                "threshold_FPR_0.01": 0.5047628618184694,
+                "purity_FPR_0.01": 0.6902492765637491,
+                "coverage_FPR_0.01": 0.021206294472245077,
+                "eff_FPR_0.001": 0.021420921099606798,
+                "actual_FPR_0.001": 0.0009988582879239172,
+                "threshold_FPR_0.001": 0.749727550384995,
+                "purity_FPR_0.001": 0.9146954402927713,
+                "coverage_FPR_0.001": 0.007806212558485023,
+                "eff_purity_0.8": 0.03498750446269117,
+                "coverage_purity_0.8": 0.014562144511509362,
+                "eff_purity_0.9": 0.021420921099606798,
+                "coverage_purity_0.9": 0.007806212558485023
+              },
+              {
+                "recall": 0.5328903654485031,
+                "AP": 0.43488477655592744,
+                "AUROC": 0.5990327905244575,
+                "eff_FPR_0.01": 0.04385382059800769,
+                "actual_FPR_0.01": 0.009833003095134324,
+                "threshold_FPR_0.01": 0.6212101555109457,
+                "purity_FPR_0.01": 0.6903957837319107,
+                "coverage_FPR_0.01": 0.02117327559609187,
+                "eff_FPR_0.001": 0.017607973421927308,
+                "actual_FPR_0.001": 0.0008414675193537438,
+                "threshold_FPR_0.001": 0.8311975051474129,
+                "purity_FPR_0.001": 0.9127601977821962,
+                "coverage_FPR_0.001": 0.006430302820211478,
+                "eff_purity_0.8": 0.027242524916944157,
+                "coverage_purity_0.8": 0.01118207706110468,
+                "eff_purity_0.9": 0.017607973421927308,
+                "coverage_purity_0.9": 0.006430302820211478
+              }
+            ],
+            "events": 8782,
+            "raw_counts": [
+              2971,
+              2801,
+              3010
+            ],
+            "weighted_prior": [
+              0.33333333333332943,
+              0.3333333333333425,
+              0.3333333333333282
+            ],
+            "weighted_counts": [
+              2927.333333333282,
+              2927.3333333333967,
+              2927.333333333271
+            ],
+            "confusion_counts": [
+              [
+                1545.9394143385744,
+                243.36968473016825,
+                1138.0242342645397
+              ],
+              [
+                1447.4675711055963,
+                317.7112935856226,
+                1162.1544686421776
+              ],
+              [
+                1167.043189368748,
+                200.34241417497185,
+                1559.9477297895517
+              ]
+            ],
+            "Neff": 8773.398274039673,
+            "argmax_raw_counts": [
+              4154,
+              757,
+              3871
+            ]
+          }
+        }
+      },
+      "convergence": {
+        "last_three_screen_exposures": [
+          150000,
+          225000,
+          300000
+        ],
+        "last_three_own_task_NLL": [
+          1.2083144939844346,
+          1.2291403454598975,
+          1.1905135468388157
+        ],
+        "last_three_common_BA": [
+          0.5586666666666668,
+          0.5593333333333333,
+          0.5713333333333334
+        ],
+        "adjacent_tail_NLL_differences": [
+          0.020825851475462898,
+          -0.03862679862108176
+        ],
+        "last_window_NLL_change": -0.03862679862108176,
+        "tail_all_NLL_changes_below_0p001": false,
+        "tail_BA_range": 0.012666666666666604,
+        "Train_Tune_gaps": {
+          "endpoint": {
+            "T3": {
+              "NLL": {
+                "Train": 0.838095429953528,
+                "Tune": 0.8645861071669045,
+                "Tune_minus_Train": 0.0264906772133765
+              },
+              "BA": {
+                "Train": 0.5763333333333334,
+                "Tune": 0.5653333333333334,
+                "Tune_minus_Train": -0.01100000000000001
+              }
+            },
+            "T4": {
+              "NLL": {
+                "Train": 1.1650649755374645,
+                "Tune": 1.185567840583843,
+                "Tune_minus_Train": 0.02050286504637855
+              },
+              "BA": {
+                "Train": 0.45875,
+                "Tune": 0.44784999999999997,
+                "Tune_minus_Train": -0.01090000000000002
+              }
+            }
+          },
+          "best_screen": {
+            "T3": {
+              "NLL": {
+                "Train": 0.838095429953528,
+                "Tune": 0.8645861071669045,
+                "Tune_minus_Train": 0.0264906772133765
+              },
+              "BA": {
+                "Train": 0.5763333333333334,
+                "Tune": 0.5653333333333334,
+                "Tune_minus_Train": -0.01100000000000001
+              }
+            },
+            "T4": {
+              "NLL": {
+                "Train": 1.1650649755374645,
+                "Tune": 1.185567840583843,
+                "Tune_minus_Train": 0.02050286504637855
+              },
+              "BA": {
+                "Train": 0.45875,
+                "Tune": 0.44784999999999997,
+                "Tune_minus_Train": -0.01090000000000002
+              }
+            }
+          }
+        },
+        "scope": "three screen points give two differences; engineering plateau aid, no asymptotic convergence claim"
+      }
+    }
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

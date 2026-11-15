@@ -20,6 +20,34 @@ def save(fig,folder,name):
     plt.close(fig)
 
 
+def readout_figures(root, partial):
+    path=root/('readout_partial' if partial else 'readout')/'results.json'
+    if not path.exists():return
+    result=json.loads(path.read_text())
+    names=list(result['models'])
+    x=np.arange(len(names))
+    fig,axes=plt.subplots(2,3,figsize=(14,7.2))
+    variants=[('raw','Raw'),('positive_scalar_temperature','OOF temperature'),
+              ('two_global_class_biases','OOF global bias')]
+    panels=[('all','BA',100.,'Common BA3 (%)'),('all','NLL',1.,'Common NLL3'),
+        ('all','mu_recall',100.,'Common muon recall (%)'),
+        ('occupancy_0_100','BA',100.,'Sparse BA3 (%)'),('occupancy_0_100','NLL',1.,'Sparse NLL3'),
+        ('occupancy_0_100','mu_recall',100.,'Sparse muon recall (%)')]
+    for ax,(domain,metric,scale,title) in zip(axes.flat,panels):
+        for i,(variant,label) in enumerate(variants):
+            values=[]
+            for name in names:
+                row=result['models'][name]['domains'][domain][variant]
+                values.append((row['per_class'][1]['recall'] if metric=='mu_recall' else row[metric])*scale)
+            ax.bar(x+(i-1)*.25,values,width=.25,label=label)
+        ax.set_xticks(x,[name.replace('b1_','').replace('_s42','').upper() for name in names],rotation=40)
+        ax.set(title=title)
+        ax.grid(axis='y',alpha=.2)
+    axes[0,0].legend(fontsize=8)
+    fig.suptitle('Five grouped folds on Tune; development diagnostic; sparse = occupancy < 100',fontsize=12)
+    save(fig,root/'figures','r2_readout_diagnostic_partial' if partial else 'r2_readout_diagnostic')
+
+
 def run(root,partial):
     folder=root/'figures'
     folder.mkdir(exist_ok=True)
@@ -92,6 +120,7 @@ def run(root,partial):
     axes[1].set(title='Low occupancy: common BA3',ylabel='Balanced accuracy (%)',xlabel='Scaling design')
     for ax in axes:ax.grid(alpha=.22);ax.legend()
     save(fig,folder,'r2_low_occupancy_partial' if partial else 'r2_low_occupancy')
+    readout_figures(root,partial)
 
 
 def main():

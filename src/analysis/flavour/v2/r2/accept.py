@@ -14,6 +14,14 @@ from analysis.flavour.v2.r1.accept import DOMAINS
 from analysis.flavour.v2.r2.evaluate import configuration
 
 
+def learning_gate_matches(gate, recipe):
+    keys = ['family', 'task', 'precision', 'modalities', 'architecture_revision', 'empty_response_bypass']
+    keys += ['image', 'cnn_width', 'cnn_variant'] if recipe['family']=='B1' else ['dim', 'compile_local']
+    defaults = {'cnn_width': 16, 'cnn_variant': 'resnet', 'dim': 64, 'compile_local': False}
+    return (gate['status']=='complete' and all(gate['checks'].values())
+        and all(gate['config'].get(key, defaults.get(key))==recipe.get(key, defaults.get(key)) for key in keys))
+
+
 def run(root):
     checks=[]
     def check(name,value,**detail):checks.append({'name':name,'passed':bool(value),**detail})
@@ -30,7 +38,7 @@ def run(root):
     check('BF16_T3_T4_full_runner_recovery_gates',any(g['status']=='complete'
         and {c['task'] for c in g['cases']}=={'T3','T4'}
         and all(c['precision']=='BF16_encoder_FP32_head' and c['maximum_parameter_delta']==0 for c in g['cases']) for g in gates))
-    fits=[read(p) for p in (root/'fit').glob('*/B1_T*.json')]
+    fits=[read(p) for p in (root/'fit').glob('*/B*_T*.json')]
     check('BF16_T3_T4_real_learning_gates',all(any(g['task']==task and g['status']=='complete'
         and g['config']['precision']=='BF16_encoder_FP32_head' and all(g['checks'].values()) for g in fits) for task in ['T3','T4']))
     config=configuration(root)
@@ -48,6 +56,7 @@ def run(root):
         recipe=read(root/'configs'/f'{name}.json')
         preflight=read(Path(recipe['preflight']))
         counters=record['counters']
+        check(name+'_matching_actual_architecture_learning_gate',any(learning_gate_matches(g,recipe) for g in fits))
         check(name+'_complete_exact_recipe',record['status']=='complete' and record['config']==recipe
             and record['precision']==recipe['precision'] and record['config']['bf16'])
         check(name+'_prescribed_budget',counters['updates']==preflight['total_updates']
@@ -101,6 +110,13 @@ def run(root):
         report=read(root/'evaluation'/filename)
         check(filename+'_complete',report['status']=='complete' and not report['failed'])
     check('all_contrasts_independently_reviewed',read(root/'evaluation/independent_core_intervals.json')['pairs']==len(config['pairs']))
+    readout=read(root/'readout/results.json')
+    check('all_endpoint_grouped_readout_diagnostics',readout['status']=='complete'
+        and set(readout['models'])==set(campaign['initial_models']+campaign.get('extension_models',[]))
+        and readout['fold_family_integrity'] and readout['fold_chunk_integrity']
+        and all(v['temperature_argmax_identical'] for v in readout['models'].values()))
+    score_review=read(root/'readout/independent_scores.json')
+    check('independent_sklearn_score_review',score_review['status']=='complete' and not score_review['failed'])
     decision=read(root/'decision.json')
     check('scientific_scaling_and_conditional_expansion_decision',decision['status']=='reviewed'
         and all(decision.get(k) for k in ['data_vs_repetition','convergence','capacity','tau_and_common_task',

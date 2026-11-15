@@ -8,6 +8,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import average_precision_score, roc_auc_score
 
 from analysis.flavour.inventory import COMPRESSION, write_json
 from analysis.flavour.s3.metrics import bootstrap_weights
@@ -83,6 +84,12 @@ def independent_points(frames,reports):
                 measured,support,balanced=direct_metrics(labels,p)
                 row=report[task]
                 check(name+'_'+domain+'_'+task+'_BA_NLL',all(abs(measured[k]-row[k])<2e-9 for k in measured))
+                ranking = independent_ranking(labels, p)
+                for c, values in enumerate(ranking):
+                    for metric, value in values.items():
+                        expected = row['per_class'][c][metric]
+                        check(f'{name}_{domain}_{task}_{c}_{metric}',
+                            expected is None if value is None else expected is not None and abs(expected-value)<2e-9)
                 for c in range(p.shape[1]):
                     for target in [.01,.001]:
                         item=row['per_class'][c]
@@ -93,7 +100,23 @@ def independent_points(frames,reports):
                             and abs(fpr-item[f'actual_FPR_{target}'])<2e-9 and fpr<=target+2e-9)
     failed=[c['name'] for c in checks if not c['passed']]
     return {'status':'complete' if not failed else 'failed','passed':len(checks)-len(failed),'failed':failed,'checks':checks,
-        'scope':'direct per-class arithmetic and selected raw counts; no Metrics/scalar_summary calls'}
+        'scope':'direct per-class arithmetic, selected raw counts and independent sklearn weighted AP/AUROC; no Metrics/scalar_summary calls'}
+
+
+def independent_ranking(labels, probabilities):
+    """Check stored score rankings with sklearn under the declared domain prior."""
+    classes = probabilities.shape[1]
+    support = np.bincount(labels, minlength=classes)
+    weight = len(labels)/(classes*support[labels]) if (support>0).all() else np.ones(len(labels))
+    values = []
+    for c in range(classes):
+        truth = labels==c
+        values.append({
+            'AP': float(average_precision_score(truth, probabilities[:, c], sample_weight=weight))
+                if truth.any() else None,
+            'AUROC': float(roc_auc_score(truth, probabilities[:, c], sample_weight=weight))
+                if truth.any() and (~truth).any() else None})
+    return values
 
 
 def run(root,replicates,workers,complete_only):

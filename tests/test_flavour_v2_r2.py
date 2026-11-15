@@ -144,8 +144,12 @@ class ScalingBudgetTests(unittest.TestCase):
             for name in ['independent_points','independent_core_intervals']:
                 write_json(root/'evaluation'/f'{name}.json',{'status':'complete'})
             calls.clear()
+            self.assertFalse(advance(root,submit))
+            self.assertEqual([call[0][1] for call in calls],['r2_evaluate_m4_a1','r2_readout_m4_a1'])
+            write_json(root/'readout/results.json',{'status':'complete','models':{name:{} for name in names}})
+            calls.clear()
             self.assertTrue(advance(root,submit))
-            self.assertEqual([call[0][1] for call in calls],['r2_evaluate_m4_a1','r2_figures_m4_a1'])
+            self.assertEqual([call[0][1] for call in calls],['r2_evaluate_m4_a1','r2_readout_m4_a1','r2_figures_m4_a1'])
 
 
 if __name__=='__main__':

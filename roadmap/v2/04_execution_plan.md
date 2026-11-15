@@ -98,6 +98,8 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 先完成首批固定预算终点，不因中间recall波动提前选择配方。D1−D0区分当前schedule下的更长训练，D2−D1区分同曝光下更多unique事件；若D1/D2仍改善才考虑D3，若更多unique明显有益再为1M单独计时，若Train/Tune均停滞再用width32检查容量。排序较好而argmax差时做family交叉拟合bias诊断；低occupancy排序本身也弱时优先局部路径。[09 §3](09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流)给出完整分流表。endpoint是主比较，best-screen是次比较，不混合两种选点策略或将screen次数不同造成的选择效应称为数据规模增益。
 
+D0完整Tune和readout诊断见[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)。原始评价之外，正式R2交付还要求所有endpoint复用同一五折、两个global bias与正温度对照；完整AP/AUROC经独立sklearn核对。容量扩展必须通过实际width/family匹配的真实拟合检查。合同与当前D0数值在[r2_readout_review.json](r2_readout_review.json)，不把其中两个模型的局部完成状态作为完整R2完成。
+
 容量对照按实际模型选择一个加宽版本：B1为793,674参数，可先将width16增为32；B2为199,882参数，可先将dim64增为128。实际参数、吞吐和显存由实现/profile生成，不把不同族都称为0.9M，也不直接把所有族扩到3–4M。只有学习曲线显示容量限制且收益足够，才继续扩大。先选择数据/训练，再扩大SSL。
 
 R1的B1 seed42使用T4/FP32，新增seed使用H100 MIG/BF16；seed波动含实际执行差异。R2沿用尽早启动的设备政策，每个配对固定数值配方；若运行时fallback改变精度，补相应D0控制或单列配方，不能把旧异精度D0直接解释为纯数据/曝光效应。无需等待同一GPU型号。

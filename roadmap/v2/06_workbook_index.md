@@ -330,3 +330,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 276 | [R2开发窗口、评价与交付协议](../../workbook/2026-11-15_stage276_r2_monitoring_and_delivery_protocol.md) |
 | 277 | [R2恢复元数据、预测复用与依赖调度](../../workbook/2026-11-15_stage277_r2_recovery_provenance_and_dependencies.md) |
 | 278 | [研究结论整理、τ物理路线与R2稀疏μ进展读回](../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md) |
+| 279 | [R2 D0完整评价、独立排序与五折readout诊断](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md) |

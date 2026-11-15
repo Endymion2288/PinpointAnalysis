@@ -30,6 +30,8 @@
 
 这支持同时检验训练/决策偏移与局部特征不足，尚不支持把稀疏μ问题全部归为分类阈值，也不支持宣布信息物理上不可分。D1/D2使用更长的完整LR轨迹，其中间点不能替代最终预算比较。快照时D0 T3已完成，其他五模型仍在执行；状态会继续变化，最终以完整40k Tune结果和验收为准。
 
+[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)已补充D0两个完整40k Tune终点及独立sklearn排序读回。T3/conditional T4的BA3为56.6500%/56.5333%；三类化增加μ recall但整体BA差值区间跨零，NLL更差。低occupancy μ AUROC为.545742/.543902。按6,845个physical chunk分五折、每折每类2k事件后，两个全局bias未改善整体或稀疏BA；正温度降低NLL而保持argmax。该固定诊断复用到后续全部endpoint，仍属于Tune开发结果；[紧凑数据](r2_readout_review.json)保留合同、逐折拟合与指标。它支持优先检验局部表示，未排除更一般的条件readout。
+
 ## 3. 当前批次：完成R2并作一次有依据的分流
 
 已冻结B1 seed42的fresh D0=100k×4、D1=100k×12、D2=300k×4，各有T3/T4。T3使用对应pool的全部非τ事件，D1/D2在T3上均为900k曝光、T4上均为1.2M曝光；尾批造成小量update差，不能称精确fixed-update比较。各自按完整updates定义warm-up/cosine，D1不是从已退火的D0机械续训。
