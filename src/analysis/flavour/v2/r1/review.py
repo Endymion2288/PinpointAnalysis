@@ -323,6 +323,11 @@ def main():
         check('independent_stress_metrics_cuts_and_contrasts', independent_stress['status']=='complete'
               and independent_stress['model_conditions']==55,
               passed_checks=independent_stress['passed'], failed=independent_stress['failed'])
+        from analysis.flavour.v2.r1.interval_review import review_intervals
+        independent_intervals = review_intervals(root, config, evaluation)
+        write_json(root/'evaluation/independent_core_intervals.json', independent_intervals)
+        check('independent_core_paired_intervals', independent_intervals['status']=='complete',
+              passed_checks=independent_intervals['passed'], failed=independent_intervals['failed'])
 
     failed = [c['name'] for c in checks if not c['passed']]
     output = {'status': 'complete' if not failed else 'failed', 'require_full': args.require_full,

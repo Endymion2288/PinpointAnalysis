@@ -154,7 +154,7 @@ def summarize(root, plan):
         'acceptance': {key: acceptance[key] for key in ['status', 'passed', 'failed', 'scope']},
         'independent_reviews': {kind: {key: value for key, value in read('evaluation/'+kind+'.json').items()
                                       if key not in ['checks', 'models']}
-                                for kind in ['independent_review', 'independent_stress_review']},
+                                for kind in ['independent_review', 'independent_stress_review', 'independent_core_intervals']},
         'Cal_A_Cut_B_Confirm_payload_read': False}
 
 

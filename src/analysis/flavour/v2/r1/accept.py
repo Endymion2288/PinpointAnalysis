@@ -133,6 +133,11 @@ def main():
     review = json.loads((root/'evaluation/independent_review.json').read_text())
     check('independent_full_probability_count_exposure_review',
           review['status']=='complete' and review['require_full'] and not review['failed'])
+    interval_review = json.loads((root/'evaluation/independent_core_intervals.json').read_text())
+    check('independent_core_interval_and_seed_SD_review', interval_review['status']=='complete'
+          and not interval_review['failed'] and interval_review['replicates']==400
+          and interval_review['pairs']==len(expected_config['pairs'])
+          and interval_review['mean_seed_pairs']==21)
     stress_review = json.loads((root/'evaluation/independent_stress_review.json').read_text())
     check('independent_stress_point_and_fixed_cut_review', stress_review['status']=='complete'
           and stress_review['model_conditions']==55 and not stress_review['failed'])
