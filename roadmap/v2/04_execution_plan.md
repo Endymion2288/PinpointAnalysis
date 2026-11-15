@@ -88,6 +88,8 @@ R1短训练默认native、2 workers、共享local staging、bounded 2-shard deco
 
 R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条件三类配对、τ 污染、calibration 前 raw score 分布和资源 Pareto；原生/图像的贡献与是否有 tracker 分开评价。Tune 内固定小型 noise/combined 开发对照随名义结果一起给出，沿用已接受的 proxy 幅度；它们用于研究已知弱点，R6/R7 另保留未见 pattern。不得以简单去除孤立 hits 的方式牺牲短轨而不报告其效率。
 
+最终accept从冻结排名重建完整矩阵，精确要求当前41模型、133配对、21项三seed平均配对及每模型11域；验证身份、配对唯一性及三个seed名单，不能以内部一致的中期子集代替完整交付。实际24模型子集负对照和26项相关tests通过，见[stage267](../../workbook/2026-11-15_stage267_r1_completion_matrix_acceptance.md)。完整accept仍待剩余训练、统计、独立读回、英文图表及资源终态实际完成。
+
 ## 4. R2：用小矩阵确定训练规模
 
 根据R1目前的完整四pass排名，优先profile总体最强B1和原生最强B2，并在完整R1三seed复核后冻结R2配方。B4保留R1 D0及逐类共同参考；是否追加其长训练由前两族的实测问题和费用决定，不自动运行三族全矩阵。B3末轮仍明显改善，若B2的规模收益有限且资源支持，再考虑其长训练控制。优先在seed42做：

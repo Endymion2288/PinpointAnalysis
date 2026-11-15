@@ -32,7 +32,7 @@ def ranking(root):
         'scope': 'development Tune at four passes; convergence is studied in R2'})
 
 
-def evaluation_config(root, check_complete=True):
+def evaluation_config(root, check_complete=True, write=True):
     ranks = json.loads((root/'architecture_ranking.json').read_text())
     expanded = ranks['expanded_families']
     models, pairs = [], []
@@ -99,10 +99,13 @@ def evaluation_config(root, check_complete=True):
             native, projection = f'final_{best}_{task}_s{seed}', f'final_b1_{task}_s{seed}'
             if native in model_names and projection in model_names:
                 pair(native, projection, 'native versus projection homologous baseline', geometry=seed==42)
-    write_json(root/'evaluation_config.json', {'models': models, 'pairs': pairs,
+    config = {'models': models, 'pairs': pairs,
         'model_completion_validated_at_generation': check_complete,
         'completion_policy': 'evaluation and acceptance require all listed models to be complete',
-        'Cal_A_Cut_B_Confirm_payload_read': False})
+        'Cal_A_Cut_B_Confirm_payload_read': False}
+    if write:
+        write_json(root/'evaluation_config.json', config)
+    return config
 
 
 def main():

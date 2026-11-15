@@ -1,6 +1,7 @@
 """Check the measured R1 deliverables, separately from scientific promotion."""
 
 import argparse
+from collections import Counter, defaultdict
 import json
 from pathlib import Path
 
@@ -10,6 +11,44 @@ import pandas as pd
 from analysis.flavour.inventory import write_json
 from analysis.flavour.v2.partitions import KEY, equal_identity_rows
 from analysis.flavour.v2.r1.metrics import METRICS_REVISION
+from analysis.flavour.v2.r1.deliver import evaluation_config
+
+
+DOMAINS = {'all', 'pixel_centered', 'large_scintillator', 'active', 'empty',
+           'tracker_active', 'tracker_empty', 'occupancy_0_100', 'occupancy_100_1000',
+           'occupancy_1000_5000', 'occupancy_5000_inf'}
+
+
+def delivery_contract_checks(config, expected, evaluation):
+    """Require the frozen matrix, even when a smaller result is internally valid."""
+    checks = []
+    def check(name, passed, **details):
+        checks.append({'name': name, 'passed': bool(passed), **details})
+    check('configuration_preserves_frozen_model_and_pair_matrix',
+          config['models'] == expected['models'] and config['pairs'] == expected['pairs'],
+          expected_models=len(expected['models']), expected_pairs=len(expected['pairs']))
+    expected_names = {e['name'] for e in expected['models']}
+    check('evaluation_contains_exactly_all_frozen_models', set(evaluation['models']) == expected_names)
+    def pair_key(row):
+        return tuple(row.get(key) for key in ['a', 'b', 'domain', 'reason'])
+    check('evaluation_contains_all_frozen_pairs_once',
+          Counter(map(pair_key, evaluation['pairs'])) == Counter(map(pair_key, expected['pairs'])))
+    check('all_frozen_models_have_all_eleven_domains',
+          all(set(evaluation['models'].get(name, {})) == DOMAINS for name in expected_names))
+    entries = {row['name']: row for row in expected['models']}
+    groups = defaultdict(list)
+    for pair in expected['pairs']:
+        a, b = entries[pair['a']], entries[pair['b']]
+        if a['seed'] == b['seed']:
+            group = tuple((row['family'], row['task'], row.get('kind', 'main')) for row in [a, b])
+            groups[(*group, pair['domain'], pair['reason'])].append(a['seed'])
+    required = Counter(key for key, seeds in groups.items() if sorted(seeds) == [17, 42, 2026])
+    actual = evaluation.get('mean_seed_pairs', [])
+    keys = Counter((tuple(row['a_family_task_kind']), tuple(row['b_family_task_kind']),
+                    row['domain'], row['reason']) for row in actual)
+    check('all_three_seed_pairs_present_once_with_exact_seeds', keys == required and all(
+        sorted(row['seeds']) == [17, 42, 2026] for row in actual), expected_mean_seed_pairs=sum(required.values()))
+    return checks
 
 
 def main():
@@ -89,6 +128,8 @@ def main():
             'wall_seconds': record['wall_seconds'], 'training_seconds': record['counters']['train_seconds'],
             'validation_seconds': record['counters']['validation_seconds']})
     evaluation = json.loads((root/'evaluation/results.json').read_text())
+    expected_config = evaluation_config(root, write=False)
+    checks.extend(delivery_contract_checks(config, expected_config, evaluation))
     review = json.loads((root/'evaluation/independent_review.json').read_text())
     check('independent_full_probability_count_exposure_review',
           review['status']=='complete' and review['require_full'] and not review['failed'])
