@@ -91,3 +91,5 @@ R1全部screen、四pass、必要三seed、10项同计算控制、压力对照�
 R2已实际测试单allocation内1/2/4/1并发：H100 MIG 3g.47gb的aggregate operation吞吐分别190.04/257.97/311.40/190.88 events/s，四并行比单进程约高63%，见[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。这是多个独立模型共享一次staging的实测，并非单模型data parallel。CPU、RAM、worker和完整validation峰值决定可用并行度；已有任务完成时不为了维持四进程再增加没有科学问题的新任务。Condor另一MIG上的D2双并行也已完成。所有allocation各计一次，异构device-hours只作资源记账。
 
 R3当前的实测选择见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)：3g.47gb三并行的各worker仅22.61/22.10/23.77 events/s，没有比三个独立1g更快；双并行为32.40/31.43 events/s。故只迁移control/relations，消融保留原1g，先确认旧writer终态再恢复100k checkpoint。计入准备/验证/丢失工作和余量后预计提前41.9min，10%吞吐惩罚下仍预计提前22.2min；这些是完成时间预测，不是已测反事实收益。两项新卡实际恢复均参数差0，全部正式分类终点尚未齐备。
+
+R3的后续CPU工作可与已获GPU上的最终probe重叠：运行`python -m analysis.flavour.v2.r3.finish --root "$R3_ROOT" --watch`。该进程每30s检查冻结completion contract、manifest与两个非空预测表；依赖完成后通过统一submit入口动态选择兼容且负载较低的schedd，分别提交8CPU/12GB评价、2CPU/6GB健康与科学review。相同attempt不会重复提交，失败需检查后创建新attempt；单observer文件锁防止并发观察者重复提交。轮询不读取事件payload。实际运行证据在`runtime/r3_finish_dependencies.json`，完整R3仍由scientific decisions、图审查、全部终态账本和accept决定。

@@ -27,6 +27,7 @@ from analysis.flavour.v2.r3.mapped_inputs import MappedItems,write_mapped_items
 from analysis.flavour.v2.r3.scientific_review import promotion_checks
 from analysis.flavour.v2.r3.probes import ReadableFeatures
 from analysis.flavour.v2.r3.handoff import validate_release
+from analysis.flavour.v2.r3.finish import advance as finish_advance, submit_once
 
 
 class GlobalOrderTests(unittest.TestCase):
@@ -216,6 +217,66 @@ class NativeRelationTests(unittest.TestCase):
 
 
 class DeliveryContractTests(unittest.TestCase):
+    def test_cpu_reviews_wait_for_complete_endpoints_and_independent_evaluations(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            (root/'runtime').mkdir()
+            experiment = root/'experiments/a'
+            experiment.mkdir(parents=True)
+            contract = {'stage': 'R3', 'status': 'frozen', 'formal_models': ['a'],
+                'evaluations': [{'output': 'evaluation_geometry', 'contract': 'geometry.json'}],
+                'health_evidence': 'health/final/results.json',
+                'scientific_review': 'audit/scientific_review_final.json'}
+            (root/'completion_contract.json').write_text(json.dumps(contract))
+            (root/'geometry.json').write_text(json.dumps({'experiments': [{'id': 'a', 'path': str(experiment)}]}))
+            calls = []
+            def submitter(*args, **kwargs):
+                calls.append((args, kwargs))
+            (experiment/'manifest.json').write_text(json.dumps({'status': 'running'}))
+            (experiment/'predictions.parquet').write_text('partial-table fixture')
+            self.assertFalse(finish_advance(root, submitter))
+            self.assertFalse(calls)
+            (experiment/'manifest.json').write_text(json.dumps({'status': 'complete'}))
+            self.assertFalse(finish_advance(root, submitter))
+            self.assertFalse(calls)
+            (experiment/'best_predictions.parquet').write_text('complete-table fixture')
+            self.assertFalse(finish_advance(root, submitter))
+            self.assertEqual([c[0][2] for c in calls],
+                ['analysis.flavour.v2.r3.evaluate', 'analysis.flavour.v2.r3.health_review'])
+            evaluation = root/'evaluation_geometry'
+            evaluation.mkdir()
+            (evaluation/'results.json').write_text(json.dumps({'status': 'complete'}))
+            calls.clear()
+            self.assertFalse(finish_advance(root, submitter))
+            self.assertNotIn('analysis.flavour.v2.r3.scientific_review', [c[0][2] for c in calls])
+            for name in ['independent_points.json', 'independent_core_intervals.json']:
+                (evaluation/name).write_text(json.dumps({'status': 'complete', 'failed': []}))
+            calls.clear()
+            self.assertFalse(finish_advance(root, submitter))
+            self.assertIn('analysis.flavour.v2.r3.scientific_review', [c[0][2] for c in calls])
+            for name in ['health_evidence', 'scientific_review']:
+                path = root/contract[name]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({'status': 'complete'}))
+            calls.clear()
+            self.assertTrue(finish_advance(root, submitter))
+            self.assertFalse(calls)
+            (evaluation/'independent_points.json').write_text(json.dumps({'status': 'failed', 'failed': ['fixture']}))
+            with self.assertRaises(ValueError):
+                finish_advance(root, submitter)
+
+    def test_followup_submission_names_are_not_replayed(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            (root/'runtime').mkdir()
+            record = root/'runtime/one.submission.json'
+            record.write_text(json.dumps({'submitted': True}))
+            # This nonexistent module would fail if a duplicate were launched.
+            submit_once(root, 'one', 'not.a.real.module', [])
+            record.write_text(json.dumps({'submitted': False}))
+            with self.assertRaises(ValueError):
+                submit_once(root, 'one', 'not.a.real.module', [])
+
     def test_handoff_rejects_live_previous_writers_and_wrong_claim(self):
         release={'allocation_id':'replacement','models':['a','b'],
             'previous_allocations':[{'id':'1.0','models':['a','b'],'JobStatus':3,'terminal_confirmed':True}],

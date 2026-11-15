@@ -123,7 +123,7 @@ M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位�
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
-首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2完整评价未显示BA/τ净增益，当前配方不晋级，见[stage297](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)；G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复，当前在三个1g MIG完成本地输入准备并正式训练。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
+首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2完整评价未显示BA/τ净增益，当前配方不晋级，见[stage297](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)；G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复。Control/relations现已从100k checkpoint恢复到Kubeflow的3g.47gb双并行，消融继续在Condor的1g.12gb，实测迁移依据见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
 
 | Work | Controlled change | Required evidence / next decision |
 | --- | --- | --- |
@@ -138,6 +138,8 @@ M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位�
 2026-11-15执行：C1使用111×420有效sensor rows，替代1322×420物理网格；保留1mm横向bin与全部响应，增加真实z/前后间距/类型五个通道、首层stride2。256个Train事件的1,490,680条投影响应逐项可逆，32-event T4在64steps达到100%拟合、NLL0.000134；40k Tune资源检查finite/完整，确定性恢复参数差0。同100k×4 screen1583011.0已完成，参照R2 D0。C1 BA3为56.6700%，配对差+.1367 pp [−.2134,+.5036]；e recall差−3.4200 pp超过质量限制，τ差−.2700 pp。当前配方不晋级。同1g MIG实测训练/含准备operation吞吐比2.7230/1.7469，保留成本候选；不因成本跳过质量约束或自动扩seed/粒度，详见[stage294](../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)。G1/G2/C1正式评价合同均在各候选endpoint访问前冻结，几何与表示效应分别报告。
 
 G1首先保持R2实际数值配方和有效batch；若显存或执行方式迫使改变batch/precision，先补同设置的stride4参照。较慢结构的同曝光比较同时交付成本，需要同计算结论时另列同allocation的预算控制。保留原始概率，重复使用相同Tune开发合同；Cal-A/Cut-B/Confirm直到R7继续封存。新的低维readout、正则化或数据规模选择与几何改动分别配对。
+
+完整交付合同revision2保留六模型、原三套核心评价、24项证据与五组optimizer控制，增加no-global对同100k×4强B1参照的直接比较。四套正式评价及各自独立points/core-interval复核全部完成后才执行最终scientific review。`analysis.flavour.v2.r3.finish --watch`只轮询metadata、按依赖提交CPU批任务，让评价与GPU最终probe重叠；科学决定、必要扩展、英文图审查、终态成本和accept仍需随后完成，见[stage300](../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md)。
 
 ### R4：重建对象
 
@@ -171,7 +173,7 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 
 ## 7. 资源与运行规则
 
-原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3的M0已完成、G1和G2诊断仍在运行，R3最终成本待统计，R4–R7尚未启动；剩余矩阵须按实际结果分批重排：
+原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3的M0/G1/C1已完成、三个G2正式模型仍在运行，R3最终成本待统计，R4–R7尚未启动；剩余矩阵须按实际结果分批重排：
 
 | Stage | Planned device-hours ceiling |
 | --- | ---: |

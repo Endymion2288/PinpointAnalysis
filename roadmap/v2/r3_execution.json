@@ -1,7 +1,7 @@
 {
   "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T17:54:26.722225+00:00",
+  "UTC": "2026-11-15T18:22:00.206644+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -70,8 +70,8 @@
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
-  "unit_tests_passed": 43,
-  "latest_stage_report": "../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md",
+  "unit_tests_passed": 45,
+  "latest_stage_report": "../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md",
   "pending": [
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
@@ -691,15 +691,8 @@
     "revision": 3
   },
   "resource_snapshot": {
-    "UTC": "2026-11-15T17:53:08.324896+00:00",
-    "device_hours": 12.358423999812867,
-    "allocated_CPU_core_hours": 130.34289066414038,
-    "device_hours_by_model_or_partition": {
-      "NVIDIA H100L-1-12C MIG 1g.12gb": 8.35198977768421,
-      "NVIDIA A100-PCIE-40GB": 0.15833333333333333,
-      "NVIDIA H100 NVL MIG 3g.47gb": 3.8208786665731003,
-      "h100-94gb": 0.02722222222222222
-    },
+    "UTC": "2026-11-15T18:19:15.210743+00:00",
+    "device_hours": 13.229062129656475,
     "active_or_unresolved": [
       "r3_g2_ablation_c9",
       "pinpoint-r3-g2-k4"
@@ -707,7 +700,7 @@
     "terminal_cost": false
   },
   "G2_formal": {
-    "status": "control_relations_restoring_saved100k_on_Kubeflow_ablation_continues_Condor",
+    "status": "two_resumed_on_Kubeflow_plus_ablation_on_original_Condor_all_optimizing",
     "models": [
       "b2_g2_control_t4_s42",
       "b2_g2_relations_t4_s42",
@@ -769,7 +762,25 @@
         "same_exact_probability_and_exposure_tables": true,
         "actual_Tune_used": false
       }
-    ]
+    ],
+    "replacement_shared_cache": {
+      "train": {
+        "events": 100000,
+        "array_bytes": 13925383580,
+        "seconds": 480.14480748190545,
+        "scattered_exact_input_checks": 32,
+        "old_candidate_graph_summary_identical": true
+      },
+      "validation": {
+        "events": 40000,
+        "array_bytes": 5622779908,
+        "seconds": 214.39964790386148,
+        "scattered_exact_input_checks": 32,
+        "old_candidate_graph_summary_identical": true
+      }
+    },
+    "prefix_health": "audit/native_prefix_health_stage299.json",
+    "latest_metadata_evidence": "audit/live_stage300.json"
   },
   "collation": {
     "status": "complete",
@@ -941,5 +952,51 @@
     "decision": "audit/native_migration_decision_k4.json",
     "writer_terminal_proof": "audit/g2_k4_writer_handoff.json",
     "post_training_probes": "all three native completed weights reuse same Train/Tune mmap; sibling weights read-only"
+  },
+  "completion_scope": {
+    "revision": 2,
+    "formal_models": 6,
+    "original_core_evaluation_matrices": {
+      "M0": [
+        4,
+        8
+      ],
+      "geometry": [
+        12,
+        48
+      ],
+      "C1": [
+        4,
+        8
+      ]
+    },
+    "supplemental_global_ablation_projection": [
+      4,
+      8
+    ],
+    "original_required_evidence": 24,
+    "original_requirements_retained": true,
+    "source": "configs/r3/completion_contract.json",
+    "final_scientific_review_must_use_all_four_evaluations": true
+  },
+  "automatic_CPU_followup": {
+    "status": "watching_revision2_endpoint_dependencies",
+    "module": "analysis.flavour.v2.r3.finish",
+    "observer_record": "runtime/r3_finish.observer.json",
+    "dependency_state": "runtime/r3_finish_dependencies.json",
+    "evaluations": 4,
+    "formal_health_models": 6,
+    "replicates": 400,
+    "evaluation_request": {
+      "CPUs": 8,
+      "memory": "12GB"
+    },
+    "health_scientific_request": {
+      "CPUs": 2,
+      "memory": "6GB"
+    },
+    "payload_read_for_polling": false,
+    "duplicate_attempts_replayed": false,
+    "final_scope": "CPU reviews only; complete R3 still requires GPU probes, conditional decisions and experiments, figures, terminal costs and strict acceptance"
   }
 }
