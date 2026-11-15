@@ -10,6 +10,8 @@
 
 六个T4模型的中期比较见[stage252](../../workbook/2026-11-15_stage252_r1_t4_architecture_contrasts_and_independent_review.md)：B1相对B4的BA3/τ工作点提高1.82/2.40 pp，但全域μ recall低5.30 pp；283项独立概率/人数/曝光读回通过。CNN成本参照、B1精度对齐的无tracker控制已完成。完整排名、必要seed扩展及最终R1交付仍待完成。
 
+B4主任务三seed均已完成，见[stage253](../../workbook/2026-11-15_stage253_r1_reference_seed_comparison.md)：T3−T4平均BA差−0.094 pp，条件事件CI95[−0.334,+0.086]；各类recall差值在seed间改变符号。B1 seed42 T3的BA3=0.5662，B2十条条件诊断完成，总覆盖35/55；完整排名仍待B3 T3。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |

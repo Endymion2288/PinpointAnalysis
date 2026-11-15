@@ -304,3 +304,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 250 | [r1 condition interactions and operating point repair](../../workbook/2026-11-15_stage250_r1_condition_interactions_and_operating_point_repair.md) |
 | 251 | [r1 tau priors and baseline pairing](../../workbook/2026-11-15_stage251_r1_tau_priors_and_baseline_pairing.md) |
 | 252 | [r1 T4 architecture contrasts and independent review](../../workbook/2026-11-15_stage252_r1_t4_architecture_contrasts_and_independent_review.md) |
+| 253 | [r1 reference seed comparison](../../workbook/2026-11-15_stage253_r1_reference_seed_comparison.md) |

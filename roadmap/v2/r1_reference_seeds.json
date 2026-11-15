@@ -1,0 +1,816 @@
+{
+  "status": "interim_complete",
+  "scope": "B4/HGB reference seeds17/42/2026; metric means, not an ensemble; development Tune, full R1 pending",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/reference_seeds/evaluation/results.json",
+  "metrics_revision": "r1-tie-aware-float-boundary-2",
+  "replicates": 400,
+  "bootstrap": {
+    "chunks": 6845,
+    "resampling_blocks": 6845,
+    "accepted_family_links_used": true,
+    "multi_chunk_blocks": 0,
+    "blocks_by_class_signature": {
+      "(0,)": 866,
+      "(1,)": 3796,
+      "(2,)": 648,
+      "(3,)": 1535
+    }
+  },
+  "models": [
+    {
+      "name": "final_b4_t3_s17",
+      "family": "B4",
+      "task": "T3",
+      "seed": 17,
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "precision": "BF16_encoder_FP32_head",
+      "BA3": 0.5447000000000001,
+      "NLL3": 0.9026663335046187,
+      "recall3": [
+        0.5471,
+        0.4849,
+        0.6021
+      ]
+    },
+    {
+      "name": "final_b0_t3_s17",
+      "family": "B0",
+      "task": "T3",
+      "seed": 17,
+      "GPU": "CPU",
+      "precision": "CPU",
+      "BA3": 0.5459,
+      "NLL3": 0.8974487666008354,
+      "recall3": [
+        0.5812,
+        0.4881,
+        0.5684
+      ]
+    },
+    {
+      "name": "final_b4_t3_s42",
+      "family": "B4",
+      "task": "T3",
+      "seed": 42,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "precision": "BF16_encoder_FP32_head",
+      "BA3": 0.5435,
+      "NLL3": 0.9012408595648076,
+      "recall3": [
+        0.5446,
+        0.5689,
+        0.517
+      ]
+    },
+    {
+      "name": "screen_b0_t3_lr0.05_s42",
+      "family": "B0",
+      "task": "T3",
+      "seed": 42,
+      "GPU": "CPU",
+      "precision": "CPU",
+      "BA3": 0.5459,
+      "NLL3": 0.8974487666008354,
+      "recall3": [
+        0.5812,
+        0.4881,
+        0.5684
+      ]
+    },
+    {
+      "name": "final_b4_t3_s2026",
+      "family": "B4",
+      "task": "T3",
+      "seed": 2026,
+      "GPU": "NVIDIA H100 NVL",
+      "precision": "BF16_encoder_FP32_head",
+      "BA3": 0.5435666666666666,
+      "NLL3": 0.9021594503661843,
+      "recall3": [
+        0.5297,
+        0.5504,
+        0.5506
+      ]
+    },
+    {
+      "name": "final_b0_t3_s2026",
+      "family": "B0",
+      "task": "T3",
+      "seed": 2026,
+      "GPU": "CPU",
+      "precision": "CPU",
+      "BA3": 0.5459,
+      "NLL3": 0.8974487666008354,
+      "recall3": [
+        0.5812,
+        0.4881,
+        0.5684
+      ]
+    },
+    {
+      "name": "final_b4_t4_s17",
+      "family": "B4",
+      "task": "T4",
+      "seed": 17,
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "precision": "BF16_encoder_FP32_head",
+      "BA3": 0.5425333333333334,
+      "NLL3": 0.9073827099976506,
+      "recall3": [
+        0.5219,
+        0.5022,
+        0.6035
+      ],
+      "BA4": 0.421625,
+      "NLL4": 1.229104110635152,
+      "tau_eff_1pct": 0.024
+    },
+    {
+      "name": "final_b0_t4_s17",
+      "family": "B0",
+      "task": "T4",
+      "seed": 17,
+      "GPU": "CPU",
+      "precision": "CPU",
+      "BA3": 0.5453,
+      "NLL3": 0.8972463741861216,
+      "recall3": [
+        0.58,
+        0.489,
+        0.5669
+      ],
+      "BA4": 0.431025,
+      "NLL4": 1.2149643049297028,
+      "tau_eff_1pct": 0.0283
+    },
+    {
+      "name": "final_b4_t4_s42",
+      "family": "B4",
+      "task": "T4",
+      "seed": 42,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "precision": "BF16_encoder_FP32_head",
+      "BA3": 0.5467666666666667,
+      "NLL3": 0.9028700652120004,
+      "recall3": [
+        0.5873,
+        0.5224,
+        0.5306
+      ],
+      "BA4": 0.42457500000000004,
+      "NLL4": 1.2234681809875827,
+      "tau_eff_1pct": 0.0269
+    },
+    {
+      "name": "screen_b0_t4_lr0.05_s42",
+      "family": "B0",
+      "task": "T4",
+      "seed": 42,
+      "GPU": "CPU",
+      "precision": "CPU",
+      "BA3": 0.5453,
+      "NLL3": 0.8972463741861216,
+      "recall3": [
+        0.58,
+        0.489,
+        0.5669
+      ],
+      "BA4": 0.431025,
+      "NLL4": 1.2149643049297028,
+      "tau_eff_1pct": 0.0283
+    },
+    {
+      "name": "final_b4_t4_s2026",
+      "family": "B4",
+      "task": "T4",
+      "seed": 2026,
+      "GPU": "NVIDIA H100 NVL",
+      "precision": "BF16_encoder_FP32_head",
+      "BA3": 0.5453,
+      "NLL3": 0.902855326830643,
+      "recall3": [
+        0.5653,
+        0.5635,
+        0.5071
+      ],
+      "BA4": 0.42345,
+      "NLL4": 1.22339384185046,
+      "tau_eff_1pct": 0.027
+    },
+    {
+      "name": "final_b0_t4_s2026",
+      "family": "B0",
+      "task": "T4",
+      "seed": 2026,
+      "GPU": "CPU",
+      "precision": "CPU",
+      "BA3": 0.5453,
+      "NLL3": 0.8972463741861216,
+      "recall3": [
+        0.58,
+        0.489,
+        0.5669
+      ],
+      "BA4": 0.431025,
+      "NLL4": 1.2149643049297028,
+      "tau_eff_1pct": 0.0283
+    }
+  ],
+  "seed_spread": [
+    {
+      "family": "B0",
+      "task": "T3",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5459,
+        0.5459,
+        0.5459
+      ],
+      "BA3_mean": 0.5459,
+      "BA3_sample_SD": 0.0,
+      "NLL3_mean": 0.8974487666008354,
+      "runtime_by_seed": [
+        {
+          "name": "final_b0_t3_s17",
+          "seed": 17,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "screen_b0_t3_lr0.05_s42",
+          "seed": 42,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "final_b0_t3_s2026",
+          "seed": 2026,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B0",
+      "task": "T4",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5453,
+        0.5453,
+        0.5453
+      ],
+      "BA3_mean": 0.5453,
+      "BA3_sample_SD": 0.0,
+      "NLL3_mean": 0.8972463741861216,
+      "runtime_by_seed": [
+        {
+          "name": "final_b0_t4_s17",
+          "seed": 17,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "screen_b0_t4_lr0.05_s42",
+          "seed": 42,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        },
+        {
+          "name": "final_b0_t4_s2026",
+          "seed": 2026,
+          "GPU": "CPU",
+          "precision": "CPU",
+          "allocation_id": null
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B4",
+      "task": "T3",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5447000000000001,
+        0.5435,
+        0.5435666666666666
+      ],
+      "BA3_mean": 0.5439222222222222,
+      "BA3_sample_SD": 0.0006743995957997656,
+      "NLL3_mean": 0.9020222144785368,
+      "runtime_by_seed": [
+        {
+          "name": "final_b4_t3_s17",
+          "seed": 17,
+          "GPU": "NVIDIA A100-PCIE-40GB",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582873.0"
+        },
+        {
+          "name": "final_b4_t3_s42",
+          "seed": 42,
+          "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "pinpoint-r1-extend-b4-s42-k12"
+        },
+        {
+          "name": "final_b4_t3_s2026",
+          "seed": 2026,
+          "GPU": "NVIDIA H100 NVL",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582874.0"
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    },
+    {
+      "family": "B4",
+      "task": "T4",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "BA3_values": [
+        0.5425333333333334,
+        0.5467666666666667,
+        0.5453
+      ],
+      "BA3_mean": 0.5448666666666667,
+      "BA3_sample_SD": 0.0021496769783181458,
+      "NLL3_mean": 0.9043693673467645,
+      "runtime_by_seed": [
+        {
+          "name": "final_b4_t4_s17",
+          "seed": 17,
+          "GPU": "NVIDIA A100-PCIE-40GB",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582873.0"
+        },
+        {
+          "name": "final_b4_t4_s42",
+          "seed": 42,
+          "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "pinpoint-r1-extend-b4-s42-k12"
+        },
+        {
+          "name": "final_b4_t4_s2026",
+          "seed": 2026,
+          "GPU": "NVIDIA H100 NVL",
+          "precision": "BF16_encoder_FP32_head",
+          "allocation_id": "1582874.0"
+        }
+      ],
+      "scope": "sample SD across realized seeds and runtime recipes; it does not isolate RNG variation"
+    }
+  ],
+  "mean_seed_pairs": [
+    {
+      "a_family_task_kind": [
+        "B0",
+        "T3",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T3",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "observation-summary baseline",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.001977777777777597,
+          "95pct": [
+            -0.0027123178696019704,
+            0.005816127525850603
+          ],
+          "per_seed_differences": [
+            0.0011999999999998678,
+            0.0023999999999998467,
+            0.0023333333333330764
+          ],
+          "training_seed_sample_SD": 0.0006743995957996724
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.004573447877697053,
+          "95pct": [
+            -0.007271066726486729,
+            -0.0011032450438806251
+          ],
+          "per_seed_differences": [
+            -0.005217566903778947,
+            -0.003792092963969873,
+            -0.004710683765342338
+          ],
+          "training_seed_sample_SD": 0.0007225781998593946
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.040733333333331324,
+          "95pct": [
+            0.03391936426703187,
+            0.048172899536034215
+          ],
+          "per_seed_differences": [
+            0.034099999999998354,
+            0.03659999999999819,
+            0.05149999999999744
+          ],
+          "training_seed_sample_SD": 0.009407621024112533
+        },
+        "recall_mu": {
+          "difference_a_minus_b": -0.04663333333333101,
+          "95pct": [
+            -0.05464756922207946,
+            -0.038295811938402764
+          ],
+          "per_seed_differences": [
+            0.0031999999999998696,
+            -0.08079999999999599,
+            -0.06229999999999691
+          ],
+          "training_seed_sample_SD": 0.04413709701977625
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.011833333333332733,
+          "95pct": [
+            0.004476471727948724,
+            0.019101387383535305
+          ],
+          "per_seed_differences": [
+            -0.0336999999999984,
+            0.05139999999999745,
+            0.01779999999999915
+          ],
+          "training_seed_sample_SD": 0.042862609968749625
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      }
+    },
+    {
+      "a_family_task_kind": [
+        "B0",
+        "T4",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "observation-summary baseline",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0004333333333332486,
+          "95pct": [
+            -0.004247054424429811,
+            0.00393590062368741
+          ],
+          "per_seed_differences": [
+            0.002766666666666473,
+            -0.0014666666666667272,
+            0.0
+          ],
+          "training_seed_sample_SD": 0.0021496769783180855
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.007122993160644723,
+          "95pct": [
+            -0.009931661641552366,
+            -0.004162859588791779
+          ],
+          "per_seed_differences": [
+            -0.01013633581153206,
+            -0.005623691025878785,
+            -0.005608952644523324
+          ],
+          "training_seed_sample_SD": 0.0026096416906759034
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.0218333333333323,
+          "95pct": [
+            0.014934914194306806,
+            0.02870533203172566
+          ],
+          "per_seed_differences": [
+            0.058099999999997154,
+            -0.00729999999999964,
+            0.01469999999999938
+          ],
+          "training_seed_sample_SD": 0.03327842143691951
+        },
+        "recall_mu": {
+          "difference_a_minus_b": -0.040366666666664684,
+          "95pct": [
+            -0.04918250984107781,
+            -0.03354006933518892
+          ],
+          "per_seed_differences": [
+            -0.013199999999999379,
+            -0.033399999999998375,
+            -0.07449999999999629
+          ],
+          "training_seed_sample_SD": 0.0312381710945637
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.019833333333332332,
+          "95pct": [
+            0.011766100780867903,
+            0.027133935843192365
+          ],
+          "per_seed_differences": [
+            -0.0365999999999983,
+            0.03629999999999822,
+            0.05979999999999708
+          ],
+          "training_seed_sample_SD": 0.05026532933676145
+        },
+        "BA4": {
+          "difference_a_minus_b": 0.007808333333332844,
+          "95pct": [
+            0.004110542529149757,
+            0.011641149387546562
+          ],
+          "per_seed_differences": [
+            0.009399999999998465,
+            0.006450000000000067,
+            0.007574999999999998
+          ],
+          "training_seed_sample_SD": 0.001488777462662167
+        },
+        "NLL4": {
+          "difference_a_minus_b": -0.01035773956135729,
+          "95pct": [
+            -0.01260766652705285,
+            -0.007744284946880446
+          ],
+          "per_seed_differences": [
+            -0.014139805705446262,
+            -0.008503876057874837,
+            -0.008429536920750769
+          ],
+          "training_seed_sample_SD": 0.0032755762570157196
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": 0.0023333333333334246,
+          "95pct": [
+            -0.0025249736309892216,
+            0.006988706687543976
+          ],
+          "per_seed_differences": [
+            0.004300000000000168,
+            0.001400000000000054,
+            0.0013000000000000511
+          ],
+          "training_seed_sample_SD": 0.001703917055884341
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": -0.0007000000000000305,
+          "95pct": [
+            -0.002360003915391597,
+            0.0008573081145042601
+          ],
+          "per_seed_differences": [
+            -0.001400000000000061,
+            -0.0005000000000000217,
+            -0.00020000000000000876
+          ],
+          "training_seed_sample_SD": 0.000624499799839867
+        }
+      }
+    },
+    {
+      "a_family_task_kind": [
+        "B4",
+        "T3",
+        "main"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "same non-tau unique rows and four exposures",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.0009444444444444144,
+          "95pct": [
+            -0.0033357492833696024,
+            0.0008639880062235252
+          ],
+          "per_seed_differences": [
+            0.002166666666666539,
+            -0.00326666666666664,
+            -0.0017333333333331424
+          ],
+          "training_seed_sample_SD": 0.002801256331904745
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.0023471528682296925,
+          "95pct": [
+            -0.0036129903776820605,
+            -0.001109412765254019
+          ],
+          "per_seed_differences": [
+            -0.004716376493035135,
+            -0.0016292056471909344,
+            -0.0006958764644630078
+          ],
+          "training_seed_sample_SD": 0.0021042079933041493
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.01769999999999916,
+          "95pct": [
+            -0.02088431064474958,
+            -0.014681921932411865
+          ],
+          "per_seed_differences": [
+            0.025199999999998668,
+            -0.04269999999999796,
+            -0.03559999999999819
+          ],
+          "training_seed_sample_SD": 0.0373217094999661
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.005366666666666371,
+          "95pct": [
+            0.0014031548223804077,
+            0.008840499485020479
+          ],
+          "per_seed_differences": [
+            -0.017299999999999205,
+            0.046499999999997654,
+            -0.013099999999999334
+          ],
+          "training_seed_sample_SD": 0.035684356983602866
+        },
+        "recall_NC": {
+          "difference_a_minus_b": 0.009499999999999545,
+          "95pct": [
+            0.00554313216792032,
+            0.013338615429319241
+          ],
+          "per_seed_differences": [
+            -0.0013999999999999568,
+            -0.01359999999999928,
+            0.043499999999997874
+          ],
+          "training_seed_sample_SD": 0.0300700848020073
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      }
+    }
+  ],
+  "independent_review": {
+    "status": "complete",
+    "passed": 381,
+    "failed": [],
+    "largest_absolute_errors": {
+      "BA": 1.0769163338864018e-14,
+      "NLL": 5.10702591327572e-15,
+      "working_point": 1.1129985821867194e-14,
+      "prior_purity": 0.0
+    }
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}
