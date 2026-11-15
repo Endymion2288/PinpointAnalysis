@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0、R1、R2已完成；R3的M0/G0/G1、候选图审计及C1正式评价已完成，三个G2任务训练中。**M0全程重混没有通过μ质量约束，G1/G2/C1保留原采样，采样和结构效应分别配对。完整R3结果尚未形成，见[stage288](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)、[单位修正stage289](../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)、[执行加速stage291](../../workbook/2026-11-15_stage291_r3_collation_and_compact_screen.md)和[r3_execution.json](r3_execution.json)。R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
+**R0、R1、R2已完成；R3的M0/G0/G1、候选图审计及C1正式评价已完成，no-global完整终点及强B1比较已完成，G2 control/relations在最终一遍训练中。**M0全程重混没有通过μ质量约束，G1/G2/C1保留原采样，采样和结构效应分别配对。完整R3结果尚未形成，见[stage288](../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md)、[单位修正stage289](../../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)、[执行加速stage291](../../workbook/2026-11-15_stage291_r3_collation_and_compact_screen.md)和[r3_execution.json](r3_execution.json)。R2完整交付8模型/16视图/128配对及必要的末轮顺序控制，198项验收通过；参考为D2的真实T3/T4固定终点，收敛与容量上限仍开放。见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)。R1的41模型、133项配对、21项三seed平均配对、11域和55条压力路径及452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
 
 R1三seed比较中B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56.3044%，τ效率在1% FPR下为5.0200%。相对B4的τ效率增益2.423 pp [1.941,2.977]满足预定τ研究门槛；T3相对HGB的1.973333 pp低于2 pp实用门槛，相对B4则未满足μ recall非劣。完整交付不等于全部科学门槛通过。
 
@@ -123,7 +123,7 @@ M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位�
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
-首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2完整评价未显示BA/τ净增益，当前配方不晋级，见[stage297](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)；G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复。Control/relations从100k checkpoint恢复到Kubeflow的3g.47gb双并行；消融从200k状态恢复到Condor A100，三者均在继续正式优化。A100完整Train100k/Tune40k缓存准备实测1,829.876s，与原1g和Kubeflow缓存的覆盖、数组规模、完整候选图摘要及各32个散点输入核对通过；正式局部训练窗口为69.440events/s，Kubeflow双模型为33.282/32.149events/s，完整终点质量仍待测。原writer终态、恢复与资源证据见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)、[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)和[stage304](../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md)。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
+首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2完整评价未显示BA/τ净增益，当前配方不晋级，见[stage297](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)；G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复。Control/relations从100k checkpoint恢复到Kubeflow的3g.47gb双并行，目前在最终一遍；消融已在Condor A100完成400k曝光/50,051updates。A100完整Train100k/Tune40k缓存准备实测1,829.876s，恢复后的200k曝光整段训练实测69.876events/s，allocation终态5,966s。No-global对同100k×4强B1 D0的BA3差−1.3967 pp [−1.8301,−0.9905]、τ在1% FPR效率差−2.340 pp，当前配方不晋级；稀疏μ recall增益伴随e损失，详见[stage305](../../workbook/2026-11-15_stage305_r3_no_global_endpoint_and_strong_reference.md)。同族global路径效应仍待完整geometry评价。原writer终态、恢复与资源证据见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)、[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)和[stage304](../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md)。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
 
 | Work | Controlled change | Required evidence / next decision |
 | --- | --- | --- |
@@ -173,7 +173,7 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 
 ## 7. 资源与运行规则
 
-原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3的M0/G1/C1已完成、三个G2正式模型仍在运行，R3最终成本待统计，R4–R7尚未启动；剩余矩阵须按实际结果分批重排：
+原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0/R1/R2已有终态成本，R3的M0/G1/C1及no-global终点已完成、G2 control/relations仍在运行，R3最终成本待统计，R4–R7尚未启动；剩余矩阵须按实际结果分批重排：
 
 | Stage | Planned device-hours ceiling |
 | --- | ---: |

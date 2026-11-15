@@ -57,7 +57,7 @@ flowchart TD
 
 R4–R6由前序证据触发，不要求先完成全部候选才能交付三类结果。未建立学习、对象覆盖或下游收益的分支先定位原因；有效负结果也形成明确决策。完整最小矩阵、实施工单、触发与停止条件见[04](v2/04_execution_plan.md)，当前科学判断集中在[09](v2/09_decisions_and_handoff.md)。
 
-R3最新执行状态见[r3_execution.json](v2/r3_execution.json)。新增材料特征已按G4源码修正：silicon header的10使用μm，换算为0.010 mm；W/scintillator厚度使用mm。修正后的五项真实学习检查全部通过，正式G2分类收益尚未测量。候选图、M0与G1不依赖该厚度特征。单位修正见[stage289](../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)，最终整理和学习读回见[stage290](../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md)。C1完整质量/成本见[stage294](../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)，六模型交付合同与独立读回见[stage295](../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md)，固定五折输出诊断见[stage296](../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)，G1完整配对负决定及资源切换见[stage297](../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)。
+R3最新执行状态见[r3_execution.json](v2/r3_execution.json)。新增材料特征已按G4源码修正：silicon header的10使用μm，换算为0.010 mm；W/scintillator厚度使用mm。修正后的五项真实学习检查全部通过，G2 no-global已完成，对同预算强B1 D0的BA3下降1.3967 pp、τ在1% FPR效率下降2.340 pp，当前配方不晋级；同族control/relations完整结果仍待测。候选图、M0与G1不依赖该厚度特征。单位修正见[stage289](../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)，最终整理和学习读回见[stage290](../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md)。C1完整质量/成本见[stage294](../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)，六模型交付合同与独立读回见[stage295](../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md)，固定五折输出诊断见[stage296](../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)，G1完整配对负决定及资源切换见[stage297](../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)。
 
 ## 资源与阅读入口
 
