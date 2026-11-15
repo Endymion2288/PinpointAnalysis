@@ -35,6 +35,8 @@ def main():
     parser.add_argument('--phase',action='store_true')
     parser.add_argument('--shared-inputs',action='store_true')
     parser.add_argument('--cache-workers',type=int,default=4)
+    parser.add_argument('--train-only',action='store_true',
+        help='Measure independent-model concurrency without repeating full Tune; not a full-validation gate')
     args=parser.parse_args()
     torch.set_num_threads(1)
     torch.zeros(1,device='cuda:0').sum().item()
@@ -54,7 +56,7 @@ def main():
             subprocess.run(command,check=True)
     shared_inputs=None;shared_audit=None
     if args.shared_inputs:
-        keys=['family','native_pixel_pitch_mm','build_relations','relation_plane_policy']
+        keys=['family','native_pixel_pitch_mm','build_relations','relation_plane_policy','image','sensor_row_image']
         signature={key:configs[0].get(key) for key in keys}
         if any({key:c.get(key) for key in keys}!=signature for c in configs):
             raise ValueError('shared profile inputs require identical observation transforms and candidate graphs')
@@ -103,6 +105,16 @@ def main():
             'aggregate_memory':monitor.peak,
             'aggregate_operation_events_per_second':sum(x['counters']['training_exposures'] for x in workers)/elapsed})
         write_json(output/'results.json',{'status':'running','results':results})
+    if args.train_only:
+        record={'status':'complete','scope':'Train-only concurrency; full Tune resource gate not performed',
+            'GPU':torch.cuda.get_device_name(),'BF16':bf16,
+            'allocation_id':os.environ.get('PINPOINT_JOB_ID'),'results':results,
+            'full_validation':None,'full_validation_gate_passed':False,
+            'shared_input_preparation':shared_audit,'Cal_A_Cut_B_Confirm_payload_read':False}
+        write_json(output/'results.json',record)
+        if shared_inputs:temporary.cleanup()
+        print(json.dumps({'status':'complete','profile':str(output),'scope':record['scope']}),flush=True)
+        return
     # The validation rows are the same frozen40k. Observe finite forward passes
     # and memory only; random-initialization scores do not select the model.
     common_validation=None

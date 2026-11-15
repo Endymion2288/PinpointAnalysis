@@ -19,7 +19,7 @@ def gate_matches(gate,config):
     defaults={'cnn_first_stride':4,'native_relation_adapter':False,'native_relations':False,
         'native_global_ablation':False,'native_pixel_pitch_mm':0.,'relation_material_context':False,
         'relation_plane_policy':'all_visible','native_relation_revision':1}
-    keys+=['image','cnn_width','cnn_first_stride'] if config['family']=='B1' else [
+    keys+=['image','cnn_width','cnn_first_stride','sensor_row_image'] if config['family']=='B1' else [
         'dim','native_relation_adapter','native_relations','native_global_ablation',
         'native_pixel_pitch_mm','relation_material_context','relation_plane_policy','native_relation_revision']
     return gate.get('status')=='complete' and all(gate['config'].get(k,defaults.get(k))==config.get(k,defaults.get(k)) for k in keys)

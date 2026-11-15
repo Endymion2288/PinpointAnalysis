@@ -13,6 +13,7 @@ from analysis.flavour.s2.dataset import SpatialBatchSampler
 from analysis.flavour.v2.r1.data import R1Dataset
 from analysis.flavour.v2.r2.schedule import learning_rate, sampler_trace
 from analysis.flavour.v2.r3.sampling import GlobalBatchSampler
+from analysis.flavour.v2.r3.sensor_rows import sensor_row_geometry
 
 
 def freeze(root, r2):
@@ -98,10 +99,20 @@ def extend(root, design, mixing, cache_workers, reason):
             related=variant!='control'
             candidates.append({**base,'name':name,'design':'G2_'+variant,
                 'data_root':str(r1/'data'),'native_relations':related,
-                'build_relations':related,'native_global_ablation':variant=='global_ablation',
+                'build_relations':True,'native_global_ablation':variant=='global_ablation',
+                'cache_storage':'mmap',
+                'candidate_cache_policy':'identical observation-only candidate arrays may be shared; control does not read edges',
                 'scientific_change':{'control':'fresh native control for matched data/sampling/exposure/precision',
                     'relations':'observation-only signed measurement/material-aware messages before native local compression',
                     'global_ablation':'retrain relations model without the inter-block stack; preserve prelocal,block/event pooling and tracker'}[variant]})
+    elif design=='C1':
+        base=json.loads((r2/'configs/b1_d0_t4_s42.json').read_text())
+        plan=json.loads((r1/'data/plan.json').read_text())
+        geometry=json.loads(Path(plan['geometry']).read_text())
+        candidates=[{**base,'name':'b1_c1_sensor_rows_t4_s42','design':'C1',
+            'sensor_row_image':True,'image':sensor_row_geometry(geometry),'cnn_first_stride':2,
+            'reference_experiment':str(r2/'experiments/b1_d0_t4_s42'),
+            'scientific_change':'compact all actual pixel/bar sensor rows; same horizontal1mm bins, views and responses; explicit z/gaps/type channels; stride2; representation screen, not a stride-only contrast'}]
     elif design=='M0T3':
         if mixing!='global':raise ValueError('M0T3 tests the adopted global order')
         base=json.loads((r2/'configs/b1_d2_t3_s42.json').read_text())
@@ -131,7 +142,7 @@ def extend(root, design, mixing, cache_workers, reason):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command',choices=['freeze','preflight','G1','G2','M0T3'])
+    parser.add_argument('command',choices=['freeze','preflight','G1','G2','C1','M0T3'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--r2',type=Path)
     parser.add_argument('--configs',type=Path,nargs='*')

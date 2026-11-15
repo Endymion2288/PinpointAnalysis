@@ -2,6 +2,7 @@
 
 from types import SimpleNamespace
 import json
+import pickle
 from pathlib import Path
 import tempfile
 import unittest
@@ -16,9 +17,13 @@ from analysis.flavour.v2.r1.models import build_model as reference_model
 from analysis.flavour.v2.r3.models import build_model, relation_features, PrelocalRelations
 from analysis.flavour.v2.r3.relations import candidate_edges
 from analysis.flavour.v2.r3.data import collate
+from analysis.flavour.v2.r3.collate_audit import reference_collate
 from analysis.flavour.v2.r3.phase import phase_forward
 from analysis.flavour.v2.r3.accept import gate_matches
 from analysis.flavour.v2.r3.evaluate import configuration
+from analysis.flavour.v2.r3.sensor_rows import sensor_row_geometry, sensor_projection
+from analysis.flavour.v2.r1.data import projection
+from analysis.flavour.v2.r3.mapped_inputs import MappedItems,write_mapped_items
 
 
 class GlobalOrderTests(unittest.TestCase):
@@ -138,6 +143,26 @@ class NativeRelationTests(unittest.TestCase):
         self.assertTrue(torch.equal(batch['event_index'][source//32],batch['event_index'][target//32]))
         self.assertTrue((source>=64).any())
 
+    def test_vectorized_padding_matches_accepted_inputs_with_unsorted_and_empty_events(self):
+        rng=np.random.default_rng(20261115)
+        groups=np.repeat(np.arange(4),[32,1,17,9])
+        nodes=self.nodes(rng.normal(size=(len(groups),3)))
+        order=rng.permutation(len(groups))
+        a=self.event(nodes[order],groups[order])
+        a['tracker']=rng.normal(size=(7,5)).astype('float32')
+        b=self.event(np.zeros((1,18),dtype='float32'),[0],1)
+        for relations in [True,False]:
+            items=[dict(a),dict(b)]
+            if not relations:
+                for item in items:item.pop('relation_edges')
+            old,new=reference_collate(items),collate(items)
+            self.assertEqual(set(old),set(new))
+            for name in old:
+                self.assertEqual(old[name].dtype,new[name].dtype)
+                self.assertTrue(torch.equal(old[name],new[name]),name)
+        bad={**a,'groups':np.zeros(len(groups),dtype='int64')}
+        with self.assertRaises(ValueError):collate([bad])
+
     def test_modality_planes_bridge_interleaved_bar_planes(self):
         nodes=self.nodes([[0,0,0],[0,0,100]]+[[0,0,z] for z in range(10,100,10)])
         nodes[2:,12]=0;nodes[2:,13]=1
@@ -198,6 +223,51 @@ class DeliveryContractTests(unittest.TestCase):
             self.assertEqual(len(configuration(root,contract)['models']),2)
             value['experiments']*=2;contract.write_text(json.dumps(value))
             with self.assertRaises(ValueError):configuration(root,contract)
+
+
+class SensorRowTests(unittest.TestCase):
+    def test_row_mapping_preserves_each_measurement_and_physical_spacing(self):
+        geometry={'pixel_Xpos':[-1.,0.,1.],'pixel_Ypos':[-1.,0.,1.],
+            'pixel_Zpos':[0.,100.], 'scint_Zpos':[10.,30.],
+            'scint_bar_Xcenter':[-1.,1.],'scint_bar_Ycenter':[-1.,1.],
+            'scint_bar_width':1.,'scint_bar_height':1.}
+        observation={'pixel':{'xyz_mm':np.array([[0.,0.,0.],[1.,1.,100.]])},
+            'bar':{'bounds_mm':np.array([[-1.5,-.5,-2.,2.,10.],[-2.,2.,.5,1.5,30.]]),
+                'horizontal':np.array([False,True]),'edep_proxy_MeV':np.array([2.,3.]),
+                'pe_proxy':np.array([20.,30.])}}
+        image=sensor_row_geometry(geometry)
+        old,values=projection(observation,geometry,image['physical_grid'])
+        compact,new_values=sensor_projection(observation,geometry,image)
+        w=image['width'];h=image['height'];physical_h=image['physical_grid']['height']
+        restored=((compact//(h*w))*physical_h+np.asarray(image['physical_row'])[(compact//w)%h])*w+compact%w
+        np.testing.assert_array_equal(old,restored)
+        np.testing.assert_array_equal(values,new_values)
+        self.assertEqual(image['row_z_mm'],[0.,10.,30.,100.])
+        config={'family':'B1','task':'T4','image':image,'cnn_width':16,
+            'sensor_row_image':True,'cnn_first_stride':2}
+        model=build_model(config)
+        self.assertEqual(model.backbone.stem[0].in_channels,9)
+        self.assertEqual(model.backbone.stem[0].stride,(2,2))
+
+
+class MappedInputTests(unittest.TestCase):
+    def test_ragged_views_and_spawn_serialization_preserve_arrays_without_copying_payload(self):
+        items=[{'index':0,'label':1,'nodes':np.arange(720,dtype='float32').reshape(40,18),
+            'relation_edges':np.array([[0,3],[3,1]],dtype='int64'),'tracker':np.empty((0,5),dtype='float32')},
+            {'index':1,'label':2,'nodes':np.zeros((1,18),dtype='float32'),
+            'relation_edges':np.empty((2,0),dtype='int64'),'tracker':np.ones((3,5),dtype='float32')}]
+        with tempfile.TemporaryDirectory() as scratch:
+            cache=write_mapped_items([[items[0]],[items[1]]],Path(scratch)/'inputs')
+            for i,item in enumerate(items):
+                for key,value in item.items():np.testing.assert_array_equal(cache[i][key],value)
+            self.assertIsInstance(cache.arrays['nodes'],np.memmap)
+            with self.assertRaises(ValueError):cache[0]['nodes'][0,0]=10.
+            payload=pickle.dumps(cache,protocol=5)
+            self.assertLess(len(payload),2000)
+            restored=pickle.loads(payload)
+            self.assertIsInstance(restored,MappedItems)
+            self.assertEqual(restored.arrays,{})
+            np.testing.assert_array_equal(restored[1]['nodes'],items[1]['nodes'])
 
 
 if __name__=='__main__':

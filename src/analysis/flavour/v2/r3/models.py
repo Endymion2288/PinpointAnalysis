@@ -8,6 +8,7 @@ from torch import nn
 
 from analysis.flavour.v2.r1.models import build_model as original_model
 from analysis.flavour.v2.r1.models import branch_groups as original_groups
+from analysis.flavour.v2.r3.sensor_rows import SensorRowEncoder
 
 
 RELATION_FEATURES = [
@@ -114,6 +115,8 @@ class NativeRelationEncoder(nn.Module):
 def build_model(config):
     model = original_model(config)
     if config['family'] == 'B1':
+        if config.get('sensor_row_image',False):
+            model.backbone=SensorRowEncoder(model.backbone)
         stride = config.get('cnn_first_stride', 4)
         if stride not in [2, 4] or config.get('cnn_variant', 'resnet') != 'resnet':
             raise ValueError('R3 local-retention control requires ResNet first stride2 or4')

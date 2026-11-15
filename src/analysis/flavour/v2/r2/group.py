@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import pickle
 import subprocess
 import sys
 import tempfile
@@ -23,9 +24,14 @@ def main():
     parser.add_argument('--parallel',type=int,default=2)
     parser.add_argument('--real-fit',action='store_true')
     parser.add_argument('--smoke',action='store_true')
+    parser.add_argument('--share-r3-inputs',action='store_true',
+        help='Build exact allocation-local mmap Train/Tune arrays once for native R3 models')
+    parser.add_argument('--cache-workers',type=int,default=4)
     parser.add_argument('--train-module',default='analysis.flavour.v2.r2.train',
         choices=['analysis.flavour.v2.r2.train','analysis.flavour.v2.r3.train'])
     args=parser.parse_args()
+    if args.share_r3_inputs and args.train_module!='analysis.flavour.v2.r3.train':
+        parser.error('shared R3 transformed inputs require the R3 runner')
     configs=[json.loads(p.read_text()) for p in args.configs]
     if len({c['data_root'] for c in configs})!=1:
         raise ValueError('shared staging group requires one exact observation corpus')
@@ -37,11 +43,18 @@ def main():
     if args.smoke or args.real_fit:
         r0=json.loads((args.root/'campaign.json').read_text())['r0']
     if args.smoke:
-        command=[sys.executable,'-m','analysis.flavour.v2.r2.smoke','--root',str(args.root),
-            '--r1',json.loads((args.root/'campaign.json').read_text())['r1'],
-            '--r0',r0,'--attempt',args.name]
-        if configs[0]['bf16']:command.append('--bf16')
-        subprocess.run(command,check=True)
+        if args.train_module=='analysis.flavour.v2.r3.train':
+            for i,path in enumerate(args.configs):
+                command=[sys.executable,'-m','analysis.flavour.v2.r3.smoke',
+                    '--root',str(args.root),'--config',str(path),'--attempt',args.name+f'_c{i}']
+                if args.share_r3_inputs:command.append('--shared-inputs')
+                subprocess.run(command,check=True)
+        else:
+            command=[sys.executable,'-m','analysis.flavour.v2.r2.smoke','--root',str(args.root),
+                '--r1',json.loads((args.root/'campaign.json').read_text())['r1'],
+                '--r0',r0,'--attempt',args.name]
+            if configs[0]['bf16']:command.append('--bf16')
+            subprocess.run(command,check=True)
     if args.real_fit:
         families=sorted({c['family'] for c in configs})
         if len(families)!=1 or len({c.get('cnn_width',16) for c in configs})!=1 or len({c.get('dim',96) for c in configs})!=1:
@@ -63,6 +76,32 @@ def main():
         stage=stage_shards(paths,Path(scratch)/'native',workers=3)
         record['shared_staging']=stage
         env=dict(os.environ,PINPOINT_R2_SHARED_STAGE=stage['local_shard_root'])
+        if args.share_r3_inputs:
+            from analysis.flavour.v2.r3.data import R3Dataset
+            keys=['family','task','native_pixel_pitch_mm','build_relations',
+                'relation_plane_policy','image','sensor_row_image','drop_modality']
+            signature={k:configs[0].get(k) for k in keys}
+            if any({k:c.get(k) for k in keys}!=signature for c in configs):
+                raise ValueError('shared R3 arrays require identical observation transforms and candidate graphs')
+            os.environ['PINPOINT_NATIVE_SHARD_ROOT']=stage['local_shard_root']
+            preparation={}
+            for split,var in [('train','PINPOINT_R3_SHARED_TRAIN_INPUTS'),
+                    ('validation','PINPOINT_R3_SHARED_TUNE_INPUTS')]:
+                common=R3Dataset(Path(configs[0]['data_root']),split,
+                    {**configs[0],'cache_training_inputs':False,'cache_storage':'mmap',
+                     'cache_workers':args.cache_workers},cache_dir=scratch)
+                common.cache_inputs()
+                payload=Path(scratch)/(split+'_transformed.pkl')
+                with payload.open('wb') as stream:
+                    pickle.dump({'root':str(Path(configs[0]['data_root']).resolve()),
+                        'input_config':signature,'keys':common.metadata[['run','chunk','row','label']].to_numpy(),
+                        'items':common.items,'audit':common.cache_audit},stream,protocol=5)
+                preparation[split]=common.cache_audit
+                env[var]=str(payload)
+                del common
+                record['shared_transformed_preparation']=preparation
+                write_json(record_path,record)
+            del os.environ['PINPOINT_NATIVE_SHARD_ROOT']
         pending=list(zip(args.configs,configs))
         live=[]
         while pending or live:
