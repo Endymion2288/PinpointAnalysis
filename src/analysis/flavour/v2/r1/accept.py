@@ -128,7 +128,7 @@ def main():
               {'nominal', 'noise', 'combined', 'remove_pixel', 'remove_tracker'})
     figures = ['r1_common_three', 'r1_t3_roc_pr', 'r1_t4_roc_pr', 'r1_tau_roc_pr',
                'r1_four_class_roc_pr', 'r1_confusion',
-               'r1_raw_scores', 'r1_resource_pareto', 'r1_learning_curves', 'r1_stress']
+               'r1_raw_scores', 'r1_resource_pareto', 'r1_learning_curves', 'r1_stress', 'r1_matched_compute']
     for name in figures:
         check(name+'_figures', all((root/'figures'/f'{name}.{ext}').is_file() for ext in ['pdf', 'png']))
     resources = json.loads((root/'resources.json').read_text())

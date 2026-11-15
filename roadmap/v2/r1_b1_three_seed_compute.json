@@ -1,0 +1,1581 @@
+{
+  "status": "complete_interim",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/b1_three_seed_compute/evaluation/results.json",
+  "models": 24,
+  "pairs": 56,
+  "replicates": 400,
+  "metrics_revision": "r1-tie-aware-float-boundary-2",
+  "scope": "complete B1/B4/HGB task and compute development subset; full R1 and Confirm pending",
+  "groups": [
+    {
+      "family": "B1",
+      "task": "T3",
+      "kind": "main",
+      "BA3_mean": 0.5656333333333333,
+      "BA3_sample_SD": 0.002400694344004078,
+      "NLL3_mean": 0.8703774789292453,
+      "recall_e_mu_NC_mean": [
+        0.6094,
+        0.5106333333333333,
+        0.5768666666666666
+      ]
+    },
+    {
+      "family": "B1",
+      "task": "T4",
+      "kind": "main",
+      "BA3_mean": 0.5630444444444445,
+      "BA3_sample_SD": 0.0017205726867443034,
+      "NLL3_mean": 0.8671052847622057,
+      "recall_e_mu_NC_mean": [
+        0.5886,
+        0.5108333333333334,
+        0.5897
+      ]
+    },
+    {
+      "family": "B1",
+      "task": "T3",
+      "kind": "matched_compute",
+      "BA3_mean": 0.5636888888888889,
+      "BA3_sample_SD": 0.0021000881815700515,
+      "NLL3_mean": 0.8755488763989567,
+      "recall_e_mu_NC_mean": [
+        0.5823333333333334,
+        0.5766666666666667,
+        0.5320666666666667
+      ]
+    },
+    {
+      "family": "B4",
+      "task": "T3",
+      "kind": "main",
+      "BA3_mean": 0.5439222222222222,
+      "BA3_sample_SD": 0.0006743995957997656,
+      "NLL3_mean": 0.9020222144785368,
+      "recall_e_mu_NC_mean": [
+        0.5404666666666667,
+        0.5347333333333333,
+        0.5565666666666667
+      ]
+    },
+    {
+      "family": "B4",
+      "task": "T4",
+      "kind": "main",
+      "BA3_mean": 0.5448666666666667,
+      "BA3_sample_SD": 0.0021496769783181458,
+      "NLL3_mean": 0.9043693673467647,
+      "recall_e_mu_NC_mean": [
+        0.5581666666666667,
+        0.5293666666666667,
+        0.5470666666666667
+      ]
+    },
+    {
+      "family": "B4",
+      "task": "T3",
+      "kind": "matched_compute",
+      "BA3_mean": 0.5467444444444445,
+      "BA3_sample_SD": 0.0004857220665420886,
+      "NLL3_mean": 0.8993369398915682,
+      "recall_e_mu_NC_mean": [
+        0.5674666666666667,
+        0.5416333333333333,
+        0.5311333333333333
+      ]
+    }
+  ],
+  "training_compute_controls": [
+    {
+      "name": "compute_b1_t3_s17",
+      "seed": 17,
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "allocation_id": "1582904.0",
+      "wall_seconds": 3405.297805034992,
+      "compute_alignment": {
+        "target_wall_seconds": 3405.089740060008,
+        "actual_wall_seconds": 3405.297805034992,
+        "relative_difference": 6.110410910364905e-05,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 149.00197129300795,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "counters": {
+        "updates": 49396,
+        "train_seconds": 3132.1385938230087,
+        "training_exposures": 394684,
+        "data_wait_seconds": 64.76598957630631,
+        "validation_seconds": 252.37620914599393,
+        "exposure_by_class": [
+          131236,
+          132236,
+          0,
+          131212
+        ]
+      },
+      "unique_train_events": 75000,
+      "precision": "BF16_encoder_FP32_head",
+      "health_samples": 51
+    },
+    {
+      "name": "compute_b1_t3_s42",
+      "seed": 42,
+      "GPU": "Tesla T4",
+      "allocation_id": "1582883.0",
+      "wall_seconds": 5199.1307518170215,
+      "compute_alignment": {
+        "target_wall_seconds": 5193.243869238067,
+        "actual_wall_seconds": 5199.1307518170215,
+        "relative_difference": 0.0011335655954507473,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 169.15031084930524,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "counters": {
+        "updates": 49018,
+        "train_seconds": 4840.7200177419,
+        "training_exposures": 391633,
+        "data_wait_seconds": 135.08891720185056,
+        "validation_seconds": 330.01984651433304,
+        "exposure_by_class": [
+          130128,
+          130962,
+          0,
+          130543
+        ]
+      },
+      "unique_train_events": 75000,
+      "precision": "FP32",
+      "health_samples": 51
+    },
+    {
+      "name": "compute_b1_t3_s2026",
+      "seed": 2026,
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "allocation_id": "1582905.0",
+      "wall_seconds": 3430.8968366530025,
+      "compute_alignment": {
+        "target_wall_seconds": 3428.810744303977,
+        "actual_wall_seconds": 3430.8968366530025,
+        "relative_difference": 0.0006084011351430441,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 148.0419095159741,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "counters": {
+        "updates": 49679,
+        "train_seconds": 3154.6485041779233,
+        "training_exposures": 396968,
+        "data_wait_seconds": 66.57158245134633,
+        "validation_seconds": 255.17429338011425,
+        "exposure_by_class": [
+          131808,
+          132832,
+          0,
+          132328
+        ]
+      },
+      "unique_train_events": 75000,
+      "precision": "BF16_encoder_FP32_head",
+      "health_samples": 51
+    },
+    {
+      "name": "compute_b4_t3_s17",
+      "seed": 17,
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "allocation_id": "1582873.0",
+      "wall_seconds": 6497.160478412174,
+      "compute_alignment": {
+        "target_wall_seconds": 6506.560443775728,
+        "actual_wall_seconds": 6497.160478412174,
+        "relative_difference": -0.001444690392839898,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 474.9177686870098,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "counters": {
+        "updates": 48562,
+        "train_seconds": 5711.221586188301,
+        "training_exposures": 388022,
+        "data_wait_seconds": 658.3579760575667,
+        "validation_seconds": 749.5133345723152,
+        "exposure_by_class": [
+          129207,
+          129857,
+          0,
+          128958
+        ]
+      },
+      "unique_train_events": 75000,
+      "precision": "BF16_encoder_FP32_head",
+      "health_samples": 50
+    },
+    {
+      "name": "compute_b4_t3_s42",
+      "seed": 42,
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "allocation_id": "pinpoint-r1-extend-b4-s42-k12",
+      "wall_seconds": 2018.5023163619917,
+      "compute_alignment": {
+        "target_wall_seconds": 2024.1895461310633,
+        "actual_wall_seconds": 2018.5023163619917,
+        "relative_difference": -0.0028096330108718925,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 162.24655199819244,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "counters": {
+        "updates": 49818,
+        "train_seconds": 1754.4118294697255,
+        "training_exposures": 398022,
+        "data_wait_seconds": 287.9289427581243,
+        "validation_seconds": 256.3334848044906,
+        "exposure_by_class": [
+          132119,
+          133195,
+          0,
+          132708
+        ]
+      },
+      "unique_train_events": 75000,
+      "precision": "BF16_encoder_FP32_head",
+      "health_samples": 51
+    },
+    {
+      "name": "compute_b4_t3_s2026",
+      "seed": 2026,
+      "GPU": "NVIDIA H100 NVL",
+      "allocation_id": "1582874.0",
+      "wall_seconds": 2085.571307756938,
+      "compute_alignment": {
+        "target_wall_seconds": 2088.7215115311556,
+        "actual_wall_seconds": 2085.571307756938,
+        "relative_difference": -0.0015081971228937396,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 166.96575263002887,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "counters": {
+        "updates": 49734,
+        "train_seconds": 1794.4345063029323,
+        "training_exposures": 397408,
+        "data_wait_seconds": 293.1633334076032,
+        "validation_seconds": 267.97182662785053,
+        "exposure_by_class": [
+          131949,
+          132987,
+          0,
+          132472
+        ]
+      },
+      "unique_train_events": 75000,
+      "precision": "BF16_encoder_FP32_head",
+      "health_samples": 51
+    }
+  ],
+  "mean_seed_compute_pairs": [
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T3",
+        "matched_compute"
+      ],
+      "b_family_task_kind": [
+        "B1",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "same-allocation total operation wall budget",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0006444444444441885,
+          "95pct": [
+            -0.0017860997584534946,
+            0.0030226005992894335
+          ],
+          "per_seed_differences": [
+            0.002366666666666517,
+            -0.00366666666666704,
+            0.0032333333333330883
+          ],
+          "training_seed_sample_SD": 0.0037585950881995457
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.008443591636750791,
+          "95pct": [
+            0.0063790026768102,
+            0.010497085068395489
+          ],
+          "per_seed_differences": [
+            0.005962397175290235,
+            0.006684145798755536,
+            0.012684231936206602
+          ],
+          "training_seed_sample_SD": 0.003690190087366099
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.0015858603737393488,
+          "95pct": [
+            0.00013020953093749276,
+            0.002767634177498103
+          ],
+          "per_seed_differences": [
+            0.0016913453897119402,
+            0.00043995124225604254,
+            0.0026262844892500636
+          ],
+          "training_seed_sample_SD": 0.0010969770203490628
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0005604333333336653,
+          "95pct": [
+            -0.0004930884678534835,
+            0.0015983687431718719
+          ],
+          "per_seed_differences": [
+            0.0005253024999992695,
+            -0.000403499999999668,
+            0.0015594975000013944
+          ],
+          "training_seed_sample_SD": 0.0009819701766554227
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.006266666666666938,
+          "95pct": [
+            -0.009791382463993078,
+            -0.0022459883767511585
+          ],
+          "per_seed_differences": [
+            0.020099999999999008,
+            -0.06509999999999849,
+            0.02619999999999867
+          ],
+          "training_seed_sample_SD": 0.05104236802239072
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.0658333333333301,
+          "95pct": [
+            0.06139233848333019,
+            0.07011144923785664
+          ],
+          "per_seed_differences": [
+            0.05209999999999737,
+            0.14319999999999306,
+            0.0021999999999998687
+          ],
+          "training_seed_sample_SD": 0.0714961770539715
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.057633333333330504,
+          "95pct": [
+            -0.06156543916754544,
+            -0.05345842313706173
+          ],
+          "per_seed_differences": [
+            -0.06509999999999683,
+            -0.08909999999999563,
+            -0.01869999999999905
+          ],
+          "training_seed_sample_SD": 0.03578901134892118
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 6.666666666648353e-05,
+          "95pct": [
+            -0.005739054568220849,
+            0.007217494087350555
+          ],
+          "per_seed_differences": [
+            -0.0034999999999998366,
+            -0.005100000000000299,
+            0.008799999999999586
+          ],
+          "training_seed_sample_SD": 0.007605480480109766
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": -0.0034000000000003494,
+          "95pct": [
+            -0.010688837741622001,
+            0.006142734298375429
+          ],
+          "per_seed_differences": [
+            -0.010400000000000936,
+            0.004100000000000235,
+            -0.0039000000000003476
+          ],
+          "training_seed_sample_SD": 0.007262919523167559
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.004733333333333108,
+          "95pct": [
+            0.0005069087637335518,
+            0.009695871867419277
+          ],
+          "per_seed_differences": [
+            0.002799999999999858,
+            0.009299999999999559,
+            0.0020999999999999075
+          ],
+          "training_seed_sample_SD": 0.003970306453327228
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0031666666666669515,
+          "95pct": [
+            -0.003458379373848856,
+            0.014625024740293193
+          ],
+          "per_seed_differences": [
+            -0.001600000000000143,
+            0.005200000000000468,
+            0.00590000000000053
+          ],
+          "training_seed_sample_SD": 0.004142865353030003
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.0011333333333332825,
+          "95pct": [
+            -0.005338872202826402,
+            0.004768769992450948
+          ],
+          "per_seed_differences": [
+            0.0007999999999999396,
+            0.00019999999999997797,
+            -0.004399999999999765
+          ],
+          "training_seed_sample_SD": 0.002844878439113422
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.000366666666666698,
+          "95pct": [
+            -0.006806482111843359,
+            0.006838461960962876
+          ],
+          "per_seed_differences": [
+            -0.0028000000000002537,
+            -0.003200000000000286,
+            0.007100000000000634
+          ],
+          "training_seed_sample_SD": 0.005834666514321056
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0020333333333328687,
+          "95pct": [
+            -0.0046413883465548905,
+            0.008116899378940116
+          ],
+          "per_seed_differences": [
+            9.999999999998899e-05,
+            0.002099999999998825,
+            0.0038999999999997925
+          ],
+          "training_seed_sample_SD": 0.001900876990584317
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.00256666666666631,
+          "95pct": [
+            -0.00931635422624541,
+            0.013412109885918618
+          ],
+          "per_seed_differences": [
+            0.0020999999999998797,
+            -0.0009000000000006225,
+            0.006499999999999673
+          ],
+          "training_seed_sample_SD": 0.003722006627255554
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.003733333333333163,
+          "95pct": [
+            -0.0026153477294485186,
+            0.011045505067073457
+          ],
+          "per_seed_differences": [
+            -0.006899999999999684,
+            0.006599999999999717,
+            0.011499999999999455
+          ],
+          "training_seed_sample_SD": 0.009529078304501696
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.00729999999999964,
+          "95pct": [
+            0.00016521804606658863,
+            0.014975871831689065
+          ],
+          "per_seed_differences": [
+            0.004299999999999776,
+            0.014399999999999302,
+            0.003199999999999842
+          ],
+          "training_seed_sample_SD": 0.006173329733619967
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": -0.005333333333333079,
+          "95pct": [
+            -0.012457356360610523,
+            0.0038652616065286325
+          ],
+          "per_seed_differences": [
+            0.0024999999999998634,
+            -0.014299999999999286,
+            -0.004199999999999815
+          ],
+          "training_seed_sample_SD": 0.008457146879020494
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.005200000000000468,
+          "95pct": [
+            -0.004240222602843911,
+            0.012013251366766106
+          ],
+          "per_seed_differences": [
+            0.008400000000000754,
+            0.008600000000000774,
+            -0.0014000000000001234
+          ],
+          "training_seed_sample_SD": 0.005716642371183093
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B1",
+        "T3",
+        "matched_compute"
+      ],
+      "b_family_task_kind": [
+        "B1",
+        "T3",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "extra non-tau exposures under T4 resource budget",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.0019444444444442672,
+          "95pct": [
+            -0.004277385017454099,
+            0.0003422454137157196
+          ],
+          "per_seed_differences": [
+            -0.0026999999999997026,
+            -0.004933333333333012,
+            0.0017999999999999128
+          ],
+          "training_seed_sample_SD": 0.003429663626741124
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.0051713974697154,
+          "95pct": [
+            0.0038055580200760525,
+            0.0065750544986925615
+          ],
+          "per_seed_differences": [
+            0.006201028469255965,
+            0.0009663073832086866,
+            0.008346856556681548
+          ],
+          "training_seed_sample_SD": 0.0037964761979925425
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.0012825674827630085,
+          "95pct": [
+            0.00021264749828182522,
+            0.002347611335256383
+          ],
+          "per_seed_differences": [
+            -0.0002182019979243277,
+            0.002389966344884642,
+            0.0016759381013287111
+          ],
+          "training_seed_sample_SD": 0.001347846748992924
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0008613899999997768,
+          "95pct": [
+            -1.702945647852522e-05,
+            0.0016468842886890865
+          ],
+          "per_seed_differences": [
+            -0.0004731816666665445,
+            0.001218339166665583,
+            0.0018390125000002921
+          ],
+          "training_seed_sample_SD": 0.001196712161206527
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.02706666666666535,
+          "95pct": [
+            -0.030780299160870907,
+            -0.023469229736392618
+          ],
+          "per_seed_differences": [
+            -0.02289999999999881,
+            -0.06459999999999688,
+            0.006299999999999639
+          ],
+          "training_seed_sample_SD": 0.03563317742404134
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.0660333333333301,
+          "95pct": [
+            0.06172479638594446,
+            0.06966443215387663
+          ],
+          "per_seed_differences": [
+            0.06629999999999675,
+            0.11279999999999452,
+            0.018999999999999018
+          ],
+          "training_seed_sample_SD": 0.046900568582194414
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.044799999999997765,
+          "95pct": [
+            -0.0484392537989155,
+            -0.041153623089723985
+          ],
+          "per_seed_differences": [
+            -0.05149999999999744,
+            -0.06299999999999684,
+            -0.01989999999999903
+          ],
+          "training_seed_sample_SD": 0.022317481936812437
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.00023333333333331688,
+          "95pct": [
+            -0.004526851822033586,
+            0.0071196242083516595
+          ],
+          "per_seed_differences": [
+            -0.004499999999999782,
+            -0.002699999999999897,
+            0.00789999999999963
+          ],
+          "training_seed_sample_SD": 0.00670024875160088
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": -0.000900000000000086,
+          "95pct": [
+            -0.005945384465932319,
+            0.007460989142843643
+          ],
+          "per_seed_differences": [
+            -0.00580000000000052,
+            -0.0012000000000001246,
+            0.004300000000000387
+          ],
+          "training_seed_sample_SD": 0.0050566787519086675
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.001066666666666614,
+          "95pct": [
+            -0.0030208450215211116,
+            0.005753868153861302
+          ],
+          "per_seed_differences": [
+            -0.004499999999999782,
+            0.005899999999999711,
+            0.0017999999999999128
+          ],
+          "training_seed_sample_SD": 0.005238638499966443
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0022000000000001927,
+          "95pct": [
+            -0.0038293141074705705,
+            0.008857119007943929
+          ],
+          "per_seed_differences": [
+            -0.001100000000000101,
+            0.0040000000000003505,
+            0.003700000000000328
+          ],
+          "training_seed_sample_SD": 0.0028618176042510914
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.000466666666666643,
+          "95pct": [
+            -0.00511048703875884,
+            0.0034871582872902864
+          ],
+          "per_seed_differences": [
+            0.0,
+            0.0018999999999999018,
+            -0.003299999999999831
+          ],
+          "training_seed_sample_SD": 0.0026312227829153162
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0015666666666668064,
+          "95pct": [
+            -0.00609877343350492,
+            0.0066458330672339826
+          ],
+          "per_seed_differences": [
+            0.006500000000000582,
+            0.002600000000000234,
+            -0.004400000000000397
+          ],
+          "training_seed_sample_SD": 0.005522982286169205
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 6.666666666664083e-05,
+          "95pct": [
+            -0.004651142311526084,
+            0.0053392592966276025
+          ],
+          "per_seed_differences": [
+            0.0,
+            -0.0012000000000000344,
+            0.0013999999999999568
+          ],
+          "training_seed_sample_SD": 0.001301281419729537
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": -0.0039333333333331595,
+          "95pct": [
+            -0.011495604999570556,
+            0.008163659675226245
+          ],
+          "per_seed_differences": [
+            -0.0014999999999999458,
+            0.0016999999999998683,
+            -0.0119999999999994
+          ],
+          "training_seed_sample_SD": 0.007166821703749011
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0024666666666665615,
+          "95pct": [
+            -0.0022494166693945374,
+            0.009661381926632791
+          ],
+          "per_seed_differences": [
+            -0.009099999999999553,
+            0.007399999999999685,
+            0.009099999999999553
+          ],
+          "training_seed_sample_SD": 0.01005302607841657
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.0012999999999999308,
+          "95pct": [
+            -0.004343493179627915,
+            0.009133930157257846
+          ],
+          "per_seed_differences": [
+            -0.005799999999999722,
+            0.007699999999999624,
+            0.0019999999999998908
+          ],
+          "training_seed_sample_SD": 0.0067771675499426415
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": -0.0003333333333333244,
+          "95pct": [
+            -0.007946431400317934,
+            0.005120118648797949
+          ],
+          "per_seed_differences": [
+            0.0004999999999999727,
+            -0.0022999999999998855,
+            0.0007999999999999396
+          ],
+          "training_seed_sample_SD": 0.0017097758137641955
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.0014666666666668011,
+          "95pct": [
+            -0.004921353847443991,
+            0.009981008412543232
+          ],
+          "per_seed_differences": [
+            -0.004600000000000409,
+            0.01200000000000108,
+            -0.0030000000000002663
+          ],
+          "training_seed_sample_SD": 0.009157146571577216
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B4",
+        "T3",
+        "matched_compute"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T4",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "same-allocation total operation wall budget",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.001877777777777719,
+          "95pct": [
+            -0.0007189752941813353,
+            0.004128848756784917
+          ],
+          "per_seed_differences": [
+            0.003666666666666485,
+            0.0003666666666666263,
+            0.0016000000000000458
+          ],
+          "training_seed_sample_SD": 0.001667444263047522
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.0050324274551962755,
+          "95pct": [
+            -0.006562434234941115,
+            -0.0034411609857151696
+          ],
+          "per_seed_differences": [
+            -0.005326032506309808,
+            -0.005208148556079206,
+            -0.0045631013031998124
+          ],
+          "training_seed_sample_SD": 0.00041069993199579195
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.005629324657246489,
+          "95pct": [
+            0.004234179097632498,
+            0.007001287803007335
+          ],
+          "per_seed_differences": [
+            0.004752724156077526,
+            0.007260191504264046,
+            0.004875058311397895
+          ],
+          "training_seed_sample_SD": 0.0014136960125554674
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0028141338888887737,
+          "95pct": [
+            0.0017057529351248019,
+            0.003765790161974672
+          ],
+          "per_seed_differences": [
+            0.0024206008333335083,
+            0.0032991291666664146,
+            0.0027226716666663986
+          ],
+          "training_seed_sample_SD": 0.0004463485316292246
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.00929999999999953,
+          "95pct": [
+            0.005860132100688673,
+            0.012513427634610705
+          ],
+          "per_seed_differences": [
+            0.013399999999999301,
+            -0.01789999999999914,
+            0.03239999999999843
+          ],
+          "training_seed_sample_SD": 0.025399409441952334
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.012266666666666093,
+          "95pct": [
+            0.007458113291207664,
+            0.016003092019975254
+          ],
+          "per_seed_differences": [
+            0.050699999999997525,
+            0.007599999999999607,
+            -0.021499999999998853
+          ],
+          "training_seed_sample_SD": 0.03632551903735446
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.01593333333333254,
+          "95pct": [
+            -0.0197669413738484,
+            -0.011719021606075002
+          ],
+          "per_seed_differences": [
+            -0.05309999999999748,
+            0.011399999999999522,
+            -0.006099999999999661
+          ],
+          "training_seed_sample_SD": 0.0333554093564032
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": -0.002099999999999889,
+          "95pct": [
+            -0.006550678894118681,
+            0.005070452323878492
+          ],
+          "per_seed_differences": [
+            -0.001699999999999896,
+            -0.002799999999999858,
+            -0.0017999999999999128
+          ],
+          "training_seed_sample_SD": 0.000608276253029796
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": -0.002866666666666922,
+          "95pct": [
+            -0.012766121409633959,
+            0.004764868730208774
+          ],
+          "per_seed_differences": [
+            -0.010600000000000949,
+            0.007400000000000663,
+            -0.005400000000000481
+          ],
+          "training_seed_sample_SD": 0.009263548636097761
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.011699999999999683,
+          "95pct": [
+            0.006226094561560374,
+            0.015895204050148264
+          ],
+          "per_seed_differences": [
+            0.010499999999999607,
+            0.014299999999999521,
+            0.01029999999999992
+          ],
+          "training_seed_sample_SD": 0.002253885533916782
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0025000000000002243,
+          "95pct": [
+            -0.000968105332882959,
+            0.010421541300710359
+          ],
+          "per_seed_differences": [
+            0.001000000000000091,
+            0.0017000000000001528,
+            0.004800000000000429
+          ],
+          "training_seed_sample_SD": 0.002022374841615848
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.002533333333333563,
+          "95pct": [
+            -0.002338480182132498,
+            0.007409614932349827
+          ],
+          "per_seed_differences": [
+            0.0029000000000002635,
+            0.007700000000000692,
+            -0.0030000000000002663
+          ],
+          "training_seed_sample_SD": 0.005359415391004739
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.010266666666667326,
+          "95pct": [
+            0.005189478778140341,
+            0.014904887645704612
+          ],
+          "per_seed_differences": [
+            0.0056000000000004345,
+            0.016500000000001055,
+            0.008700000000000489
+          ],
+          "training_seed_sample_SD": 0.005616345193570025
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0021999999999999056,
+          "95pct": [
+            -0.001949387865486337,
+            0.008190177634533934
+          ],
+          "per_seed_differences": [
+            -0.0012999999999999123,
+            0.003099999999999825,
+            0.004799999999999804
+          ],
+          "training_seed_sample_SD": 0.0031480152477392845
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": -0.0019333333333332314,
+          "95pct": [
+            -0.01085936394109842,
+            0.010939169887240323
+          ],
+          "per_seed_differences": [
+            -0.004799999999999777,
+            -0.005199999999999733,
+            0.004199999999999815
+          ],
+          "training_seed_sample_SD": 0.005315386470740456
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.015333333333332588,
+          "95pct": [
+            0.0066865410307292246,
+            0.024569794829395232
+          ],
+          "per_seed_differences": [
+            0.010499999999999482,
+            0.028999999999998582,
+            0.0064999999999997005
+          ],
+          "training_seed_sample_SD": 0.012003471720019967
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.0174333333333349,
+          "95pct": [
+            0.010130958698739595,
+            0.028744023457856878
+          ],
+          "per_seed_differences": [
+            0.016100000000001446,
+            0.02400000000000216,
+            0.012200000000001099
+          ],
+          "training_seed_sample_SD": 0.0060119325789083685
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": 0.00736666666666728,
+          "95pct": [
+            -0.003963490760534888,
+            0.014500283492845528
+          ],
+          "per_seed_differences": [
+            0.009500000000000716,
+            0.019600000000001755,
+            -0.007000000000000631
+          ],
+          "training_seed_sample_SD": 0.013427707672323128
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.024433333333335455,
+          "95pct": [
+            0.014637265222096234,
+            0.03536985172740859
+          ],
+          "per_seed_differences": [
+            0.01720000000000154,
+            0.03610000000000303,
+            0.020000000000001794
+          ],
+          "training_seed_sample_SD": 0.010200163397384849
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    },
+    {
+      "a_family_task_kind": [
+        "B4",
+        "T3",
+        "matched_compute"
+      ],
+      "b_family_task_kind": [
+        "B4",
+        "T3",
+        "main"
+      ],
+      "domain": "all",
+      "reason": "extra non-tau exposures under T4 resource budget",
+      "seeds": [
+        17,
+        42,
+        2026
+      ],
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.0028222222222221336,
+          "95pct": [
+            0.0008820731542750649,
+            0.00468170811419829
+          ],
+          "per_seed_differences": [
+            0.0014999999999999458,
+            0.0036333333333332662,
+            0.0033333333333331883
+          ],
+          "training_seed_sample_SD": 0.0011548609023183903
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.002685274586966583,
+          "95pct": [
+            -0.0036708928409987843,
+            -0.001616101007798531
+          ],
+          "per_seed_differences": [
+            -0.0006096560132746731,
+            -0.003578942908888272,
+            -0.0038672248387368047
+          ],
+          "training_seed_sample_SD": 0.0018033083389593773
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.002148948539182275,
+          "95pct": [
+            0.0012830451210187823,
+            0.0029864885240350257
+          ],
+          "per_seed_differences": [
+            0.001303577049258875,
+            0.002150382821943353,
+            0.002992885746344598
+          ],
+          "training_seed_sample_SD": 0.0008446552618599169
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.001161092777776059,
+          "95pct": [
+            0.0004356581403142629,
+            0.0017843804843447903
+          ],
+          "per_seed_differences": [
+            0.00043342583333272344,
+            0.0011188241666646448,
+            0.0019310283333308087
+          ],
+          "training_seed_sample_SD": 0.0007496954639145783
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.02699999999999869,
+          "95pct": [
+            0.023873921736182108,
+            0.030251901659468936
+          ],
+          "per_seed_differences": [
+            -0.011799999999999367,
+            0.024799999999998823,
+            0.06799999999999662
+          ],
+          "training_seed_sample_SD": 0.039945462821199595
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.0068999999999997215,
+          "95pct": [
+            0.003399540342126034,
+            0.009643936480674131
+          ],
+          "per_seed_differences": [
+            0.06799999999999673,
+            -0.03889999999999805,
+            -0.008399999999999519
+          ],
+          "training_seed_sample_SD": 0.05506786721854863
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.025433333333332087,
+          "95pct": [
+            -0.028454337237513446,
+            -0.022257941052546703
+          ],
+          "per_seed_differences": [
+            -0.051699999999997526,
+            0.0249999999999988,
+            -0.049599999999997535
+          ],
+          "training_seed_sample_SD": 0.04368916723094122
+        },
+        "tau_eff_1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "tau_eff_0p1pct": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "NLL4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        },
+        "e_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.001333333333333279,
+          "95pct": [
+            -0.0028040110902495443,
+            0.007644839818946521
+          ],
+          "per_seed_differences": [
+            0.005999999999999728,
+            -0.003199999999999842,
+            0.001199999999999951
+          ],
+          "training_seed_sample_SD": 0.004601449047129757
+        },
+        "e_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0003666666666667003,
+          "95pct": [
+            -0.007948604443310248,
+            0.007587484904680012
+          ],
+          "per_seed_differences": [
+            0.0024000000000002145,
+            0.007000000000000631,
+            -0.008300000000000744
+          ],
+          "training_seed_sample_SD": 0.007850053078377522
+        },
+        "mu_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.00269999999999986,
+          "95pct": [
+            -0.0010960920147479718,
+            0.006410417084419773
+          ],
+          "per_seed_differences": [
+            0.00469999999999976,
+            0.00339999999999982,
+            0.0
+          ],
+          "training_seed_sample_SD": 0.0024269322199021942
+        },
+        "mu_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.0013333333333334502,
+          "95pct": [
+            -0.0018322212513014688,
+            0.006931843325237907
+          ],
+          "per_seed_differences": [
+            0.0006000000000000519,
+            0.0006000000000000519,
+            0.0028000000000002467
+          ],
+          "training_seed_sample_SD": 0.0012701705922172893
+        },
+        "NC_eff_FPR_0.01": {
+          "difference_a_minus_b": 0.001600000000000143,
+          "95pct": [
+            -0.0016096500414856715,
+            0.0046029496013955335
+          ],
+          "per_seed_differences": [
+            0.0,
+            0.001600000000000143,
+            0.003200000000000286
+          ],
+          "training_seed_sample_SD": 0.001600000000000143
+        },
+        "NC_eff_FPR_0.001": {
+          "difference_a_minus_b": 0.002533333333333547,
+          "95pct": [
+            -0.0006654085051566427,
+            0.005931478313624444
+          ],
+          "per_seed_differences": [
+            0.004900000000000397,
+            0.0040000000000003574,
+            -0.0013000000000001136
+          ],
+          "training_seed_sample_SD": 0.0033501243758008795
+        },
+        "e_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0022999999999998764,
+          "95pct": [
+            -0.001915313081337875,
+            0.00705501975517023
+          ],
+          "per_seed_differences": [
+            -0.00259999999999988,
+            -0.00040000000000001146,
+            0.00989999999999952
+          ],
+          "training_seed_sample_SD": 0.006673080248280834
+        },
+        "e_eff_purity_0.9": {
+          "difference_a_minus_b": 0.00526666666666641,
+          "95pct": [
+            -0.002951148631882863,
+            0.017562705065561422
+          ],
+          "per_seed_differences": [
+            0.00869999999999957,
+            0.0006999999999999784,
+            0.006399999999999684
+          ],
+          "training_seed_sample_SD": 0.004118656738954048
+        },
+        "mu_eff_purity_0.8": {
+          "difference_a_minus_b": 0.0046999999999997695,
+          "95pct": [
+            -0.0026858966616142904,
+            0.010421058025943885
+          ],
+          "per_seed_differences": [
+            9.999999999998899e-05,
+            0.00859999999999958,
+            0.005399999999999738
+          ],
+          "training_seed_sample_SD": 0.00429301758673293
+        },
+        "mu_eff_purity_0.9": {
+          "difference_a_minus_b": 0.0092666666666675,
+          "95pct": [
+            -0.0006330407634430837,
+            0.01567809626659863
+          ],
+          "per_seed_differences": [
+            0.016500000000001486,
+            0.009600000000000858,
+            0.0017000000000001597
+          ],
+          "training_seed_sample_SD": 0.007405628490097458
+        },
+        "NC_eff_purity_0.8": {
+          "difference_a_minus_b": -0.0011333333333333935,
+          "95pct": [
+            -0.008624860619437874,
+            0.006670702878878695
+          ],
+          "per_seed_differences": [
+            -0.0008999999999999564,
+            -0.0009000000000000813,
+            -0.001600000000000143
+          ],
+          "training_seed_sample_SD": 0.0004041451884328097
+        },
+        "NC_eff_purity_0.9": {
+          "difference_a_minus_b": 0.00696666666666729,
+          "95pct": [
+            -0.0004700026804615602,
+            0.0117181636793015
+          ],
+          "per_seed_differences": [
+            0.006900000000000614,
+            0.0017000000000001528,
+            0.012300000000001102
+          ],
+          "training_seed_sample_SD": 0.00530031445608073
+        },
+        "BA4": {
+          "difference_a_minus_b": null,
+          "95pct": [
+            null,
+            null
+          ],
+          "per_seed_differences": [
+            null,
+            null,
+            null
+          ],
+          "training_seed_sample_SD": null
+        }
+      },
+      "scope": "paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately"
+    }
+  ],
+  "independent_review": {
+    "status": "complete",
+    "require_full": false,
+    "scope": "independent array/count readback of development results; uncertainty and scientific promotion reviewed separately",
+    "largest_absolute_errors": {
+      "BA": 1.0769163338864018e-14,
+      "NLL": 5.10702591327572e-15,
+      "working_point": 1.1129985821867194e-14,
+      "prior_purity": 0.0,
+      "weighted_confusion": 5.056790541857481e-10,
+      "coverage_and_purity": 4.2577052994374753e-14
+    },
+    "passed": 1431,
+    "failed": [],
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "uncertainty": "pointwise physical-block development intervals conditional on fitted seeds and realized runtimes; seed sample SD is separate",
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

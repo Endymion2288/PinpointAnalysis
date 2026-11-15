@@ -4,7 +4,7 @@
   "status": "design_with_completed_R0_and_R1_full_training_in_progress_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 complete; R1 seed42 ranking and paired ranking uncertainty complete; B1/B4/B0 three-seed main-task statistics and573 independent checks complete;55 stress paths/400 draws/5666 checks complete; B1 compute, B2 expanded seeds/compute and B3 compute running; final41-model evaluation and acceptance pending",
+  "implementation_status": "R0 complete; R1 seed42 ranking and paired ranking uncertainty complete; B1/B4/B0 three-seed main tasks and B1/B4 same-allocation compute complete (24 models/56 pairs/1431 independent checks); 55 stress paths/400 draws/5666 checks complete; 34 of 41 final models complete; B2 expanded seeds/compute and B3 compute running; final evaluation and acceptance pending",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -302,14 +302,14 @@
       ],
       "planned_device_hours": 18,
       "status": "in_progress",
-      "progress_report": "../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md",
-      "measured_progress": "seed42 ranking and paired pointwise intervals complete; B1/B4/B0 three-seed18-model40-pair main-task evaluation complete (1185 independent array/count/working-point checks); B1 T4 tau criteria pass versus B4/HGB; B1 T3 practical BA3 gain versus HGB and mu argmax noninferiority versus B4 do not pass; B1 class-score mu working points improve versus B4; B2 remaining-time handoffs in progress; final41-model133-pair nominal/compute/acceptance pending",
+      "progress_report": "../../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md",
+      "measured_progress": "seed42 ranking and pointwise intervals complete; B1/B4/B0 three-seed tasks and B1/B4 compute complete (24 models/56 pairs/1431 independent checks); B1 compute T3 minus T4 BA3 +0.06444 pp with interval crossing zero and NLL3 +0.008443592; substantial mu/NC recall tradeoff remains; B1 T4 tau criteria pass versus B4/HGB; B1 T3 practical BA3 gain versus HGB and mu argmax noninferiority versus B4 do not pass; 34 of 41 models complete; B2 remaining-time handoffs and B3 compute in progress; final41-model133-pair acceptance pending",
       "interim_results": "r1_interim_b4.json",
       "ranking_result": "r1_architecture_ranking.json",
       "interim_training_control": "r1_b1_compute_controls.json",
       "resource_progress": {
-        "snapshot_UTC": "2026-11-15T03:31:39Z",
-        "allocation_device_hours_so_far": 33.10224804,
+        "snapshot_UTC": "2026-11-15T04:31:42Z",
+        "allocation_device_hours_so_far": 37.7478541435,
         "planning_envelope_exceeded": true,
         "terminal_cost": false,
         "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; aborted1g attempts and replacement probes included"
@@ -317,7 +317,8 @@
       "three_seed_B1_result": "r1_b1_three_seed.json",
       "ranking_uncertainty": "r1_ranking_uncertainty.json",
       "collaboration_report": "08_r1_collaboration.md",
-      "muon_decision_review": "r1_muon_decision_review.json"
+      "muon_decision_review": "r1_muon_decision_review.json",
+      "three_seed_compute_result": "r1_b1_three_seed_compute.json"
     },
     {
       "id": "R2",

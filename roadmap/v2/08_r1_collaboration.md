@@ -1,6 +1,6 @@
 # R1 三类合作组对照
 
-**R1已实现真实三类重训及相同事件上的四类条件三类评价。当前B1/B4/HGB三seed和seed42投影控制已测量；41模型的最终同计算比较仍在运行。本页先给可核对的对照口径和已完成的域表。**
+**R1已实现真实三类重训及相同事件上的四类条件三类评价。当前B1/B4/HGB三seed、B1/B4同allocation等时预算及seed42投影控制已测量；41模型的最终交付仍在运行。本页给出可核对的对照口径和已完成的域表。**
 
 ## 已完成的对照范围
 
@@ -46,6 +46,8 @@ R1的benchmark三类prior为1/3、1/3、1/3。几何域内重新等类加权；�
 上述18行的126个实测数值已逐项核对；另对B1/B4/HGB三seed的18模型、11域从预测独立读回1,185项，包含raw/weighted confusion与固定purity效率/coverage，全部通过，见[stage261](../../workbook/2026-11-15_stage261_r1_collaboration_and_count_audit.md)。
 
 全域三seed的较稳健结论见[stage259](../../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)：B1真实T3平均BA3为56.563%，T4 conditional为56.304%；相对HGB的T3平均增益1.9733 pp，低于预设2 pp实用门槛。对B4的T3平均增益2.1711 pp，同时μ recall下降2.410 pp，未满足逐类非劣。不能只凭平均BA宣布全面优于基线。
+
+[stage263](../../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md)的三seed同allocation等时预算结果：B1 compute T3平均BA3为56.369%，相对T4 conditional只高.064 pp [−.179,+.302]，NLL更差.008444；e/μ/NC recall差为−.627/+6.583/−5.763 pp。B4 compute T3的BA3为54.674%，相对其T4高.188 pp [−.072,+.413]。24模型56配对、1,431项独立读回通过；增加三类重复曝光没有消除逐类取舍。这里比较的是本allocation fresh T4对应的操作wall，设备、实际精度与逐seed波动见[紧凑结果](r1_b1_three_seed_compute.json)。
 
 ## 与合作组原报告的逐项关系
 

@@ -4,9 +4,9 @@
 
 **当前执行状态：R0 完成，R1 正在执行。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm，排除1,560,122个历史使用family。R0验收完成；R1八项真实学习门槛、B0三seed、16项screen和seed42四pass主任务完成。冻结排名为B1、B2、B3、B4，平均共同BA3分别为56.5567%、55.3950%、55.1750%、54.5133%；B1/B2与参考B4扩三seed。55条压力路径的400次统计及5,666项独立读回完成，完整nominal比较仍在执行。见[stage258](../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)、[排名](v2/r1_architecture_ranking.json)与[B1同结构控制](v2/r1_b1_compute_controls.json)。Cal-A/Cut-B/Confirm继续封存。
 
-B1同结构计算控制在更多曝光与wall-based schedule下，μ recall提高11.28 pp，同时e/NC下降6.46/6.30 pp，BA3下降0.493 pp。训练、决策和表示机制需要分别检查。四pass排名没有建立收敛；B2/B3仅相差0.220 pp，不作已确认的架构优势解释。04:12 UTC尚未关闭的R1 allocation已达36.6508 device-hours，超过18 h规划，最终成本待所有作业终态。
+B1三seed同allocation等时预算比较已完成：compute T3相对T4 conditional的BA3仅高0.064 pp [−0.179,+0.302]，NLL3更差0.008444；μ recall提高6.583 pp，同时e/NC下降0.627/5.763 pp。B4增加重复曝光有小幅收益，B1未显示同样趋势。训练、决策和表示机制需要分别检查，R2将更多unique与更多重复曝光分开。见[stage263](../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md)与[同计算结果](v2/r1_b1_three_seed_compute.json)。四pass排名没有建立收敛；B2/B3仅相差0.220 pp，不作已确认的架构优势解释。04:31 UTC尚未关闭的R1 allocation已达37.7479 device-hours，超过18 h规划，最终成本待所有作业终态。
 
-[B1三seed结果](v2/r1_b1_three_seed.json)进一步支持保留四类主线：相对B4的τ1%效率增益为2.423 pp [1.941,2.977]；真实T3相对T4 conditional的BA3增益为0.259 pp [0.042,0.479]，但NLL更差且有e/NC取舍。B1 T3相对HGB平均增加1.973 pp，未达预设2 pp实用值，对B4则未满足μ非劣。见[stage259](../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)；完整同计算和B2重复尚未完成。
+[B1三seed结果](v2/r1_b1_three_seed.json)进一步支持保留四类主线：相对B4的τ1%效率增益为2.423 pp [1.941,2.977]；共同曝光下真实T3相对T4 conditional的BA3增益为0.259 pp [0.042,0.479]，但NLL更差且有e/NC取舍。B1 T3相对HGB平均增加1.973 pp，未达预设2 pp实用值，对B4则未满足μ非劣。见[stage259](../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)；B1完整同计算已完成，B2重复及B3 compute尚未完成，当前34/41最终模型complete。
 
 [μ工作点读回](v2/r1_muon_decision_review.json)补充：B1相对B4的T3 argmax μ recall虽低2.410 pp，1% FPR效率却高4.850 pp [4.057,5.823]，三个seed均为正；这两种决策需分别评价，原非劣门槛仍未通过。见[stage262](../workbook/2026-11-15_stage262_r1_muon_working_points_and_time_handoff.md)。
 
@@ -20,7 +20,7 @@ B1同结构计算控制在更多曝光与wall-based schedule下，μ recall提�
 
 - 六模型均以第 4/4 轮为 best，末轮 NLL 继续下降 **0.00203–0.00779**，训练饱和未建立。
 - 100k 监督标签、100k SSL 语料和约 0.898M 参数构成当前主模型规模；没有完成 300k/1M 监督训练的饱和研究。
-- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是S6条件诊断；R1实际三类重训的首组结果见stage246，完整三seed与同计算结论仍待完成。
+- 从固定四类 ensemble 删除真 τ 并重归一化，三类 validation BA 为 **54.6933%**；pixel-centered 为 **74.4517%**。这是S6条件诊断；R1实际三类重训的B1/B4三seed与同计算结果见stage259/263，完整R1交付仍待完成。
 - 记录中的 data-wait/总耗时为 **31.16%–46.64%**。先提升数据供给，可把更多计算用于长训练和有效模型比较。
 
 数值、统计口径和代码证据见[独立评估](v2/01_evidence_review.md)及[复核 JSON](v2/current_results_review.json)。

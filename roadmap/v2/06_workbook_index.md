@@ -314,3 +314,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 260 | [r1 compact domain export](../../workbook/2026-11-15_stage260_r1_compact_domain_export.md) |
 | 261 | [r1 collaboration and count audit](../../workbook/2026-11-15_stage261_r1_collaboration_and_count_audit.md) |
 | 262 | [r1 muon working points and time handoff](../../workbook/2026-11-15_stage262_r1_muon_working_points_and_time_handoff.md) |
+| 263 | [r1 three-seed compute comparison](../../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md) |

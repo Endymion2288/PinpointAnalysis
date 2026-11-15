@@ -22,6 +22,8 @@ B1投影控制与合作组条件域见[stage254](../../workbook/2026-11-15_stage
 
 [stage259](../../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)补齐排名区间：B1−B2为+1.162 pp [0.835,1.443]，B2−B3为+0.220 pp [−0.047,0.494]。B1三seed T3−T4 conditional的BA3差+0.259 pp [0.042,0.479]，NLL3反而增加0.003272，逐类为e +2.080、μ −0.020、NC −1.283 pp。B1 T4相对B4的τ1%效率增加2.423 pp [1.941,2.977]，支持保留四类主线，同时报告其μ代价。B1 T3相对HGB平均BA增益1.973 pp，未达到预设2 pp实用门槛；相对B4仍未满足μ非劣。完整同计算和B2 seed结果继续执行。
 
+[stage263](../../workbook/2026-11-15_stage263_r1_three_seed_compute_comparison.md)完成B1/B4三seed等时预算比较，24模型、56配对及1,431项独立读回通过。B1 compute T3−T4的BA差+.064 pp [−.179,+.302]、NLL差+.008444，逐类e/μ/NC为−.627/+6.583/−5.763 pp；总体BA非劣支持保留四类，逐类取舍仍需处理。B1 compute−main T3的BA差−.194 pp、区间跨零，B4则+.282 pp [.088,.468]。R2分开检验unique数据与重复曝光，不预设更多曝光一定改善。34/41模型完成，B2扩展和B3 compute继续；完整R1验收尚未完成。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |

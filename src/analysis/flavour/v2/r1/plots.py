@@ -225,7 +225,64 @@ def results(root):
     figure.suptitle('Four-pass development learning curves, seed 42')
     save(figure, root, 'r1_learning_curves')
 
+    matched_compute_results(root)
     stress_results(root, entries)
+
+
+def matched_compute_results(root):
+    evaluation = json.loads((root/'evaluation/results.json').read_text())
+    entries = json.loads((root/'evaluation_config.json').read_text())['models']
+    families = [family for family in ['B1', 'B2', 'B3', 'B4']
+                if any(e['family']==family and e.get('kind')=='matched_compute' for e in entries)]
+    figure, axes = plt.subplots(2, 2, figsize=(14, 9), constrained_layout=True)
+    comparisons = {}
+    for j, family in enumerate(families):
+        for x, (task, kind) in enumerate([('T3', 'main'), ('T4', 'main'), ('T3', 'matched_compute')]):
+            group = [e for e in entries if e['family']==family and e['task']==task
+                     and e.get('kind', 'main')==kind]
+            values = [evaluation['models'][e['name']]['all']['T3']['BA']*100 for e in group]
+            axes[0, 0].errorbar(x+(j-(len(families)-1)/2)*.09, np.mean(values),
+                yerr=np.std(values, ddof=1) if len(values)>1 else 0., fmt='o', capsize=3,
+                color=COLORS[family], label=f'{family} ({len(values)} seeds)' if x==0 else None)
+        mean_pair = next((p for p in evaluation['mean_seed_pairs']
+            if p['domain']=='all' and p['a_family_task_kind']==[family, 'T3', 'matched_compute']
+            and p['b_family_task_kind']==[family, 'T4', 'main']), None)
+        pair = mean_pair or next(p for p in evaluation['pairs']
+            if p['domain']=='all' and p['a']==f'compute_{family.lower()}_t3_s42'
+            and p['b']==f'final_{family.lower()}_t4_s42')
+        comparisons[family] = pair['metrics']
+        for axis, metric, scale in [(axes[0, 1], 'BA3', 100), (axes[1, 1], 'NLL3', 1)]:
+            row = pair['metrics'][metric]
+            point = row['difference_a_minus_b']*scale
+            low, high = np.asarray(row['95pct'])*scale
+            axis.hlines(j, low, high, color=COLORS[family], linewidth=1.5)
+            axis.plot(point, j, 'o', color=COLORS[family])
+    axes[0, 0].set(xticks=range(3), xticklabels=['T3: four passes', 'T4: four passes', 'T3: T4 wall budget'],
+                   ylabel='Common non-tau balanced accuracy (%)', title='Mean and realized seed sample SD')
+    axes[0, 0].legend(fontsize=8)
+    for axis, title, xlabel in [
+            (axes[0, 1], 'T3 compute control minus conditional T4', 'BA3 difference (percentage points)'),
+            (axes[1, 1], 'T3 compute control minus conditional T4', 'NLL3 difference')]:
+        axis.set(yticks=range(len(families)), yticklabels=families, title=title, xlabel=xlabel)
+        axis.invert_yaxis()
+        axis.axvline(0., color='black', linestyle=':', linewidth=.8)
+        axis.grid(axis='x', alpha=.2)
+    focus = families[0]
+    for c, label in enumerate(['e', 'mu', 'NC']):
+        row = comparisons[focus]['recall_'+label]
+        point = row['difference_a_minus_b']*100
+        low, high = np.asarray(row['95pct'])*100
+        axes[1, 0].hlines(c, low, high, color=COLORS[focus], linewidth=1.5)
+        axes[1, 0].plot(point, c, 'o', color=COLORS[focus])
+    axes[1, 0].set(yticks=range(3), yticklabels=['Electron', 'Muon', 'NC'],
+        title=f'{focus}: T3 compute control minus conditional T4', xlabel='Recall difference (percentage points)')
+    axes[1, 0].invert_yaxis()
+    axes[1, 0].axvline(0., color='black', linestyle=':', linewidth=.8)
+    axes[1, 0].grid(axis='x', alpha=.2)
+    axes[0, 0].grid(axis='y', alpha=.2)
+    figure.suptitle('Development Tune: same-allocation total wall controls\n'
+                   'Paired 95% physical-block intervals condition on the fitted seeds and actual runtime recipes')
+    save(figure, root, 'r1_matched_compute')
 
 
 def stress_results(root, entries):
@@ -273,7 +330,11 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--results', action='store_true')
     parser.add_argument('--stress-only', action='store_true')
+    parser.add_argument('--compute-only', action='store_true')
     args = parser.parse_args()
+    if args.compute_only:
+        matched_compute_results(args.root)
+        return
     if args.stress_only:
         config = json.loads((args.root/'evaluation_config.json').read_text())
         entries = [e for e in config['models'] if e.get('kind', 'main') == 'main' and e['seed'] == 42]
