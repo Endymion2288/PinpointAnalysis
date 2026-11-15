@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+import json
 from pathlib import Path
 
 import numpy as np
@@ -125,6 +126,48 @@ class ObservationTests(unittest.TestCase):
 
 
 class MetricTests(unittest.TestCase):
+    def test_independent_stress_audit_detects_wrong_counts_and_shifts(self):
+        from analysis.flavour.v2.r1.evaluate import domain_report
+        from analysis.flavour.v2.r1.review import review_stress
+        from analysis.flavour.v2.r1.stress_evaluate import frozen_points
+        rng = np.random.default_rng(17)
+        y = np.repeat(np.arange(4), 20)
+        p = rng.uniform(.02, 1., (len(y), 4)).astype('float32')
+        p /= p.sum(1, keepdims=True)
+        frame = pd.DataFrame({'label': y, **{f'p{c}': p[:, c] for c in range(4)}})
+        reference = domain_report(frame, np.ones(len(y), dtype=bool))
+        conditions = {}
+        for name in ['nominal', 'noise', 'combined', 'remove_pixel', 'remove_tracker']:
+            fixed, _ = frozen_points(frame, reference)
+            for row in fixed:
+                row['efficiency_difference_from_nominal'] = 0.
+                row['actual_FPR_difference_from_nominal'] = 0.
+            metrics = ['BA3', 'NLL3', 'BA4', 'NLL4', 'recall_e', 'recall_mu',
+                       'recall_NC', 'tau_eff_1pct', 'tau_eff_0p1pct']
+            conditions[name] = {'metrics': reference, 'frozen_points': fixed,
+                'paired_descriptive_differences': {key: {'difference_a_minus_b': 0.} for key in metrics}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'experiments/model').mkdir(parents=True)
+            (root/'experiments/model/manifest.json').write_text(json.dumps({'metrics': reference}))
+            for name in conditions:
+                folder = root/'diagnostics'/f'model_{name}'
+                folder.mkdir(parents=True)
+                frame.to_parquet(folder/'predictions.parquet', index=False)
+            (root/'evaluation').mkdir()
+            report = {'models': {'model': {'conditions': conditions}}, 'paired_model_comparisons': []}
+            path = root/'evaluation/stress_results.json'
+            path.write_text(json.dumps(report))
+            config = {'models': [{'name': 'model', 'seed': 42}]}
+            initial = review_stress(root, config)
+            self.assertEqual(initial['failed'], [])
+            conditions['noise']['frozen_points'][0]['selected_signal'] += 1
+            conditions['combined']['paired_descriptive_differences']['BA3']['difference_a_minus_b'] = .05
+            path.write_text(json.dumps(report))
+            broken = review_stress(root, config)
+            self.assertTrue(any('noise_T3_0_FPR_0.01_frozen_cut_and_counts' in key for key in broken['failed']))
+            self.assertIn('model_combined_BA3_condition_shift', broken['failed'])
+
     def test_tau_prior_purity_uses_conditional_response_in_unequal_domain(self):
         from analysis.flavour.v2.r1.evaluate import domain_report
         y = np.repeat(np.arange(4), [100, 200, 40, 300])

@@ -22,6 +22,8 @@ V100本身支持FP32；本次失败的原因是当前Torch二进制没有SM70内
 
 `analysis.flavour.v2.submit`默认最低Capability为7.5，不限定DeviceName。R1训练在创建实验目录、复制全样本之前执行一个实际CUDA算子；SM75运行时切换FP32/eager，并在manifest分别保存submitted recipe、实际精度、GPU、Capability和Torch内核架构。更高设备仍须由实际probe验证。
 
+2026-11-15实际广告补充：Condor H100 1g.12gb/2g.24gb MIG省略Capability；提交条件对这些明确的SM90型号补充识别，保留实际CUDA probe。R1已测aggregate RSS最高12,647 MiB，GPU默认请求15GiB，经站点变换为5 CPU/15,360 MB，可进入17GB的1g节点；旧16GiB会变成6 CPU/18GB而排除它们。三个尚未开始的作业修正后已在1g MIG启动，见[stage255](../../workbook/2026-11-15_stage255_r1_stress_audit_and_mig_matching.md)。
+
 ## 2. 调度与比较
 
 1. 大样本转换、统计和重模拟使用HTCondor；训练同时考虑Condor与Kubeflow。先检查兼容schedd的队列、WRITE和EOS策略，再选择负载最低者，保留submission记录。

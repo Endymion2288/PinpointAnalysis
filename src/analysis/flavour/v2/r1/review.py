@@ -41,14 +41,139 @@ def selected_rates(y, p, c, cut, balanced):
     return selected, counts, acceptance, float(fpr)
 
 
+def review_stress(root, config):
+    """Recompute stress points and cut counts without the evaluation metric code."""
+    stress = json.loads((root/'evaluation/stress_results.json').read_text())
+    checks, points, fixed_rates = [], {}, {}
+    largest = 0.
+    paths = 0
+
+    def check(name, value, **details):
+        checks.append({'name': name, 'passed': bool(value), **details})
+
+    def same(name, actual, expected):
+        nonlocal largest
+        error = abs(float(actual)-float(expected))
+        largest = max(largest, error)
+        check(name, error<2e-10, maximum_absolute_error=error)
+
+    for entry in [e for e in config['models'] if e.get('kind', 'main')=='main' and e['seed']==42]:
+        name = entry['name']
+        manifest = json.loads((root/'experiments'/name/'manifest.json').read_text())
+        points[name], fixed_rates[name] = {}, {}
+        for condition in ['nominal', 'noise', 'combined', 'remove_pixel', 'remove_tracker']:
+            path = root/'diagnostics'/f'{name}_{condition}'
+            frame = pd.read_parquet(path/'predictions.parquet')
+            original, common = conditional_probabilities(frame)
+            y = frame.label.to_numpy()
+            non_tau = y!=2
+            reported = stress['models'][name]['conditions'][condition]
+            prefix = f'{name}_{condition}'
+            check(prefix+'_probabilities', np.isfinite(original).all() and (original>=0).all()
+                  and (original<=1).all() and np.allclose(original.sum(1), 1., atol=2e-6))
+            check(prefix+'_raw_class_counts', reported['metrics']['raw_counts_original_labels']==
+                  np.bincount(y, minlength=4).tolist())
+            point = {}
+            for task in ['T3', 'T4']:
+                if task=='T4' and original.shape[1]!=4:
+                    continue
+                keep = non_tau if task=='T3' else np.ones(len(y), dtype=bool)
+                labels = np.searchsorted([0, 1, 3], y[keep]) if task=='T3' else y[keep]
+                p = common[keep] if task=='T3' else original[keep]
+                direct, support, balanced = direct_metrics(labels, p)
+                for metric, value in direct.items():
+                    key = metric+task[1]
+                    point[key] = value
+                    same(prefix+'_'+key, reported['metrics'][task][metric], value)
+                if task=='T3':
+                    for c, label in enumerate(['e', 'mu', 'NC']):
+                        point['recall_'+label] = float(np.mean(p[labels==c].argmax(1)==c))
+                for c in range(p.shape[1]):
+                    for target in [.01, .001]:
+                        row = reported['metrics'][task]['per_class'][c]
+                        selected, counts, acceptance, fpr = selected_rates(
+                            labels, p, c, row[f'threshold_FPR_{target}'], balanced)
+                        same(prefix+f'_{task}_{c}_eff_{target}', row[f'eff_FPR_{target}'], acceptance[c])
+                        same(prefix+f'_{task}_{c}_fpr_{target}', row[f'actual_FPR_{target}'], fpr)
+                        check(prefix+f'_{task}_{c}_fpr_bound_{target}', fpr<=target+2e-10)
+                        if task=='T4' and c==2:
+                            point['tau_eff_1pct' if target==.01 else 'tau_eff_0p1pct'] = float(acceptance[c])
+            points[name][condition] = point
+            fixed_rates[name][condition] = {}
+            for row in reported['frozen_points']:
+                key = row['name']
+                if key.startswith('T3_'):
+                    label = int(key.split('_')[1])
+                    c = [0, 1, 3].index(label)
+                    target = float(key.split('_')[-1])
+                    cut = manifest['metrics']['T3']['per_class'][c][f'threshold_FPR_{target}']
+                    score = common[:, c]
+                    background = (y!=label)&non_tau
+                    background_labels = [v for v in [0, 1, 3] if v!=label]
+                else:
+                    label, c = 2, 2
+                    target = float(key.split('_')[-1])
+                    cut = manifest['metrics']['T4']['per_class'][2][f'threshold_FPR_{target}']
+                    score = original[:, 2]
+                    background = y!=2
+                    background_labels = [0, 1, 3]
+                selected = score>=cut if cut is not None else np.zeros(len(y), dtype=bool)
+                signal = y==label
+                efficiency = float(np.mean(selected[signal]))
+                fpr = float(np.mean([np.mean(selected[y==v]) for v in background_labels]))
+                expected_counts = [int(signal.sum()), int(background.sum()),
+                    int((signal&selected).sum()), int((background&selected).sum()),
+                    int(((y==2)&selected).sum())]
+                actual_counts = [row[k] for k in ['signal_events', 'background_events',
+                    'selected_signal', 'selected_background', 'selected_tau']]
+                check(prefix+'_'+key+'_frozen_cut_and_counts',
+                      row['frozen_full_Tune_nominal_threshold']==cut and expected_counts==actual_counts)
+                for metric, value in [('efficiency', efficiency), ('actual_FPR', fpr)]:
+                    same(prefix+'_'+key+'_'+metric, row[metric], value)
+                    fixed_rates[name][condition][key+'_'+metric] = value
+                    reference = fixed_rates[name]['nominal'][key+'_'+metric]
+                    same(prefix+'_'+key+'_'+metric+'_shift',
+                         row[metric+'_difference_from_nominal'], value-reference)
+            if condition!='nominal':
+                for metric, value in point.items():
+                    same(prefix+'_'+metric+'_condition_shift',
+                         reported['paired_descriptive_differences'][metric]['difference_a_minus_b'],
+                         value-points[name]['nominal'][metric])
+            paths += 1
+    for i, comparison in enumerate(stress.get('paired_model_comparisons', [])):
+        left, right = points[comparison['a']], points[comparison['b']]
+        for condition, reported in comparison['conditions'].items():
+            for metric in left[condition].keys() & right[condition].keys():
+                difference = left[condition][metric]-right[condition][metric]
+                nominal = left['nominal'][metric]-right['nominal'][metric]
+                same(f'pair_{i}_{condition}_{metric}',
+                     reported['a_minus_b'][metric]['difference_a_minus_b'], difference)
+                same(f'pair_{i}_{condition}_{metric}_interaction',
+                     reported['condition_shift_a_minus_b'][metric]['difference_a_minus_b'], difference-nominal)
+    failed = [c['name'] for c in checks if not c['passed']]
+    return {'status': 'complete' if not failed else 'failed', 'model_conditions': paths,
+        'models': len(points), 'largest_absolute_error': largest,
+        'checks': checks, 'passed': len(checks)-len(failed), 'failed': failed,
+        'scope': 'independent stress class means, raw selections, frozen cuts and paired point differences; intervals audited separately',
+        'Cal_A_Cut_B_Confirm_payload_read': False}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--config', type=Path)
     parser.add_argument('--require-full', action='store_true')
+    parser.add_argument('--stress-only', action='store_true')
     args = parser.parse_args()
     root = args.root
     config = json.loads((args.config or root/'evaluation_config.json').read_text())
+    if args.stress_only:
+        output = review_stress(root, config)
+        write_json(root/'evaluation/independent_stress_review.json', output)
+        print(json.dumps({k: v for k,v in output.items() if k!='checks'}), flush=True)
+        if output['failed']:
+            raise SystemExit(1)
+        return
     evaluation = json.loads((root/'evaluation/results.json').read_text())
     catalog = pd.read_parquet(root/'data/catalog.parquet').sort_values(KEY).reset_index(drop=True)
     tune = catalog[catalog.split.eq('validation')].reset_index(drop=True)
@@ -158,6 +283,11 @@ def main():
                 check(path.name+'_terminal_inference', record['status']=='complete' and not record['Cal_A_Cut_B_Confirm_payload_read'])
                 paths.append(path.name)
         check('eleven_models_five_conditions', len(paths)==55 and len(stress['models'])==11)
+        independent_stress = review_stress(root, config)
+        write_json(root/'evaluation/independent_stress_review.json', independent_stress)
+        check('independent_stress_metrics_cuts_and_contrasts', independent_stress['status']=='complete'
+              and independent_stress['model_conditions']==55,
+              passed_checks=independent_stress['passed'], failed=independent_stress['failed'])
 
     failed = [c['name'] for c in checks if not c['passed']]
     output = {'status': 'complete' if not failed else 'failed', 'require_full': args.require_full,

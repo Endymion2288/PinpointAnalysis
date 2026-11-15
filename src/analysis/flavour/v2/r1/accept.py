@@ -92,6 +92,9 @@ def main():
     review = json.loads((root/'evaluation/independent_review.json').read_text())
     check('independent_full_probability_count_exposure_review',
           review['status']=='complete' and review['require_full'] and not review['failed'])
+    stress_review = json.loads((root/'evaluation/independent_stress_review.json').read_text())
+    check('independent_stress_point_and_fixed_cut_review', stress_review['status']=='complete'
+          and stress_review['model_conditions']==55 and not stress_review['failed'])
     check('400_paired_physical_block_bootstraps', evaluation['status']=='complete' and evaluation['replicates']==400)
     check('roundoff_aware_operating_points', evaluation.get('metrics_revision')==METRICS_REVISION)
     for entry in [e for e in config['models'] if e['task']=='T4']:

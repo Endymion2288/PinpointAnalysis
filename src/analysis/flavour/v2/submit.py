@@ -11,6 +11,19 @@ import subprocess
 import tarfile
 
 
+def gpu_requirement(minimum_capability, device_name=None):
+    """Accept known SM90 MIG ads when CERN omits their Capability property."""
+    minimum = max(7.5, minimum_capability)
+    capability = f'(Capability >= {minimum})'
+    if minimum<=9.0:
+        capability = (f'({capability} || ((Capability =?= UNDEFINED) && '
+                      'regexp("^NVIDIA H100.* MIG ", DeviceName)))')
+    requirement = '(GlobalMemoryMb >= 10000) && '+capability
+    if device_name:
+        requirement += ' && (DeviceName == '+json.dumps(device_name)+')'
+    return requirement
+
+
 def submit_kubeflow(args, root, script, archive):
     from analysis.flavour.s2.kubeflow import GPU_FLAVORS, kubectl
     product, resource = GPU_FLAVORS[args.flavor]
@@ -140,10 +153,7 @@ def main():
                'requirements = (OpSysAndVer == "AlmaLinux9")', f'+JobFlavour = "{args.job_flavour}"',
                "should_transfer_files = YES", "when_to_transfer_output = ON_EXIT", 'transfer_output_files = ""']
     if args.gpu:
-        effective_capability = max(7.5, args.min_capability)
-        requirement = f"(GlobalMemoryMb >= 10000) && (Capability >= {effective_capability})"
-        if args.gpu_model:
-            requirement += ' && (DeviceName == ' + json.dumps(args.gpu_model) + ')'
+        requirement = gpu_requirement(args.min_capability, args.gpu_model)
         content += ["request_gpus = 1", "require_gpus = " + requirement]
     content.append("queue 1")
     path = directory / "job.sub"
@@ -158,6 +168,7 @@ def main():
                 "cpus": args.cpus, "gpu": args.gpu,
                 "requested_minimum_capability": args.min_capability,
                 "LCG108_Torch_kernel_minimum_capability": 7.5,
+                "missing_GPU_capability_policy": "known NVIDIA H100 MIG is SM90; actual CUDA startup probe still required",
                 "stdout": response.stdout, "stderr": response.stderr,
                 "returncode": response.returncode, "submitted": response.returncode == 0}
     record.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n")
