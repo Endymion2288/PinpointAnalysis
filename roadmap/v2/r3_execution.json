@@ -1,7 +1,7 @@
 {
   "status": "M0_C1_evaluated_G1_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T16:34:00.696472+00:00",
+  "UTC": "2026-11-15T16:58:43.032873+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -70,8 +70,8 @@
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
-  "unit_tests_passed": 41,
-  "latest_stage_report": "../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md",
+  "unit_tests_passed": 43,
+  "latest_stage_report": "../../workbook/2026-11-15_stage295_r3_delivery_contract_and_recovery.md",
   "pending": [
     "G1 fixed-exposure endpoint and full Tune comparison against matched D2 stride4",
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
@@ -376,9 +376,10 @@
   },
   "delivery_implementation": {
     "evaluation_contract": "configs/r3/m0_evaluation.json",
-    "readability_probes": "B1 reference Train4k/Tune40k complete; formal G1/G2 trained feature extraction pending",
+    "readability_probes": "M0,D2 and C1 complete,full Tune readback probability difference0;G1/native endpoints pending",
     "retrained_global_ablation": "formal revision3 model frozen and allocation running; no final effects yet",
-    "acceptance": "implemented; final models,decisions and terminal resources remain"
+    "acceptance": "frozen six formal models,three full evaluation contracts,24 required evidence items; actual full-Tune readback and health matrices required",
+    "completion_contract": "configs/r3/completion_contract.json"
   },
   "G1_formal": {
     "status": "running",
@@ -387,7 +388,15 @@
     "flavor": "h100-47gb",
     "config": "configs/r3/b1_g1_stride2_t4_s42.json",
     "reference": "R2 b1_d2_t4_s42",
-    "sampling": "spatial"
+    "sampling": "spatial",
+    "deterministic_recovery": {
+      "status": "complete",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/smoke/g1_formal_c2/integrity.json",
+      "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+      "maximum_parameter_delta": 0.0,
+      "same_exact_probability_and_exposure_tables": true,
+      "actual_Tune_used": false
+    }
   },
   "G2_candidate_audit": {
     "status": "complete",

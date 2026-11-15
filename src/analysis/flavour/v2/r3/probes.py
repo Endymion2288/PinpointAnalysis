@@ -47,7 +47,8 @@ class ReadableFeatures:
         else:
             self.family='native'
             encoder=getattr(backbone,'encoder',backbone)
-            modules={'local':encoder.pool,'regional':encoder.global_blocks[0],'global':backbone}
+            modules={'local':encoder.pool,'global':backbone}
+            if len(encoder.global_blocks):modules['regional']=encoder.global_blocks[0]
         for name,module in modules.items():
             def capture(_,inputs,output,name=name):
                 self.values.setdefault(name,[]).append(output.detach().float())
@@ -137,7 +138,6 @@ def main():
         record=json.loads((experiment/'manifest.json').read_text())
         if record['status']!='complete':raise ValueError('readability requires completed fixed-endpoint weights')
         config={**record['config'],'cache_training_inputs':False}
-        if config.get('native_global_ablation'):raise ValueError('probe contract expects intact control/candidate')
         rows=selected[selected.label.ne(2)] if config['task']=='T3' else selected
         # A native control ignores edge tensors, so it can share the exact
         # raw-node inputs and candidate cache with its relation counterpart.
@@ -171,13 +171,14 @@ def main():
             frame.to_parquet(output/(experiment.name+'_'+branch+'_predictions.parquet'),index=False,compression=COMPRESSION)
         models[experiment.name]={'config':config,'reports':reports,'Train_events':len(train),'Tune_events':len(tune),
             'checkpoint_probability_readback':readback,
+            'absent_feature_paths':['regional'] if config.get('native_global_ablation') else [],
             'feature_dimensions':{name:value.shape[1] for name,value in x.items()}}
         del model;torch.cuda.empty_cache()
         write_json(output/'results.json',{'status':'running','models':models})
     write_json(output/'results.json',{'status':'complete','models':models,
         'probe_recipe':'StandardScaler + multinomial logistic C1, max_iter1000; fit only common frozen balanced Train4k; no Tune hyperparameter choice',
         'scope':'readability of frozen features; actual branch use requires training gradients and utility requires retrained ablation',
-        'native_regional_definition':'first inter-block geometry-message stage; no independent region branch in B2/B3',
+        'native_regional_definition':'first inter-block geometry-message stage; no independent region branch in B2/B3; absent in the retrained global ablation',
         'Cal_A_Cut_B_Confirm_payload_read':False})
     scratch.cleanup()
 

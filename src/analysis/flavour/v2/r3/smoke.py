@@ -80,7 +80,8 @@ def main():
         'precision':base['precision'],'GPU':torch.cuda.get_device_name(),
         'shared_transformed_inputs':args.shared_inputs,'shared_preparation':preparation,
         'source_Train_rows':len(source_rows),'optimizer_Train_events':train_events,'synthetic_validation_events':validation_events,
-        'scope':'frozen source Train rows split into optimizer Train and synthetic validation; tests actual cache,global sampler,screen,checkpoint and recovery',
+        'event_mixing':config.get('event_mixing','spatial'),
+        'scope':'frozen source Train rows split into optimizer Train and synthetic validation; tests actual configured cache,sampler,screen,checkpoint and recovery',
         'actual_Tune_used':False,'Cal_A_Cut_B_Confirm_payload_read':False}
     write_json(output/'integrity.json',result)
     print(json.dumps(result),flush=True)

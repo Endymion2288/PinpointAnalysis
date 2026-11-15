@@ -144,6 +144,59 @@ def matched_cost(root,path):
     save(fig,root/'figures','r3_compact_matched_cost')
 
 
+def readability(root,paths):
+    models={}
+    for path in paths:
+        result=json.loads(path.read_text())
+        if result['status']!='complete':raise ValueError('feature figures require complete probes')
+        models.update(result['models'])
+    branches=['local','regional','global','tracker']
+    fig,axes=plt.subplots(1,2,figsize=(12,4.4))
+    for ax,domain,title in [(axes[0],'all','All Tune'),
+            (axes[1],'occupancy_0_100','Pixel occupancy 0–100')]:
+        for name,model in models.items():
+            values=[100*model['reports'][branch][domain]['T3']['BA']
+                if branch in model['reports'] else np.nan for branch in branches]
+            ax.plot(range(4),values,'o-',label=model_label(name))
+        ax.axhline(100/3,color='gray',ls=':',lw=1)
+        ax.set(title=title,xticks=range(4),xticklabels=[b.capitalize() for b in branches],
+            ylabel='Common three-class probe BA (%)')
+        ax.grid(alpha=.2)
+    axes[1].legend(fontsize=8)
+    fig.suptitle('Frozen-feature readability; scaler and logistic C1 fitted on Train4k only\n'
+        'Global = detector encoder before tracker fusion; ablated regional path is absent; not branch utility',fontsize=10)
+    save(fig,root/'figures','r3_feature_readability')
+
+
+def branch_health(root,paths):
+    models={}
+    for path in paths:
+        result=json.loads(path.read_text())
+        if result['status']!='complete':raise ValueError('health figures require completed optimizer-time review')
+        models.update(result['models'])
+    fig,axes=plt.subplots(len(models),2,figsize=(11.5,2.9*len(models)),squeeze=False)
+    for row,(name,model) in enumerate(models.items()):
+        branches=model['branches'];positions=np.arange(len(branches))
+        for ax,median,low,high,title in [
+                (axes[row,0],'gradient_RMS_median','gradient_RMS_min','gradient_RMS_max','Gradient RMS per parameter'),
+                (axes[row,1],'representative_parameter_update_RMS_median',
+                    'representative_parameter_update_RMS_min','representative_parameter_update_RMS_max',
+                    'Representative tensor update RMS')]:
+            for i,branch in enumerate(branches):
+                if branch[high]>0:
+                    minimum=branch.get(low.replace('_min','_positive_min'),branch[low])
+                    if minimum is not None and minimum>0:
+                        ax.hlines(i,minimum,branch[high],color='#4477aa',alpha=.6)
+                if branch[median]>0:ax.plot(branch[median],i,'o',color='#228833',ms=4)
+                if branch[low]==0:ax.text(.02,i,'zero steps',transform=ax.get_yaxis_transform(),fontsize=6,va='center')
+            ax.set(xscale='log',yticks=positions,yticklabels=[b['branch'] for b in branches],
+                title=model_label(name)+' — '+title)
+            ax.tick_params(axis='y',labelsize=7);ax.grid(axis='x',alpha=.2)
+    fig.suptitle('Actual sampled optimizer steps: positive ranges / overall medians; zero steps marked\n'
+        'Positive gradients and updates measure use during fitting; activation and small-fit checks reported separately',fontsize=10)
+    save(fig,root/'figures','r3_training_branch_health')
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
@@ -151,10 +204,14 @@ def main():
     parser.add_argument('--profile',type=Path)
     parser.add_argument('--evaluations',type=Path,nargs='*',default=[])
     parser.add_argument('--matched-cost',type=Path)
+    parser.add_argument('--probes',type=Path,nargs='*',default=[])
+    parser.add_argument('--health',type=Path,nargs='*',default=[])
     args=parser.parse_args()
     if args.phase and args.profile:diagnostics(args.root,args.phase,args.profile)
     for path in args.evaluations:endpoint_figures(args.root,path)
     if args.matched_cost:matched_cost(args.root,args.matched_cost)
+    if args.probes:readability(args.root,args.probes)
+    if args.health:branch_health(args.root,args.health)
 
 
 if __name__=='__main__':main()

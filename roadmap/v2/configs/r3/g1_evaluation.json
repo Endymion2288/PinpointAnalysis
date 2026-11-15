@@ -1,0 +1,29 @@
+{
+  "status": "frozen_before_candidate_endpoint_access",
+  "UTC": "2026-11-15T17:04:17.539246+00:00",
+  "experiments": [
+    {
+      "id": "b1_g1_stride2_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_g1_stride2_t4_s42"
+    },
+    {
+      "id": "b1_d2_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t4_s42"
+    }
+  ],
+  "contrasts": [
+    {
+      "a": "b1_g1_stride2_t4_s42",
+      "b": "b1_d2_t4_s42",
+      "reason": "first_stride2_only_same_D2",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "derivation": "exact G1 subset of the earlier frozen geometry contract; early delivery while native training continues; final full geometry evaluation remains required"
+}

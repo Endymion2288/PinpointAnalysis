@@ -25,6 +25,8 @@ from analysis.flavour.v2.r3.sensor_rows import sensor_row_geometry, sensor_proje
 from analysis.flavour.v2.r1.data import projection
 from analysis.flavour.v2.r3.mapped_inputs import MappedItems,write_mapped_items
 from analysis.flavour.v2.r3.scientific_review import promotion_checks
+from analysis.flavour.v2.r3.probes import ReadableFeatures
+from analysis.flavour.v2.r3.handoff import validate_release
 
 
 class GlobalOrderTests(unittest.TestCase):
@@ -199,8 +201,34 @@ class NativeRelationTests(unittest.TestCase):
         self.assertGreater(float(related.backbone.relations.message[0].weight.grad.norm()),0.)
         self.assertGreater(float(related.backbone.relations.gate.grad.abs()),0.)
 
+    def test_retrained_ablation_readout_has_no_invented_regional_stage(self):
+        config={'family':'B2','task':'T4','dim':16,'seed':42,
+            'native_relation_adapter':True,'native_relations':True,'native_global_ablation':True}
+        batch=collate([self.event(self.nodes([[0,0,0],[1,0,0],[0,0,10]]),[0,1,2])])
+        model=build_model(config).eval();hooks=ReadableFeatures(model)
+        with torch.inference_mode():
+            output=model(batch)
+            features=hooks.collect(batch)
+        hooks.close()
+        self.assertEqual(set(features),{'local','global','tracker'})
+        self.assertTrue(torch.isfinite(output).all())
+        self.assertTrue(all(len(value)==1 and np.isfinite(value).all() for value in features.values()))
+
 
 class DeliveryContractTests(unittest.TestCase):
+    def test_handoff_rejects_live_previous_writers_and_wrong_claim(self):
+        release={'allocation_id':'replacement','models':['a','b'],
+            'previous_allocations':[{'id':'1.0','models':['a','b'],'JobStatus':3,'terminal_confirmed':True}],
+            'previous_writers_terminal':True,'completion_time_decision':'measured saving including preparation'}
+        validate_release(release,'replacement',['a','b'])
+        with self.assertRaises(ValueError):validate_release(release,'other',['a','b'])
+        with self.assertRaises(ValueError):validate_release(release,'replacement',['a'])
+        release['previous_allocations'][0]['models']=['a']
+        with self.assertRaises(ValueError):validate_release(release,'replacement',['a','b'])
+        release['previous_allocations'][0]['models']=['a','b']
+        release['previous_allocations'][0]['JobStatus']=2
+        with self.assertRaises(ValueError):validate_release(release,'replacement',['a','b'])
+
     def test_compensating_recalls_and_tau_common_task_loss_do_not_pass_promotion(self):
         def metric(point,low,high):return {'difference_a_minus_b':point,'95pct':[low,high]}
         values={'BA3':metric(.025,.021,.029),'NLL3':metric(-.02,-.03,-.01),

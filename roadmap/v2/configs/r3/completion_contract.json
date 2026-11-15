@@ -1,0 +1,202 @@
+{
+  "stage": "R3",
+  "status": "frozen",
+  "revision": 1,
+  "UTC": "2026-11-15T16:46:01.749023+00:00",
+  "formal_models": [
+    "b1_m0_t4_s42",
+    "b1_g1_stride2_t4_s42",
+    "b2_g2_control_t4_s42",
+    "b2_g2_relations_t4_s42",
+    "b2_g2_global_ablation_t4_s42",
+    "b1_c1_sensor_rows_t4_s42"
+  ],
+  "evaluations": [
+    {
+      "output": "evaluation_m0",
+      "contract": "contracts/m0_evaluation.json"
+    },
+    {
+      "output": "evaluation_geometry",
+      "contract": "contracts/geometry_evaluation.json"
+    },
+    {
+      "output": "evaluation_c1",
+      "contract": "contracts/c1_evaluation.json"
+    }
+  ],
+  "required_evidence": [
+    {
+      "name": "conserved_sampling_phase",
+      "path": "diagnostics/phase_g1_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "native_candidate_coverage",
+      "path": "diagnostics/graph_plane_policy_c2/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "exact_vectorized_collation",
+      "path": "audit/collate_c1.json",
+      "status": "complete"
+    },
+    {
+      "name": "reversible_sensor_rows",
+      "path": "audit/sensor_rows_c1.json",
+      "status": "complete"
+    },
+    {
+      "name": "corrected_native_five_learning_gates",
+      "path": "fit/g2_c5/gates.json",
+      "status": "complete"
+    },
+    {
+      "name": "compact_real_learning",
+      "path": "fit/sensor_rows_c1/B1_T4.json",
+      "status": "complete"
+    },
+    {
+      "name": "G1_full_validation_resources",
+      "path": "audit/profile_g1_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "G2_full_validation_resource_graph",
+      "path": "audit/profile_g2_c4/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "compact_full_validation_resources",
+      "path": "audit/profile_sensor_rows_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "compact_matched_allocation_cost",
+      "path": "audit/profile_c1_cost_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "M0_deterministic_recovery",
+      "path": "smoke/m0_k1/integrity.json",
+      "status": "complete"
+    },
+    {
+      "name": "G1_deterministic_recovery",
+      "path": "smoke/g1_formal_c2/integrity.json",
+      "status": "complete"
+    },
+    {
+      "name": "compact_deterministic_recovery",
+      "path": "smoke/sensor_rows_c2_c0/integrity.json",
+      "status": "complete"
+    },
+    {
+      "name": "native_control_shared_recovery",
+      "path": "smoke/g2_control_c9_c0/integrity.json",
+      "status": "complete"
+    },
+    {
+      "name": "native_relations_shared_recovery",
+      "path": "smoke/g2_relations_c9_c0/integrity.json",
+      "status": "complete"
+    },
+    {
+      "name": "native_ablation_shared_recovery",
+      "path": "smoke/g2_ablation_c9_c0/integrity.json",
+      "status": "complete"
+    },
+    {
+      "name": "all_formal_optimizer_health",
+      "path": "health/final/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "M0_and_reference_readability",
+      "path": "probes/m0_reference_c2/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "G1_readability",
+      "path": "probes/g1_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "native_readability_and_ablation_readback",
+      "path": "probes/g2_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "compact_readability",
+      "path": "probes/sensor_rows_c1/results.json",
+      "status": "complete"
+    },
+    {
+      "name": "unchanged_scientific_gates",
+      "path": "audit/scientific_review_final.json",
+      "status": "complete"
+    },
+    {
+      "name": "conditional_extension_decisions",
+      "path": "conditional_decisions.json",
+      "status": "reviewed"
+    },
+    {
+      "name": "English_figure_visual_review",
+      "path": "audit/figures_final_review.json",
+      "status": "complete"
+    }
+  ],
+  "probe_evidence": [
+    "probes/m0_reference_c2/results.json",
+    "probes/g1_c1/results.json",
+    "probes/g2_c1/results.json",
+    "probes/sensor_rows_c1/results.json"
+  ],
+  "health_evidence": "health/final/results.json",
+  "scientific_review": "audit/scientific_review_final.json",
+  "matched_optimizer_controls": [
+    {
+      "a": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_m0_t4_s42",
+      "b": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t4_s42",
+      "factor": "global_event_mixing"
+    },
+    {
+      "a": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_g1_stride2_t4_s42",
+      "b": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t4_s42",
+      "factor": "first_convolution_stride"
+    },
+    {
+      "a": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_c1_sensor_rows_t4_s42",
+      "b": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d0_t4_s42",
+      "factor": "compact_image_representation"
+    },
+    {
+      "a": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_relations_t4_s42",
+      "b": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_control_t4_s42",
+      "factor": "prelocal_native_relations"
+    },
+    {
+      "a": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_global_ablation_t4_s42",
+      "b": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b2_g2_relations_t4_s42",
+      "factor": "retrained_global_path_removal"
+    }
+  ],
+  "figures": [
+    "r3_phase_sensitivity",
+    "r3_stride_cost_profile",
+    "r3_candidate_coverage_graph_plane_policy_c2",
+    "r3_endpoints_evaluation_m0",
+    "r3_contrasts_evaluation_m0",
+    "r3_endpoints_evaluation_geometry",
+    "r3_contrasts_evaluation_geometry",
+    "r3_endpoints_evaluation_c1",
+    "r3_contrasts_evaluation_c1",
+    "r3_compact_matched_cost",
+    "r3_feature_readability",
+    "r3_training_branch_health"
+  ],
+  "conditional_additions": "evidence-triggered seeds,resolution or mechanism controls must be frozen before their endpoints and added to campaign/completion/evaluation requirements; no policy relaxation",
+  "resource_scope": "all attempts and auxiliary probes,allocation counted once,terminal states required",
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}
