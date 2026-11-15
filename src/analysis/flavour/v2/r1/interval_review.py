@@ -14,7 +14,8 @@ from analysis.flavour.s3.metrics import bootstrap_weights
 from analysis.flavour.v2.partitions import KEY, equal_identity_rows
 
 
-CORE = ['BA3', 'NLL3', 'recall_e', 'recall_mu', 'recall_NC', 'BA4', 'NLL4']
+CORE = ['BA3', 'NLL3', 'recall_e', 'recall_mu', 'recall_NC', 'BA4', 'NLL4',
+        'tau_eff_1pct', 'tau_eff_0p1pct']
 
 
 def domain_mask(catalog, domain):
@@ -44,6 +45,47 @@ def class_statistics(labels, probabilities, weights):
     values = np.stack(per_class, axis=1)
     return np.column_stack([np.nanmean(values[:, :, 0], axis=1),
                             np.nanmean(values[:, :, 1], axis=1), values[:, :, 0]])
+
+
+def tau_working_points(labels, scores, weights, targets=(.01, .001)):
+    """Rebuild whole-score-group cuts from independent class histograms.
+
+    Normalize the raw block multiplicities separately in each original class.
+    Background FPR is the mean acceptance of supported non-tau classes. This
+    implements the uniform-class development prior without Metrics or its
+    cached ranking arrays. At most 16 draws are materialized at a time.
+    """
+    labels = np.asarray(labels)
+    _, score_group = np.unique(scores, return_inverse=True)
+    groups = int(score_group.max())+1
+    result = np.full((len(weights), len(targets)), np.nan)
+    members = [labels == c for c in range(4)]
+    for start in range(0, len(weights), 16):
+        draws = weights[start:start+16]
+        support = np.column_stack([draws[:, keep].sum(1) for keep in members])
+        background_classes = (support[:, [0, 1, 3]] > 0).sum(1)
+        signal = np.zeros((len(draws), groups))
+        background = np.zeros_like(signal)
+        for c, keep in enumerate(members):
+            counts = np.asarray([np.bincount(score_group[keep], weights=w[keep],
+                minlength=groups) for w in draws])
+            accepted = counts[:, ::-1].cumsum(1)
+            rates = np.divide(accepted, support[:, c, None],
+                out=np.zeros_like(accepted), where=support[:, c, None] > 0)
+            if c == 2:
+                signal = rates
+            else:
+                background += rates
+        background /= np.maximum(background_classes[:, None], 1)
+        valid = (support[:, 2] > 0) & (background_classes > 0)
+        for index, target in enumerate(targets):
+            # Class-normalized sums can differ at an exact rational boundary
+            # by floating point roundoff. This absolute tolerance is far below
+            # one event in the frozen Tune and does not split a tied group.
+            eligible = background <= target+1e-12
+            efficiency = np.where(eligible, signal, 0.).max(1)
+            result[start:start+len(draws), index] = np.where(valid, efficiency, np.nan)
+    return result
 
 
 def review_intervals(root, config, evaluation):
@@ -91,7 +133,9 @@ def review_intervals(root, config, evaluation):
             three = class_statistics(labels, common[non_tau], weights[:, non_tau])
             four = class_statistics(y[mask], original[mask], weights[:, mask])[:, :2] \
                 if len(columns) == 4 else np.full((len(weights), 2), np.nan)
-            cache[(name, domain)] = np.column_stack([three, four])
+            tau = tau_working_points(y[mask], original[mask, 2], weights[:, mask]) \
+                if len(columns) == 4 else np.full((len(weights), 2), np.nan)
+            cache[(name, domain)] = np.column_stack([three, four, tau])
 
     def contrast(prefix, samples, reported):
         for i, metric in enumerate(CORE):
@@ -138,7 +182,7 @@ def review_intervals(root, config, evaluation):
         'metrics': CORE, 'replicates': evaluation['replicates'],
         'largest_absolute_errors': largest, 'bootstrap_design': design,
         'seconds': time.perf_counter()-started,
-        'scope': 'independent class-weighted event arithmetic for core points, paired percentile intervals and realized seed SD; same frozen physical-block draws; no independent confirmation',
+        'scope': 'independent class-weighted event arithmetic and tau whole-score-group class histograms for core points, paired percentile intervals and realized seed SD; same frozen physical-block draws; no independent confirmation',
         'Cal_A_Cut_B_Confirm_payload_read': False}
 
 

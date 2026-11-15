@@ -107,6 +107,8 @@ purity = pi * epsilon / (pi * epsilon + (1-pi) * f)
 
 保留 accepted-family 连接的物理块重采样，同一配对使用同一组 resamples。screen 默认 seed42；只将前两名和共同基线扩到 seeds17/42/2026。三 seed 各自差值与 sample SD 单列；事件 bootstrap 不解释为训练种子总体区间。若训练波动和目标增益相当，再增加 seeds，先 profile 和缩小候选。
 
+R3最终独立数值复核覆盖全部晋级指标：BA3、NLL3、e/μ/NC recall、NLL4以及τ的1%/0.1%工作点。τ另按每个原类别的完整score-group直方图和原始block multiplicity重建均匀先验下的接受率，再复核配对区间；不调用主评价的Metrics或排序缓存。独立报告须覆盖当前完整pairs、400次draws和实际seed平均范围，才能进入最终scientific review。该步骤验证计算，不增加独立事件，也不改变已冻结门槛，见[stage302](../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md)。
+
 确认阶段主比较最多两个：最佳三类候选对共同三类基线、最佳 τ 候选对共同 T4 基线。预定主要检验采用 Holm 控制这两个比较的 family-wise error；其余指标和分层给 pointwise 区间并作为解释。400 次 bootstrap 复用开发流程；最终区间使用 2,000 次，先在实际数据上验证数值稳定性。Cal-A/Cut-B 的分组重采样重新拟合温度/阈值，以补充其估计不确定度；另保留条件于冻结 cuts 的性能区间。
 
 建议的研究晋级值如下，须在新 Tune 开放前写入执行合同：

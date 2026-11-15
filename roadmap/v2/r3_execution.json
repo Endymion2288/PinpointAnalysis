@@ -1,7 +1,7 @@
 {
   "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T18:25:57.665372+00:00",
+  "UTC": "2026-11-15T18:38:38.618974+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -70,8 +70,8 @@
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
-  "unit_tests_passed": 45,
-  "latest_stage_report": "../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md",
+  "unit_tests_passed": 47,
+  "latest_stage_report": "../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md",
   "pending": [
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
@@ -1012,5 +1012,72 @@
     },
     "source_and_live_frozen_scope_equal": true,
     "actual_acceptance_run": false
+  },
+  "independent_promotion_intervals": {
+    "status": "M0_C1_complete_G2_endpoint_dependent",
+    "metrics": [
+      "BA3",
+      "NLL3",
+      "recall_e",
+      "recall_mu",
+      "recall_NC",
+      "BA4",
+      "NLL4",
+      "tau_eff_1pct",
+      "tau_eff_0p1pct"
+    ],
+    "draws": 400,
+    "models": {
+      "evaluation_m0": {
+        "status": "complete",
+        "old_checks": 116,
+        "checks": 148,
+        "failed": [],
+        "original_seven_check_records_identical": true,
+        "additional_tau_checks": 32,
+        "tau_checks_all_passed": true,
+        "maximum_tau_point_error": 1.8041124150158794e-16,
+        "maximum_tau_interval_error": 3.5518463170625125e-16,
+        "seconds": 35.1285376381129,
+        "draws": 400,
+        "model_domains": 16,
+        "pairs": 8
+      },
+      "evaluation_c1": {
+        "status": "complete",
+        "old_checks": 116,
+        "checks": 148,
+        "failed": [],
+        "original_seven_check_records_identical": true,
+        "additional_tau_checks": 32,
+        "tau_checks_all_passed": true,
+        "maximum_tau_point_error": 1.942890293094024e-16,
+        "maximum_tau_interval_error": 1.8518173106052416e-16,
+        "seconds": 34.27711617387831,
+        "draws": 400,
+        "model_domains": 16,
+        "pairs": 8
+      }
+    },
+    "evidence": "audit/independent_tau_intervals_stage302.json",
+    "partial_scientific_review": "audit/scientific_review_m0_c1_tau_c1.json",
+    "partial_primary_eligible": [],
+    "Condor_terminal_CPU_reviews": {
+      "1583022.0": {
+        "JobStatus": 4,
+        "ExitCode": 0,
+        "allocation_seconds": 46.0,
+        "CPUs": 2,
+        "MemoryUsage_MB": 269
+      },
+      "1583023.0": {
+        "JobStatus": 4,
+        "ExitCode": 0,
+        "allocation_seconds": 47.0,
+        "CPUs": 2,
+        "MemoryUsage_MB": 293
+      }
+    },
+    "original_scope_and_thresholds_unchanged": true
   }
 }

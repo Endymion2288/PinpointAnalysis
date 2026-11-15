@@ -551,7 +551,7 @@
       "execution_record": "r3_execution.json",
       "progress_report": "../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md",
       "measured_progress": "M0/G0/G1/C1 and Train1024 candidate audit complete; M0/G1/C1 not promoted; five corrected native learning gates and full Tune resource/recovery gates complete; native control/relations resume100k checkpoints as Kubeflow3g47gb pair, no-global continues original Condor1g12gb; all three target100k x4; final G2 quality and complete R3 acceptance pending",
-      "latest_report": "../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md",
+      "latest_report": "../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md",
       "next_conditional_screen": {
         "representation": "compact sensor-row images with explicit physical z/spacing",
         "status": "complete_C1_not_promoted_class_quality_failed",
@@ -605,6 +605,23 @@
         "status": "watching_actual_endpoint_dependencies",
         "state": "runtime/r3_finish_dependencies.json",
         "scope": "metadata-only observer; batch statistics via HTCondor; GPU final probes reuse Kubeflow input caches"
+      },
+      "independent_promotion_intervals": {
+        "metrics": [
+          "BA3",
+          "NLL3",
+          "recall_e",
+          "recall_mu",
+          "recall_NC",
+          "BA4",
+          "NLL4",
+          "tau_eff_1pct",
+          "tau_eff_0p1pct"
+        ],
+        "scope": "full actual pairs,400 draws,realized seed means; independent class arithmetic and whole-score-group tau histograms",
+        "M0_C1": "complete,148checks each,original116 checks identical,64 added tau checks pass",
+        "G2": "final full matrices use the same nine-metric independent review",
+        "scientific_limits": "unchanged"
       }
     },
     {
@@ -848,7 +865,7 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md",
     "R1_measured": "r1_results.json",
     "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
     "research_decisions": "09_decisions_and_handoff.md",
@@ -871,5 +888,5 @@
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
   "last_updated": "2026-11-15",
-  "latest_evidence_stage": 301
+  "latest_evidence_stage": 302
 }

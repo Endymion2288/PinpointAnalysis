@@ -50,6 +50,15 @@ def review(paths):
             independent=json.loads((path.parent/name).read_text())
             if independent['status']!='complete' or independent['failed']:
                 raise ValueError('independent point/interval review must pass')
+            if name=='independent_core_intervals.json' and not {
+                    'BA3','NLL3','recall_e','recall_mu','recall_NC','NLL4',
+                    'tau_eff_1pct','tau_eff_0p1pct'}.issubset(independent.get('metrics',[])):
+                raise ValueError('independent intervals must cover every promotion metric, including tau working points')
+            if name=='independent_core_intervals.json' and not (
+                    independent.get('pairs')==len(result['pairs'])
+                    and independent.get('replicates')==result['replicates']
+                    and independent.get('mean_seed_pairs')==len(result.get('mean_seed_pairs',[]))):
+                raise ValueError('independent interval scope differs from the complete evaluation')
         for pair in result['pairs']:
             if pair['domain']!='all':continue
             contrasts.append({**{k:pair[k] for k in ['a','b','reason','domain']},

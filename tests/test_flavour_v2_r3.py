@@ -24,10 +24,11 @@ from analysis.flavour.v2.r3.evaluate import configuration
 from analysis.flavour.v2.r3.sensor_rows import sensor_row_geometry, sensor_projection
 from analysis.flavour.v2.r1.data import projection
 from analysis.flavour.v2.r3.mapped_inputs import MappedItems,write_mapped_items
-from analysis.flavour.v2.r3.scientific_review import promotion_checks
+from analysis.flavour.v2.r3.scientific_review import promotion_checks, review as scientific_review
 from analysis.flavour.v2.r3.probes import ReadableFeatures
 from analysis.flavour.v2.r3.handoff import validate_release
 from analysis.flavour.v2.r3.finish import advance as finish_advance, submit_once
+from analysis.flavour.v2.r1.interval_review import tau_working_points
 
 
 class GlobalOrderTests(unittest.TestCase):
@@ -217,6 +218,48 @@ class NativeRelationTests(unittest.TestCase):
 
 
 class DeliveryContractTests(unittest.TestCase):
+    def test_scientific_review_requires_independent_tau_interval_coverage(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            folder = Path(scratch)
+            path = folder/'results.json'
+            path.write_text(json.dumps({'status': 'complete', 'replicates': 400, 'pairs': []}))
+            (folder/'independent_points.json').write_text(json.dumps({'status': 'complete', 'failed': []}))
+            core = {'status': 'complete', 'failed': [],
+                'metrics': ['BA3', 'NLL3', 'recall_e', 'recall_mu', 'recall_NC', 'BA4', 'NLL4'],
+                'pairs': 0, 'replicates': 400, 'mean_seed_pairs': 0}
+            intervals = folder/'independent_core_intervals.json'
+            intervals.write_text(json.dumps(core))
+            with self.assertRaises(ValueError):
+                scientific_review([path])
+            core['metrics'] += ['tau_eff_1pct', 'tau_eff_0p1pct']
+            intervals.write_text(json.dumps(core))
+            self.assertEqual(scientific_review([path])['status'], 'complete')
+            core['replicates'] = 20
+            intervals.write_text(json.dumps(core))
+            with self.assertRaises(ValueError):
+                scientific_review([path])
+
+    def test_independent_tau_intervals_preserve_ties_prior_and_block_weights(self):
+        labels = np.repeat(np.arange(4), 1000)
+        background = np.r_[np.full(990, .1), np.full(9, .8), .9]
+        signal = np.r_[np.full(50, .95), np.full(100, .85), np.full(200, .75), np.full(650, .05)]
+        scores = np.concatenate([background, background, signal, background])
+        weights = np.ones((5, len(labels)), dtype='uint16')
+        # Per-class rescaling changes the raw mixture, not its uniform prior.
+        weights[1] = np.repeat([2, 3, 5, 7], 1000)
+        # Raising one tied background group above the quota rejects all of it.
+        weights[2, 990] = 2
+        weights[3, labels == 2] = 0
+        weights[4, labels != 2] = 0
+        result = tau_working_points(labels, scores, weights)
+        np.testing.assert_allclose(result[:2], [[.35, .15], [.35, .15]])
+        np.testing.assert_allclose(result[2], [.15, .15])
+        self.assertTrue(np.isnan(result[3:]).all())
+        # A weighted signal changes efficiency with its actual denominator.
+        weights = np.ones((1, len(labels)), dtype='uint16')
+        weights[0, 2000:2050] = 2
+        np.testing.assert_allclose(tau_working_points(labels, scores, weights), [[400/1050, 200/1050]])
+
     def test_cpu_reviews_wait_for_complete_endpoints_and_independent_evaluations(self):
         with tempfile.TemporaryDirectory() as scratch:
             root = Path(scratch)
