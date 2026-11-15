@@ -355,3 +355,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 301 | [R3机器计划同步与完整交付范围核对](../../workbook/2026-11-15_stage301_r3_plan_and_completion_scope.md) |
 | 302 | [R3全部晋级指标的独立区间复核](../../workbook/2026-11-15_stage302_r3_independent_tau_intervals.md) |
 | 303 | [R3消融A100恢复与实际GPU池准入](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md) |
+| 304 | [R3 A100完整缓存核对与正式恢复训练](../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md) |

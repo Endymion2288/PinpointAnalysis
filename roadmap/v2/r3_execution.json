@@ -1,7 +1,7 @@
 {
   "status": "M0_G1_C1_evaluated_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T19:04:27.436196+00:00",
+  "UTC": "2026-11-15T19:38:32.446686+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -71,10 +71,10 @@
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 47,
-  "latest_stage_report": "../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md",
   "pending": [
-    "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
-    "trained-model local/regional/global/tracker probes and gradient/ablation review",
+    "G2 formal control/relations/retrained-ablation complete400k exposure endpoints",
+    "trained-model local/regional/global/tracker probes and final gradient/ablation review",
     "evidence-triggered seed,resolution,anchor/fusion choices",
     "final scientific decisions,terminal resource accounting,figures and complete R3 acceptance"
   ],
@@ -691,16 +691,24 @@
     "revision": 3
   },
   "resource_snapshot": {
-    "UTC": "2026-11-15T19:03:11.259528+00:00",
-    "device_hours": 14.88945160402192,
+    "UTC": "2026-11-15T19:35:42.402779+00:00",
+    "device_hours": 15.973047152757644,
+    "allocated_CPU_core_hours": 183.6115238191022,
     "active_or_unresolved": [
       "r3_g2_ablation_c10",
       "pinpoint-r3-g2-k4"
     ],
+    "device_hours_by_model_or_partition": {
+      "NVIDIA H100L-1-12C MIG 1g.12gb": 9.388055555555553,
+      "NVIDIA A100-PCIE-40GB": 1.0274957986010445,
+      "NVIDIA H100 NVL MIG 3g.47gb": 5.530273576378823,
+      "h100-94gb": 0.02722222222222222
+    },
+    "allocation_records": 35,
     "terminal_cost": false
   },
   "G2_formal": {
-    "status": "Kubeflow_pair_optimizing_saved200k_A100_ablation_recovery_passed_preparing_cache",
+    "status": "all_three_formal_models_optimizing_full_inputs_verified_endpoints_pending",
     "models": [
       "b2_g2_control_t4_s42",
       "b2_g2_relations_t4_s42",
@@ -788,11 +796,55 @@
       }
     },
     "prefix_health": "audit/native_prefix_health_stage299.json",
-    "latest_metadata_evidence": "audit/resource_handoff_stage303.json",
+    "latest_metadata_evidence": "audit/g2_ablation_c10_formal_execution.json",
     "initial_allocation_metadata": "clusters and GPU preserve the initial three1g launch; use current_allocations/current_GPU for live placement",
     "current_GPU": {
       "control_and_relations": "NVIDIA H100 NVL MIG 3g.47gb",
       "global_ablation": "NVIDIA A100-PCIE-40GB"
+    },
+    "replacement_shared_cache_scope": "existing replacement_shared_cache describes Kubeflow g2_k4; ablation_replacement_shared_cache describes A100 g2_ablation_c10",
+    "ablation_replacement_shared_cache": {
+      "train": {
+        "events": 100000,
+        "array_bytes": 13925383580,
+        "seconds": 1253.5841439990327,
+        "scattered_exact_input_checks": 32,
+        "old_and_Kubeflow_candidate_graph_summary_identical": true
+      },
+      "validation": {
+        "events": 40000,
+        "array_bytes": 5622779908,
+        "seconds": 576.2919122939929,
+        "scattered_exact_input_checks": 32,
+        "old_and_Kubeflow_candidate_graph_summary_identical": true
+      }
+    },
+    "formal_rolling_windows_at_UTC": {
+      "UTC": "2026-11-15T19:35:04.799983+00:00",
+      "models": {
+        "b2_g2_global_ablation_t4_s42": {
+          "latest_recorded_exposures": 211766,
+          "window_updates": 1250,
+          "window_exposures": 9990,
+          "window_train_seconds": 143.86423064023256,
+          "events_per_train_second": 69.44047144687703
+        },
+        "b2_g2_control_t4_s42": {
+          "latest_recorded_exposures": 283706,
+          "window_updates": 1750,
+          "window_exposures": 13986,
+          "window_train_seconds": 420.2331419144757,
+          "events_per_train_second": 33.281525432009786
+        },
+        "b2_g2_relations_t4_s42": {
+          "latest_recorded_exposures": 273716,
+          "window_updates": 1750,
+          "window_exposures": 13991,
+          "window_train_seconds": 435.189252741402,
+          "events_per_train_second": 32.149231424870976
+        }
+      },
+      "scope": "recent real optimizer windows; excludes cache preparation, validation, staging and process startup; not full-run throughput"
     }
   },
   "collation": {
@@ -961,10 +1013,12 @@
       1583008,
       1583009
     ],
-    "old_ablation_continues": 1583010,
     "decision": "audit/native_migration_decision_k4.json",
     "writer_terminal_proof": "audit/g2_k4_writer_handoff.json",
-    "post_training_probes": "all three native completed weights reuse same Train/Tune mmap; sibling weights read-only"
+    "post_training_probes": "all three native completed weights reuse same Train/Tune mmap; sibling weights read-only",
+    "initial_nonmigrated_ablation": 1583010,
+    "initial_nonmigrated_ablation_final_status": "terminal JobStatus3; see audit/g2_ablation_c10_writer_handoff.json",
+    "current_ablation_allocation": "1583024.0"
   },
   "completion_scope": {
     "revision": 2,
@@ -1139,5 +1193,16 @@
       ],
       "terminal_cost": false
     }
+  },
+  "ablation_A100_formal_execution": {
+    "status": "full_cache_verified_formal_resume_and_real_optimization_observed",
+    "UTC": "2026-11-15T19:35:04.799983+00:00",
+    "evidence": "audit/g2_ablation_c10_formal_execution.json",
+    "complete_cache_seconds": 1829.8760562930256,
+    "restored_at_update": 25028,
+    "restored_exposures": 200000,
+    "target_exposures": 400000,
+    "target_updates": 50051,
+    "classification_endpoints_measured": false
   }
 }

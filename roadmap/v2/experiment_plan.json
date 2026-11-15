@@ -549,9 +549,9 @@
         "measured_outcome": "BA3 difference +0.383pp versus D2; common mu recall -4.08pp, accepted-channels<100 mu -14.816pp, no tau gain; original spatial sampler retained"
       },
       "execution_record": "r3_execution.json",
-      "progress_report": "../../workbook/2026-11-15_stage300_r3_dependent_cpu_reviews.md",
-      "measured_progress": "M0/G0/G1/C1 and Train1024 candidate audit complete; M0/G1/C1 not promoted; corrected native learning/resource/recovery gates pass; Kubeflow3g47gb control/relations both saved200k and optimizing; no-global original1g terminal, resumes200k on acquired A100 with exact new-device recovery verified and cache preparing; all three target100k x4; final G2 quality and full R3 acceptance pending",
-      "latest_report": "../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md",
+      "progress_report": "../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md",
+      "measured_progress": "M0/G0/G1/C1 and Train1024 candidate audit complete; M0/G1/C1 not promoted; all three native models optimizing toward400k each; A100 complete Train100k/Tune40k caches verified against old1g and Kubeflow,1829.876s preparation,formal resume from200k observed; local formal windows A10069.440/Kubeflow pair33.282 and32.149events/s,not full-run throughput; final G2 quality and full R3 acceptance pending",
+      "latest_report": "../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md",
       "next_conditional_screen": {
         "representation": "compact sensor-row images with explicit physical z/spacing",
         "status": "complete_C1_not_promoted_class_quality_failed",
@@ -622,6 +622,23 @@
         "M0_C1": "complete,148checks each,original116 checks identical,64 added tau checks pass",
         "G2": "final full matrices use the same nine-metric independent review",
         "scientific_limits": "unchanged"
+      },
+      "resource_progress": {
+        "UTC": "2026-11-15T19:35:42.402779+00:00",
+        "device_hours": 15.973047152757644,
+        "allocated_CPU_core_hours": 183.6115238191022,
+        "active_or_unresolved": [
+          "r3_g2_ablation_c10",
+          "pinpoint-r3-g2-k4"
+        ],
+        "device_hours_by_model_or_partition": {
+          "NVIDIA H100L-1-12C MIG 1g.12gb": 9.388055555555553,
+          "NVIDIA A100-PCIE-40GB": 1.0274957986010445,
+          "NVIDIA H100 NVL MIG 3g.47gb": 5.530273576378823,
+          "h100-94gb": 0.02722222222222222
+        },
+        "allocation_records": 35,
+        "terminal_cost": false
       }
     },
     {
@@ -865,7 +882,7 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md",
     "R1_measured": "r1_results.json",
     "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
     "research_decisions": "09_decisions_and_handoff.md",
@@ -887,6 +904,6 @@
     "W07": "prototype_and_Train1024_candidate_audit_complete_R3_formal_classification_pending",
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
-  "last_updated": "2026-11-15",
-  "latest_evidence_stage": 303
+  "last_updated": "2026-11-15T19:38:32.470333+00:00",
+  "latest_evidence_stage": 304
 }

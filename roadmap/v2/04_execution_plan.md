@@ -123,7 +123,7 @@ M0已选择保留原采样；固定训练和输入做B1的stride4→2及相位�
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
-首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2完整评价未显示BA/τ净增益，当前配方不晋级，见[stage297](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)；G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复。Control/relations从100k checkpoint恢复到Kubeflow的3g.47gb双并行，现均已保存200k；消融从200k状态转至新获得的Condor A100，实际吞吐、原writer终态和恢复证据见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)与[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
+首个小批次按以下顺序执行，R2已选D2两个固定endpoint。M0结论为不采用全程重混；G1 stride2完整评价未显示BA/τ净增益，当前配方不晋级，见[stage297](../../workbook/2026-11-15_stage297_r3_stride_endpoint_and_resource_handoff.md)；G2三个正式配置已通过修正单位后的学习验证、完整Tune资源及共享mmap确定性恢复。Control/relations从100k checkpoint恢复到Kubeflow的3g.47gb双并行；消融从200k状态恢复到Condor A100，三者均在继续正式优化。A100完整Train100k/Tune40k缓存准备实测1,829.876s，与原1g和Kubeflow缓存的覆盖、数组规模、完整候选图摘要及各32个散点输入核对通过；正式局部训练窗口为69.440events/s，Kubeflow双模型为33.282/32.149events/s，完整终点质量仍待测。原writer终态、恢复与资源证据见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)、[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)和[stage304](../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md)。新增硅厚度统一为0.010 mm，修订号为3，旧revision2拟合仅作诊断。候选图不使用厚度，其覆盖/recall审计继续有效。
 
 | Work | Controlled change | Required evidence / next decision |
 | --- | --- | --- |
