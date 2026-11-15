@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "completed_R0_R1_R2_R3_in_progress",
+  "status": "completed_R0_R1_R2_R3",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0/R1/R2 complete; R3 M0/G1/C1 fully evaluated and not promoted; G0/candidate audit and corrected revision3 learning/resource/recovery gates complete; three formal G2 fits running; four-matrix completion scope frozen and CPU dependency observer live; Cal-A/Cut-B/Confirm sealed",
+  "implementation_status": "R0-R3 complete; R3 six models/four evaluations/72 paired domain comparisons,249 acceptance checks; no R3 intervention promoted,retain B1 D2 T3/T4; R4 object/candidate diagnostics next; Cal-A/Cut-B/Confirm sealed",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -529,7 +529,7 @@
         "W07"
       ],
       "planned_device_hours": 20,
-      "status": "M0_G1_C1_evaluated_three_G2_running_full_R3_not_complete",
+      "status": "complete",
       "entry_batch": {
         "status": "complete_not_adopted_muon_quality_guard_failed",
         "id": "M0",
@@ -549,15 +549,15 @@
         "measured_outcome": "BA3 difference +0.383pp versus D2; common mu recall -4.08pp, accepted-channels<100 mu -14.816pp, no tau gain; original spatial sampler retained"
       },
       "execution_record": "r3_execution.json",
-      "progress_report": "../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md",
-      "measured_progress": "M0/G0/G1/C1 and Train1024 candidate audit complete; M0/G1/C1 not promoted; all three native models optimizing toward400k each; A100 complete Train100k/Tune40k caches verified against old1g and Kubeflow,1829.876s preparation,formal resume from200k observed; local formal windows A10069.440/Kubeflow pair33.282 and32.149events/s,not full-run throughput; final G2 quality and full R3 acceptance pending",
-      "latest_report": "../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md",
+      "progress_report": "../../workbook/2026-11-15_stage306_r3_final_results.md",
+      "measured_progress": "All six fixed endpoints,72 paired comparisons,11 domains,400draws;8208 independent point checks and1320 interval checks; full feature probes and actual health; no promoted primary intervention; all conditional additions decided;39 terminal allocations",
+      "latest_report": "../../workbook/2026-11-15_stage306_r3_final_results.md",
       "next_conditional_screen": {
         "representation": "compact sensor-row images with explicit physical z/spacing",
         "status": "complete_C1_not_promoted_class_quality_failed",
         "minimum_training": "same Train100k x4 and Tune40k; profile then one screen before expansion",
         "reason": "current1322x420 physical-z dense grid differs from collaboration sensor-row representation; isolate representation and cost",
-        "measured_outcome": "BA3 +0.1367pp versus same100k D0, electron recall -3.42pp, no tau gain; matched-device training throughput2.723x; five-fold global bias does not recover quality; further quality recovery conditional on complete G2 evidence"
+        "measured_outcome": "BA3 +0.1367pp versus same100k D0, electron recall -3.42pp, no tau gain; matched-device training throughput2.723x; five-fold global bias does not recover quality; further quality recovery conditional on complete G2 evidence; complete G2 evidence does not trigger another compact recovery screen this campaign"
       },
       "completion_contract": {
         "path": "configs/r3/completion_contract.json",
@@ -602,7 +602,7 @@
       },
       "dependent_CPU_reviews": {
         "module": "analysis.flavour.v2.r3.finish",
-        "status": "watching_actual_endpoint_dependencies",
+        "status": "complete",
         "state": "runtime/r3_finish_dependencies.json",
         "scope": "metadata-only observer; batch statistics via HTCondor; GPU final probes reuse Kubeflow input caches"
       },
@@ -620,25 +620,79 @@
         ],
         "scope": "full actual pairs,400 draws,realized seed means; independent class arithmetic and whole-score-group tau histograms",
         "M0_C1": "complete,148checks each,original116 checks identical,64 added tau checks pass",
-        "G2": "final full matrices use the same nine-metric independent review",
+        "G2": "complete geometry4104points/876intervals; supplemental1368points/148intervals; same nine metrics and400draws",
         "scientific_limits": "unchanged"
       },
       "resource_progress": {
-        "UTC": "2026-11-15T19:35:42.402779+00:00",
-        "device_hours": 15.973047152757644,
-        "allocated_CPU_core_hours": 183.6115238191022,
-        "active_or_unresolved": [
-          "r3_g2_ablation_c10",
-          "pinpoint-r3-g2-k4"
-        ],
+        "UTC": "2026-11-15T20:57:45.627279+00:00",
+        "device_hours": 18.094166666666666,
+        "allocated_CPU_core_hours": 223.33833333333334,
         "device_hours_by_model_or_partition": {
           "NVIDIA H100L-1-12C MIG 1g.12gb": 9.388055555555553,
-          "NVIDIA A100-PCIE-40GB": 1.0274957986010445,
-          "NVIDIA H100 NVL MIG 3g.47gb": 5.530273576378823,
+          "NVIDIA A100-PCIE-40GB": 1.8155555555555556,
+          "NVIDIA H100 NVL MIG 3g.47gb": 6.863333333333333,
           "h100-94gb": 0.02722222222222222
         },
-        "allocation_records": 35,
-        "terminal_cost": false
+        "active_or_unresolved": [],
+        "heterogeneous_device_hours_are_not_FLOP_equivalent": true,
+        "worker_wall_seconds_are_not_summed_as_device_hours": true,
+        "interactive_total_allocation_seconds": "not measured; operation lower bounds reported separately",
+        "allocation_records": 39,
+        "Kubeflow_last_allocation_upper_bound_seconds": 11692.0,
+        "terminal_cost": true
+      },
+      "measured_result": "r3_results.json",
+      "acceptance": {
+        "status": "complete",
+        "passed": 249,
+        "failed": [],
+        "manual_full_scope_review": "audit/final_delivery_review.json"
+      },
+      "conditional_decisions": {
+        "status": "reviewed",
+        "UTC": "2026-11-15T20:56:29.082715+00:00",
+        "policy": "unchanged frozen v2 practical-effect and quality criteria; all four complete evaluation matrices and independent nine-metric interval reviews",
+        "scientific_review": "audit/scientific_review_final.json",
+        "primary_endpoint_contrasts": 9,
+        "eligible_primary": [],
+        "matched_seeds": {
+          "decision": "not_triggered",
+          "reason": "No R3 primary intervention meets either scientific gate; native relations have essentially zero BA gain and lower tau efficiency, and no-global is inferior to its family reference. No candidate is selected for seeds17/2026.",
+          "not_measured": "R3 training-seed uncertainty remains unmeasured; seed42 results do not establish population equivalence."
+        },
+        "resolution": {
+          "decision": "not_triggered",
+          "reason": "No best improved native candidate selected. Native/100um/1mm scan is deferred until a useful observation-only geometry/object representation is established.",
+          "not_measured": "No R3 resolution performance or detector-resolution limit is claimed."
+        },
+        "capacity_or_shuffled_relations": {
+          "decision": "not_triggered",
+          "reason": "Relations-control does not yield an adopted gain; no-global plus relations also fails. A capacity-matched or shuffled-edge mechanism control would not resolve an adopted improvement in this campaign.",
+          "identifiability_limit": "Control,relations,no-global are three arms, not a full2x2. Removing the global stack changes capacity; no claim of pure relation/global interaction or universally harmful relation information."
+        },
+        "anchors": {
+          "decision": "deferred_to_R4_candidate_and_object_study",
+          "reason": "Modality-visible graph increases coverage but recorded same-track candidate recall remains limited. Test candidate association/robust fits with station geometry and uncertainty before introducing another event-level anchor module.",
+          "required_reentry": "Train/Tune small-sample candidate recall and object efficiency/fake/coverage evidence, followed by frozen observation-only raw+object comparison."
+        },
+        "late_fusion": {
+          "decision": "not_triggered_in_R3",
+          "reason": "Retrained removal of the global stack reduces all-Tune BA3 by0.450pp versus relations and does not improve tau. No demonstrated net local-specialist gain requiring a new fusion fit in this campaign.",
+          "future_reentry": "Object-level features with validated coverage and complementary discrimination may motivate raw+object late fusion in R4."
+        },
+        "branch_competition": {
+          "decision": "not_triggered_in_R3",
+          "reason": "All branches have actual gradients and updates; removing the global stack fails overall quality. Sparse electron/muon recall redistribution alone does not establish a remediable optimization-competition mechanism.",
+          "not_measured": "No gradient-modulation or branch-dropout benefit has been measured; readability is not utility."
+        },
+        "compact_quality_recovery": {
+          "decision": "deferred_cost_candidate_not_selected",
+          "reason": "C1 improves same-device train throughput2.723x and short operation throughput1.747x, but electron recall declines3.420pp. Existing fixed five-fold global-bias diagnostic leaves3.15pp relative electron loss. No evidence supports an immediate bias-only recovery or seed/resolution expansion.",
+          "future_reentry": "Freeze one targeted representation/head recovery and a quality/noninferiority plus matched-cost contract before retraining; compare to strong B1 using all events and sparse per-class guards."
+        },
+        "additional_training_allocations_required": [],
+        "scope": "All conditional branches explicitly decided for R3; R4-R7 remain future work, not completed experiments.",
+        "Cal_A_Cut_B_Confirm_payload_read": false
       }
     },
     {
@@ -648,7 +702,8 @@
       ],
       "work": "candidate/fit quality then learned association; raw/object all-event fusion",
       "planned_device_hours": 8,
-      "status": "pending"
+      "status": "pending",
+      "next_entry": "Freeze balanced Train10k/Tune10k candidate,truth-label-support and robust-fit audit; no new event-level module before measured association/coverage; use retained B1 D2 plus same100k D0 paired control for later raw+object classification"
     },
     {
       "id": "R5",
@@ -775,7 +830,7 @@
   ],
   "resources": {
     "planned_total_device_hours": 80,
-    "status": "R0/R1/R2 terminal; cumulative R0 upper bound plus R1/R2 batch54.269577 heterogeneous device-hours; original80h nominal remainder25.730423 before full interactive overhead; original R3-R7 42h matrix must be replanned as measured small batches with R7 reserve",
+    "status": "R0-R3 terminal; cumulative72.363744 heterogeneous hours includes R0 upper bound; original80h nominal remainder7.636256 before complete interactive overhead; R4-R7 must use measured small batches and R7 reserve",
     "estimated_calendar_weeks": [
       6,
       10
@@ -826,7 +881,7 @@
     "R1_interactive_operation_hours_lower_bound": 0.3255333065249336,
     "R0_recorded_upper_bound_plus_R1_batch_hours": 46.79374353474368,
     "nominal_original_plan_remainder_before_R1_interactive_hours": 33.20625646525632,
-    "remaining_policy": "M0/G1/C1 complete and not promoted. Finish all three G2 endpoints, all four evaluation matrices and final probes/health; evidence-triggered seeds/resolution/mechanism or compact quality recovery only. Objects/tau/targeted SSL remain R4-R6; profile earliest compatible full/shared/MIG allocations and reserve R7",
+    "remaining_policy": "R3 complete,no additional training trigger. Next R4 CPU candidate/fit/label-support audit on fixed10k subsets,then one justified raw+object comparison after quality evidence. R5/R6 remain conditional; retain R7 confirmation reserve and earliest compatible full/shared/MIG scheduling.",
     "independent_model_concurrency": "profile aggregate operation throughput and full-validation RAM/VRAM on an obtained allocation; share compressed staging; independent model/optimizer/checkpoint; count allocation once; never fill released slots with unmotivated experiments",
     "R2_actual_batch_device_hours": 7.475833333333334,
     "R2_CPU_allocation_core_hours": 116.64999999999999,
@@ -841,17 +896,48 @@
     "R2_interactive_operation_hours_lower_bound": 0.17765723452153098,
     "R0_recorded_upper_bound_plus_R1_R2_batch_hours": 54.26957686807702,
     "nominal_original_plan_remainder_before_complete_R1_R2_interactive_hours": 25.730423131922983,
-    "historical_resource_fields": "R0_recorded_upper_bound_plus_R1_batch_hours and nominal_original_plan_remainder_before_R1_interactive_hours preserve pre-R2 accounting; use the R1_R2 fields for current totals",
+    "historical_resource_fields": "R0_recorded_upper_bound_plus_R1_batch_hours and nominal_original_plan_remainder_before_R1_interactive_hours preserve pre-R2 accounting; use the R1_R2 fields for current totals; R1_R2 fields now preserve pre-R3 totals,use R1_R2_R3 for current totals",
     "R3_snapshot": {
-      "UTC": "2026-11-15T19:03:11.259528+00:00",
-      "device_hours": 14.88945160402192,
-      "allocated_CPU_core_hours": 165.19039949059487,
-      "active_or_unresolved": [
-        "r3_g2_ablation_c10",
-        "pinpoint-r3-g2-k4"
-      ],
-      "terminal_cost": false
-    }
+      "UTC": "2026-11-15T20:57:45.627279+00:00",
+      "device_hours": 18.094166666666666,
+      "allocated_CPU_core_hours": 223.33833333333334,
+      "device_hours_by_model_or_partition": {
+        "NVIDIA H100L-1-12C MIG 1g.12gb": 9.388055555555553,
+        "NVIDIA A100-PCIE-40GB": 1.8155555555555556,
+        "NVIDIA H100 NVL MIG 3g.47gb": 6.863333333333333,
+        "h100-94gb": 0.02722222222222222
+      },
+      "active_or_unresolved": [],
+      "heterogeneous_device_hours_are_not_FLOP_equivalent": true,
+      "worker_wall_seconds_are_not_summed_as_device_hours": true,
+      "interactive_total_allocation_seconds": "not measured; operation lower bounds reported separately",
+      "allocation_records": 39,
+      "Kubeflow_last_allocation_upper_bound_seconds": 11692.0,
+      "terminal_cost": true
+    },
+    "R3_final": {
+      "UTC": "2026-11-15T20:57:45.627279+00:00",
+      "device_hours": 18.094166666666666,
+      "allocated_CPU_core_hours": 223.33833333333334,
+      "device_hours_by_model_or_partition": {
+        "NVIDIA H100L-1-12C MIG 1g.12gb": 9.388055555555553,
+        "NVIDIA A100-PCIE-40GB": 1.8155555555555556,
+        "NVIDIA H100 NVL MIG 3g.47gb": 6.863333333333333,
+        "h100-94gb": 0.02722222222222222
+      },
+      "active_or_unresolved": [],
+      "heterogeneous_device_hours_are_not_FLOP_equivalent": true,
+      "worker_wall_seconds_are_not_summed_as_device_hours": true,
+      "interactive_total_allocation_seconds": "not measured; operation lower bounds reported separately",
+      "allocation_records": 39,
+      "Kubeflow_last_allocation_upper_bound_seconds": 11692.0,
+      "terminal_cost": true
+    },
+    "R3_actual_batch_device_hours": 18.094166666666666,
+    "R3_CPU_allocation_core_hours": 223.33833333333334,
+    "R3_allocation_records": 39,
+    "R0_recorded_upper_bound_plus_R1_R2_R3_batch_hours": 72.36374353474369,
+    "nominal_original_plan_remainder_before_complete_interactive_hours": 7.636256465256309
   },
   "required_learning_evidence": [
     "real small-sample fitting",
@@ -863,13 +949,13 @@
   ],
   "unmeasured": [
     "converged supervised performance and capacity sufficiency at300k; beyond300k/1M data scaling",
-    "R3 complete native control/relations/retrained-global-ablation generalization and mechanism; seed/resolution extensions and R4-R6 object,specialist,targeted SSL gains",
     "strict original collaboration replication on matched event identities,tracker features and cuts",
     "real calibrated hardware systematic envelope",
     "physical flux and tau yield",
-    "R3 final terminal device/CPU costs, R4-R7 architecture-specific costs and beyond300k throughput",
     "same-device eager versus compiled gain",
-    "complete R1/R2 interactive allocation overhead"
+    "complete R1/R2 interactive allocation overhead",
+    "R3 training-seed and pool uncertainty; causal relation/global interaction at equal capacity; resolution/anchor/fusion/branch-modulation and compact-recovery benefit",
+    "R4-R6 object,specialist,targeted SSL gains and R4-R7 actual costs; GPU utilization"
   ],
   "references": {
     "evidence": "01_evidence_review.md",
@@ -901,9 +987,9 @@
     "W04": "complete_R1_T3_T4_evaluation;T3T_T4D_probability_loss_tested_training_pending_R5",
     "W05": "complete_R1_adapters_real_fits_and_model_health",
     "W06": "complete_R1_screens_full_training_seed_expansion_and_evaluation",
-    "W07": "prototype_and_Train1024_candidate_audit_complete_R3_formal_classification_pending",
+    "W07": "complete_R3_six_model_matched_relations_and_ablation_evaluation_no_intervention_promoted;conditional_seed_resolution_anchor_fusion_not_triggered",
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
-  "last_updated": "2026-11-15T19:38:32.470333+00:00",
-  "latest_evidence_stage": 304
+  "last_updated": "2026-11-15T21:03:02.294836+00:00",
+  "latest_evidence_stage": 306
 }

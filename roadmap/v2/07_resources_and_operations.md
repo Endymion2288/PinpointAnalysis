@@ -4,7 +4,11 @@
 
 2026-11-15 R1最终状态：122条allocation全部终态，`active_or_unresolved=[]`；batch成本45.708889异构device-hours和307.181111 allocated CPU core-hours，452项验收通过。失败、探针、迁移前已运行部分均保留成本；历史SSL .635321 h单列，交互操作另有.325533 h已记录下界。[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)给出完整账本口径；下文迁移记录说明当时的调度选择。
 
-R2最终状态（2026-11-15 13:30:44 UTC）：39条allocation全部终态，`active_or_unresolved=[]`，7.475833异构device-hours、116.65 allocated CPU core-hours，198项验收通过；另一次提交拒绝未产生allocation。交互operation下界.177657 h另列，完整交互allocation开销未测量。R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h；后续按实测小批次重排并保留R7。[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)为最终口径；下文R1/R2运行实例保留为历史操作证据。
+R2最终状态（2026-11-15 13:30:44 UTC）：39条allocation全部终态，`active_or_unresolved=[]`，7.475833异构device-hours、116.65 allocated CPU core-hours，198项验收通过；另一次提交拒绝未产生allocation。交互operation下界.177657 h另列，完整交互allocation开销未测量。[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)和[r2_results.json](r2_results.json)为该阶段最终口径。
+
+**R3最终状态（2026-11-15 20:57:45 UTC）：39条allocation全部终态，`active_or_unresolved=[]`，18.094167异构device-hours、223.338333 allocated CPU core-hours，249项验收通过。**按型号/分区分别为H100 1g.12gb 9.388056 h、A100 1.815556 h、H100 NVL 3g.47gb 6.863333 h及旧h100-94gb生命周期上界0.027222 h。失败、迁移、缓存和probe均计入，单allocation不按worker重复计时。最后Kubeflow双并行训练及三个native probe已完成，Job成功后Pod被清理，已保存PodScheduled与live Job Complete支持11,692s保守allocation上界；GPU utilization未测量。完整证据见[stage306](../../workbook/2026-11-15_stage306_r3_final_results.md)与[r3_results.json](r3_results.json)。
+
+R0已记录上界+R1/R2/R3 batch累计72.363744 h，原80 h规划名义余量7.636256 h，完整交互allocation开销未测量。R4先做CPU小批次，再依据关联质量、覆盖和实测吞吐选择GPU比较，保留R7确认资源，见[10](10_r3_results_and_next_steps.md)。下文运行实例保留为带时点的历史操作证据。
 
 ## 1. 软件兼容性与精度
 
@@ -86,16 +90,18 @@ python -m analysis.flavour.v2.r1.accounting --root "$R1_ROOT"
 
 `resources.json`按GPU型号/分区分别列出allocation和CPU core-hours，包含启动、编译、失败和恢复。记录仍运行的任务时明确为截至该时点成本，不标为最终成本。MIG device-hour不折成整卡hour。18 R1/80总device-hours是规划额度，按实测预测调整候选数量与后续矩阵，不因预算数字而宣称未完成实验已有结论。
 
-R1全部screen、四pass、必要三seed、10项同计算控制、压力对照及终态验收已完成。45.708889 h为原18 h规划的2.539倍，不能把原80 h总额减去阶段计划值后照常执行剩余矩阵。R2已完成一族D0/D1/D2及必要控制；R3从M0全程重混控制开始，后续工作与成本重排见[执行路线](04_execution_plan.md)。
+R1全部screen、四pass、必要三seed、10项同计算控制、压力对照及终态验收已完成。45.708889 h为原18 h规划的2.539倍，不能把原80 h总额减去阶段计划值后照常执行剩余矩阵。R2的一族D0/D1/D2及必要控制、R3的六模型及最终交付均已完成；后续工作与成本重排见[执行路线](04_execution_plan.md)与[10](10_r3_results_and_next_steps.md)。
 
 R2已实际测试单allocation内1/2/4/1并发：H100 MIG 3g.47gb的aggregate operation吞吐分别190.04/257.97/311.40/190.88 events/s，四并行比单进程约高63%，见[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。这是多个独立模型共享一次staging的实测，并非单模型data parallel。CPU、RAM、worker和完整validation峰值决定可用并行度；已有任务完成时不为了维持四进程再增加没有科学问题的新任务。Condor另一MIG上的D2双并行也已完成。所有allocation各计一次，异构device-hours只作资源记账。
 
-R3当前的实测选择见[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)：3g.47gb三并行的各worker仅22.61/22.10/23.77 events/s，没有比三个独立1g更快；双并行为32.40/31.43 events/s。故只迁移control/relations，消融保留原1g，先确认旧writer终态再恢复100k checkpoint。计入准备/验证/丢失工作和余量后预计提前41.9min，10%吞吐惩罚下仍预计提前22.2min；这些是完成时间预测，不是已测反事实收益。两项新卡实际恢复均参数差0，全部正式分类终点尚未齐备。
+R3在[stage298](../../workbook/2026-11-15_stage298_r3_partial_gpu_handoff_and_g1_readback.md)时的实测选择：3g.47gb三并行的各worker仅22.61/22.10/23.77 events/s，没有比三个独立1g更快；双并行为32.40/31.43 events/s。因此当时只迁移control/relations，消融继续原1g，先确认旧writer终态再恢复100k checkpoint。计入准备/验证/丢失工作和余量后预计提前41.9min，10%吞吐惩罚下仍预计提前22.2min；这些是完成时间预测，不是已测反事实收益。两项新卡实际恢复均参数差0；最终两个模型和共享probe均已完成。
 
-R3的后续CPU工作可与已获GPU上的最终probe重叠：运行`python -m analysis.flavour.v2.r3.finish --root "$R3_ROOT" --watch`。该进程每30s检查冻结completion contract、manifest与两个非空预测表；依赖完成后通过统一submit入口动态选择兼容且负载较低的schedd，分别提交8CPU/12GB评价、2CPU/6GB健康与科学review。相同attempt不会重复提交，失败需检查后创建新attempt；单observer文件锁防止并发观察者重复提交。轮询不读取事件payload。实际运行证据在`runtime/r3_finish_dependencies.json`，完整R3仍由scientific decisions、图审查、全部终态账本和accept决定。
+R3的CPU工作通过`python -m analysis.flavour.v2.r3.finish --root "$R3_ROOT" --watch`与GPU最终probe重叠完成。该进程每30s检查冻结completion contract、manifest与两个非空预测表；依赖完成后通过统一submit入口动态选择兼容且负载较低的schedd，分别提交8CPU/12GB评价、2CPU/6GB健康与科学review。相同attempt不会重复提交，失败检查后创建新attempt；单observer文件锁防止重复提交，轮询不读取事件payload。最终geometry、health、scientific review分别为1583027.0/1583028.0/1583029.0，均在bigbird20终态Exit0，allocation为305/33/8s；geometry主评价214.254960s。实际证据在`runtime/r3_finish_dependencies.json`，最终科学决定、图审查、终态账本和accept均已完成。
 
-[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)实测另一兼容allocation：A100上no-global的两段Train10k profile为66.20/66.55 events/s，高于原1g约25.60。计入完整准备线性估计、恢复检查、验证和余量后，先确认原1583010.0终态及10,943s全量计费，再从200k checkpoint切换到1583024.0；至少19,758条已记录但未保存曝光重放，最终有效预算仍400k。新卡确定性恢复参数差0、概率/曝光表逐位一致，正式新缓存准备中。原Kubeflow双模型继续运行。
+[stage303](../../workbook/2026-11-15_stage303_r3_ablation_a100_and_pool_eligibility.md)实测另一兼容allocation：A100上no-global的两段Train10k profile为66.20/66.55 events/s，高于原1g约25.60。计入完整准备线性估计、恢复检查、验证和余量后，先确认原1583010.0终态及10,943s全量计费，再从200k checkpoint切换到1583024.0；至少19,758条已记录但未保存曝光重放，最终有效预算仍400k。新卡确定性恢复参数差0、概率/曝光表逐位一致。该时点新缓存尚在准备，最终已完成，见下段及stage305。
 
 同次查询的“Unclaimed H100/H200”不能解释为当前用户可立即使用：所查`b9pgpun015/801/802`的`SCond_vo_filter`要求BE/ATS accounting groups，当前提交组为CMS/Zurich；另一Unclaimed A100处于已过ShutdownTime的staged drain。应同时查看原始`Start/Requirements`、`SCond_vo_filter`、`InStagedDrain/ShutdownTime`和实际job group，再解释queue匹配。未获配的双模型探针1583025.0据此移除，NumJobStarts0、allocation0。此为当次实时策略证据，后续需重新查询，不硬编码型号或历史可用性。
 
 [stage304](../../workbook/2026-11-15_stage304_r3_a100_full_cache_and_formal_resume.md)已完成A100实际恢复：Train100k/Tune40k完整缓存分别用时1,253.584/576.292s，各32个散点输入检查通过，事件数、数组规模和完整图摘要与原1g/Kubeflow一致。正式manifest确认从25,028updates/200k曝光恢复至1583024.0，后续局部1,250update窗口实测69.440events/s；双模型共享3g.47gb的对应窗口为33.282/32.149events/s。局部训练速率不含准备与验证，也不替代完整模型质量。19:35:42 UTC账本为15.973047异构device-hours，仍有两项活动allocation；此前3,519.997s准备估计由1,829.876s实测替代，但没有运行旧设备剩余反事实，迁移总节省仍不是实测结论。
+
+[stage305](../../workbook/2026-11-15_stage305_r3_no_global_endpoint_and_strong_reference.md)交付A100终态：1583024.0 allocation为5,966s，恢复后的200k有效曝光训练2,862.225683s、69.875692 events/train-second；完整准备1,829.876s。最后Kubeflow Job `pinpoint-r3-g2-k4`在20:55:39 UTC成功结束，Pod已自动清理，双模型及三个native probe复用一次mmap staging。最终成本采用本文开头的R3终态账本，历史活动快照不作为当前状态。

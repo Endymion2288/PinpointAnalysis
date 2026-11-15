@@ -1,8 +1,8 @@
 # 模型改进与物理信息利用设计
 
-**R1已建立同输入基线，本轮B1 ResNet最强。下一步先分开检验训练配方与数据规模，再增加真实几何邻接、跨层连续性和高分辨局部路径。对象重建与预训练随后服务已识别的信息缺口。**
+**R0–R3已完成，继续以R2 B1 D2为参考。R3的采样、stride、原生关系和global消融均未形成质量晋级；下一步先验证候选关联、方向和对象覆盖，再决定raw+object与定向监督。**完整结论和实施工单见[10](10_r3_results_and_next_steps.md)。
 
-B0–B4基线的41模型完整比较与452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)。三类化没有稳定改善共同任务，B1/B2 compute的μ改善伴随e/NC损失，训练收敛未建立。新增关系、对象及专家结构仍为待检验方案；论文编号见[文献表](05_literature.md)。
+B0–B4基线的41模型完整比较与452项验收见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)，R2/R3终态见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)与[stage306](../../workbook/2026-11-15_stage306_r3_final_results.md)。三类化没有稳定改善共同任务，训练收敛与容量上限未建立。以下设计区分已经检验的具体配方与有条件的后续候选；论文编号见[文献表](05_literature.md)。
 
 ## 1. 应保留的现有成果
 
@@ -59,11 +59,11 @@ R2固定screen的[新增读回](r2_progress_review.json)也显示，低occupancy
 
 ### 2.3 图像基线的紧凑表示对照
 
-代码复核确认B1对pixel/bar共同使用物理1mm的1322×420网格，两个投影共享CNN权重；合作组报告按pixel plane/panel排列多幅紧凑图像，pixel示例15×250/15×200，strip示例68×40/56×40。二者的空行数量、局部邻接及卷积计算不同，R1并非该表示的严格复现。沿z缩短网格可能减少无响应间隙上的dense计算，是否改善训练或分类尚未测量。
+代码复核确认B1对pixel/bar共同使用物理1mm的1322×420网格，两个投影共享CNN权重；合作组报告按pixel plane/panel排列多幅紧凑图像，pixel示例15×250/15×200，strip示例68×40/56×40。二者的空行数量、局部邻接及卷积计算不同，R1并非该表示的严格复现。R3已实际检验沿z压缩的C1配方，测得计算优势及逐类质量损失，详见下段。
 
 已实现独立紧凑图像候选C1：bar保留真实panel测量轴，pixel保留plane与1mm横向投影；同一accepted响应、信号、边界、totals及tracker set继续保留。111行按真实sensor z排序，真实z、前后层间距与sensor类型经五个静态通道输入，机制参考[CoordConv](05_literature.md#p7)。图像尺寸由accepted geometry生成。256个Train事件、1,490,680条响应的原index和值逐项可逆；32-event T4真实拟合与完整Tune资源/恢复已通过，同100k×4正式分类已完成：相对D0的BA3仅+.1367 pp [−.2134,+.5036]，e recall下降3.42pp，τ无收益，当前配方不晋级。同设备训练吞吐2.723倍、含准备的短operation吞吐1.747倍；保留成本研究候选。五折global-bias修正未恢复逐类质量，见[stage294](../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)和[stage296](../../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)。
 
-先以同Tune40k、同Train100k和4 passes作小规模基线比较，再按实测选一项继续监督；若需要公平等时结论，另在同allocation匹配预算。网格、模态分支、stride与容量分别记录，不能把组合改变后的收益归因于单一因素。其主决策同样包括全域和稀疏逐类、τ工作点及成本。原研究的exact scores/事件列表尚未取得，也不阻止这一同响应的表示研究。
+同Tune40k、同Train100k和4 passes的比较已经完成；后续仅在有新的质量恢复假设时选择一项重训，需要等时结论时另在同allocation匹配预算。网格、模态分支、stride与容量分别记录，不能把组合改变后的收益归因于单一因素。主决策包括全域和稀疏逐类、τ工作点及成本；原研究的exact scores/事件列表尚未取得，严格合作组复现仍未测量。
 
 ## 3. 原生几何关系：R3 G2及条件扩展
 
@@ -92,13 +92,17 @@ flowchart LR
 
 ### 3.2 跨层候选图
 
-已实现的R3 G2原型在全部原生节点上增加一层压缩前消息：同plane跨窗口最多4条，前后同类可见plane及跨传感器候选合计出度最多14。1024个平衡Train事件的同recorded-trackID候选recall，pixel gap1/2/3为27.53%/10.15%/17.48%；该truth只用于审计，不参与构图。PixelSD首贡献者标签不等同完整ancestry，候选recall也不等同整轨效率。低recall要求R4检验更广方向候选、歧义和学习筛选；不能仅因98%以上节点有边就判定关联充分。正式分类增益尚未测量。
+已实现的R3 G2原型在全部原生节点上增加一层压缩前消息：同plane跨窗口最多4条，前后同类可见plane及跨传感器候选合计出度最多14。1024个平衡Train事件的同recorded-trackID候选recall，pixel gap1/2/3为27.53%/10.15%/17.48%；该truth只用于审计，不参与构图。PixelSD首贡献者标签不等同完整ancestry，候选recall也不等同整轨效率。低recall要求R4检验更广方向候选、歧义和学习筛选；不能仅因98%以上节点有边就判定关联充分。正式分类及probe均已完成，当前配方没有净收益，详见下文。
 
 新增材料输入为名义轴向slab厚度积分：silicon header单位μm，10换算为0.010 mm，W/scintillator header为mm。它们不是真实轨迹长度、动量或辐射长度。原型修订号3的学习检查与旧revision2分开；X0与散射协方差只有在材料成分和传播模型明确后另行加入。下面保留对象级图和其他候选实现的后续设计。
 
 本族control与relations的首轮比较估计“增加关系分支”的整体效应，额外参数、计算与实际邻域一起改变。若它有值得扩展的收益，再增加一个同容量local MLP或保持degree/plane/modality分布的打乱边重训控制，区分容量与具体几何关联的贡献；打乱只能在事件内部进行，不允许混入其他事件。固定权重时打乱边衡量依赖，不能替代重训控制。有限预算下先完成整体效应，不据此单独宣布几何归纳偏置已被证明。
 
 当前control/relations/no-global不是完整的关系×global路径2×2矩阵。global消融只估计已含relations时去除global的条件效应；若只有组合配置有效，追加无global且无relations的匹配重训控制，或在实际胜出结构上做同容量/打乱边控制，才能进一步解释关系增量。各原生候选同时与同100k×4的B1 D0直接比较；去除global的强基线参照已在其完整终点开放前补充冻结，见[stage299](../../workbook/2026-11-15_stage299_r3_full_reference_and_prefix_health.md)。
+
+**R3最终测量：**relations−control BA3差−0.0233 pp [−0.3084,+0.2191]、τ在1% FPR效率差−0.450 pp [−0.7954,−0.1008]；no-global−relations BA3差−0.4500 pp [−0.7423,−0.1402]、μ recall差−1.370 pp。三个native候选对同100k×4强B1 D0也均退化。六模型实际优化健康和七权重最终probe已通过；native关系模块gate/message/norm均有52个窗口正梯度及参数更新，因此没有把明显学习故障当成架构负结论。线性可读性不等于增量utility，移除global同时减少容量。完整数值见[stage306](../../workbook/2026-11-15_stage306_r3_final_results.md)和[r3_results.json](r3_results.json)。
+
+本轮不追加同容量/打乱边或补齐2×2：没有成功组合需要解释增益来源。先转向R4的标签支持、candidate recall–edge count及整轨fake–efficiency–coverage，避免仅扩大低recall候选消息的规模。稀疏域的e/μ recall取舍仍未建立净分离改善。
 
 节点先用 observation-only cluster 或高占用窗口 token，边连接相邻 1–3 个可见 plane，并允许越过无响应 plane。构图依赖已知 geometry、观测 hit/interval 与 uncertainty，不读取 trackID、PDG 或真 vertex。
 
@@ -126,6 +130,8 @@ S2 已有 block 级跨层 attention/graph 及 plane-only 控制，τ AP 主区�
 | G2d | 最佳关系结构的 native / 100μm / 1mm | 新结构能否把原生粒度转为任务收益？ |
 
 G2a/G2b先单因素，只有二者各有价值才组合。这里的G2a–d为设计子项；正式执行ID中的G1专指B1 stride控制，G2专指原生关系族。G2c是重训ablation；置换 feature 只衡量固定权重依赖，不能替代它。Latent 数 64→128/256、queries 2→4 在 plateau 后做小范围扫描，单纯增加数量不视为关系问题的解决。
+
+R3已完成relations/global三臂，当前不触发anchors、late fusion、branch competition、seed或粒度扩展。Global移除降低整体质量，probe与梯度也未建立足以选择branch modulation的机制证据；R4若取得覆盖可靠且互补的对象表示，再冻结单项融合比较。上述未执行设计保留为条件候选，完整重入条件见[10](10_r3_results_and_next_steps.md)。
 
 ### 3.4 高占用执行
 

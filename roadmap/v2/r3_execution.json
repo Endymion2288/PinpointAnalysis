@@ -1,7 +1,7 @@
 {
-  "status": "M0_G1_C1_and_no_global_D0_evaluated_G2_pair_finishing_R3_not_complete",
+  "status": "complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T20:32:47.246879+00:00",
+  "UTC": "2026-11-15T21:03:02.294836+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -71,13 +71,8 @@
     "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 47,
-  "latest_stage_report": "../../workbook/2026-11-15_stage305_r3_no_global_endpoint_and_strong_reference.md",
-  "pending": [
-    "G2 control/relations complete400k exposure endpoints and complete12-view48-pair geometry evaluation",
-    "three native final probes and six-model final optimizer health",
-    "evidence-triggered seed,resolution,anchor/fusion choices",
-    "final scientific decisions,terminal resource accounting,full figure review and complete R3 acceptance"
-  ],
+  "latest_stage_report": "../../workbook/2026-11-15_stage306_r3_final_results.md",
+  "pending": [],
   "Cal_A_Cut_B_Confirm_payload_read": false,
   "G0": {
     "status": "complete",
@@ -375,9 +370,9 @@
   },
   "delivery_implementation": {
     "evaluation_contract": "configs/r3/m0_evaluation.json",
-    "readability_probes": "M0,D2,G1,C1 complete; three native final probes pending",
-    "retrained_global_ablation": "complete400k exposure endpoint and strong D0 comparison; within-family comparison pending",
-    "acceptance": "frozen six formal models,four full evaluation contracts,24 required evidence items; final probes,health,decisions,figures,terminal costs and acceptance pending",
+    "readability_probes": "all four probe groups complete; all six formal models and D2 reference,all Tune40k; no-global A100/H100 readback max0.003715,argmax99.89pct,others0",
+    "retrained_global_ablation": "complete; within-family BA3-0.450pp and mu-1.370pp versus relations; no-global versus same100k B1 D0 BA3-1.3967pp; not adopted",
+    "acceptance": "complete249checks; all six models,four complete matrices,24 evidence items,five matched optimizer controls,23 reviewed English figures,39 terminal allocations",
     "completion_contract": "configs/r3/completion_contract.json"
   },
   "G1_formal": {
@@ -691,24 +686,25 @@
     "revision": 3
   },
   "resource_snapshot": {
-    "UTC": "2026-11-15T19:35:42.402779+00:00",
-    "device_hours": 15.973047152757644,
-    "allocated_CPU_core_hours": 183.6115238191022,
-    "active_or_unresolved": [
-      "r3_g2_ablation_c10",
-      "pinpoint-r3-g2-k4"
-    ],
+    "UTC": "2026-11-15T20:57:45.627279+00:00",
+    "device_hours": 18.094166666666666,
+    "allocated_CPU_core_hours": 223.33833333333334,
     "device_hours_by_model_or_partition": {
       "NVIDIA H100L-1-12C MIG 1g.12gb": 9.388055555555553,
-      "NVIDIA A100-PCIE-40GB": 1.0274957986010445,
-      "NVIDIA H100 NVL MIG 3g.47gb": 5.530273576378823,
+      "NVIDIA A100-PCIE-40GB": 1.8155555555555556,
+      "NVIDIA H100 NVL MIG 3g.47gb": 6.863333333333333,
       "h100-94gb": 0.02722222222222222
     },
-    "allocation_records": 35,
-    "terminal_cost": false
+    "active_or_unresolved": [],
+    "heterogeneous_device_hours_are_not_FLOP_equivalent": true,
+    "worker_wall_seconds_are_not_summed_as_device_hours": true,
+    "interactive_total_allocation_seconds": "not measured; operation lower bounds reported separately",
+    "allocation_records": 39,
+    "Kubeflow_last_allocation_upper_bound_seconds": 11692.0,
+    "terminal_cost": true
   },
   "G2_formal": {
-    "status": "no_global_complete_control_relations_final_pass",
+    "status": "complete_all_three_formal_endpoints_and_probes",
     "models": [
       "b2_g2_control_t4_s42",
       "b2_g2_relations_t4_s42",
@@ -748,9 +744,9 @@
         "shared_transformed_inputs": true
       }
     ],
-    "full_training_results_measured": "no_global endpoint complete; control/relations final endpoints pending",
+    "full_training_results_measured": true,
     "current_allocations": {
-      "control_and_relations": "pinpoint-r3-g2-k4",
+      "control_and_relations": null,
       "global_ablation": null
     },
     "replacement_recovery": [
@@ -796,7 +792,7 @@
       }
     },
     "prefix_health": "audit/native_prefix_health_stage299.json",
-    "latest_metadata_evidence": "audit/g2_ablation_endpoint_a100.json",
+    "latest_metadata_evidence": "audit/final_delivery_review.json",
     "initial_allocation_metadata": "clusters and GPU preserve the initial three1g launch; use current_allocations/current_GPU for live placement",
     "current_GPU": {
       "control_and_relations": "NVIDIA H100 NVL MIG 3g.47gb",
@@ -846,7 +842,58 @@
       },
       "scope": "recent real optimizer windows; excludes cache preparation, validation, staging and process startup; not full-run throughput"
     },
-    "global_ablation_terminal_allocation": "1583024.0"
+    "global_ablation_terminal_allocation": "1583024.0",
+    "terminal_allocations": {
+      "control_and_relations": "pinpoint-r3-g2-k4",
+      "global_ablation": "1583024.0"
+    },
+    "counters_by_model": {
+      "b2_g2_control_t4_s42": {
+        "updates": 50051,
+        "training_exposures": 400000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          100000,
+          100000
+        ],
+        "train_seconds": 13320.417088143848,
+        "validation_seconds": 616.2820466821722,
+        "data_wait_seconds": 138.46117864659755,
+        "lr_sum": 7.865059679070895
+      },
+      "b2_g2_relations_t4_s42": {
+        "updates": 50051,
+        "training_exposures": 400000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          100000,
+          100000
+        ],
+        "train_seconds": 13874.870442564832,
+        "validation_seconds": 389.3646859592409,
+        "data_wait_seconds": 136.5408360157744,
+        "lr_sum": 7.865059679070895
+      },
+      "b2_g2_global_ablation_t4_s42": {
+        "updates": 50051,
+        "training_exposures": 400000,
+        "non_tau_exposures": 300000,
+        "exposure_by_class": [
+          100000,
+          100000,
+          100000,
+          100000
+        ],
+        "train_seconds": 10752.976482016325,
+        "validation_seconds": 292.5146318616753,
+        "data_wait_seconds": 171.0898736419913,
+        "lr_sum": 7.865059679070895
+      }
+    }
   },
   "collation": {
     "status": "complete",
@@ -1045,10 +1092,11 @@
     "original_required_evidence": 24,
     "original_requirements_retained": true,
     "source": "configs/r3/completion_contract.json",
-    "final_scientific_review_must_use_all_four_evaluations": true
+    "final_scientific_review_must_use_all_four_evaluations": true,
+    "status": "complete_verified_actual_scope"
   },
   "automatic_CPU_followup": {
-    "status": "watching_revision2_endpoint_dependencies",
+    "status": "CPU_reviews_complete",
     "module": "analysis.flavour.v2.r3.finish",
     "observer_record": "runtime/r3_finish.observer.json",
     "dependency_state": "runtime/r3_finish_dependencies.json",
@@ -1065,7 +1113,8 @@
     },
     "payload_read_for_polling": false,
     "duplicate_attempts_replayed": false,
-    "final_scope": "CPU reviews only; complete R3 still requires GPU probes, conditional decisions and experiments, figures, terminal costs and strict acceptance"
+    "final_scope": "CPU reviews complete; final GPU probes, conditional decisions, figure review, terminal costs and strict acceptance are also complete in final_results and acceptance",
+    "state": "runtime/r3_finish_dependencies.json"
   },
   "completion_scope_metadata_audit": {
     "path": "audit/completion_scope_stage301.json",
@@ -1933,7 +1982,15 @@
       }
     ],
     "promote": false,
-    "interpretation": "same100k4passes cross-family comparison; no three-class or tau promotion, sparse mu recall gain accompanies electron loss; within-family effect of global removal still awaits complete geometry evaluation",
+    "interpretation": "same100k4passes cross-family comparison; no three-class or tau promotion, sparse mu recall gain accompanies electron loss; final within-family geometry comparison is also complete: no-global minus relations BA3 -0.450pp and mu recall -1.370pp, not promoted",
     "figure_review": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/audit/figures_stage305_review.json"
-  }
+  },
+  "final_results": "r3_results.json",
+  "acceptance": {
+    "status": "complete",
+    "passed": 249,
+    "failed": [],
+    "manual_full_scope_review": "audit/final_delivery_review.json"
+  },
+  "conditional_decisions": "r3_results.json#conditional_decisions"
 }

@@ -1,6 +1,6 @@
 # 研究结论与下一批实验决策
 
-**已有改进成立；现有模型尚未达到已验证的最佳效果。R2已完成，保留四类研究和真实三类交付；M0已检验全程重混并保留原采样；当前检验局部几何信息路径。**本文将资料审查、已经完成的对照和后续决策放在同一入口。详细证据、模型和评价定义分别见[01](01_evidence_review.md)、[03](03_models_and_physics.md)和[02](02_tasks_and_evaluation.md)。
+**已有改进成立；现有模型尚未达到已验证的最佳效果。R0–R3已完成，保留四类研究、真实三类交付及R2 B1 D2参考；R3没有新的质量晋级候选。下一项优先验证候选关联、方向和对象质量。**本文汇集资料审查、已完成对照和后续决策。完整R3结果与R4–R7小批次见[10](10_r3_results_and_next_steps.md)；证据、模型和评价定义见[01](01_evidence_review.md)、[03](03_models_and_physics.md)和[02](02_tasks_and_evaluation.md)。
 
 ## 1. 对目前结果的判断
 
@@ -34,7 +34,7 @@
 
 <a id="3-当前批次完成r2并作一次有依据的分流"></a>
 
-## 3. R2最终结果与R3采样决定
+## 3. R2与R3最终结果
 
 R2完整交付包括B1 seed42的fresh D0=100k×4、D1=100k×12、D2=300k×4及两个D1WD控制，共8模型、16个endpoint/best-screen视图、128配对、11域；另有同prefix末轮的两次重放和8项配对。198项验收通过，全部allocation终态。完整数值、科学决策和成本见[stage284](../../workbook/2026-11-15_stage284_r2_final_results.md)与[结果JSON](r2_results.json)。
 
@@ -54,16 +54,18 @@ T3使用对应四类pool的全部非τ事件；D1/D2在T3上均为900k曝光、T
 
 D0/D2两个global bias没有净BA改善；D1WD T3/T4分别恢复.78/1.25 pp。正温度改善部分NLL但保持argmax。这个低维诊断区分置信度、决策偏移与表示限制，不排除更一般readout，也不代替R7校准。前序记录见[stage279](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md)、[stage282](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md)和[stage283](../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md)。
 
-R3进行中：M0的BA3+0.383 pp，但共同μ recall−4.08 pp、稀疏μ−14.816 pp，τ无增益，不采用全程重混；G1以原D2采样独立检验stride后BA3−0.0333 pp，e recall−1.43 pp，当前配方不采用；G2 no-global完整终点对同预算D0的BA3下降1.3967 pp、τ在1% FPR效率下降2.340 pp，当前配方不晋级；同族control/relations与global移除效应仍待完整比较。实时证据见[r3_execution.json](r3_execution.json)，完整R3尚未完成。
+R3已完成六模型、四套评价/72配对、8,208项独立point与1,320项interval复核、七权重probe及六模型最终健康，249项验收通过。M0的BA3+0.383 pp，但共同μ recall−4.08 pp、稀疏μ−14.816 pp，τ无增益，不采用全程重混；G1的BA3−0.0333 pp，e recall−1.43 pp，当前配方不采用。G2 relations−control BA3差−0.0233 pp [−0.3084,+0.2191]、τ在1% FPR效率差−0.450 pp；no-global−relations BA3差−0.4500 pp [−0.7423,−0.1402]、NLL3差+0.008938、μ recall差−1.370 pp。三个native候选对同100k×4强B1 D0均退化，无质量晋级。完整结果见[stage306](../../workbook/2026-11-15_stage306_r3_final_results.md)、[r3_results.json](r3_results.json)与[r3_execution.json](r3_execution.json)。
 
-紧凑sensor-row图像C1已完成100k×4：111×420有效rows保留全部响应和真实z/间距/类型，同事件映射、真实拟合及恢复通过。对D0的BA3仅+.1367 pp [−.2134,+.5036]，e recall下降3.42pp，τ无收益；同设备训练吞吐2.723倍。固定五折global-bias修正后，相对同处理D0的e recall仍下降3.15pp，未恢复共同质量。当前配方不晋级，保留成本研究价值，等待G1/G2完整结果决定下一项质量恢复实验；不因成本自动扩seed/粒度。证据见[stage294](../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)、[stage296](../../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)和[03 §2.3](03_models_and_physics.md#23-图像基线的紧凑表示对照)。
+三臂native不是完整2×2，移除global也减少容量；这些结果不证明几何无用，也未建立纯relations/global interaction。内部正梯度和线性probe可读性不等于分类增益。稀疏域的e/μ recall取舍未形成BA/AP/AUROC的共同改善，低候选recall仍要求对象级证据。本轮七项条件扩展均已决定：不追加seeds17/2026、粒度、同容量/打乱边、anchors、late fusion、branch modulation或紧凑图像质量恢复训练；对象候选与质量恢复保留明确的未来重入条件。
+
+紧凑sensor-row图像C1已完成100k×4：111×420有效rows保留全部响应和真实z/间距/类型，同事件映射、真实拟合及恢复通过。对D0的BA3仅+.1367 pp [−.2134,+.5036]，e recall下降3.42pp，τ无收益；同设备训练吞吐2.723倍。固定五折global-bias修正后，相对同处理D0的e recall仍下降3.15pp，未恢复共同质量。当前配方不晋级，保留成本研究价值；后续有新的逐类质量恢复假设时再冻结单项比较，不重复相同bias修正或自动扩seed/粒度。证据见[stage294](../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md)、[stage296](../../workbook/2026-11-15_stage296_r3_readout_and_shared_final_probes.md)和[03 §2.3](03_models_and_physics.md#23-图像基线的紧凑表示对照)。
 
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |
 | --- | --- | --- |
-| R3: measured relations | M0已完成并保留原采样；G1检验B1首层stride4→2，G2用本族控制检验压缩前跨窗口/跨plane几何边 | 采样与结构分别配对；主任务、逐类/occupancy和成本。最有价值改变补三seed，再做native/100μm/1mm |
-| R4: objects and tracker | 增加真实station spacing、方向相容与测量不确定度；多候选关联/robust fit控制，再择一learned edge或instance方案；raw路径覆盖全部事件 | candidate recall、整轨efficiency/fake/duplicate/coverage、vertex与方向残差均报告；raw+object增益包含重建失败事件 |
+| R3: complete | M0/G0/G1、G2三臂、C1与四套正式评价均完成 | 249项验收通过，无新质量晋级；保留D2及原采样，条件扩展全部决定 |
+| R4: objects and tracker | 先冻结Train/Tune各10k及标签支持，增加真实station spacing、方向相容与测量不确定度；多候选/robust fit、object-summary HGB，再择一个有依据的raw+object比较 | candidate recall、整轨efficiency/fake/duplicate/coverage、vertex与方向残差均报告；同100k×4比较及对D2差值分别交付，失败事件保留 |
 | R5: tau and labels | 先flat4、tau gate+conditional3、conditional decay辅助；优先τhad specialist，τe/τμ按混淆推进；完整非τ背景及prompt lepton识别一起评估 | 合并后τ工作点改善，共同三类非劣；分支与inclusive效率分别报告；不使用truth路由 |
 | R6: targeted learning | 仅在胜出encoder上追加一项连续性/局部监督或topology MAE；同总计算监督为控制；加入已接受幅度的readout训练扰动 | 下游实际收益或数据效率成立；名义与未见扰动pattern同时评价，不以pretext loss下降晋级 |
 | R7: independent confirmation | 冻结候选、权重、先验、主比较；Cal-A拟合概率、Cut-B选择阈值，最后打开200k Confirm | 最多两项主要比较、多重比较控制、逐类与τ工作点、系统变化和最终资源完整交付 |
@@ -80,8 +82,8 @@ R5分两条物理路径。OPERA支持在可见母轨/次级顶点上结合1h/3h�
 
 数值配方按对照保持清楚即可，无需等待同型号或整卡。T4的FP32、A100/H100的BF16和V100兼容构建都可按实测使用；若改变精度/软件配方则补必要基线。当前LCG108没有SM70内核，这是该软件构建的限制。运行中的有效训练继续完成；排队副本的迁移保留单writer和实际成本记录。
 
-R1实际batch成本45.708889异构device-hours，已超过原18 h规划；R2一族及必要控制实际7.475833 h、116.65 allocated CPU core-hours，39条allocation全部终态。按R0上界+R1/R2 batch累计54.269577 h，原80 h规划名义余量25.730423 h，交互完整allocation开销仍未测量。后续按实测小批次重排，保留R7确认资源。没有实测收益的复杂分支暂缓，不把项目交付绑定在τ成功或全部候选训练完成上。
+R1实际batch成本45.708889异构device-hours，已超过原18 h规划；R2一族及必要控制实际7.475833 h、116.65 allocated CPU core-hours；R3为18.094167 h、223.338333 core-hours，R2/R3各39条allocation全部终态。按R0已记录上界+R1/R2/R3 batch累计72.363744 h，原80 h规划名义余量7.636256 h，完整交互allocation开销未测量。后续先做CPU小批次，按实测只安排有依据的GPU比较并保留R7资源；不直接执行原R4–R7全矩阵。没有实测收益的复杂分支暂缓，不把项目交付绑定在τ成功或全部候选训练完成上。
 
 统一晋级值沿用[02](02_tasks_and_evaluation.md#6-统计设计与晋级门槛)：三类ΔBA3至少2 pp并满足NLL/逐类约束；τ在1%背景工作点Δ效率至少1 pp、区间支持正效应且共同三类非劣。更小收益如实记录，用成本与科学问题决定是否追加。最终交付至少包含合作组三类对照、保留/暂缓τ的证据、已选模型的完整概率与工作点、新独立确认、可复现配置和资源账本。
 
-旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线是v2的R0–R7；R0/R1/R2已完成，R3的M0已完成且不采用新采样，修正硅单位后的五项真实学习检查已通过，G1正式评价已完成且不晋级、no-global终点及强B1比较已完成、control/relations仍在最终训练，C1已完成且因逐类质量不晋级；完整R3尚未完成，R4–R7为设计。后续入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。
+旧14份计划保存在[完整v1归档](../archive/2026-11-14_v1/README.md)，历史数值和失败/修复记录保留。当前路线为v2 R0–R7；R0–R3已完成，R4–R7为下一阶段设计。当前工单、输入与验收见[10](10_r3_results_and_next_steps.md)，总入口为[总路线](../README.md)、[执行工单](04_execution_plan.md)和[工作记录索引](06_workbook_index.md)。
