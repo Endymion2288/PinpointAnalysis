@@ -42,6 +42,8 @@ V100本身支持FP32；本次失败的原因是LCG108的Torch二进制没有SM70
 
 [stage262](../../workbook/2026-11-15_stage262_r1_muon_working_points_and_time_handoff.md)已完成seed17的下一次迁移：1582928 profile为64.545 events/s，按当时余量预计节省1.993 h；旧1582921确认eviction/abort及history状态3、2,829 s全部计费，归档后才release新H100 NVL writer。seed2026继续2g有效训练，新候选尚在排队；不因seed17获得较大设备而让另一seed停止工作。
 
+[stage265](../../workbook/2026-11-15_stage265_r1_b2_remaining_time_handoff.md)中seed2026候选1582929也已获配H100 NVL，实测82.757 events/s；以旧195,813次曝光的当时进度计算，预计节省2.336 h。旧1582922确认终态与eviction/abort、5,245 s全部计费后归档，04:53 UTC才release新writer。两项B2在新资源继续，当前没有Idle候选；最终wall收益与全部模型仍待完成。
+
 ## 3. Kubeflow
 
 沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据过期，已提醒用户重新登录。当前没有active Kubeflow allocation，继续由Condor推进训练。

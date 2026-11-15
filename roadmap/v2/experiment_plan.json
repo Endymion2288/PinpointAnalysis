@@ -308,11 +308,11 @@
       "ranking_result": "r1_architecture_ranking.json",
       "interim_training_control": "r1_b1_compute_controls.json",
       "resource_progress": {
-        "snapshot_UTC": "2026-11-15T04:31:42Z",
-        "allocation_device_hours_so_far": 37.7478541435,
+        "snapshot_UTC": "2026-11-15T04:54:09Z",
+        "allocation_device_hours_so_far": 38.92016795463032,
         "planning_envelope_exceeded": true,
         "terminal_cost": false,
-        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; aborted1g attempts and replacement probes included"
+        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; all aborted1g/2g attempts and replacement probes included; B2 two seeds migrated after measured remaining-time checks; three GPU allocations active and no Idle candidate"
       },
       "three_seed_B1_result": "r1_b1_three_seed.json",
       "ranking_uncertainty": "r1_ranking_uncertainty.json",
