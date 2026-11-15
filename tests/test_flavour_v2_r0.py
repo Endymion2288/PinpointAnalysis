@@ -93,12 +93,26 @@ class PartitionTests(unittest.TestCase):
         snapshot = 'bigbird21.cern.ch 10 0 0\nbigbird20.cern.ch 0 1 0\n'
         replies = [SimpleNamespace(returncode=0, stdout='!regexp("^/eos", Iwd)'),
                    SimpleNamespace(returncode=0, stdout='True'),
+                   SimpleNamespace(returncode=0, stdout='NoEos, ValidRequestCpus'),
                    SimpleNamespace(returncode=0, stdout='WRITE ALLOW')]
         with patch('analysis.flavour.v2.submit.subprocess.check_output', return_value=snapshot), \
              patch('analysis.flavour.v2.submit.subprocess.run', side_effect=replies):
             name, _, checks = choose_schedd(Path('/unused'))
         self.assertEqual(name, 'bigbird20.cern.ch')
         self.assertFalse(checks[0]['compatible'])
+
+    def test_schedd_all_eos_policy_rejects_afs_executable_layout(self):
+        snapshot = 'bigbird24.cern.ch 10 0 0\nbigbird20.cern.ch 0 1 0\n'
+        replies = [SimpleNamespace(returncode=0, stdout='True'),
+                   SimpleNamespace(returncode=0, stdout='NoEos, AllEos, AbsPathInEos'),
+                   SimpleNamespace(returncode=0, stdout='True'),
+                   SimpleNamespace(returncode=0, stdout='NoEos, ValidRequestCpus'),
+                   SimpleNamespace(returncode=0, stdout='WRITE ALLOW')]
+        with patch('analysis.flavour.v2.submit.subprocess.check_output', return_value=snapshot), \
+             patch('analysis.flavour.v2.submit.subprocess.run', side_effect=replies):
+            name, _, checks = choose_schedd(Path('/unused'))
+        self.assertEqual(name, 'bigbird20.cern.ch')
+        self.assertIn('EOS-only', checks[0]['reason'])
 
     def test_fit_maps_event_keys_instead_of_sample_list_ordinals(self):
         selected = self.frame().iloc[[0, 40, 80, 120]]

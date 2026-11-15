@@ -77,10 +77,19 @@ def choose_schedd(root):
             checks.append({'schedd': name, 'compatible': False, 'EOS_policy': policy.stdout,
                            'reason': 'AFS executable and direct EOS log paths require the unconditional EOS policy'})
             continue
+        requirements = subprocess.run(['condor_config_val', '-name', name, '-schedd',
+            'SUBMIT_REQUIREMENT_NAMES'], capture_output=True, text=True)
+        names = {part.strip().lower() for part in requirements.stdout.split(',')}
+        if requirements.returncode or names & {'alleos', 'abspathineos'}:
+            checks.append({'schedd': name, 'compatible': False, 'EOS_policy': policy.stdout,
+                'submit_requirement_names': requirements.stdout,
+                'reason': 'AFS executable is incompatible with EOS-only submission requirements'})
+            continue
         ping = subprocess.run(['condor_ping', '-type', 'SCHEDD', '-name', name,
                                '-table', 'WRITE'], capture_output=True, text=True)
         compatible = ping.returncode == 0 and 'ALLOW' in ping.stdout
-        checks.append({'schedd': name, 'compatible': compatible, 'EOS_policy': policy.stdout, 'WRITE': ping.stdout})
+        checks.append({'schedd': name, 'compatible': compatible, 'EOS_policy': policy.stdout,
+            'submit_requirement_names': requirements.stdout, 'WRITE': ping.stdout})
         if compatible:
             return name, snapshot, checks
     raise RuntimeError('no WRITE-authorized schedd compatible with the current path layout')

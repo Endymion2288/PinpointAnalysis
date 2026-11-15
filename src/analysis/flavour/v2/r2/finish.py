@@ -32,7 +32,17 @@ def advance(root,submitter=submit):
         groups.setdefault((config['family'],config['design']),[]).append(name)
     for (family,design),members in sorted(groups.items()):
         if not all(complete(root/'experiments'/name/'manifest.json') for name in members):continue
-        if all(complete(root/'gap'/name/kind/'report.json') for name in members for kind in ['endpoint','best_screen']):continue
+        members=[name for name in members if not all(complete(root/'gap'/name/kind/'report.json')
+            for kind in ['endpoint','best_screen'])]
+        if not members:continue
+        active=set()
+        for path in (root/'runtime').glob('*.submission.json'):
+            record=json.loads(path.read_text())
+            command=record.get('command',[])
+            if record.get('submitted') and command and command[0]=='analysis.flavour.v2.r2.gap' and '--names' in command:
+                active.update(command[command.index('--names')+1:])
+        members=[name for name in members if name not in active]
+        if not members:continue
         attempt=f'gap_{family.lower()}_{design.lower()}_a1'
         submitter(root,'r2_'+attempt,'analysis.flavour.v2.r2.gap',
             ['run','--attempt',attempt,'--names',*members],gpu=True,cpus=4,memory='12GB')

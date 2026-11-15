@@ -61,5 +61,59 @@
     "replicates": 400,
     "unit": "same frozen physical blocks as R1; paired"
   },
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "extension_models": [
+    "b1_d1wd_t3_s42"
+  ],
+  "extensions": [
+    {
+      "design": "D1WD",
+      "reference_design": "D1",
+      "tasks": [
+        "T3"
+      ],
+      "reason_source": "roadmap/v2/configs/r2/d1wd_reason.md",
+      "reason": "# D1WD\uff1aD1\u4e09\u7c7b\u7ec8\u70b9\u540e\u7684\u5355\u56e0\u7d20\u6b63\u5219\u5316\u5bf9\u7167\n\n\u51b3\u7b56\u65f6\u70b9\uff1a2026-11-15\uff0cD1 T3\u5df2\u5b8c\u6210\u5b8c\u657440k Tune endpoint/best-screen\uff0cD1 T4\u53caD2 T3/T4\u4ecd\u5728\u8fd0\u884c\u3002D0 T3\u7684BA3/NLL3\u4e3a.5665/.871321793\uff1bD1 T3 endpoint\u4e3a.5317/1.143738363\uff0cmacro AP/AUROC\u4e3a.613771288/.738472882\u3002D1 best-screen\u5bf9\u5e94\u5b8c\u6574Tune\u7684BA3/NLL3\u4e3a.553366667/.868712994\uff0c\u6574\u4f53BA\u4ecd\u4f4e\u4e8eD0\u3002D1\u540e\u6bb5screen AP/AUROC\u968f\u91cd\u590d\u66dd\u5149\u4e0b\u964d\uff0c\u540c\u65f6rolling Train loss\u7ee7\u7eed\u964d\u4f4e\uff1b\u5bf9\u5e94\u5171\u540cTrain\u7684eval-mode gap\u6b64\u65f6\u5c1a\u672a\u6d4b\u91cf\uff0c\u540e\u7eed\u7edf\u4e00\u8865\u9f50\u3002\n\n\u8fd9\u4e9b\u7ed3\u679c\u89e6\u53d1\u5df2\u6709R2\u8def\u7ebf\u4e2d\u7684\u8fc7\u62df\u5408\u5206\u6d41\u3002\u4ee5fresh D1 T3\u4e3a\u552f\u4e00\u56e0\u679c\u53c2\u8003\uff0cD1WD\u4ec5\u628aAdamW\u7684decoupled weight decay\u4ece.01\u6539\u4e3a.1\uff1bTrain100k\u56db\u7c7bpool\u5185\u5168\u90e875k\u975e\u03c4\u4e8b\u4ef6\u300112 passes\u3001seed42\u3001BF16 encoder/FP32 head\u3001batch8\u3001LR\u3001\u5b8c\u6574update schedule\u3001\u6a21\u578b\u5bbd\u5ea6\u548c\u8f93\u5165\u8868\u793a\u5747\u6cbf\u7528D1\u3002\u540d\u79f0/design/preflight/extension_reference\u4f5c\u4e3a\u6267\u884c\u5143\u6570\u636e\u66f4\u65b0\u3002\u65b0\u7cfb\u6570\u4e3a\u4e8b\u5148\u56fa\u5b9a\u7684\u4e00\u70b9\u63a7\u5236\uff0c\u6ca1\u6709\u8fdb\u884c\u7cfb\u6570\u626b\u63cf\uff0c\u4e0d\u79f0\u5176\u4e3a\u6700\u4f18\u503c\u3002\u6587\u732e\u4f9d\u636e\u4e3aLoshchilov\u2013Hutter\u7684Decoupled Weight Decay Regularization\uff0carXiv:1711.05101\uff0c\u89c1\u7814\u7a76\u6765\u6e90M8\u53ca`R2/audit/literature_stage280/`\u3002\n\n\u6267\u884c\u987a\u5e8f\u8865\u5145\uff1a\u628a\u9884\u5b9a\u8fc7\u62df\u5408\u5206\u6d41\u7684\u6700\u5c0f\u63a7\u5236\u63d0\u524d\u5230\u5bf9\u5e94\u53c2\u8003\u7ec8\u70b9\u5b8c\u6210\u540e\u542f\u52a8\uff0c\u4ee5\u5e76\u884c\u5229\u7528\u53ef\u7528GPU\uff1b\u521d\u59cb\u516d\u6a21\u578b\u7684\u56fa\u5b9a\u7ec8\u70b9\u6bd4\u8f83\u5355\u72ec\u4fdd\u7559\uff0c\u5b8c\u6574R2\u5224\u65ad\u7b49\u5f85\u521d\u59cb\u6a21\u578b\u548c\u672c\u63a7\u5236\u5168\u90e8\u7ed3\u675f\u3002D3/1M/\u7b2c\u4e8c\u67b6\u6784\u65cf\u6ca1\u6709\u5728\u8fd9\u91cc\u51bb\u7ed3\u3002\u4ec5\u8865T3\uff0c\u907f\u514d\u5728\u5c1a\u65e0\u7ec8\u70b9\u8bc1\u636e\u7684\u5176\u4ed6\u4efb\u52a1\u4e0a\u590d\u5236\u76f8\u540c\u5bf9\u7167\u3002\n\n\u4e3b\u8981\u914d\u5bf9\u4e3aD1WD\u2212D1\uff0c\u540cunique\u6570\u636e\u3001passes\u548cLR\u65e5\u7a0b\uff0c\u53ea\u6539\u53d8weight decay\u3002\u4e3a\u9009\u62e9\u540e\u7eed\u53c2\u8003\uff0c\u8ffd\u52a0D1WD\u2212D0\u53caD1WD\u2212D2\uff0c\u5206\u522b\u6807\u6ce8\u4e3a\u914d\u65b9/\u66dd\u5149\u7684\u7efc\u5408\u6bd4\u8f83\uff0c\u4e0d\u80fd\u89e3\u91ca\u4e3a\u7eafweight-decay\u6548\u5e94\u3002\u4e09\u4e2a\u914d\u5bf9\u5747\u7ed9all\u3001pixel-centered\u3001large-scintillator\u53caoccupancy<100\u57df\uff0cendpoint\u4e3a\u4e3b\u3001best-screen\u4e3a\u6b21\uff1b\u4fdd\u7559\u539f\u59cb\u8f93\u51fa\u548c\u540c\u4e00400\u6b21paired physical-block bootstrap\u3002\u540e\u4e24\u7ec4\u53c2\u8003D2\u5c1a\u5728\u8bad\u7ec3\uff0c\u914d\u5bf9\u53ea\u5728\u5176\u5b8c\u6210\u540e\u8bc4\u4ef7\u3002\n\n\u9a8c\u6536\u4f7f\u7528\u5b9e\u9645\u5b8c\u6574\u9884\u7b97\u3001\u539f\u59cb\u9884\u6d4b\u3001\u5171\u540cTrain gap\u3001\u76f8\u540c\u4e94\u6298readout\u8bca\u65ad\u3001\u5206\u652f\u5b66\u4e60\u5065\u5eb7\u548c\u7ec8\u6001\u6210\u672c\u3002\u6539\u5584\u4e0e\u5426\u540c\u65f6\u8bc4\u4ef7BA/NLL\u3001\u9010\u7c7b\u53d6\u820d\u548c\u5c40\u90e8\u6392\u5e8f\u3002Cal-A/Cut-B/Confirm\u7ee7\u7eed\u5c01\u5b58\uff0c\u4e8b\u4ef6bootstrap\u4e0d\u4f30\u8ba1\u8bad\u7ec3seed\u603b\u4f53\u6ce2\u52a8\u3002",
+      "models": [
+        "b1_d1wd_t3_s42"
+      ],
+      "UTC": "2026-11-15T11:45:16.127235+00:00",
+      "sequence_amendment": "preplanned overfit control starts after its own completed T3 reference, while other initial endpoints continue; primary six-model matrix preserved"
+    }
+  ],
+  "extension_pairs": [
+    {
+      "a": "b1_d1wd_t3_s42",
+      "b": "b1_d1_t3_s42",
+      "reason": "D1WD_minus_D1",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b1_d1wd_t3_s42",
+      "b": "b1_d0_t3_s42",
+      "reason": "D1WD_vs_D0_combined_recipe_and_exposure",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    },
+    {
+      "a": "b1_d1wd_t3_s42",
+      "b": "b1_d2_t3_s42",
+      "reason": "D1WD_vs_D2_combined_recipe_and_unique",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    }
+  ]
 }

@@ -1,0 +1,3744 @@
+{
+  "decision": "D1WD_T3_only",
+  "initial_reference": "b1_d1_t3_s42",
+  "reference_status": "complete",
+  "reference_Tune": {
+    "BA": 0.5317,
+    "NLL": 1.1437383627193058,
+    "macro_AP": 0.6137712879233508,
+    "macro_AUROC": 0.7384728816666667,
+    "per_class": [
+      {
+        "recall": 0.7373,
+        "AP": 0.6748743232886013,
+        "AUROC": 0.791406115,
+        "eff_FPR_0.01": 0.1656,
+        "actual_FPR_0.01": 0.01,
+        "threshold_FPR_0.01": 0.9868106842041016,
+        "purity_FPR_0.01": 0.8922413793103449,
+        "coverage_FPR_0.01": 0.06186666666666667,
+        "eff_FPR_0.001": 0.0379,
+        "actual_FPR_0.001": 0.001,
+        "threshold_FPR_0.001": 0.9990484118461609,
+        "purity_FPR_0.001": 0.949874686716792,
+        "coverage_FPR_0.001": 0.0133,
+        "eff_purity_0.8": 0.3297,
+        "coverage_purity_0.8": 0.1373,
+        "eff_purity_0.9": 0.1517,
+        "coverage_purity_0.9": 0.05616666666666666
+      },
+      {
+        "recall": 0.3452,
+        "AP": 0.6064381911232706,
+        "AUROC": 0.725495285,
+        "eff_FPR_0.01": 0.1448,
+        "actual_FPR_0.01": 0.01,
+        "threshold_FPR_0.01": 0.9325401186943054,
+        "purity_FPR_0.01": 0.8786407766990292,
+        "coverage_FPR_0.01": 0.054933333333333334,
+        "eff_FPR_0.001": 0.064,
+        "actual_FPR_0.001": 0.001,
+        "threshold_FPR_0.001": 0.9990817308425903,
+        "purity_FPR_0.001": 0.9696969696969697,
+        "coverage_FPR_0.001": 0.022,
+        "eff_purity_0.8": 0.2048,
+        "coverage_purity_0.8": 0.08533333333333333,
+        "eff_purity_0.9": 0.1342,
+        "coverage_purity_0.9": 0.0497
+      },
+      {
+        "recall": 0.5126,
+        "AP": 0.5600013493581802,
+        "AUROC": 0.698517245,
+        "eff_FPR_0.01": 0.093,
+        "actual_FPR_0.01": 0.01,
+        "threshold_FPR_0.01": 0.9944394826889038,
+        "purity_FPR_0.01": 0.8230088495575221,
+        "coverage_FPR_0.01": 0.03766666666666667,
+        "eff_FPR_0.001": 0.025,
+        "actual_FPR_0.001": 0.001,
+        "threshold_FPR_0.001": 0.999863862991333,
+        "purity_FPR_0.001": 0.9259259259259259,
+        "coverage_FPR_0.001": 0.009,
+        "eff_purity_0.8": 0.1303,
+        "coverage_purity_0.8": 0.054233333333333335,
+        "eff_purity_0.9": 0.0386,
+        "coverage_purity_0.9": 0.014233333333333334
+      }
+    ],
+    "events": 30000,
+    "raw_counts": [
+      10000,
+      10000,
+      10000
+    ],
+    "weighted_prior": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "weighted_counts": [
+      10000.0,
+      10000.0,
+      10000.0
+    ],
+    "confusion_counts": [
+      [
+        7373.0,
+        690.0,
+        1937.0
+      ],
+      [
+        3248.0,
+        3452.0,
+        3300.0
+      ],
+      [
+        3540.0,
+        1334.0,
+        5126.0
+      ]
+    ],
+    "Neff": 30000.0
+  },
+  "reference_Train_eval": {
+    "BA": 0.6963333333333334,
+    "NLL": 0.6269825968400207,
+    "macro_AP": 0.8373446083742788,
+    "macro_AUROC": 0.8951586666666667,
+    "per_class": [
+      {
+        "recall": 0.878,
+        "AP": 0.861333066178632,
+        "AUROC": 0.915609,
+        "eff_FPR_0.01": 0.466,
+        "actual_FPR_0.01": 0.01,
+        "threshold_FPR_0.01": 0.8748390674591064,
+        "purity_FPR_0.01": 0.9588477366255144,
+        "coverage_FPR_0.01": 0.162,
+        "eff_FPR_0.001": 0.191,
+        "actual_FPR_0.001": 0.001,
+        "threshold_FPR_0.001": 0.986400842666626,
+        "purity_FPR_0.001": 0.9896373056994818,
+        "coverage_FPR_0.001": 0.06433333333333334,
+        "eff_purity_0.8": 0.684,
+        "coverage_purity_0.8": 0.2846666666666667,
+        "eff_purity_0.9": 0.558,
+        "coverage_purity_0.9": 0.20633333333333334
+      },
+      {
+        "recall": 0.517,
+        "AP": 0.834492465184519,
+        "AUROC": 0.89410875,
+        "eff_FPR_0.01": 0.451,
+        "actual_FPR_0.01": 0.01,
+        "threshold_FPR_0.01": 0.5372483730316162,
+        "purity_FPR_0.01": 0.9575371549893843,
+        "coverage_FPR_0.01": 0.157,
+        "eff_FPR_0.001": 0.283,
+        "actual_FPR_0.001": 0.001,
+        "threshold_FPR_0.001": 0.8209869861602783,
+        "purity_FPR_0.001": 0.9929824561403509,
+        "coverage_FPR_0.001": 0.095,
+        "eff_purity_0.8": 0.632,
+        "coverage_purity_0.8": 0.263,
+        "eff_purity_0.9": 0.498,
+        "coverage_purity_0.9": 0.184
+      },
+      {
+        "recall": 0.694,
+        "AP": 0.8162082937596855,
+        "AUROC": 0.87575825,
+        "eff_FPR_0.01": 0.426,
+        "actual_FPR_0.01": 0.01,
+        "threshold_FPR_0.01": 0.7493758797645569,
+        "purity_FPR_0.01": 0.9551569506726457,
+        "coverage_FPR_0.01": 0.14866666666666667,
+        "eff_FPR_0.001": 0.329,
+        "actual_FPR_0.001": 0.001,
+        "threshold_FPR_0.001": 0.9048193097114563,
+        "purity_FPR_0.001": 0.9939577039274925,
+        "coverage_FPR_0.001": 0.11033333333333334,
+        "eff_purity_0.8": 0.563,
+        "coverage_purity_0.8": 0.23266666666666666,
+        "eff_purity_0.9": 0.486,
+        "coverage_purity_0.9": 0.17966666666666667
+      }
+    ],
+    "events": 3000,
+    "raw_counts": [
+      1000,
+      1000,
+      1000
+    ],
+    "weighted_prior": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "weighted_counts": [
+      1000.0,
+      1000.0,
+      1000.0
+    ],
+    "confusion_counts": [
+      [
+        878.0,
+        23.0,
+        99.0
+      ],
+      [
+        253.0,
+        517.0,
+        230.0
+      ],
+      [
+        255.0,
+        51.0,
+        694.0
+      ]
+    ],
+    "Neff": 3000.0
+  },
+  "preflight": {
+    "total_updates": 112645,
+    "total_exposures": 900000,
+    "non_tau_exposures": 900000,
+    "unique_events": 75000,
+    "passes": 12,
+    "per_pass": [
+      {
+        "pass": 1,
+        "updates": 9388,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 2,
+        "updates": 9387,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 3,
+        "updates": 9386,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 4,
+        "updates": 9389,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 5,
+        "updates": 9387,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 6,
+        "updates": 9386,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 7,
+        "updates": 9384,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 8,
+        "updates": 9389,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 9,
+        "updates": 9388,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 10,
+        "updates": 9386,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 11,
+        "updates": 9386,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      },
+      {
+        "pass": 12,
+        "updates": 9389,
+        "events": 75000,
+        "class_counts": [
+          25000,
+          25000,
+          0,
+          25000
+        ]
+      }
+    ],
+    "batch_size_distribution": {
+      "1": 38,
+      "2": 39,
+      "3": 43,
+      "4": 53,
+      "5": 32,
+      "6": 48,
+      "7": 41,
+      "8": 112351
+    },
+    "single_class_batch_fraction": 0.0017932442629499756,
+    "class_proportion_lag1": [
+      0.13210497298961957,
+      0.16314751872464459,
+      null,
+      0.03931347463224161
+    ],
+    "terminal_100_batches_class_counts": [
+      373,
+      144,
+      0,
+      282
+    ],
+    "minimum_row_exposures": 12,
+    "maximum_row_exposures": 12,
+    "windows": [
+      {
+        "pass": 1,
+        "events": 1915,
+        "class_counts": [
+          588,
+          681,
+          0,
+          646
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3766,
+        "class_counts": [
+          1172,
+          1327,
+          0,
+          1267
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3666,
+        "class_counts": [
+          1176,
+          1241,
+          0,
+          1249
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1901,
+        "class_counts": [
+          579,
+          680,
+          0,
+          642
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1886,
+        "class_counts": [
+          585,
+          687,
+          0,
+          614
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1898,
+        "class_counts": [
+          580,
+          670,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1927,
+        "class_counts": [
+          559,
+          712,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3826,
+        "class_counts": [
+          1204,
+          1339,
+          0,
+          1283
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3587,
+        "class_counts": [
+          1647,
+          671,
+          0,
+          1269
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1891,
+        "class_counts": [
+          578,
+          655,
+          0,
+          658
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3852,
+        "class_counts": [
+          1197,
+          1375,
+          0,
+          1280
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3178,
+        "class_counts": [
+          1139,
+          1376,
+          0,
+          663
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3577,
+        "class_counts": [
+          1600,
+          687,
+          0,
+          1290
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1941,
+        "class_counts": [
+          633,
+          675,
+          0,
+          633
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3807,
+        "class_counts": [
+          1208,
+          1335,
+          0,
+          1264
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3907,
+        "class_counts": [
+          1149,
+          1342,
+          0,
+          1416
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3804,
+        "class_counts": [
+          1173,
+          1350,
+          0,
+          1281
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3670,
+        "class_counts": [
+          1735,
+          692,
+          0,
+          1243
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3933,
+        "class_counts": [
+          1256,
+          1366,
+          0,
+          1311
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1905,
+        "class_counts": [
+          599,
+          674,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1911,
+        "class_counts": [
+          586,
+          684,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 1914,
+        "class_counts": [
+          613,
+          678,
+          0,
+          623
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3782,
+        "class_counts": [
+          1148,
+          1354,
+          0,
+          1280
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3754,
+        "class_counts": [
+          1140,
+          1367,
+          0,
+          1247
+        ]
+      },
+      {
+        "pass": 1,
+        "events": 3802,
+        "class_counts": [
+          1156,
+          1382,
+          0,
+          1264
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3758,
+        "class_counts": [
+          1138,
+          1381,
+          0,
+          1239
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3812,
+        "class_counts": [
+          1176,
+          1339,
+          0,
+          1297
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1911,
+        "class_counts": [
+          586,
+          684,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3704,
+        "class_counts": [
+          1144,
+          1314,
+          0,
+          1246
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1926,
+        "class_counts": [
+          582,
+          684,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3798,
+        "class_counts": [
+          1164,
+          1365,
+          0,
+          1269
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1899,
+        "class_counts": [
+          581,
+          682,
+          0,
+          636
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3825,
+        "class_counts": [
+          1217,
+          1348,
+          0,
+          1260
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3833,
+        "class_counts": [
+          1195,
+          1355,
+          0,
+          1283
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3854,
+        "class_counts": [
+          1210,
+          1379,
+          0,
+          1265
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1905,
+        "class_counts": [
+          592,
+          668,
+          0,
+          645
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1276,
+        "class_counts": [
+          584,
+          692,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3861,
+        "class_counts": [
+          1228,
+          1370,
+          0,
+          1263
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3775,
+        "class_counts": [
+          1146,
+          1241,
+          0,
+          1388
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3831,
+        "class_counts": [
+          1190,
+          1361,
+          0,
+          1280
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3779,
+        "class_counts": [
+          1168,
+          1337,
+          0,
+          1274
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 2002,
+        "class_counts": [
+          657,
+          675,
+          0,
+          670
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1851,
+        "class_counts": [
+          559,
+          671,
+          0,
+          621
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3628,
+        "class_counts": [
+          1719,
+          674,
+          0,
+          1235
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1901,
+        "class_counts": [
+          579,
+          680,
+          0,
+          642
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3404,
+        "class_counts": [
+          2103,
+          0,
+          0,
+          1301
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1905,
+        "class_counts": [
+          596,
+          692,
+          0,
+          617
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3818,
+        "class_counts": [
+          1137,
+          1367,
+          0,
+          1314
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 1934,
+        "class_counts": [
+          590,
+          701,
+          0,
+          643
+        ]
+      },
+      {
+        "pass": 2,
+        "events": 3810,
+        "class_counts": [
+          1159,
+          1340,
+          0,
+          1311
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1902,
+        "class_counts": [
+          572,
+          711,
+          0,
+          619
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3823,
+        "class_counts": [
+          1206,
+          1348,
+          0,
+          1269
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3818,
+        "class_counts": [
+          1169,
+          1372,
+          0,
+          1277
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3750,
+        "class_counts": [
+          1156,
+          1328,
+          0,
+          1266
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3826,
+        "class_counts": [
+          1173,
+          1354,
+          0,
+          1299
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1931,
+        "class_counts": [
+          599,
+          691,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1902,
+        "class_counts": [
+          555,
+          684,
+          0,
+          663
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1901,
+        "class_counts": [
+          579,
+          680,
+          0,
+          642
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1934,
+        "class_counts": [
+          590,
+          701,
+          0,
+          643
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3836,
+        "class_counts": [
+          1194,
+          1370,
+          0,
+          1272
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3647,
+        "class_counts": [
+          1674,
+          684,
+          0,
+          1289
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1899,
+        "class_counts": [
+          604,
+          679,
+          0,
+          616
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1926,
+        "class_counts": [
+          613,
+          669,
+          0,
+          644
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1927,
+        "class_counts": [
+          559,
+          712,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1891,
+        "class_counts": [
+          578,
+          655,
+          0,
+          658
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1668,
+        "class_counts": [
+          1015,
+          0,
+          0,
+          653
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3761,
+        "class_counts": [
+          1162,
+          1362,
+          0,
+          1237
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3184,
+        "class_counts": [
+          1188,
+          1348,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3808,
+        "class_counts": [
+          1171,
+          1331,
+          0,
+          1306
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3637,
+        "class_counts": [
+          1716,
+          669,
+          0,
+          1252
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3900,
+        "class_counts": [
+          1151,
+          1379,
+          0,
+          1370
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3792,
+        "class_counts": [
+          1192,
+          1346,
+          0,
+          1254
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 2002,
+        "class_counts": [
+          657,
+          675,
+          0,
+          670
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3761,
+        "class_counts": [
+          1153,
+          1343,
+          0,
+          1265
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 3813,
+        "class_counts": [
+          1194,
+          1360,
+          0,
+          1259
+        ]
+      },
+      {
+        "pass": 3,
+        "events": 1761,
+        "class_counts": [
+          580,
+          549,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1905,
+        "class_counts": [
+          592,
+          668,
+          0,
+          645
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3865,
+        "class_counts": [
+          1222,
+          1366,
+          0,
+          1277
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1911,
+        "class_counts": [
+          586,
+          684,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3833,
+        "class_counts": [
+          1171,
+          1383,
+          0,
+          1279
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3819,
+        "class_counts": [
+          1196,
+          1319,
+          0,
+          1304
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 2944,
+        "class_counts": [
+          1599,
+          692,
+          0,
+          653
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1901,
+        "class_counts": [
+          579,
+          680,
+          0,
+          642
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1914,
+        "class_counts": [
+          613,
+          678,
+          0,
+          623
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1926,
+        "class_counts": [
+          582,
+          684,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3764,
+        "class_counts": [
+          1136,
+          1375,
+          0,
+          1253
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1852,
+        "class_counts": [
+          576,
+          658,
+          0,
+          618
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1905,
+        "class_counts": [
+          599,
+          674,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3484,
+        "class_counts": [
+          1700,
+          549,
+          0,
+          1235
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3745,
+        "class_counts": [
+          1145,
+          1348,
+          0,
+          1252
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3805,
+        "class_counts": [
+          1187,
+          1362,
+          0,
+          1256
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3843,
+        "class_counts": [
+          1205,
+          1386,
+          0,
+          1252
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1891,
+        "class_counts": [
+          578,
+          655,
+          0,
+          658
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1931,
+        "class_counts": [
+          599,
+          691,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3751,
+        "class_counts": [
+          1172,
+          1335,
+          0,
+          1244
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1909,
+        "class_counts": [
+          585,
+          687,
+          0,
+          637
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 2014,
+        "class_counts": [
+          566,
+          692,
+          0,
+          756
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3794,
+        "class_counts": [
+          1189,
+          1343,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3829,
+        "class_counts": [
+          1114,
+          1396,
+          0,
+          1319
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3634,
+        "class_counts": [
+          1668,
+          670,
+          0,
+          1296
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 1914,
+        "class_counts": [
+          596,
+          669,
+          0,
+          649
+        ]
+      },
+      {
+        "pass": 4,
+        "events": 3917,
+        "class_counts": [
+          1245,
+          1356,
+          0,
+          1316
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3900,
+        "class_counts": [
+          1237,
+          1345,
+          0,
+          1318
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1856,
+        "class_counts": [
+          566,
+          670,
+          0,
+          620
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1723,
+        "class_counts": [
+          1120,
+          0,
+          0,
+          603
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3766,
+        "class_counts": [
+          1189,
+          1336,
+          0,
+          1241
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1668,
+        "class_counts": [
+          1015,
+          0,
+          0,
+          653
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3805,
+        "class_counts": [
+          1190,
+          1344,
+          0,
+          1271
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1851,
+        "class_counts": [
+          559,
+          671,
+          0,
+          621
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3823,
+        "class_counts": [
+          1199,
+          1342,
+          0,
+          1282
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3663,
+        "class_counts": [
+          1135,
+          1233,
+          0,
+          1295
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3836,
+        "class_counts": [
+          1195,
+          1383,
+          0,
+          1258
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3804,
+        "class_counts": [
+          1169,
+          1334,
+          0,
+          1301
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3812,
+        "class_counts": [
+          1198,
+          1356,
+          0,
+          1258
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3766,
+        "class_counts": [
+          1164,
+          1325,
+          0,
+          1277
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3961,
+        "class_counts": [
+          1181,
+          1384,
+          0,
+          1396
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1902,
+        "class_counts": [
+          572,
+          711,
+          0,
+          619
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3780,
+        "class_counts": [
+          1157,
+          1333,
+          0,
+          1290
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1941,
+        "class_counts": [
+          633,
+          675,
+          0,
+          633
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1926,
+        "class_counts": [
+          582,
+          684,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1899,
+        "class_counts": [
+          581,
+          682,
+          0,
+          636
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3635,
+        "class_counts": [
+          1692,
+          679,
+          0,
+          1264
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1913,
+        "class_counts": [
+          577,
+          704,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3810,
+        "class_counts": [
+          1164,
+          1367,
+          0,
+          1279
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3842,
+        "class_counts": [
+          1147,
+          1393,
+          0,
+          1302
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 1276,
+        "class_counts": [
+          584,
+          692,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 5,
+        "events": 3842,
+        "class_counts": [
+          1194,
+          1357,
+          0,
+          1291
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1898,
+        "class_counts": [
+          580,
+          670,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3832,
+        "class_counts": [
+          1151,
+          1380,
+          0,
+          1301
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3855,
+        "class_counts": [
+          1246,
+          1353,
+          0,
+          1256
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1852,
+        "class_counts": [
+          576,
+          658,
+          0,
+          618
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1900,
+        "class_counts": [
+          591,
+          670,
+          0,
+          639
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3836,
+        "class_counts": [
+          1162,
+          1412,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1908,
+        "class_counts": [
+          604,
+          656,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3813,
+        "class_counts": [
+          1177,
+          1351,
+          0,
+          1285
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3831,
+        "class_counts": [
+          1184,
+          1378,
+          0,
+          1269
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1851,
+        "class_counts": [
+          559,
+          671,
+          0,
+          621
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3787,
+        "class_counts": [
+          1165,
+          1361,
+          0,
+          1261
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3037,
+        "class_counts": [
+          1164,
+          1241,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1911,
+        "class_counts": [
+          586,
+          684,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1852,
+        "class_counts": [
+          568,
+          656,
+          0,
+          628
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3662,
+        "class_counts": [
+          1670,
+          684,
+          0,
+          1308
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3800,
+        "class_counts": [
+          1163,
+          1342,
+          0,
+          1295
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3804,
+        "class_counts": [
+          1203,
+          1353,
+          0,
+          1248
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3803,
+        "class_counts": [
+          1134,
+          1364,
+          0,
+          1305
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3815,
+        "class_counts": [
+          1192,
+          1347,
+          0,
+          1276
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3779,
+        "class_counts": [
+          1168,
+          1337,
+          0,
+          1274
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1905,
+        "class_counts": [
+          596,
+          692,
+          0,
+          617
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 2002,
+        "class_counts": [
+          657,
+          675,
+          0,
+          670
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3929,
+        "class_counts": [
+          1154,
+          1373,
+          0,
+          1402
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 1668,
+        "class_counts": [
+          1015,
+          0,
+          0,
+          653
+        ]
+      },
+      {
+        "pass": 6,
+        "events": 3670,
+        "class_counts": [
+          1735,
+          692,
+          0,
+          1243
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3574,
+        "class_counts": [
+          1679,
+          671,
+          0,
+          1224
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3804,
+        "class_counts": [
+          1192,
+          1361,
+          0,
+          1251
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1905,
+        "class_counts": [
+          592,
+          668,
+          0,
+          645
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1926,
+        "class_counts": [
+          582,
+          684,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1736,
+        "class_counts": [
+          1088,
+          0,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3852,
+        "class_counts": [
+          1211,
+          1384,
+          0,
+          1257
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3819,
+        "class_counts": [
+          1190,
+          1340,
+          0,
+          1289
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3854,
+        "class_counts": [
+          1210,
+          1379,
+          0,
+          1265
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3755,
+        "class_counts": [
+          1147,
+          1352,
+          0,
+          1256
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3903,
+        "class_counts": [
+          1236,
+          1355,
+          0,
+          1312
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3814,
+        "class_counts": [
+          1192,
+          1360,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3823,
+        "class_counts": [
+          1169,
+          1379,
+          0,
+          1275
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1852,
+        "class_counts": [
+          568,
+          656,
+          0,
+          628
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1893,
+        "class_counts": [
+          583,
+          650,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3202,
+        "class_counts": [
+          1197,
+          1361,
+          0,
+          644
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1902,
+        "class_counts": [
+          572,
+          711,
+          0,
+          619
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1898,
+        "class_counts": [
+          580,
+          670,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3599,
+        "class_counts": [
+          1614,
+          691,
+          0,
+          1294
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1927,
+        "class_counts": [
+          559,
+          712,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1900,
+        "class_counts": [
+          591,
+          670,
+          0,
+          639
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3823,
+        "class_counts": [
+          1198,
+          1365,
+          0,
+          1260
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3743,
+        "class_counts": [
+          1154,
+          1313,
+          0,
+          1276
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 1914,
+        "class_counts": [
+          596,
+          669,
+          0,
+          649
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3775,
+        "class_counts": [
+          1146,
+          1241,
+          0,
+          1388
+        ]
+      },
+      {
+        "pass": 7,
+        "events": 3807,
+        "class_counts": [
+          1154,
+          1358,
+          0,
+          1295
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 2002,
+        "class_counts": [
+          657,
+          675,
+          0,
+          670
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3823,
+        "class_counts": [
+          1198,
+          1365,
+          0,
+          1260
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1852,
+        "class_counts": [
+          576,
+          658,
+          0,
+          618
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1898,
+        "class_counts": [
+          580,
+          670,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1899,
+        "class_counts": [
+          581,
+          682,
+          0,
+          636
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3676,
+        "class_counts": [
+          1168,
+          1230,
+          0,
+          1278
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1723,
+        "class_counts": [
+          1120,
+          0,
+          0,
+          603
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3520,
+        "class_counts": [
+          1583,
+          656,
+          0,
+          1281
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1941,
+        "class_counts": [
+          633,
+          675,
+          0,
+          633
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3826,
+        "class_counts": [
+          1204,
+          1339,
+          0,
+          1283
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3790,
+        "class_counts": [
+          1156,
+          1371,
+          0,
+          1263
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1926,
+        "class_counts": [
+          582,
+          684,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1905,
+        "class_counts": [
+          596,
+          692,
+          0,
+          617
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1918,
+        "class_counts": [
+          607,
+          674,
+          0,
+          637
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3629,
+        "class_counts": [
+          1671,
+          650,
+          0,
+          1308
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1927,
+        "class_counts": [
+          559,
+          712,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3794,
+        "class_counts": [
+          1189,
+          1343,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3793,
+        "class_counts": [
+          1150,
+          1366,
+          0,
+          1277
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1905,
+        "class_counts": [
+          592,
+          668,
+          0,
+          645
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1889,
+        "class_counts": [
+          579,
+          678,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3842,
+        "class_counts": [
+          1185,
+          1375,
+          0,
+          1282
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3223,
+        "class_counts": [
+          1199,
+          1384,
+          0,
+          640
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3827,
+        "class_counts": [
+          1173,
+          1373,
+          0,
+          1281
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3756,
+        "class_counts": [
+          1158,
+          1345,
+          0,
+          1253
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 3916,
+        "class_counts": [
+          1121,
+          1376,
+          0,
+          1419
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1901,
+        "class_counts": [
+          579,
+          680,
+          0,
+          642
+        ]
+      },
+      {
+        "pass": 8,
+        "events": 1899,
+        "class_counts": [
+          604,
+          679,
+          0,
+          616
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1899,
+        "class_counts": [
+          604,
+          679,
+          0,
+          616
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1905,
+        "class_counts": [
+          592,
+          668,
+          0,
+          645
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1927,
+        "class_counts": [
+          559,
+          712,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1900,
+        "class_counts": [
+          591,
+          670,
+          0,
+          639
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3817,
+        "class_counts": [
+          1191,
+          1324,
+          0,
+          1302
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1913,
+        "class_counts": [
+          577,
+          704,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1911,
+        "class_counts": [
+          586,
+          684,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1723,
+        "class_counts": [
+          1120,
+          0,
+          0,
+          603
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3815,
+        "class_counts": [
+          1192,
+          1358,
+          0,
+          1265
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1276,
+        "class_counts": [
+          584,
+          692,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1898,
+        "class_counts": [
+          580,
+          670,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3852,
+        "class_counts": [
+          1197,
+          1375,
+          0,
+          1280
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1668,
+        "class_counts": [
+          1015,
+          0,
+          0,
+          653
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 2002,
+        "class_counts": [
+          657,
+          675,
+          0,
+          670
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3798,
+        "class_counts": [
+          1179,
+          1342,
+          0,
+          1277
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3670,
+        "class_counts": [
+          1165,
+          1236,
+          0,
+          1269
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3782,
+        "class_counts": [
+          1158,
+          1362,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3829,
+        "class_counts": [
+          1184,
+          1350,
+          0,
+          1295
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3755,
+        "class_counts": [
+          1147,
+          1352,
+          0,
+          1256
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3588,
+        "class_counts": [
+          1664,
+          658,
+          0,
+          1266
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3738,
+        "class_counts": [
+          1153,
+          1343,
+          0,
+          1242
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3834,
+        "class_counts": [
+          1186,
+          1340,
+          0,
+          1308
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 1902,
+        "class_counts": [
+          572,
+          711,
+          0,
+          619
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3807,
+        "class_counts": [
+          1154,
+          1358,
+          0,
+          1295
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3961,
+        "class_counts": [
+          1181,
+          1384,
+          0,
+          1396
+        ]
+      },
+      {
+        "pass": 9,
+        "events": 3830,
+        "class_counts": [
+          1212,
+          1353,
+          0,
+          1265
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1918,
+        "class_counts": [
+          607,
+          674,
+          0,
+          637
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1915,
+        "class_counts": [
+          588,
+          681,
+          0,
+          646
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3789,
+        "class_counts": [
+          1170,
+          1348,
+          0,
+          1271
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3831,
+        "class_counts": [
+          1212,
+          1343,
+          0,
+          1276
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3615,
+        "class_counts": [
+          1630,
+          692,
+          0,
+          1293
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3797,
+        "class_counts": [
+          1171,
+          1371,
+          0,
+          1255
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3836,
+        "class_counts": [
+          1144,
+          1399,
+          0,
+          1293
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3901,
+        "class_counts": [
+          1238,
+          1357,
+          0,
+          1306
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1852,
+        "class_counts": [
+          568,
+          656,
+          0,
+          628
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1851,
+        "class_counts": [
+          559,
+          671,
+          0,
+          621
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1899,
+        "class_counts": [
+          604,
+          679,
+          0,
+          616
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3803,
+        "class_counts": [
+          1134,
+          1364,
+          0,
+          1305
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3621,
+        "class_counts": [
+          1700,
+          670,
+          0,
+          1251
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3847,
+        "class_counts": [
+          1167,
+          1405,
+          0,
+          1275
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1852,
+        "class_counts": [
+          576,
+          658,
+          0,
+          618
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1931,
+        "class_counts": [
+          599,
+          691,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3846,
+        "class_counts": [
+          1229,
+          1367,
+          0,
+          1250
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3816,
+        "class_counts": [
+          1168,
+          1380,
+          0,
+          1268
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1914,
+        "class_counts": [
+          613,
+          678,
+          0,
+          623
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3132,
+        "class_counts": [
+          1150,
+          1362,
+          0,
+          620
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1761,
+        "class_counts": [
+          580,
+          549,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3644,
+        "class_counts": [
+          1692,
+          656,
+          0,
+          1296
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 1893,
+        "class_counts": [
+          583,
+          650,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3940,
+        "class_counts": [
+          1148,
+          1376,
+          0,
+          1416
+        ]
+      },
+      {
+        "pass": 10,
+        "events": 3796,
+        "class_counts": [
+          1170,
+          1323,
+          0,
+          1303
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3812,
+        "class_counts": [
+          1181,
+          1383,
+          0,
+          1248
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3638,
+        "class_counts": [
+          1708,
+          681,
+          0,
+          1249
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3800,
+        "class_counts": [
+          1160,
+          1362,
+          0,
+          1278
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3747,
+        "class_counts": [
+          1144,
+          1325,
+          0,
+          1278
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3827,
+        "class_counts": [
+          1192,
+          1361,
+          0,
+          1274
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3810,
+        "class_counts": [
+          1188,
+          1360,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3782,
+        "class_counts": [
+          1158,
+          1362,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3913,
+        "class_counts": [
+          1243,
+          1359,
+          0,
+          1311
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1761,
+        "class_counts": [
+          580,
+          549,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3520,
+        "class_counts": [
+          1591,
+          658,
+          0,
+          1271
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1900,
+        "class_counts": [
+          591,
+          670,
+          0,
+          639
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1736,
+        "class_counts": [
+          1088,
+          0,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1905,
+        "class_counts": [
+          599,
+          674,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1926,
+        "class_counts": [
+          582,
+          684,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1926,
+        "class_counts": [
+          613,
+          669,
+          0,
+          644
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1276,
+        "class_counts": [
+          584,
+          692,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1902,
+        "class_counts": [
+          555,
+          684,
+          0,
+          663
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1934,
+        "class_counts": [
+          590,
+          701,
+          0,
+          643
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3855,
+        "class_counts": [
+          1219,
+          1348,
+          0,
+          1288
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1852,
+        "class_counts": [
+          568,
+          656,
+          0,
+          628
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3803,
+        "class_counts": [
+          1192,
+          1356,
+          0,
+          1255
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3795,
+        "class_counts": [
+          1155,
+          1361,
+          0,
+          1279
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1941,
+        "class_counts": [
+          633,
+          675,
+          0,
+          633
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 2014,
+        "class_counts": [
+          566,
+          692,
+          0,
+          756
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1927,
+        "class_counts": [
+          559,
+          712,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 1898,
+        "class_counts": [
+          580,
+          670,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 11,
+        "events": 3800,
+        "class_counts": [
+          1181,
+          1356,
+          0,
+          1263
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1893,
+        "class_counts": [
+          583,
+          650,
+          0,
+          660
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3841,
+        "class_counts": [
+          1201,
+          1350,
+          0,
+          1290
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3933,
+        "class_counts": [
+          1256,
+          1366,
+          0,
+          1311
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3761,
+        "class_counts": [
+          1158,
+          1338,
+          0,
+          1265
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1889,
+        "class_counts": [
+          579,
+          678,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1901,
+        "class_counts": [
+          579,
+          680,
+          0,
+          642
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3769,
+        "class_counts": [
+          1166,
+          1345,
+          0,
+          1258
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3635,
+        "class_counts": [
+          1669,
+          682,
+          0,
+          1284
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1914,
+        "class_counts": [
+          596,
+          669,
+          0,
+          649
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1899,
+        "class_counts": [
+          604,
+          679,
+          0,
+          616
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1908,
+        "class_counts": [
+          604,
+          656,
+          0,
+          648
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3566,
+        "class_counts": [
+          1595,
+          670,
+          0,
+          1301
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 2014,
+        "class_counts": [
+          566,
+          692,
+          0,
+          756
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3836,
+        "class_counts": [
+          1162,
+          1412,
+          0,
+          1262
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3796,
+        "class_counts": [
+          1174,
+          1347,
+          0,
+          1275
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1761,
+        "class_counts": [
+          580,
+          549,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1905,
+        "class_counts": [
+          599,
+          674,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1911,
+        "class_counts": [
+          586,
+          684,
+          0,
+          641
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1886,
+        "class_counts": [
+          585,
+          687,
+          0,
+          614
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3203,
+        "class_counts": [
+          1143,
+          1404,
+          0,
+          656
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1941,
+        "class_counts": [
+          633,
+          675,
+          0,
+          633
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1913,
+        "class_counts": [
+          577,
+          704,
+          0,
+          632
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 1902,
+        "class_counts": [
+          555,
+          684,
+          0,
+          663
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3847,
+        "class_counts": [
+          1206,
+          1362,
+          0,
+          1279
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3778,
+        "class_counts": [
+          1150,
+          1340,
+          0,
+          1288
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3823,
+        "class_counts": [
+          1198,
+          1365,
+          0,
+          1260
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 0,
+        "class_counts": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "pass": 12,
+        "events": 3575,
+        "class_counts": [
+          1696,
+          658,
+          0,
+          1221
+        ]
+      }
+    ],
+    "status": "complete",
+    "name": "b1_d1wd_t3_s42",
+    "data_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/data",
+    "lr_sum": 17.701315577074674,
+    "lr_first": 1.4999999999999999e-05,
+    "lr_last": 1.4999999999999999e-05,
+    "lr_max": 0.0002999999999606992,
+    "actual_precision_recipe": "BF16_encoder_FP32_head",
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "contract": "configs/r2/d1wd_reason.md",
+  "precision": "BF16_encoder_FP32_head",
+  "pending": "fresh training endpoint, same diagnostics, full final comparison",
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

@@ -104,6 +104,8 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 
 论文将balanced error的Bayes决策写成`argmax(logit_y−log(prior_y))`，并讨论概率校准前提。当前PINPOINT训练pool全局平衡，按全局label frequency作这个平移是共同常数，不能解释或修复低occupancy μ argmax损失。不能因存在mixed-window类比例波动就直接套用long-tail loss。若R2终点仍有排序较好而argmax差的证据，使用按physical family分组的Tune交叉拟合、低维logit-bias诊断，检验decision/readout部分可恢复的量；正scalar temperature另作argmax不变的对照。该诊断不用于宣称物理信息增加，也不替代R7独立Cal-A/Cut-B。
 
+<a id="m8"></a>**M8. I. Loshchilov, F. Hutter, Decoupled Weight Decay Regularization.** ICLR2019；[arXiv:1711.05101](https://arxiv.org/abs/1711.05101)。2026-11-15在线读取摘要，HTTP200、43,412bytes，访问记录及HTML保存在`R2/audit/literature_stage280/`。文章明确区分Adam的L2 penalty和decoupled weight decay，并给出image classification泛化证据。当前已使用AdamW，若完整R2参考表现出Train改善而Tune退化，后续只改变其decoupled衰减强度，保持LR、数据和曝光固定；论文没有替PINPOINT确定最佳系数，单个对照也不构成完整HPO。
+
 ## 5. 预训练的候选与优先级
 
 **S1. Multi-Scale Neighborhood Occupancy Masked Autoencoder for Self-Supervised Learning in LiDAR Point Clouds (NOMAE).** CVPR 2025；[正式页面](https://openaccess.thecvf.com/content/CVPR2025/html/Abdelsamad_Multi-Scale_Neighborhood_Occupancy_Masked_Autoencoder_for_Self-Supervised_Learning_in_LiDAR_CVPR_2025_paper.html)。保留多尺度正/负 occupancy query 的思想；孤立低 occupancy 结构可能是 PINPOINT 信号，不能照搬忽略 isolated points 的规则。

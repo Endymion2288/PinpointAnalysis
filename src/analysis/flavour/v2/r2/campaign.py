@@ -87,7 +87,7 @@ def preflight(root, path):
     print(json.dumps({k:v for k,v in report.items() if k not in ['windows','per_pass']}),flush=True)
 
 
-def extend(root,design,reference_design,reason_file,passes=None,width=None,family=None):
+def extend(root,design,reference_design,reason_file,passes=None,width=None,family=None,weight_decay=None,tasks=None):
     """Freeze only an explicitly justified follow-up, with matched-data references."""
     campaign=json.loads((root/'campaign.json').read_text())
     reason=reason_file.read_text().strip()
@@ -95,7 +95,11 @@ def extend(root,design,reference_design,reason_file,passes=None,width=None,famil
     configs=[json.loads(p.read_text()) for p in (root/'configs').glob('*.json')]
     references=[c for c in configs if c.get('design')==reference_design]
     if {c['task'] for c in references}!={'T3','T4'} or len(references)!=2:
-        raise ValueError('reference design must identify exactly one completed T3/T4 pair')
+        raise ValueError('reference design must identify exactly one T3/T4 pair')
+    selected_tasks=set(tasks or ['T3','T4'])
+    if not selected_tasks or not selected_tasks<={'T3','T4'}:
+        raise ValueError('extension tasks must be T3 and/or T4')
+    references=[c for c in references if c['task'] in selected_tasks]
     for reference in references:
         path=root/'experiments'/reference['name']/'manifest.json'
         if not path.exists() or json.loads(path.read_text())['status']!='complete':
@@ -117,17 +121,21 @@ def extend(root,design,reference_design,reason_file,passes=None,width=None,famil
         if width is not None:
             if target_family!='B1':raise ValueError('cnn-width applies only to B1')
             config['cnn_width']=width
+        if weight_decay is not None:
+            if weight_decay<0:raise ValueError('weight decay must be nonnegative')
+            config['weight_decay']=weight_decay
         new.append((path,config))
     for path,config in new:write_json(path,config)
     campaign.setdefault('extension_models',[]).extend(c['name'] for _,c in new)
-    campaign.setdefault('extensions',[]).append({'design':design,'reference_design':reference_design,
+    campaign.setdefault('extensions',[]).append({'design':design,'reference_design':reference_design,'tasks':sorted(selected_tasks),
         'reason_source':str(reason_file),'reason':reason,'models':[c['name'] for _,c in new],
         'UTC':datetime.now(timezone.utc).isoformat()})
     for _,config in new:
         campaign.setdefault('extension_pairs',[]).append({'a':config['name'],'b':config['extension_reference'],
             'reason':f'{design}_minus_{reference_design}','domains':['all','pixel_centered','large_scintillator','occupancy_0_100']})
-    campaign['extension_pairs'].append({'a':new[0][1]['name'],'b':new[1][1]['name'],
-        'reason':f'{design}_T3_minus_conditional_T4','domains':['all','pixel_centered','large_scintillator','occupancy_0_100']})
+    if len(new)==2:
+        campaign['extension_pairs'].append({'a':new[0][1]['name'],'b':new[1][1]['name'],
+            'reason':f'{design}_T3_minus_conditional_T4','domains':['all','pixel_centered','large_scintillator','occupancy_0_100']})
     write_json(root/'campaign.json',campaign)
     print(json.dumps({'status':'frozen_extension','models':[c['name'] for _,c in new]}),flush=True)
 
@@ -144,10 +152,12 @@ def main():
     parser.add_argument('--passes',type=int)
     parser.add_argument('--cnn-width',type=int)
     parser.add_argument('--family',choices=['B1','B2','B3'])
+    parser.add_argument('--weight-decay',type=float)
+    parser.add_argument('--tasks',choices=['T3','T4'],nargs='+')
     args=parser.parse_args()
     if args.command=='freeze':freeze(args.root,args.r1)
     elif args.command=='extend':
-        extend(args.root,args.design,args.reference_design,args.reason_file,args.passes,args.cnn_width,args.family)
+        extend(args.root,args.design,args.reference_design,args.reason_file,args.passes,args.cnn_width,args.family,args.weight_decay,args.tasks)
     else:
         for path in args.configs:preflight(args.root,path)
 

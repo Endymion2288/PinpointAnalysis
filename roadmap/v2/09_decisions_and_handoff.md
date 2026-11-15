@@ -50,6 +50,8 @@
 
 这张表允许多种现象同时存在；每次只增加能区分当前假设的一小批。任何单seed开发收益都先保留其区间和成本，再决定是否补seeds17/2026。R2初始六模型尚未完成，不预先选定D3、1M或第二族。
 
+[stage280](../../workbook/2026-11-15_stage280_r2_repetition_overfit_and_regularization.md)记录随后形成的D1终点：T3/conditional T4 BA3为53.17%/53.73%，均低于D0；T3共同Train BA3=69.63%、NLL=.627而Tune NLL=1.144，支持过拟合分流。已启动fresh D1WD T3，只改变weight decay .01→.1；具体理由、精确预算和单任务执行见[合同](configs/r2/d1wd_reason.md)。该扩展与尚在运行的D2并行，原六模型主比较保留；正式交付扩为七模型、14视图、96配对。D3/1M/第二族仍未冻结。
+
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |

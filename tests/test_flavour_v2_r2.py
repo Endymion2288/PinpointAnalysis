@@ -120,6 +120,16 @@ class ScalingBudgetTests(unittest.TestCase):
                 self.assertEqual(new['initialization'],'scratch')
                 self.assertEqual(new['data_root'],old['data_root'])
                 self.assertEqual(new['precision'],old['precision'])
+            write_json(root/'experiments'/names[1]/'manifest.json',{'status':'running'})
+            reason.write_text('Completed T3 reference has an observed Train/Tune gap; change only weight decay.')
+            extend(root,'D2WD','D2',reason,weight_decay=.1,tasks=['T3'])
+            old=json.loads((root/'configs'/f'{names[0]}.json').read_text())
+            new=json.loads((root/'configs'/f'{names[0].replace("_d2_","_d2wd_")}.json').read_text())
+            self.assertEqual(new['weight_decay'],.1)
+            self.assertEqual(new['passes'],old['passes'])
+            self.assertEqual(new['data_root'],old['data_root'])
+            self.assertNotIn('weight_decay',old)
+            self.assertFalse((root/'configs'/f'{names[1].replace("_d2_","_d2wd_")}.json').exists())
 
     def test_batch_delivery_waits_for_model_dependencies(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -135,6 +145,11 @@ class ScalingBudgetTests(unittest.TestCase):
             self.assertEqual(len(calls),1)
             self.assertTrue(calls[0][1]['gpu'])
             self.assertEqual(calls[0][0][1],'r2_gap_b1_d0_a1')
+            write_json(root/'runtime/manual_gap.submission.json',{'submitted':True,
+                'command':['analysis.flavour.v2.r2.gap','run','--root',str(root),'--names',names[0]]})
+            calls.clear()
+            self.assertFalse(advance(root,submit))
+            self.assertEqual(calls[0][0][3][-1:],names[1:2])
             for name in names:
                 write_json(root/'experiments'/name/'manifest.json',{'status':'complete'})
                 for kind in ['endpoint','best_screen']:
