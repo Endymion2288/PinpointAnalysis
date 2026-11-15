@@ -308,3 +308,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 254 | [r1 projection controls and domains](../../workbook/2026-11-15_stage254_r1_projection_controls_and_domains.md) |
 | 255 | [r1 stress audit and MIG matching](../../workbook/2026-11-15_stage255_r1_stress_audit_and_mig_matching.md) |
 | 256 | [r1 sparse muons and nine-model conditions](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md) |
+| 257 | [r1 quality criteria and sparse controls](../../workbook/2026-11-15_stage257_r1_quality_criteria_and_sparse_controls.md) |

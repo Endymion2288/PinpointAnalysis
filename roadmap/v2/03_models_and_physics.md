@@ -24,6 +24,20 @@
 
 各网络至少有相同调参额度；独立选择合适学习率和正则化。相同默认超参数并不保证公平，强制所有架构都只训四轮也不能回答其实际最佳效果。最终同时给相同计算预算结果和各自收敛结果。
 
+### 2.1 R1发现的稀疏μ问题与后续对照
+
+[stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)实测：seed42的B1 T3相对B4，channel数<100的μ recall差为−24.24 pp，CI95[−25.76,−22.41]；该组对全域μ差贡献−6.79 pp。241个全空μ事件的正确差为0，损失来自有响应的稀疏事件。三seed重现程度仍待最终R1结果；occupancy与几何/接受度相关，当前未识别因果机制。
+
+B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel totals、presence和独立tracker set分支。仅增加计数或presence不能作为新增几何信息的证据。R2先保留结构研究收敛，R3根据三seed结果安排以下最小控制：
+
+| Control | Change and question | Required measurement |
+| --- | --- | --- |
+| Projection downsampling | 单独将首层stride4改为2，保留通道数及其余层；检验早期压缩是否影响稀疏响应 | 同曝光、实测额外计算/显存；全域逐类与固定occupancy分层；不能把参数相同解释为计算相同 |
+| Sampling phase / filtering | 先以单点、短线和真实Train响应检查栅格相位敏感性，再决定是否加入降采样前滤波[P5] | 记录映射与边界，不把探测器整体平移当物理对称性；滤波可能削弱孤立信号，收益待测 |
+| Sparse local residual | 在投影融合前保留轻量的高分辨率局部方向/邻接路径，与现有totals skip分开 | 使用全部accepted响应，记录短结构经过聚合的保留率；局部稀疏卷积不能自行连接相隔很远的plane[P6] |
+
+每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，不改动正在执行的R1合同，也未启动R2/R3训练。
+
 ## 3. 优先架构 G1：显式几何与跨层稀疏关系
 
 ```mermaid

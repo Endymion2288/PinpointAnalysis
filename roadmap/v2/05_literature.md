@@ -36,6 +36,14 @@
 
 高分辨率早期阶段使用便宜的局部编码，压缩后使用 attention，符合 PINPOINT 的资源条件。采用设计原则，不把其 benchmark 的速度/内存提升作为本项目收益；局部方向和 cross-plane propagation 要按 detector 特性设计。
 
+<a id="p5"></a>**P5. R. Zhang, Making Convolutional Networks Shift-Invariant Again.** ICML 2019，PMLR 97:7324–7334；[正式页面](https://proceedings.mlr.press/v97/zhang19a.html)。2026-11-15追加核对官方摘要与元数据，HTTP200；访问记录见`R1/audit/sparse_projection_sources_stage257.json`。
+
+论文指出stride/pooling的采样相位可能影响CNN输出，并研究降采样前的anti-aliasing。它为stage256稀疏μ损失提供一个可检验的程序/表示假设，不能证明PINPOINT损失已经由aliasing造成。先检查单点/短线与真实Train响应，再比较首层stride和滤波；滤波可能抹去孤立测量，不能直接照用ImageNet方案，也不要求绝对探测器位置具有平移不变性。正式实现前补读方法与算子顺序。
+
+<a id="p6"></a>**P6. B. Graham, L. van der Maaten, Submanifold Sparse Convolutional Networks.** [arXiv:1706.01307](https://arxiv.org/abs/1706.01307)，2017。2026-11-15追加核对arXiv摘要及作者/题名，HTTP200；同上保存来源。
+
+采用在稀疏支持上保留局部结构、减少dense空网格计算的原则。它适合plane内高分辨率残差候选；相隔的plane仍需显式几何边或其他可达路径，不能将submanifold convolution本身当成跨层传播。尚未在本项目实现或测得收益；复用现成兼容算子，先profile，再决定是否值得增加环境依赖。
+
 ## 3. 中微子重建与实例关系
 
 <a id="h1"></a>**H1. NuGraph2: A Graph Neural Network for Neutrino Physics Event Reconstruction.** 正式题名 *Graph neural network for neutrino physics event reconstruction*，*Phys. Rev. D* 110, 032008 (2024)；[arXiv:2403.11872](https://arxiv.org/abs/2403.11872)，[DOI](https://doi.org/10.1103/PhysRevD.110.032008)。

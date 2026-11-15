@@ -1,0 +1,207 @@
+{
+  "status": "complete_interim",
+  "scope": "seed42, pointwise development criteria; frozen architecture ranking unchanged; final three-seed assessment pending",
+  "criteria": [
+    {
+      "a": "final_b1_t3_s42",
+      "b": "final_b4_t3_s42",
+      "task": "T3",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/projection_controls/evaluation/results.json",
+      "all_criteria_met": false,
+      "checks": [
+        {
+          "name": "BA3_practical_gain",
+          "value": 0.022699999999998943,
+          "relation": ">=",
+          "limit": 0.02,
+          "passed": true
+        },
+        {
+          "name": "BA3_positive_lower_bound",
+          "value": 0.018269578579491345,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "NLL3_upper_bound",
+          "value": -0.025240534799991648,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_e_lower_bound",
+          "value": 0.07771560441437282,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_mu_lower_bound",
+          "value": -0.0773864696756584,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": false
+        },
+        {
+          "name": "recall_NC_lower_bound",
+          "value": 0.04450934934579692,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        }
+      ],
+      "failed": [
+        "recall_mu_lower_bound"
+      ],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    },
+    {
+      "a": "final_b1_t3_s42",
+      "b": "screen_b0_t3_lr0.05_s42",
+      "task": "T3",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/projection_controls/evaluation/results.json",
+      "all_criteria_met": true,
+      "checks": [
+        {
+          "name": "BA3_practical_gain",
+          "value": 0.020299999999999097,
+          "relation": ">=",
+          "limit": 0.02,
+          "passed": true
+        },
+        {
+          "name": "BA3_positive_lower_bound",
+          "value": 0.015668530062675427,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "NLL3_upper_bound",
+          "value": -0.020780841737140877,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_e_lower_bound",
+          "value": 0.04150271986426184,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_mu_lower_bound",
+          "value": 0.002988986530390191,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        },
+        {
+          "name": "recall_NC_lower_bound",
+          "value": -0.006833006277269604,
+          "relation": ">=",
+          "limit": -0.01,
+          "passed": true
+        }
+      ],
+      "failed": [],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    },
+    {
+      "a": "final_b1_t4_s42",
+      "b": "final_b4_t4_s42",
+      "task": "T4",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/architectures_seed42/evaluation/results.json",
+      "all_criteria_met": true,
+      "checks": [
+        {
+          "name": "tau_1pct_practical_gain",
+          "value": 0.024000000000001614,
+          "relation": ">=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "tau_1pct_positive_lower_bound",
+          "value": 0.018127155762579554,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "BA3_lower_bound",
+          "value": 0.013418956282954312,
+          "relation": ">=",
+          "limit": -0.005,
+          "passed": true
+        },
+        {
+          "name": "NLL4_upper_bound",
+          "value": -0.03234487448514477,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "actual_FPR_recorded_for_both_models",
+          "value": true,
+          "relation": ">=",
+          "limit": true,
+          "passed": true
+        }
+      ],
+      "failed": [],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    },
+    {
+      "a": "final_b1_t4_s42",
+      "b": "screen_b0_t4_lr0.05_s42",
+      "task": "T4",
+      "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/architectures_seed42/evaluation/results.json",
+      "all_criteria_met": true,
+      "checks": [
+        {
+          "name": "tau_1pct_practical_gain",
+          "value": 0.02260000000000156,
+          "relation": ">=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "tau_1pct_positive_lower_bound",
+          "value": 0.01630404142116121,
+          "relation": ">",
+          "limit": 0,
+          "passed": true
+        },
+        {
+          "name": "BA3_lower_bound",
+          "value": 0.01482997291502966,
+          "relation": ">=",
+          "limit": -0.005,
+          "passed": true
+        },
+        {
+          "name": "NLL4_upper_bound",
+          "value": -0.023493591628712788,
+          "relation": "<=",
+          "limit": 0.01,
+          "passed": true
+        },
+        {
+          "name": "actual_FPR_recorded_for_both_models",
+          "value": true,
+          "relation": ">=",
+          "limit": true,
+          "passed": true
+        }
+      ],
+      "failed": [],
+      "scope": "development research criteria; not independent confirmation or a global optimum claim"
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

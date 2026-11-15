@@ -1,0 +1,79 @@
+{
+  "UTC": "2026-11-15T02:15:04.855105+00:00",
+  "sources": [
+    {
+      "url": "https://proceedings.mlr.press/v97/zhang19a.html",
+      "status": 200,
+      "page_title": "Making Convolutional Networks Shift-Invariant Again",
+      "metadata": {
+        "citation_publisher": [
+          "PMLR"
+        ],
+        "citation_title": [
+          "Making Convolutional Networks Shift-Invariant Again"
+        ],
+        "citation_language": [
+          "en"
+        ],
+        "citation_abstract_html_url": [
+          "https://proceedings.mlr.press/v97/zhang19a.html"
+        ],
+        "citation_pdf_url": [
+          "http://proceedings.mlr.press/v97/zhang19a/zhang19a.pdf"
+        ],
+        "citation_firstpage": [
+          "7324"
+        ],
+        "citation_lastpage": [
+          "7334"
+        ],
+        "citation_author": [
+          "Richard Zhang"
+        ],
+        "citation_publication_date": [
+          "2019/05/24"
+        ],
+        "citation_inbook_title": [
+          "International Conference on Machine Learning"
+        ],
+        "citation_conference_title": [
+          "International Conference on Machine Learning"
+        ],
+        "citation_issn": [
+          "2640-3498"
+        ]
+      },
+      "abstract": "Modern convolutional networks are not shift-invariant, as small input shifts or translations can cause drastic changes in the output. Commonly used downsampling methods, such as max-pooling, strided-convolution, and average-pooling, ignore the sampling theorem. The well-known signal processing fix is anti-aliasing by low-pass filtering before downsampling. However, simply inserting this module into deep networks leads to performance degradation; as a result, it is seldomly used today. We show that when integrated correctly, it is compatible with existing architectural components, such as max-pooling. The technique is general and can be incorporated across layer types and applications, such as image classification and conditional image generation. In addition to increased shift-invariance, we also observe, surprisingly, that anti-aliasing boosts accuracy in ImageNet classification, across several commonly-used architectures. This indicates that anti-aliasing serves as effective regularization. Our results demonstrate that this classical signal processing technique has been undeservingly overlooked in modern deep networks."
+    },
+    {
+      "url": "https://arxiv.org/abs/1706.01307",
+      "status": 200,
+      "page_title": "[1706.01307] Submanifold Sparse Convolutional Networks",
+      "metadata": {
+        "citation_title": [
+          "Submanifold Sparse Convolutional Networks"
+        ],
+        "citation_author": [
+          "Graham, Benjamin",
+          "van der Maaten, Laurens"
+        ],
+        "citation_date": [
+          "2017/06/05"
+        ],
+        "citation_online_date": [
+          "2017/06/05"
+        ],
+        "citation_pdf_url": [
+          "https://arxiv.org/pdf/1706.01307"
+        ],
+        "citation_arxiv_id": [
+          "1706.01307"
+        ],
+        "citation_abstract": [
+          "Convolutional network are the de-facto standard for analysing spatio-temporal data such as images, videos, 3D shapes, etc. Whilst some of this data is naturally dense (for instance, photos), many other data sources are inherently sparse. Examples include pen-strokes forming on a piece of paper, or (colored) 3D point clouds that were obtained using a LiDAR scanner or RGB-D camera. Standard \"dense\" implementations of convolutional networks are very inefficient when applied on such sparse data. We introduce a sparse convolutional operation tailored to processing sparse data that differs from prior work on sparse convolutional networks in that it operates strictly on submanifolds, rather than \"dilating\" the observation with every layer in the network. Our empirical analysis of the resulting submanifold sparse convolutional networks shows that they perform on par with state-of-the-art methods whilst requiring substantially less computation."
+        ]
+      },
+      "abstract": "Abstract: Convolutional network are the de-facto standard for analysing spatio-temporal data such as images, videos, 3D shapes, etc. Whilst some of this data is naturally dense (for instance, photos), many other data sources are inherently sparse. Examples include pen-strokes forming on a piece of paper, or (colored) 3D point clouds that were obtained using a LiDAR scanner or RGB-D camera. Standard \"dense\" implementations of convolutional networks are very inefficient when applied on such sparse data. We introduce a sparse convolutional operation tailored to processing sparse data that differs from prior work on sparse convolutional networks in that it operates strictly on submanifolds, rather than \"dilating\" the observation with every layer in the network. Our empirical analysis of the resulting submanifold sparse convolutional networks shows that they perform on par with state-of-the-art methods whilst requiring substantially less computation."
+    }
+  ]
+}

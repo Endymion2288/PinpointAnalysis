@@ -16,6 +16,8 @@ B1投影控制与合作组条件域见[stage254](../../workbook/2026-11-15_stage
 
 45/55条件路径与μ损失定位见[stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)：B1−B4在channel数<100的μ recall差−24.24 pp，[−25.76,−22.41]；1,000–4,999时为+4.59 pp。低occupancy贡献全域μ差−6.79 pp；4,580项独立条件核算通过。后续几何/融合对照需保留这一逐类分层，完整排名仍待B3。
 
+[stage257](../../workbook/2026-11-15_stage257_r1_quality_criteria_and_sparse_controls.md)将研究质量条件落实为逐项判定：B1 T3相对HGB满足本seed条件，相对B4因μ recall未满足；B1 T4满足本seed的τ条件，但仍报告μ损失。最终汇总要求全部交付验收通过。稀疏投影的stride/相位/局部残差对照已补充设计及文献，尚未训练，不改变R1排名规则。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |
