@@ -4,7 +4,7 @@
   "status": "design_with_completed_R0_and_R1_full_training_in_progress_not_runner_config",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 complete; R1 full140k data, real learning gates, B0 three-seed baselines and all16 neural screens complete; four-pass paired training in progress; final comparisons pending",
+  "implementation_status": "R0 complete; R1 frozen seed42 four-pass ranking complete (B1/B2/B3/B4); B1/B2 and reference B4 expanded to three seeds; 55 stress paths with 400 draws and independent5666 checks complete; remaining expanded training, full nominal evaluation and acceptance in progress",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -303,8 +303,17 @@
       "planned_device_hours": 18,
       "status": "in_progress",
       "progress_report": "../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md",
-      "measured_progress": "140k identities/labels/PE conserved; eight actual learning gates; B0 three-seed and all16 neural screens complete; seed42 B4 T3/T4/no-tracker and 400 paired physical-block intervals complete; full ranking, three-seed, compute, CNN reference and stress pending delivery",
-      "interim_results": "r1_interim_b4.json"
+      "measured_progress": "140k data accepted; eight learning gates and all16 screens complete; seed42 four-pass architecture ranking complete; B4 three-seed tasks/compute complete; B1/B2 expanded seeds and B3 compute still running; 55 stress paths/400 draws/5666 independent checks complete; complete41-model133-pair evaluation contract enumerated; final nominal statistics and acceptance pending",
+      "interim_results": "r1_interim_b4.json",
+      "ranking_result": "r1_architecture_ranking.json",
+      "interim_training_control": "r1_b1_compute_controls.json",
+      "resource_progress": {
+        "snapshot_UTC": "2026-11-15T03:00:33Z",
+        "allocation_device_hours_so_far": 30.32128161,
+        "planning_envelope_exceeded": true,
+        "terminal_cost": false,
+        "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate"
+      }
     },
     {
       "id": "R2",

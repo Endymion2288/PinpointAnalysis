@@ -83,8 +83,16 @@ def summarize(root, plan):
         record = read(f'experiments/{name}/manifest.json')
         training[name] = {key: record.get(key) for key in ['GPU', 'allocation_id', 'parameters',
             'wall_seconds', 'GPU_peak_MiB', 'unique_train_events', 'events_per_train_second',
-            'counters', 'compute_alignment']}
+            'counters', 'compute_alignment', 'capability', 'memory', 'probability_diagnostics']}
         training[name]['precision'] = record['config'].get('precision', 'CPU')
+        training[name]['compile_local'] = record['config'].get('compile_local', False)
+        training[name]['learning_curve'] = [{
+            **{key: row[key] for key in ['pass', 'updates', 'training_exposures', 'train_NLL', 'lr']},
+            'Tune_screen': {task: {key: metrics[key] for key in ['BA', 'NLL']}
+                            for task, metrics in row.get('Tune_screen', {}).items()}}
+            for row in record.get('history', [])]
+        health = record.get('health', [])
+        training[name]['health_samples'] = len(health)
     research_criteria = []
     for pair in evaluation['pairs']:
         if pair.get('domain', 'all') != 'all':
@@ -127,7 +135,7 @@ def summarize(root, plan):
         'complete_domain_tables': str(root/'evaluation/model_domain_metrics.csv'),
         'pairs': evaluation['pairs'], 'mean_seed_pairs': evaluation['mean_seed_pairs'],
         'seed_spread': evaluation['seed_spread'], 'research_criteria': research_criteria,
-        'bootstrap': {**evaluation['bootstrap'], 'replicates': evaluation['replicates']},
+        'bootstrap': read('evaluation/bootstrap_design.json'),
         'uncertainty_scope': 'pointwise development physical-block intervals conditional on fitted seeds; sample SD includes actual runtime variation; no independent Confirm or Holm result',
         'stress': {'models': stress_compact, 'replicates': stress['replicates'],
                    'scope': stress['scope'], 'source': str(root/'evaluation/stress_results.json')},

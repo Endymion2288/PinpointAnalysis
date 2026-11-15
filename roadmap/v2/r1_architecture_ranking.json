@@ -1,0 +1,356 @@
+{
+  "status": "complete_development_point_ranking",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/architecture_ranking.json",
+  "rule": "frozen Scratch mean T3/T4 conditional BA3 then NLL3",
+  "scope": "development Tune at four passes; convergence is studied in R2",
+  "expanded_families": [
+    "B1",
+    "B2",
+    "B4"
+  ],
+  "ranking": [
+    {
+      "family": "B1",
+      "mean_common_BA3": 0.5655666666666668,
+      "mean_common_NLL3": 0.8691083073026586,
+      "per_task": {
+        "T3": {
+          "BA3": 0.5662,
+          "NLL3": 0.8719672265104341,
+          "recall_e_mu_NC": [
+            0.6301,
+            0.4998,
+            0.5687
+          ]
+        },
+        "T4": {
+          "BA3": 0.5649333333333334,
+          "NLL3": 0.8662493880948833,
+          "recall_e_mu_NC": [
+            0.6306,
+            0.4694,
+            0.5948
+          ]
+        }
+      }
+    },
+    {
+      "family": "B2",
+      "mean_common_BA3": 0.55395,
+      "mean_common_NLL3": 0.8963825727301631,
+      "per_task": {
+        "T3": {
+          "BA3": 0.5512,
+          "NLL3": 0.9009733510534811,
+          "recall_e_mu_NC": [
+            0.569,
+            0.503,
+            0.5816
+          ]
+        },
+        "T4": {
+          "BA3": 0.5567000000000001,
+          "NLL3": 0.8917917944068451,
+          "recall_e_mu_NC": [
+            0.6115,
+            0.4785,
+            0.5801
+          ]
+        }
+      }
+    },
+    {
+      "family": "B3",
+      "mean_common_BA3": 0.55175,
+      "mean_common_NLL3": 0.8951689720977154,
+      "per_task": {
+        "T3": {
+          "BA3": 0.5506,
+          "NLL3": 0.8973010021699029,
+          "recall_e_mu_NC": [
+            0.5968,
+            0.4821,
+            0.5729
+          ]
+        },
+        "T4": {
+          "BA3": 0.5529000000000001,
+          "NLL3": 0.893036942025528,
+          "recall_e_mu_NC": [
+            0.608,
+            0.4814,
+            0.5693
+          ]
+        }
+      }
+    },
+    {
+      "family": "B4",
+      "mean_common_BA3": 0.5451333333333334,
+      "mean_common_NLL3": 0.902055462388404,
+      "per_task": {
+        "T3": {
+          "BA3": 0.5435,
+          "NLL3": 0.9012408595648079,
+          "recall_e_mu_NC": [
+            0.5446,
+            0.5689,
+            0.517
+          ]
+        },
+        "T4": {
+          "BA3": 0.5467666666666667,
+          "NLL3": 0.902870065212,
+          "recall_e_mu_NC": [
+            0.5873,
+            0.5224,
+            0.5306
+          ]
+        }
+      }
+    }
+  ],
+  "learning_curves": {
+    "final_b1_t3_s42": {
+      "GPU": "Tesla T4",
+      "precision": "FP32",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.5253333333333333,
+          "Tune_screen_NLL3": 0.9308242904186474
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5606666666666666,
+          "Tune_screen_NLL3": 0.8935195225182673
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5710000000000001,
+          "Tune_screen_NLL3": 0.8783988387186673
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5783333333333333,
+          "Tune_screen_NLL3": 0.8776952454388203
+        }
+      ]
+    },
+    "final_b1_t4_s42": {
+      "GPU": "Tesla T4",
+      "precision": "FP32",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.5423333333333332,
+          "Tune_screen_NLL3": 0.9230429721570317
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5579999999999999,
+          "Tune_screen_NLL3": 0.8929275722803077
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5583333333333332,
+          "Tune_screen_NLL3": 0.8841788912083153
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5683333333333334,
+          "Tune_screen_NLL3": 0.871243143028126
+        }
+      ]
+    },
+    "final_b2_t3_s42": {
+      "GPU": "NVIDIA H100 NVL",
+      "precision": "BF16_encoder_FP32_head",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.5353333333333333,
+          "Tune_screen_NLL3": 0.9329036724490051
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5456666666666666,
+          "Tune_screen_NLL3": 0.9281007916966384
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5603333333333333,
+          "Tune_screen_NLL3": 0.9122814468504553
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5606666666666666,
+          "Tune_screen_NLL3": 0.904713864371329
+        }
+      ]
+    },
+    "final_b2_t4_s42": {
+      "GPU": "NVIDIA H100 NVL",
+      "precision": "BF16_encoder_FP32_head",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.516,
+          "Tune_screen_NLL3": 0.9829752076264229
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5473333333333333,
+          "Tune_screen_NLL3": 0.9129604489720151
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5586666666666668,
+          "Tune_screen_NLL3": 0.908599412912006
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5653333333333334,
+          "Tune_screen_NLL3": 0.8973321630028008
+        }
+      ]
+    },
+    "final_b3_t3_s42": {
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "precision": "BF16_encoder_FP32_head",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.5056666666666667,
+          "Tune_screen_NLL3": 0.967830650900835
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.535,
+          "Tune_screen_NLL3": 0.9368324321244247
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.545,
+          "Tune_screen_NLL3": 0.9155764392831534
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5513333333333333,
+          "Tune_screen_NLL3": 0.8991779642905173
+        }
+      ]
+    },
+    "final_b3_t4_s42": {
+      "GPU": "NVIDIA A100-PCIE-40GB",
+      "precision": "BF16_encoder_FP32_head",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.5423333333333333,
+          "Tune_screen_NLL3": 0.9424526423039056
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5376666666666666,
+          "Tune_screen_NLL3": 0.921623388411674
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5503333333333333,
+          "Tune_screen_NLL3": 0.9119817047648213
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5593333333333333,
+          "Tune_screen_NLL3": 0.8959262853186275
+        }
+      ]
+    },
+    "final_b4_t3_s42": {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "precision": "BF16_encoder_FP32_head",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.537,
+          "Tune_screen_NLL3": 0.9410019378545031
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5493333333333333,
+          "Tune_screen_NLL3": 0.9241259073532967
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5519999999999999,
+          "Tune_screen_NLL3": 0.9081343991276688
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5499999999999999,
+          "Tune_screen_NLL3": 0.9003807262828957
+        }
+      ]
+    },
+    "final_b4_t4_s42": {
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "precision": "BF16_encoder_FP32_head",
+      "history": [
+        {
+          "pass": 1,
+          "non_tau_exposures": 75000,
+          "Tune_screen_BA3": 0.5256666666666666,
+          "Tune_screen_NLL3": 0.9813807484862968
+        },
+        {
+          "pass": 2,
+          "non_tau_exposures": 150000,
+          "Tune_screen_BA3": 0.5299999999999999,
+          "Tune_screen_NLL3": 0.9220538763941174
+        },
+        {
+          "pass": 3,
+          "non_tau_exposures": 225000,
+          "Tune_screen_BA3": 0.5493333333333333,
+          "Tune_screen_NLL3": 0.9205958004219418
+        },
+        {
+          "pass": 4,
+          "non_tau_exposures": 300000,
+          "Tune_screen_BA3": 0.5546666666666666,
+          "Tune_screen_NLL3": 0.9023746354014761
+        }
+      ]
+    }
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

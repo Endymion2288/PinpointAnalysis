@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0已完成，R1正在执行。**完整Train100k/Tune40k已通过身份、标签、PE与计数验收；四个神经网络的八项真实学习及集成检查、B0三seed、全部16项screen已完成。B1–B4四pass训练、同计算控制及必要的seed重复在Condor/Kubeflow执行。冻结合同见[配置](configs/r1_campaign.json)，screen实测见[stage243](../../workbook/2026-11-14_stage243_r1_all_screens_and_full_training.md)。完整排名、paired比较和stress仍待完成。
+**R0已完成，R1正在执行。**完整Train100k/Tune40k已通过身份、标签、PE与计数验收；四个神经网络的八项真实学习及集成检查、B0三seed、全部16项screen和seed42八项四pass主任务已完成。冻结排名为B1、B2、B3、B4；B1/B2和共同参考B4扩三seed，同计算和完整条件交付继续执行。冻结合同见[配置](configs/r1_campaign.json)，排名见[实测JSON](r1_architecture_ranking.json)与[stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)。
 
 首组B4 seed42完整T3/T4与无tracker重训的400次paired结果见[stage246](../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md)：tracker全域ΔBA3=+3.90 pp，CI95[3.43,4.41]；T3−T4 conditional为−0.33 pp，[−0.69,0.004]。共同BA接近但逐类有取舍，B4尚未显示对HGB的全面优势。普通CNN成本参照与完整四类图表已补齐实现/依赖，实际训练见[stage245](../../workbook/2026-11-14_stage245_r1_cost_control_and_delivery_dependencies.md)。上述中期结果不改变主排名规则。
 
@@ -17,6 +17,8 @@ B1投影控制与合作组条件域见[stage254](../../workbook/2026-11-15_stage
 45/55条件路径与μ损失定位见[stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)：B1−B4在channel数<100的μ recall差−24.24 pp，[−25.76,−22.41]；1,000–4,999时为+4.59 pp。低occupancy贡献全域μ差−6.79 pp；4,580项独立条件核算通过。后续几何/融合对照需保留这一逐类分层，完整排名仍待B3。
 
 [stage257](../../workbook/2026-11-15_stage257_r1_quality_criteria_and_sparse_controls.md)将研究质量条件落实为逐项判定：B1 T3相对HGB满足本seed条件，相对B4因μ recall未满足；B1 T4满足本seed的τ条件，但仍报告μ损失。最终汇总要求全部交付验收通过。稀疏投影的stride/相位/局部残差对照已补充设计及文献，尚未训练，不改变R1排名规则。
+
+[stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)完整排名确定前两名B1/B2；B2比B3的平均BA只高0.220 pp，不将点排序解释为已确认的架构优势。B1同结构计算控制在低occupancy恢复879个μ、同时损失703个e和367个NC，全域BA下降0.493 pp [−0.876,−0.105]。R2同时检查训练配方和逐类决策，R3的压缩原因仍待单因素验证。
 
 ## 1. 分阶段依赖与交付
 
@@ -84,7 +86,7 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 ## 4. R2：用小矩阵确定训练规模
 
-先选 R1 最强原生模型与 B4 共同参考，若两者相同则只训练一族。优先在 seed42 做：
+根据R1目前的完整四pass排名，优先profile总体最强B1和原生最强B2，并在完整R1三seed复核后冻结R2配方。B4保留R1 D0及逐类共同参考；是否追加其长训练由前两族的实测问题和费用决定，不自动运行三族全矩阵。B3末轮仍明显改善，若B2的规模收益有限且资源支持，再考虑其长训练控制。优先在seed42做：
 
 | ID | Unique labels | Passes | Contrast |
 | --- | ---: | ---: | --- |
@@ -98,7 +100,11 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 收敛参考：每隔固定 label exposures 评价 Tune，连续三个 evaluation windows 的 NLL 变化小于 0.001 且主指标没有实际改善时，进入 plateau 检查；记录 train/Tune gap。这个规则是停止计算的工程启发式，不是物理信息饱和证明。出现过拟合先调整正则化/augmentation，在相同 HPO 额度下比较。
 
-当前约 0.9M 参数模型与约 3–4M 的单一加宽版本作容量对照；准确参数数由实现生成。只有学习曲线显示容量限制且收益足够，才考虑 10M 量级。先选择数据/训练，再扩大 SSL，避免继续围绕 1k-label 的复杂 probe 争取小收益。
+容量对照按实际模型选择一个加宽版本：B1为793,674参数，可先将width16增为32；B2为199,882参数，可先将dim64增为128。实际参数、吞吐和显存由实现/profile生成，不把不同族都称为0.9M，也不直接把所有族扩到3–4M。只有学习曲线显示容量限制且收益足够，才继续扩大。先选择数据/训练，再扩大SSL。
+
+R1的B1 seed42使用T4/FP32，新增seed使用H100 MIG/BF16；seed波动含实际执行差异。R2沿用尽早启动的设备政策，每个配对固定数值配方；若运行时fallback改变精度，补相应D0控制或单列配方，不能把旧异精度D0直接解释为纯数据/曝光效应。无需等待同一GPU型号。
+
+B1计算控制说明增加曝光与改变wall-based schedule可以显著改变逐类取舍。D1/D2使用明确的update/exposure schedule，逐窗口保留NLL、AP/ROC、概率分布和e/μ/NC recall；低occupancy组使用原accepted计数定义。必要的低维readout/logit-bias诊断在Train-inner或Tune内按family交叉拟合，Cal-A/Cut-B/Confirm继续封存。
 
 ## 5. R3–R6：按证据逐步增加结构
 

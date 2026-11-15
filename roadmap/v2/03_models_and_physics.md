@@ -2,7 +2,7 @@
 
 **首选改进是在现有有效编码器上增加真实几何邻接和跨层连续性，并建立简单而强的同输入基线。对象重建与预训练随后服务已识别的具体信息缺口。**
 
-下列结构均为拟实施方案。论文编号见[文献表](05_literature.md)；性能需由 R1–R7 测量。
+B0–B4基线已在R1实现，新增关系、对象及专家结构仍为待检验方案。论文编号见[文献表](05_literature.md)；实测范围以各阶段报告为准。
 
 ## 1. 应保留的现有成果
 
@@ -37,6 +37,8 @@ B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel
 | Sparse local residual | 在投影融合前保留轻量的高分辨率局部方向/邻接路径，与现有totals skip分开 | 使用全部accepted响应，记录短结构经过聚合的保留率；局部稀疏卷积不能自行连接相隔很远的plane[P6] |
 
 每次只改变一项，先做真实拟合与吞吐验证，再按相同HPO额度比较。`pixel+bar+tracker`原accepted channel数是固定报告分组，扰动/移除后的计数不用于重定义该组。若以后使用occupancy gate或专家混合，路由只能依赖观测，并在Train拟合、Tune选择；全空、低occupancy和全域均保留在分母中。此处是R3待检验设计，不改动正在执行的R1合同，也未启动R2/R3训练。
+
+[stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)补充了同结构的有效训练对照：B1 seed42 fresh计算控制在391,633次曝光、wall-based schedule下，低occupancy μ多识别879个，域内recall差+31.38 pp [29.53,33.04]；同组e/NC分别少识别703/367个，全域BA反而下降0.493 pp。全空事件仍全部判NC。结构和投影相同，预算与schedule共同改变，说明训练配方和决策取舍必须与压缩假设一起排查。R2先跟踪逐类概率、recall与AP/ROC；必要时在Train-inner或Tune内按family交叉拟合低维logit-bias/冻结readout诊断，检验固定表示的可读性。该诊断不打开Cal-A，也不重写R1排名。
 
 ## 3. 优先架构 G1：显式几何与跨层稀疏关系
 

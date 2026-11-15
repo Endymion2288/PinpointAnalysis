@@ -32,12 +32,13 @@ def ranking(root):
         'scope': 'development Tune at four passes; convergence is studied in R2'})
 
 
-def evaluation_config(root):
+def evaluation_config(root, check_complete=True):
     ranks = json.loads((root/'architecture_ranking.json').read_text())
     expanded = ranks['expanded_families']
     models, pairs = [], []
     def model(name, family, task, seed, kind='main'):
-        load(root, name)
+        if check_complete:
+            load(root, name)
         models.append({'name': name, 'family': family, 'task': task, 'seed': seed,
                        'kind': kind, 'predictions': f'experiments/{name}/predictions.parquet'})
     def pair(a, b, reason, geometry=False):
@@ -99,6 +100,8 @@ def evaluation_config(root):
             if native in model_names and projection in model_names:
                 pair(native, projection, 'native versus projection homologous baseline', geometry=seed==42)
     write_json(root/'evaluation_config.json', {'models': models, 'pairs': pairs,
+        'model_completion_validated_at_generation': check_complete,
+        'completion_policy': 'evaluation and acceptance require all listed models to be complete',
         'Cal_A_Cut_B_Confirm_payload_read': False})
 
 
@@ -106,8 +109,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['ranking', 'evaluation_config'])
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--plan-only', action='store_true',
+                        help='Enumerate the selected model contract while expanded seeds train')
     args = parser.parse_args()
-    globals()[args.command](args.root)
+    if args.command == 'evaluation_config':
+        evaluation_config(args.root, check_complete=not args.plan_only)
+    elif args.plan_only:
+        parser.error('--plan-only applies to evaluation_config')
+    else:
+        ranking(args.root)
 
 
 if __name__ == '__main__':

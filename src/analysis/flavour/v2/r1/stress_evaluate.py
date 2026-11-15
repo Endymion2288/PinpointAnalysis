@@ -81,6 +81,8 @@ def main():
         elif not equal_identity_rows(nominal, common_nominal) or not np.array_equal(nominal.label, common_nominal.label):
             raise ValueError('model stress cohorts or labels differ')
         training_manifest = json.loads((root/'experiments'/name/'manifest.json').read_text())
+        if training_manifest.get('status') != 'complete':
+            raise ValueError(f'R1 stress evaluation requires a completed model: {name}')
         reference = training_manifest['metrics']
         nominal_fixed, nominal_compute = frozen_points(nominal, reference)
         nominal_samples = np.array([nominal_compute(w) for w in weights])

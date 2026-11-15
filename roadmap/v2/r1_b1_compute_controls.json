@@ -1,0 +1,3148 @@
+{
+  "status": "complete_interim",
+  "scope": "seed42 fresh timed T3 versus four-pass recipes, development Tune; changed budget and wall schedule jointly; not a convergence or architecture ceiling claim",
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/interim/b1_compute/evaluation/results.json",
+  "metrics_revision": "r1-tie-aware-float-boundary-2",
+  "replicates": 400,
+  "bootstrap": {
+    "chunks": 6845,
+    "resampling_blocks": 6845,
+    "accepted_family_links_used": true,
+    "multi_chunk_blocks": 0,
+    "blocks_by_class_signature": {
+      "(0,)": 866,
+      "(1,)": 3796,
+      "(2,)": 648,
+      "(3,)": 1535
+    }
+  },
+  "models": {
+    "compute_b1_t3_s42": {
+      "all": {
+        "events": 40000,
+        "non_tau_events": 30000,
+        "raw_counts_original_labels": [
+          10000,
+          10000,
+          10000,
+          10000
+        ],
+        "tau_forced_assignments_e_mu_NC": [
+          2453,
+          4227,
+          3320
+        ],
+        "tau_contamination": [
+          {
+            "original_label": 0,
+            "0.01": {
+              "threshold": 0.9061828255653381,
+              "selected_total": 2470,
+              "selected_tau": 194,
+              "tau_fraction_observed_domain_mixture": 0.07854251012145749,
+              "tau_acceptance": 0.0194,
+              "raw_selected_original_labels": [
+                2076,
+                60,
+                194,
+                140
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.07854251012145748,
+                  "input_coverage": 0.061750000000000006,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.002576292794348092,
+                  "input_coverage": 0.075302,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0002559022400679592,
+                  "input_coverage": 0.07581020000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9867135286331177,
+              "selected_total": 579,
+              "selected_tau": 21,
+              "tau_fraction_observed_domain_mixture": 0.03626943005181347,
+              "tau_acceptance": 0.0021,
+              "raw_selected_original_labels": [
+                538,
+                4,
+                21,
+                16
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.036269430051813475,
+                  "input_coverage": 0.014474999999999998,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0011391375101708703,
+                  "input_coverage": 0.018435000000000003,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00011300347082088947,
+                  "input_coverage": 0.018583500000000003,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 1,
+            "0.01": {
+              "threshold": 0.8301516771316528,
+              "selected_total": 2420,
+              "selected_tau": 387,
+              "tau_fraction_observed_domain_mixture": 0.15991735537190083,
+              "tau_acceptance": 0.0387,
+              "raw_selected_original_labels": [
+                37,
+                1833,
+                387,
+                163
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.1599173553719008,
+                  "input_coverage": 0.060500000000000005,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.005735372576916237,
+                  "input_coverage": 0.067476,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005713222789115645,
+                  "input_coverage": 0.06773760000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9800145626068115,
+              "selected_total": 925,
+              "selected_tau": 126,
+              "tau_fraction_observed_domain_mixture": 0.1362162162162162,
+              "tau_acceptance": 0.0126,
+              "raw_selected_original_labels": [
+                6,
+                779,
+                126,
+                14
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.1362162162162162,
+                  "input_coverage": 0.023125,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.004755973275959687,
+                  "input_coverage": 0.026493000000000003,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00047334077154545756,
+                  "input_coverage": 0.026619300000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 3,
+            "0.01": {
+              "threshold": 0.8188145160675049,
+              "selected_total": 1867,
+              "selected_tau": 305,
+              "tau_fraction_observed_domain_mixture": 0.16336368505623997,
+              "tau_acceptance": 0.0305,
+              "raw_selected_original_labels": [
+                78,
+                122,
+                305,
+                1362
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.16336368505623997,
+                  "input_coverage": 0.046674999999999994,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.005882239493934543,
+                  "input_coverage": 0.051851,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005860301930441097,
+                  "input_coverage": 0.052045100000000004,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9636362791061401,
+              "selected_total": 588,
+              "selected_tau": 68,
+              "tau_fraction_observed_domain_mixture": 0.11564625850340136,
+              "tau_acceptance": 0.0068,
+              "raw_selected_original_labels": [
+                9,
+                11,
+                68,
+                500
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.11564625850340135,
+                  "input_coverage": 0.014700000000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.003947062920826561,
+                  "input_coverage": 0.017228,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00039254623963793376,
+                  "input_coverage": 0.017322800000000003,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          }
+        ],
+        "T3": {
+          "BA": 0.5612666666666667,
+          "NLL": 0.8729335338936379,
+          "macro_AP": 0.6581763718947022,
+          "macro_AUROC": 0.7706983383333333,
+          "Neff": 30000.0,
+          "per_class": [
+            {
+              "recall": 0.5655,
+              "AP": 0.7146021601787862,
+              "AUROC": 0.816961425,
+              "eff_FPR_0.01": 0.2076,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0538,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.6126,
+              "AP": 0.6491731167274034,
+              "AUROC": 0.7583784975,
+              "eff_FPR_0.01": 0.1833,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0779,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.5057,
+              "AP": 0.6107538387779173,
+              "AUROC": 0.7367550925,
+              "eff_FPR_0.01": 0.1362,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.05,
+              "actual_FPR_0.001": 0.001
+            }
+          ]
+        }
+      }
+    },
+    "final_b1_t3_s42": {
+      "all": {
+        "events": 40000,
+        "non_tau_events": 30000,
+        "raw_counts_original_labels": [
+          10000,
+          10000,
+          10000,
+          10000
+        ],
+        "tau_forced_assignments_e_mu_NC": [
+          3049,
+          2939,
+          4012
+        ],
+        "tau_contamination": [
+          {
+            "original_label": 0,
+            "0.01": {
+              "threshold": 0.8707550168037415,
+              "selected_total": 2498,
+              "selected_tau": 195,
+              "tau_fraction_observed_domain_mixture": 0.07806244995996797,
+              "tau_acceptance": 0.0195,
+              "raw_selected_original_labels": [
+                2103,
+                59,
+                195,
+                141
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.07806244995996799,
+                  "input_coverage": 0.06244999999999999,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0025592566343806593,
+                  "input_coverage": 0.07619400000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00025420613379846535,
+                  "input_coverage": 0.07670940000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.980199933052063,
+              "selected_total": 589,
+              "selected_tau": 19,
+              "tau_fraction_observed_domain_mixture": 0.03225806451612903,
+              "tau_acceptance": 0.0019,
+              "raw_selected_original_labels": [
+                550,
+                4,
+                19,
+                16
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.03225806451612904,
+                  "input_coverage": 0.014724999999999999,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0010090817356205853,
+                  "input_coverage": 0.018829000000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00010009008107296567,
+                  "input_coverage": 0.0189829,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 1,
+            "0.01": {
+              "threshold": 0.8208813071250916,
+              "selected_total": 2354,
+              "selected_tau": 380,
+              "tau_fraction_observed_domain_mixture": 0.16142735768903993,
+              "tau_acceptance": 0.038,
+              "raw_selected_original_labels": [
+                40,
+                1774,
+                380,
+                160
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.16142735768903993,
+                  "input_coverage": 0.05885,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.005799578767436892,
+                  "input_coverage": 0.065522,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005777516944849039,
+                  "input_coverage": 0.06577220000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.97977614402771,
+              "selected_total": 881,
+              "selected_tau": 122,
+              "tau_fraction_observed_domain_mixture": 0.13847900113507378,
+              "tau_acceptance": 0.0122,
+              "raw_selected_original_labels": [
+                5,
+                739,
+                122,
+                15
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.1384790011350738,
+                  "input_coverage": 0.022025,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.004847232706901348,
+                  "input_coverage": 0.025168999999999997,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00048246325172322433,
+                  "input_coverage": 0.0252869,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 3,
+            "0.01": {
+              "threshold": 0.8239603042602539,
+              "selected_total": 1816,
+              "selected_tau": 273,
+              "tau_fraction_observed_domain_mixture": 0.15033039647577093,
+              "tau_acceptance": 0.0273,
+              "raw_selected_original_labels": [
+                80,
+                120,
+                273,
+                1343
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.15033039647577093,
+                  "input_coverage": 0.0454,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0053328645100797,
+                  "input_coverage": 0.051192,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.000531033355897388,
+                  "input_coverage": 0.0514092,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.960118293762207,
+              "selected_total": 544,
+              "selected_tau": 50,
+              "tau_fraction_observed_domain_mixture": 0.09191176470588236,
+              "tau_acceptance": 0.005,
+              "raw_selected_original_labels": [
+                10,
+                10,
+                50,
+                474
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.09191176470588236,
+                  "input_coverage": 0.0136,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0030577299412915854,
+                  "input_coverage": 0.016352,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00030385531625261314,
+                  "input_coverage": 0.016455200000000003,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          }
+        ],
+        "T3": {
+          "BA": 0.5662,
+          "NLL": 0.8719672265104358,
+          "macro_AP": 0.6557864055498176,
+          "macro_AUROC": 0.7694799991666667,
+          "Neff": 30000.0,
+          "per_class": [
+            {
+              "recall": 0.6301,
+              "AP": 0.7127199244946322,
+              "AUROC": 0.815108435,
+              "eff_FPR_0.01": 0.2103,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.055,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.4998,
+              "AP": 0.6475069477558689,
+              "AUROC": 0.7594038575,
+              "eff_FPR_0.01": 0.1774,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0739,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.5687,
+              "AP": 0.6071323443989515,
+              "AUROC": 0.733927705,
+              "eff_FPR_0.01": 0.1343,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0474,
+              "actual_FPR_0.001": 0.001
+            }
+          ]
+        }
+      }
+    },
+    "final_b1_t4_s42": {
+      "all": {
+        "events": 40000,
+        "non_tau_events": 30000,
+        "raw_counts_original_labels": [
+          10000,
+          10000,
+          10000,
+          10000
+        ],
+        "tau_forced_assignments_e_mu_NC": [
+          3064,
+          2630,
+          4306
+        ],
+        "tau_contamination": [
+          {
+            "original_label": 0,
+            "0.01": {
+              "threshold": 0.8779518604278564,
+              "selected_total": 2502,
+              "selected_tau": 175,
+              "tau_fraction_observed_domain_mixture": 0.06994404476418865,
+              "tau_acceptance": 0.0175,
+              "raw_selected_original_labels": [
+                2127,
+                68,
+                175,
+                132
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.06994404476418867,
+                  "input_coverage": 0.06255,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00227373125795806,
+                  "input_coverage": 0.07696599999999999,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00022578722328163022,
+                  "input_coverage": 0.07750660000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9831488728523254,
+              "selected_total": 530,
+              "selected_tau": 13,
+              "tau_fraction_observed_domain_mixture": 0.024528301886792454,
+              "tau_acceptance": 0.0013,
+              "raw_selected_original_labels": [
+                497,
+                4,
+                13,
+                16
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.02452830188679245,
+                  "input_coverage": 0.01325,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0007613915895513645,
+                  "input_coverage": 0.017074000000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 7.550501237120587e-05,
+                  "input_coverage": 0.0172174,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 1,
+            "0.01": {
+              "threshold": 0.7938052415847778,
+              "selected_total": 2305,
+              "selected_tau": 365,
+              "tau_fraction_observed_domain_mixture": 0.15835140997830802,
+              "tau_acceptance": 0.0365,
+              "raw_selected_original_labels": [
+                35,
+                1740,
+                365,
+                165
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.15835140997830802,
+                  "input_coverage": 0.057624999999999996,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.005669022287799953,
+                  "input_coverage": 0.064385,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005646789452106717,
+                  "input_coverage": 0.0646385,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9630078673362732,
+              "selected_total": 868,
+              "selected_tau": 121,
+              "tau_fraction_observed_domain_mixture": 0.13940092165898618,
+              "tau_acceptance": 0.0121,
+              "raw_selected_original_labels": [
+                4,
+                727,
+                121,
+                16
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.13940092165898615,
+                  "input_coverage": 0.0217,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.004884547069271758,
+                  "input_coverage": 0.024772000000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00048619370600147863,
+                  "input_coverage": 0.0248872,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 3,
+            "0.01": {
+              "threshold": 0.8313931822776794,
+              "selected_total": 1816,
+              "selected_tau": 256,
+              "tau_fraction_observed_domain_mixture": 0.14096916299559473,
+              "tau_acceptance": 0.0256,
+              "raw_selected_original_labels": [
+                61,
+                139,
+                256,
+                1360
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.1409691629955947,
+                  "input_coverage": 0.0454,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0049481985464666775,
+                  "input_coverage": 0.051736000000000004,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.000492557760093586,
+                  "input_coverage": 0.05197360000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9486064314842224,
+              "selected_total": 604,
+              "selected_tau": 52,
+              "tau_fraction_observed_domain_mixture": 0.08609271523178808,
+              "tau_acceptance": 0.0052,
+              "raw_selected_original_labels": [
+                8,
+                12,
+                52,
+                532
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.08609271523178809,
+                  "input_coverage": 0.015099999999999999,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0028465075541931244,
+                  "input_coverage": 0.018268,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00028281158222202884,
+                  "input_coverage": 0.018386800000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          }
+        ],
+        "T3": {
+          "BA": 0.5649333333333334,
+          "NLL": 0.8662493880948835,
+          "macro_AP": 0.6577364206524458,
+          "macro_AUROC": 0.7711018383333332,
+          "Neff": 30000.0,
+          "per_class": [
+            {
+              "recall": 0.6306,
+              "AP": 0.7144483803830666,
+              "AUROC": 0.8169261525,
+              "eff_FPR_0.01": 0.2127,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0497,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.4694,
+              "AP": 0.6474984361757055,
+              "AUROC": 0.7594661875,
+              "eff_FPR_0.01": 0.174,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0727,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.5948,
+              "AP": 0.6112624453985653,
+              "AUROC": 0.736913175,
+              "eff_FPR_0.01": 0.136,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0532,
+              "actual_FPR_0.001": 0.001
+            }
+          ]
+        },
+        "T4": {
+          "BA": 0.446225,
+          "NLL": 1.1877919579164222,
+          "macro_AP": 0.49881992308861406,
+          "macro_AUROC": 0.7178100325000001,
+          "Neff": 40000.0,
+          "per_class": [
+            {
+              "recall": 0.5527,
+              "AP": 0.6140760394253468,
+              "AUROC": 0.7956901216666666,
+              "eff_FPR_0.01": 0.1927,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.05,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.4233,
+              "AP": 0.514669575787842,
+              "AUROC": 0.7282006216666667,
+              "eff_FPR_0.01": 0.1312,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0232,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.3269,
+              "AP": 0.3768997715990952,
+              "AUROC": 0.6401726933333334,
+              "eff_FPR_0.01": 0.0509,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0134,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.482,
+              "AP": 0.4896343055421723,
+              "AUROC": 0.7071766933333333,
+              "eff_FPR_0.01": 0.1155,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0319,
+              "actual_FPR_0.001": 0.001
+            }
+          ]
+        }
+      }
+    },
+    "final_b4_t3_s42": {
+      "all": {
+        "events": 40000,
+        "non_tau_events": 30000,
+        "raw_counts_original_labels": [
+          10000,
+          10000,
+          10000,
+          10000
+        ],
+        "tau_forced_assignments_e_mu_NC": [
+          2426,
+          3982,
+          3592
+        ],
+        "tau_contamination": [
+          {
+            "original_label": 0,
+            "0.01": {
+              "threshold": 0.8463868498802185,
+              "selected_total": 2440,
+              "selected_tau": 224,
+              "tau_fraction_observed_domain_mixture": 0.09180327868852459,
+              "tau_acceptance": 0.0224,
+              "raw_selected_original_labels": [
+                2016,
+                74,
+                224,
+                126
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.09180327868852459,
+                  "input_coverage": 0.061,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.003053768131748282,
+                  "input_coverage": 0.073352,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.000303460533873782,
+                  "input_coverage": 0.07381520000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9654940366744995,
+              "selected_total": 526,
+              "selected_tau": 25,
+              "tau_fraction_observed_domain_mixture": 0.04752851711026616,
+              "tau_acceptance": 0.0025,
+              "raw_selected_original_labels": [
+                481,
+                5,
+                25,
+                15
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.04752851711026616,
+                  "input_coverage": 0.01315,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0015098441840802033,
+                  "input_coverage": 0.016557999999999996,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0001498279974589172,
+                  "input_coverage": 0.016685799999999997,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 1,
+            "0.01": {
+              "threshold": 0.7439407706260681,
+              "selected_total": 1882,
+              "selected_tau": 340,
+              "tau_fraction_observed_domain_mixture": 0.1806588735387885,
+              "tau_acceptance": 0.034,
+              "raw_selected_original_labels": [
+                42,
+                1342,
+                340,
+                158
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.1806588735387885,
+                  "input_coverage": 0.04705000000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.006637254519189474,
+                  "input_coverage": 0.05122600000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0006617025997127432,
+                  "input_coverage": 0.05138260000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.8486190438270569,
+              "selected_total": 640,
+              "selected_tau": 95,
+              "tau_fraction_observed_domain_mixture": 0.1484375,
+              "tau_acceptance": 0.0095,
+              "raw_selected_original_labels": [
+                4,
+                525,
+                95,
+                16
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.1484375,
+                  "input_coverage": 0.016,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0052544247787610614,
+                  "input_coverage": 0.018080000000000002,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005231853728384184,
+                  "input_coverage": 0.018158,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 3,
+            "0.01": {
+              "threshold": 0.729546308517456,
+              "selected_total": 1410,
+              "selected_tau": 232,
+              "tau_fraction_observed_domain_mixture": 0.16453900709219857,
+              "tau_acceptance": 0.0232,
+              "raw_selected_original_labels": [
+                52,
+                148,
+                232,
+                978
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.16453900709219854,
+                  "input_coverage": 0.035250000000000004,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00593259346391858,
+                  "input_coverage": 0.039106,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005910737670252173,
+                  "input_coverage": 0.039250600000000004,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.8441882133483887,
+              "selected_total": 384,
+              "selected_tau": 50,
+              "tau_fraction_observed_domain_mixture": 0.13020833333333334,
+              "tau_acceptance": 0.005,
+              "raw_selected_original_labels": [
+                6,
+                14,
+                50,
+                314
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.13020833333333334,
+                  "input_coverage": 0.0096,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.004515895953757226,
+                  "input_coverage": 0.011072,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0004493493421525632,
+                  "input_coverage": 0.011127199999999999,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          }
+        ],
+        "T3": {
+          "BA": 0.5435,
+          "NLL": 0.9012408595648076,
+          "macro_AP": 0.6276799115826738,
+          "macro_AUROC": 0.7515666616666667,
+          "Neff": 30000.0,
+          "per_class": [
+            {
+              "recall": 0.5446,
+              "AP": 0.7026420630018364,
+              "AUROC": 0.80651551,
+              "eff_FPR_0.01": 0.2016,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0481,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.5689,
+              "AP": 0.6026348723556562,
+              "AUROC": 0.7297005125,
+              "eff_FPR_0.01": 0.1342,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0525,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.517,
+              "AP": 0.577762799390529,
+              "AUROC": 0.7184839625,
+              "eff_FPR_0.01": 0.0978,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0314,
+              "actual_FPR_0.001": 0.001
+            }
+          ]
+        }
+      }
+    },
+    "screen_b0_t3_lr0.05_s42": {
+      "all": {
+        "events": 40000,
+        "non_tau_events": 30000,
+        "raw_counts_original_labels": [
+          10000,
+          10000,
+          10000,
+          10000
+        ],
+        "tau_forced_assignments_e_mu_NC": [
+          2957,
+          3094,
+          3949
+        ],
+        "tau_contamination": [
+          {
+            "original_label": 0,
+            "0.01": {
+              "threshold": 0.8345534471094154,
+              "selected_total": 2503,
+              "selected_tau": 246,
+              "tau_fraction_observed_domain_mixture": 0.0982820615261686,
+              "tau_acceptance": 0.0246,
+              "raw_selected_original_labels": [
+                2057,
+                70,
+                246,
+                130
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.09828206152616858,
+                  "input_coverage": 0.062575,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0032919828174555383,
+                  "input_coverage": 0.074727,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00032720293365361976,
+                  "input_coverage": 0.0751827,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.9539399159406585,
+              "selected_total": 593,
+              "selected_tau": 23,
+              "tau_fraction_observed_domain_mixture": 0.0387858347386172,
+              "tau_acceptance": 0.0023,
+              "raw_selected_original_labels": [
+                550,
+                7,
+                23,
+                13
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0387858347386172,
+                  "input_coverage": 0.014825,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0012212605532841293,
+                  "input_coverage": 0.018832999999999996,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.00012115912407221082,
+                  "input_coverage": 0.0189833,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 1,
+            "0.01": {
+              "threshold": 0.691662060155179,
+              "selected_total": 1918,
+              "selected_tau": 323,
+              "tau_fraction_observed_domain_mixture": 0.1684045881126173,
+              "tau_acceptance": 0.0323,
+              "raw_selected_original_labels": [
+                49,
+                1395,
+                323,
+                151
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.16840458811261733,
+                  "input_coverage": 0.04795,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0060991729294912955,
+                  "input_coverage": 0.052958000000000005,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0006077620432846999,
+                  "input_coverage": 0.05314580000000001,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.8784954712663291,
+              "selected_total": 838,
+              "selected_tau": 122,
+              "tau_fraction_observed_domain_mixture": 0.14558472553699284,
+              "tau_acceptance": 0.0122,
+              "raw_selected_original_labels": [
+                5,
+                696,
+                122,
+                15
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.14558472553699284,
+                  "input_coverage": 0.02095,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.005136842105263159,
+                  "input_coverage": 0.023749999999999997,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005114231817229093,
+                  "input_coverage": 0.023855,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          },
+          {
+            "original_label": 3,
+            "0.01": {
+              "threshold": 0.7077935931588992,
+              "selected_total": 1321,
+              "selected_tau": 189,
+              "tau_fraction_observed_domain_mixture": 0.14307342922028765,
+              "tau_acceptance": 0.0189,
+              "raw_selected_original_labels": [
+                45,
+                155,
+                189,
+                932
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.14307342922028768,
+                  "input_coverage": 0.033025,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.005033959248901318,
+                  "input_coverage": 0.037545,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0005011335162868393,
+                  "input_coverage": 0.037714500000000005,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            },
+            "0.001": {
+              "threshold": 0.8466459203005745,
+              "selected_total": 264,
+              "selected_tau": 32,
+              "tau_fraction_observed_domain_mixture": 0.12121212121212122,
+              "tau_acceptance": 0.0032,
+              "raw_selected_original_labels": [
+                9,
+                11,
+                32,
+                212
+              ],
+              "prior_scenarios": {
+                "0.25": {
+                  "prior_e_mu_tau_NC": [
+                    0.25,
+                    0.25,
+                    0.25,
+                    0.25
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.12121212121212122,
+                  "input_coverage": 0.0066,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.01": {
+                  "prior_e_mu_tau_NC": [
+                    0.33,
+                    0.33,
+                    0.01,
+                    0.33
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.004162330905306972,
+                  "input_coverage": 0.007688,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                },
+                "0.001": {
+                  "prior_e_mu_tau_NC": [
+                    0.333,
+                    0.333,
+                    0.001,
+                    0.333
+                  ],
+                  "all_classes_observed": true,
+                  "tau_fraction": 0.0004140358140979195,
+                  "input_coverage": 0.0077288,
+                  "interpretation": "benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate"
+                }
+              }
+            }
+          }
+        ],
+        "T3": {
+          "BA": 0.5459,
+          "NLL": 0.8974487666008354,
+          "macro_AP": 0.6249957303890539,
+          "macro_AUROC": 0.74944576,
+          "Neff": 30000.0,
+          "per_class": [
+            {
+              "recall": 0.5812,
+              "AP": 0.6995539152601901,
+              "AUROC": 0.80246258,
+              "eff_FPR_0.01": 0.2057,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.055,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.4881,
+              "AP": 0.6060678610021148,
+              "AUROC": 0.72877231,
+              "eff_FPR_0.01": 0.1395,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0696,
+              "actual_FPR_0.001": 0.001
+            },
+            {
+              "recall": 0.5684,
+              "AP": 0.5693654149048567,
+              "AUROC": 0.71710239,
+              "eff_FPR_0.01": 0.0932,
+              "actual_FPR_0.01": 0.01,
+              "eff_FPR_0.001": 0.0212,
+              "actual_FPR_0.001": 0.001
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pairs": [
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b1_t3_s42",
+      "domain": "all",
+      "reason": "changed total budget and wall-based schedule at fixed architecture and initialization",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.004933333333333012,
+          "95pct": [
+            -0.008764370335414154,
+            -0.0010513432169854781
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.0009663073832086866,
+          "95pct": [
+            -0.001256350049474153,
+            0.0029100686192846106
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.002389966344884642,
+          "95pct": [
+            0.0006456706600444451,
+            0.004065136758839285
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.001218339166665583,
+          "95pct": [
+            -8.62763402882655e-06,
+            0.0025718269067696088
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.06459999999999688,
+          "95pct": [
+            -0.07110220939622608,
+            -0.058284082175278105
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.11279999999999452,
+          "95pct": [
+            0.10523323991496235,
+            0.11961178080372685
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.06299999999999684,
+          "95pct": [
+            -0.0696409826218166,
+            -0.055967756721031346
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b1_t3_s42",
+      "domain": "pixel_centered",
+      "reason": "changed total budget and wall-based schedule at fixed architecture and initialization",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.00017124208789831563,
+          "95pct": [
+            -0.007510661414317915,
+            0.007962528235452118
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.0052633605254521765,
+          "95pct": [
+            -0.0138629329295228,
+            0.003511821936787615
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.003222877377305533,
+          "95pct": [
+            -0.0005898137798095612,
+            0.007875953350352826
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0019649994720291053,
+          "95pct": [
+            -0.0005538314687273421,
+            0.004274784374841669
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.007526881720429812,
+          "95pct": [
+            -0.005206530630415068,
+            0.01954830465213111
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.00952380952380949,
+          "95pct": [
+            -0.002944412667830684,
+            0.02167541123774545
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.0165369649805448,
+          "95pct": [
+            -0.031354200279660245,
+            2.4533856722361192e-05
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b1_t3_s42",
+      "domain": "large_scintillator",
+      "reason": "changed total budget and wall-based schedule at fixed architecture and initialization",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.001163797138538758,
+          "95pct": [
+            -0.002501218996375476,
+            0.005578347702669457
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.0018176540443031186,
+          "95pct": [
+            -0.006142849990076393,
+            0.0017956049178322266
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.0019055628345316933,
+          "95pct": [
+            -0.0003086460566514709,
+            0.004597518652693058
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0012767650572353961,
+          "95pct": [
+            7.472676455458073e-05,
+            0.0029086870553466106
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.023056057866185253,
+          "95pct": [
+            0.016707365727492787,
+            0.029516328991068173
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.0060873215785046675,
+          "95pct": [
+            -0.001050678528480142,
+            0.013160759894343826
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.025651988029073647,
+          "95pct": [
+            -0.033015253256408215,
+            -0.017449170178627932
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b1_t4_s42",
+      "domain": "all",
+      "reason": "same-allocation operation wall budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.00366666666666704,
+          "95pct": [
+            -0.007590023424717868,
+            0.0003140418196877065
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.006684145798755536,
+          "95pct": [
+            0.004017692512263302,
+            0.00921054231500837
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.00043995124225604254,
+          "95pct": [
+            -0.0014479802370264666,
+            0.00219019192526659
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": -0.000403499999999668,
+          "95pct": [
+            -0.0018106266724627561,
+            0.0009760563214847794
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.06509999999999849,
+          "95pct": [
+            -0.07189613316115921,
+            -0.058974261381238485
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.14319999999999306,
+          "95pct": [
+            0.13603855907868462,
+            0.15092478332593404
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.08909999999999563,
+          "95pct": [
+            -0.09559797521501237,
+            -0.08271855015320123
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b1_t4_s42",
+      "domain": "pixel_centered",
+      "reason": "same-allocation operation wall budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.003505352435941078,
+          "95pct": [
+            -0.012093568660060658,
+            0.004608012130238796
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.006471640550189228,
+          "95pct": [
+            -0.0021706459127937027,
+            0.015850659132013528
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.000375875420909777,
+          "95pct": [
+            -0.0036897183206628047,
+            0.0044274683533940705
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0004935594114094943,
+          "95pct": [
+            -0.002257236207649044,
+            0.002948630018731114
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.01505376344086029,
+          "95pct": [
+            -0.02912621359223289,
+            -0.0022371838064798137
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.015238095238095384,
+          "95pct": [
+            0.0018827565145508097,
+            0.030586603841106796
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.010700389105058328,
+          "95pct": [
+            -0.027752550329511544,
+            0.00397764361476208
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b1_t4_s42",
+      "domain": "large_scintillator",
+      "reason": "same-allocation operation wall budget",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": -0.00029699272874461613,
+          "95pct": [
+            -0.004676280118225448,
+            0.003917902583025662
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": 0.009652521176042872,
+          "95pct": [
+            0.00528446632080089,
+            0.014085281994472452
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 3.8794946678133435e-05,
+          "95pct": [
+            -0.002293762372037542,
+            0.002304491767710697
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": -0.00017845740268496169,
+          "95pct": [
+            -0.0016363495049001447,
+            0.0012511215473156917
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.003616636528029016,
+          "95pct": [
+            -0.01051649108556388,
+            0.0035394305049150743
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.037783375314860757,
+          "95pct": [
+            0.02994405063233798,
+            0.045561700399376674
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.03505771697306581,
+          "95pct": [
+            -0.04367466688758161,
+            -0.027722418729457847
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b4_t3_s42",
+      "domain": "all",
+      "reason": "descriptive classifier tradeoff; unequal architecture and resource recipes",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.01776666666666593,
+          "95pct": [
+            0.012906847268861687,
+            0.02227431809265927
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.028307325671166672,
+          "95pct": [
+            -0.03237165409919846,
+            -0.02424977075564578
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.03049646031202735,
+          "95pct": [
+            0.02719373128318243,
+            0.03365295918359586
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.0191316766666626,
+          "95pct": [
+            0.01672623682974519,
+            0.02130833570870682
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.02089999999999903,
+          "95pct": [
+            0.013800543267857698,
+            0.026908737716067634
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.04369999999999796,
+          "95pct": [
+            0.035180619805221344,
+            0.05304074146320268
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.011299999999999422,
+          "95pct": [
+            -0.01914739799344156,
+            -0.0033927575721389696
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b4_t3_s42",
+      "domain": "pixel_centered",
+      "reason": "descriptive classifier tradeoff; unequal architecture and resource recipes",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.00889952801337257,
+          "95pct": [
+            -0.001375832746252231,
+            0.01905125412187579
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.04120342851067749,
+          "95pct": [
+            -0.05414744553433037,
+            -0.025376531696557392
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.020208675394670528,
+          "95pct": [
+            0.013330071625188261,
+            0.027313139950169478
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.013353737440756408,
+          "95pct": [
+            0.00903267037038397,
+            0.017447845626087793
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.01075268817204278,
+          "95pct": [
+            -0.006495823057294128,
+            0.02781015027186254
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.027619047619047765,
+          "95pct": [
+            0.00864797708138444,
+            0.044992410612680896
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.011673151750972832,
+          "95pct": [
+            -0.03407675675237117,
+            0.008721565868872485
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "final_b4_t3_s42",
+      "domain": "large_scintillator",
+      "reason": "descriptive classifier tradeoff; unequal architecture and resource recipes",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.02850224997877704,
+          "95pct": [
+            0.02291077088186022,
+            0.034207815649677675
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.04501750934094806,
+          "95pct": [
+            -0.05187372642248645,
+            -0.037136359401717695
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.03764836601094068,
+          "95pct": [
+            0.03325100799240005,
+            0.041643804163549944
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.022572025593642242,
+          "95pct": [
+            0.019834966409254546,
+            0.025141611783797216
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.029837251356239713,
+          "95pct": [
+            0.02182382311677532,
+            0.03731517126252627
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.06486146095717726,
+          "95pct": [
+            0.05432647790981819,
+            0.0752332742413985
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.009191962377085972,
+          "95pct": [
+            -0.019641725604374678,
+            0.0008498072037327109
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "screen_b0_t3_lr0.05_s42",
+      "domain": "all",
+      "reason": "descriptive summary baseline; operation costs separate",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.015366666666666084,
+          "95pct": [
+            0.010753803805192563,
+            0.0201293506369603
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.0245152327071968,
+          "95pct": [
+            -0.02919167153318715,
+            -0.02031542827491757
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.03318064150564681,
+          "95pct": [
+            0.02932030143773487,
+            0.03723442832016007
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.02125257833333105,
+          "95pct": [
+            0.01840661332271106,
+            0.02381483226443454
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": -0.01569999999999916,
+          "95pct": [
+            -0.0237002397758398,
+            -0.008069557246872942
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.12449999999999395,
+          "95pct": [
+            0.1146806916895043,
+            0.13411499522229572
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.06269999999999687,
+          "95pct": [
+            -0.07056990253987261,
+            -0.054823404954954705
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "screen_b0_t3_lr0.05_s42",
+      "domain": "pixel_centered",
+      "reason": "descriptive summary baseline; operation costs separate",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.010671559866991198,
+          "95pct": [
+            -0.0019144868349396742,
+            0.02312243564140085
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.033445268360265845,
+          "95pct": [
+            -0.04839605415949859,
+            -0.01697907874913176
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.026679306210333986,
+          "95pct": [
+            0.01814273231123431,
+            0.034184929365299606
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.016231840933800923,
+          "95pct": [
+            0.010961931985487488,
+            0.02139059521438075
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.0010752688172041003,
+          "95pct": [
+            -0.019230769230769273,
+            0.021173217397325136
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.054285714285714715,
+          "95pct": [
+            0.031925491001315,
+            0.07670735304963454
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.023346303501945553,
+          "95pct": [
+            -0.04788395413663231,
+            -0.002921167727190707
+          ]
+        }
+      }
+    },
+    {
+      "a": "compute_b1_t3_s42",
+      "b": "screen_b0_t3_lr0.05_s42",
+      "domain": "large_scintillator",
+      "reason": "descriptive summary baseline; operation costs separate",
+      "metrics": {
+        "BA3": {
+          "difference_a_minus_b": 0.028084572045095513,
+          "95pct": [
+            0.022326218978596685,
+            0.03425766298194045
+          ]
+        },
+        "NLL3": {
+          "difference_a_minus_b": -0.04382780268141717,
+          "95pct": [
+            -0.051726787700070984,
+            -0.03582236498897405
+          ]
+        },
+        "macro_AP3": {
+          "difference_a_minus_b": 0.04266800609407306,
+          "95pct": [
+            0.03737619136178699,
+            0.04746278187311729
+          ]
+        },
+        "macro_AUROC3": {
+          "difference_a_minus_b": 0.02592474093052677,
+          "95pct": [
+            0.022894483254047183,
+            0.0289489273317255
+          ]
+        },
+        "recall_e": {
+          "difference_a_minus_b": 0.012432188065099825,
+          "95pct": [
+            0.0033438909787307128,
+            0.0220658541720206
+          ]
+        },
+        "recall_mu": {
+          "difference_a_minus_b": 0.11649874055415399,
+          "95pct": [
+            0.10365954561338847,
+            0.12774572906514298
+          ]
+        },
+        "recall_NC": {
+          "difference_a_minus_b": -0.04467721248396761,
+          "95pct": [
+            -0.05483836173778954,
+            -0.03367833984418452
+          ]
+        }
+      }
+    }
+  ],
+  "occupancy": {
+    "status": "complete",
+    "a": "compute_b1_t3_s42",
+    "b": "final_b1_t3_s42",
+    "scope": "post-hoc descriptive Tune localization; one trained seed; occupancy correlates with geometry and acceptance, not a causal effect",
+    "occupancy_definition": "pre-removal accepted pixel_channels+bar_channels+tracker_channels",
+    "replicates": 400,
+    "bootstrap_seed": 20261116,
+    "bootstrap": {
+      "chunks": 6845,
+      "resampling_blocks": 6845,
+      "accepted_family_links_used": true,
+      "multi_chunk_blocks": 0,
+      "blocks_by_class_signature": {
+        "(0,)": 866,
+        "(1,)": 3796,
+        "(2,)": 648,
+        "(3,)": 1535
+      }
+    },
+    "strata": [
+      {
+        "occupancy_min_inclusive": 0,
+        "occupancy_max_exclusive": 100,
+        "raw_counts_e_mu_tau_NC": [
+          2971,
+          2801,
+          3371,
+          3010
+        ],
+        "classes": {
+          "e": {
+            "events": 2971,
+            "a_correct": 573,
+            "b_correct": 1276,
+            "a_only_correct": 16,
+            "b_only_correct": 719,
+            "recall_difference": {
+              "difference_a_minus_b": -0.23662066644227533,
+              "95pct": [
+                -0.25223103830301613,
+                -0.2228463936474924
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": -0.0703,
+              "95pct": [
+                -0.07516070843128579,
+                -0.06560873716549191
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "mu": {
+            "events": 2801,
+            "a_correct": 1205,
+            "b_correct": 326,
+            "a_only_correct": 893,
+            "b_only_correct": 14,
+            "recall_difference": {
+              "difference_a_minus_b": 0.3138164941092467,
+              "95pct": [
+                0.2952512119402343,
+                0.3303655241940155
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": 0.0879,
+              "95pct": [
+                0.08217358066037544,
+                0.09295096410927321
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "NC": {
+            "events": 3010,
+            "a_correct": 1549,
+            "b_correct": 1916,
+            "a_only_correct": 84,
+            "b_only_correct": 451,
+            "recall_difference": {
+              "difference_a_minus_b": -0.12192691029900332,
+              "95pct": [
+                -0.13604174349332324,
+                -0.10686477138062575
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": -0.0367,
+              "95pct": [
+                -0.04110149673739935,
+                -0.0321073862361592
+              ],
+              "valid_replicates": 400
+            }
+          }
+        },
+        "BA3_difference": {
+          "difference_a_minus_b": -0.014910360877343978,
+          "95pct": [
+            -0.024674554926755892,
+            -0.006637619375455762
+          ],
+          "valid_replicates": 400
+        }
+      },
+      {
+        "occupancy_min_inclusive": 100,
+        "occupancy_max_exclusive": 1000,
+        "raw_counts_e_mu_tau_NC": [
+          2645,
+          3653,
+          2823,
+          3618
+        ],
+        "classes": {
+          "e": {
+            "events": 2645,
+            "a_correct": 1693,
+            "b_correct": 1734,
+            "a_only_correct": 86,
+            "b_only_correct": 127,
+            "recall_difference": {
+              "difference_a_minus_b": -0.01550094517958412,
+              "95pct": [
+                -0.027181688711367207,
+                -0.003808059157646556
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": -0.0041,
+              "95pct": [
+                -0.007086594816158922,
+                -0.0010008308805402656
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "mu": {
+            "events": 3653,
+            "a_correct": 2485,
+            "b_correct": 2246,
+            "a_only_correct": 325,
+            "b_only_correct": 86,
+            "recall_difference": {
+              "difference_a_minus_b": 0.06542567752532165,
+              "95pct": [
+                0.053046570595000626,
+                0.07591334926596108
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": 0.0239,
+              "95pct": [
+                0.01971082424854874,
+                0.027638823718675896
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "NC": {
+            "events": 3618,
+            "a_correct": 2032,
+            "b_correct": 2213,
+            "a_only_correct": 109,
+            "b_only_correct": 290,
+            "recall_difference": {
+              "difference_a_minus_b": -0.05002763957987839,
+              "95pct": [
+                -0.061381865638632134,
+                -0.0404910875189867
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": -0.0181,
+              "95pct": [
+                -0.0221546610998601,
+                -0.014626731153127528
+              ],
+              "valid_replicates": 400
+            }
+          }
+        },
+        "BA3_difference": {
+          "difference_a_minus_b": -3.430241138028626e-05,
+          "95pct": [
+            -0.006482278204833518,
+            0.005788198264811159
+          ],
+          "valid_replicates": 400
+        }
+      },
+      {
+        "occupancy_min_inclusive": 1000,
+        "occupancy_max_exclusive": 5000,
+        "raw_counts_e_mu_tau_NC": [
+          3850,
+          3336,
+          3646,
+          3205
+        ],
+        "classes": {
+          "e": {
+            "events": 3850,
+            "a_correct": 2924,
+            "b_correct": 2827,
+            "a_only_correct": 154,
+            "b_only_correct": 57,
+            "recall_difference": {
+              "difference_a_minus_b": 0.025194805194805193,
+              "95pct": [
+                0.019031058808760624,
+                0.031452289588560126
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": 0.0097,
+              "95pct": [
+                0.007257585526856006,
+                0.012169483737736147
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "mu": {
+            "events": 3336,
+            "a_correct": 2317,
+            "b_correct": 2308,
+            "a_only_correct": 125,
+            "b_only_correct": 116,
+            "recall_difference": {
+              "difference_a_minus_b": 0.002697841726618705,
+              "95pct": [
+                -0.007525324399799964,
+                0.011626271616019567
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": 0.0009,
+              "95pct": [
+                -0.0024792426138061647,
+                0.003899601741801594
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "NC": {
+            "events": 3205,
+            "a_correct": 1447,
+            "b_correct": 1520,
+            "a_only_correct": 85,
+            "b_only_correct": 158,
+            "recall_difference": {
+              "difference_a_minus_b": -0.022776911076443057,
+              "95pct": [
+                -0.031578158493940814,
+                -0.012622630658812722
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": -0.0073,
+              "95pct": [
+                -0.010173234553053431,
+                -0.00410023275124041
+              ],
+              "valid_replicates": 400
+            }
+          }
+        },
+        "BA3_difference": {
+          "difference_a_minus_b": 0.0017052452816602806,
+          "95pct": [
+            -0.0028048854811541612,
+            0.006253401646004495
+          ],
+          "valid_replicates": 400
+        }
+      },
+      {
+        "occupancy_min_inclusive": 5000,
+        "occupancy_max_exclusive": null,
+        "raw_counts_e_mu_tau_NC": [
+          534,
+          210,
+          160,
+          167
+        ],
+        "classes": {
+          "e": {
+            "events": 534,
+            "a_correct": 465,
+            "b_correct": 464,
+            "a_only_correct": 7,
+            "b_only_correct": 6,
+            "recall_difference": {
+              "difference_a_minus_b": 0.0018726591760299626,
+              "95pct": [
+                -0.013629703965589162,
+                0.015398936170212754
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": 0.0001,
+              "95pct": [
+                -0.0007148805247289402,
+                0.0008117167191097368
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "mu": {
+            "events": 210,
+            "a_correct": 119,
+            "b_correct": 118,
+            "a_only_correct": 5,
+            "b_only_correct": 4,
+            "recall_difference": {
+              "difference_a_minus_b": 0.004761904761904762,
+              "95pct": [
+                -0.019760068274133607,
+                0.030303030303030304
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": 0.0001,
+              "95pct": [
+                -0.0004076441927863555,
+                0.00060615701738941
+              ],
+              "valid_replicates": 400
+            }
+          },
+          "NC": {
+            "events": 167,
+            "a_correct": 29,
+            "b_correct": 38,
+            "a_only_correct": 3,
+            "b_only_correct": 12,
+            "recall_difference": {
+              "difference_a_minus_b": -0.05389221556886228,
+              "95pct": [
+                -0.1,
+                -0.011762985896112833
+              ],
+              "valid_replicates": 400
+            },
+            "contribution_to_all_class_recall": {
+              "difference_a_minus_b": -0.0009,
+              "95pct": [
+                -0.0016898023204441942,
+                -0.00019999958163146995
+              ],
+              "valid_replicates": 400
+            }
+          }
+        },
+        "BA3_difference": {
+          "difference_a_minus_b": -0.015752550543642517,
+          "95pct": [
+            -0.034194059314303415,
+            0.0016499782572540562
+          ],
+          "valid_replicates": 400
+        }
+      }
+    ],
+    "all_class_recall_differences": {
+      "e": -0.0646,
+      "mu": 0.1128,
+      "NC": -0.063
+    },
+    "maximum_contribution_identity_error": 2.7755575615628914e-17,
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "independent_review": {
+    "status": "complete",
+    "require_full": false,
+    "scope": "independent array/count readback of development results; uncertainty and scientific promotion reviewed separately",
+    "largest_absolute_errors": {
+      "BA": 9.325873406851315e-15,
+      "NLL": 4.218847493575595e-15,
+      "working_point": 1.0630385460785874e-14,
+      "prior_purity": 0.0
+    },
+    "passed": 116,
+    "failed": [],
+    "Cal_A_Cut_B_Confirm_payload_read": false
+  },
+  "training": {
+    "compute_b1_t3_s42": {
+      "GPU": "Tesla T4",
+      "allocation_id": "1582883.0",
+      "counters": {
+        "updates": 49018,
+        "train_seconds": 4840.7200177419,
+        "training_exposures": 391633,
+        "data_wait_seconds": 135.08891720185056,
+        "validation_seconds": 330.01984651433304,
+        "exposure_by_class": [
+          130128,
+          130962,
+          0,
+          130543
+        ]
+      },
+      "wall_seconds": 5199.1307518170215,
+      "compute_alignment": {
+        "target_wall_seconds": 5193.243869238067,
+        "actual_wall_seconds": 5199.1307518170215,
+        "relative_difference": 0.0011335655954507473,
+        "within_five_percent": true,
+        "reserved_final_inference_seconds": 169.15031084930524,
+        "scope": "same-allocation operation wall time, including loader, training and validation"
+      },
+      "probability_diagnostics": {
+        "mean": [
+          0.30489200353622437,
+          0.3606448471546173,
+          0.3344694972038269
+        ],
+        "std": [
+          0.27275916934013367,
+          0.23517577350139618,
+          0.20969489216804504
+        ],
+        "minimum": [
+          3.3352666832797695e-06,
+          6.775730435037985e-05,
+          6.080781895434484e-05
+        ],
+        "maximum": [
+          0.9989703893661499,
+          0.9999352693557739,
+          0.9969696402549744
+        ],
+        "distinct_vectors": 38918
+      },
+      "precision": "FP32",
+      "health_samples": 51
+    },
+    "final_b1_t3_s42": {
+      "GPU": "Tesla T4",
+      "allocation_id": "1582883.0",
+      "counters": {
+        "updates": 37550,
+        "train_seconds": 3711.594141662121,
+        "training_exposures": 300000,
+        "data_wait_seconds": 107.82439319090918,
+        "validation_seconds": 305.75083446130157,
+        "exposure_by_class": [
+          100000,
+          100000,
+          0,
+          100000
+        ]
+      },
+      "wall_seconds": 4050.881834800821,
+      "compute_alignment": null,
+      "probability_diagnostics": {
+        "mean": [
+          0.3022014796733856,
+          0.34426361322402954,
+          0.35354188084602356
+        ],
+        "std": [
+          0.26244089007377625,
+          0.22668218612670898,
+          0.2068503350019455
+        ],
+        "minimum": [
+          5.6015237532847095e-06,
+          0.000254199345363304,
+          0.00023641066218260676
+        ],
+        "maximum": [
+          0.9971479773521423,
+          0.9997579455375671,
+          0.9958627223968506
+        ],
+        "distinct_vectors": 38918
+      },
+      "precision": "FP32",
+      "health_samples": 39
+    },
+    "final_b1_t4_s42": {
+      "GPU": "Tesla T4",
+      "allocation_id": "1582883.0",
+      "counters": {
+        "updates": 50051,
+        "train_seconds": 4866.233125218656,
+        "training_exposures": 400000,
+        "data_wait_seconds": 98.23102598078549,
+        "validation_seconds": 300.10260995151475,
+        "exposure_by_class": [
+          100000,
+          100000,
+          100000,
+          100000
+        ]
+      },
+      "wall_seconds": 5193.243869238067,
+      "compute_alignment": null,
+      "probability_diagnostics": {
+        "mean": [
+          0.25176194310188293,
+          0.2534638047218323,
+          0.2249353975057602,
+          0.2698383629322052
+        ],
+        "std": [
+          0.2429697960615158,
+          0.1917734146118164,
+          0.10922430455684662,
+          0.17837578058242798
+        ],
+        "minimum": [
+          1.49567913467763e-05,
+          0.00023171606881078333,
+          0.0012723628897219896,
+          0.0007080016075633466
+        ],
+        "maximum": [
+          0.9962615370750427,
+          0.9755908250808716,
+          0.9477880001068115,
+          0.981867790222168
+        ],
+        "distinct_vectors": 38918
+      },
+      "precision": "FP32",
+      "health_samples": 52
+    }
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

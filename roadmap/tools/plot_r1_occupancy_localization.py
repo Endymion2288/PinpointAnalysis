@@ -13,6 +13,8 @@ import numpy as np
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--label-a', default='B1 T3')
+    parser.add_argument('--label-b', default='B4 T3')
     args = parser.parse_args()
     result = json.loads((args.root/'evaluation/occupancy_localization.json').read_text())
     rows = result['strata']
@@ -33,9 +35,9 @@ def main():
         axes[1].vlines(j, *np.asarray(value['95pct'])*100, color=colors['mu'], linewidth=1.5)
         axes[1].scatter(j, value['difference_a_minus_b']*100, color=colors['mu'], s=30)
     axes[1].set(ylabel='Contribution to all-domain muon recall (pp)',
-                title='Contributions sum to -6.91 pp')
-    for name, shift, label, color in [('a_only_correct', -.18, 'B1 only correct', 'tab:red'),
-                                     ('b_only_correct', .18, 'B4 only correct', 'tab:blue')]:
+                title=f"Contributions sum to {result['all_class_recall_differences']['mu']*100:+.2f} pp")
+    for name, shift, label, color in [('a_only_correct', -.18, args.label_a+' only correct', 'tab:red'),
+                                     ('b_only_correct', .18, args.label_b+' only correct', 'tab:blue')]:
         axes[2].bar(np.arange(4)+shift, [r['classes']['mu'][name] for r in rows],
                     width=.36, label=label, color=color)
     axes[2].set(ylabel='Muon event count', title='Paired disagreements, same muon events')
@@ -45,8 +47,8 @@ def main():
         axis.grid(axis='y', alpha=.2)
     for axis in axes[:2]:
         axis.axhline(0., color='black', linestyle=':', linewidth=.8)
-    figure.suptitle('B1 T3 minus B4 T3, seed 42: post-hoc development Tune localization\n'
-                   '400 paired physical-block draws; occupancy correlates with geometry and acceptance', fontsize=12)
+    figure.suptitle(f'{args.label_a} minus {args.label_b}, seed 42: post-hoc development Tune localization\n'
+                   f"{result['replicates']} paired physical-block draws; occupancy correlates with geometry and acceptance", fontsize=12)
     output = args.root/'figures'
     output.mkdir(exist_ok=True)
     for extension in ['pdf', 'png']:

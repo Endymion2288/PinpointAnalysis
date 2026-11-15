@@ -155,6 +155,8 @@ def main():
     rows = []
     for entry in config['models']:
         manifest = json.loads((args.root/'experiments'/entry['name']/'manifest.json').read_text())
+        if manifest.get('status') != 'complete':
+            raise ValueError(f"R1 evaluation requires a completed model: {entry['name']}")
         runtime[entry['name']] = {'seed': entry['seed'], 'GPU': manifest.get('GPU', 'CPU'),
             'precision': manifest['config'].get('precision', 'CPU'),
             'allocation_id': manifest.get('allocation_id')}
