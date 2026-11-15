@@ -4,9 +4,11 @@
 
 **当前执行状态：R0 完成，R1 正在执行。**已冻结100k/300k/1M嵌套Train、40k Tune、40k Cal-A、160k Cut-B和200k Confirm，排除1,560,122个历史使用family。R0验收完成；R1八项真实学习门槛、B0三seed、16项screen和seed42四pass主任务完成。冻结排名为B1、B2、B3、B4，平均共同BA3分别为56.5567%、55.3950%、55.1750%、54.5133%；B1/B2与参考B4扩三seed。55条压力路径的400次统计及5,666项独立读回完成，完整nominal比较仍在执行。见[stage258](../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)、[排名](v2/r1_architecture_ranking.json)与[B1同结构控制](v2/r1_b1_compute_controls.json)。Cal-A/Cut-B/Confirm继续封存。
 
-B1同结构计算控制在更多曝光与wall-based schedule下，μ recall提高11.28 pp，同时e/NC下降6.46/6.30 pp，BA3下降0.493 pp。训练、决策和表示机制需要分别检查。四pass排名没有建立收敛；B2/B3仅相差0.220 pp，不作已确认的架构优势解释。03:31 UTC尚未关闭的R1 allocation已达33.1022 device-hours，超过18 h规划，最终成本待所有作业终态。
+B1同结构计算控制在更多曝光与wall-based schedule下，μ recall提高11.28 pp，同时e/NC下降6.46/6.30 pp，BA3下降0.493 pp。训练、决策和表示机制需要分别检查。四pass排名没有建立收敛；B2/B3仅相差0.220 pp，不作已确认的架构优势解释。04:12 UTC尚未关闭的R1 allocation已达36.6508 device-hours，超过18 h规划，最终成本待所有作业终态。
 
 [B1三seed结果](v2/r1_b1_three_seed.json)进一步支持保留四类主线：相对B4的τ1%效率增益为2.423 pp [1.941,2.977]；真实T3相对T4 conditional的BA3增益为0.259 pp [0.042,0.479]，但NLL更差且有e/NC取舍。B1 T3相对HGB平均增加1.973 pp，未达预设2 pp实用值，对B4则未满足μ非劣。见[stage259](../workbook/2026-11-15_stage259_r1_three_seed_task_evidence_and_scheduling.md)；完整同计算和B2重复尚未完成。
+
+[μ工作点读回](v2/r1_muon_decision_review.json)补充：B1相对B4的T3 argmax μ recall虽低2.410 pp，1% FPR效率却高4.850 pp [4.057,5.823]，三个seed均为正；这两种决策需分别评价，原非劣门槛仍未通过。见[stage262](../workbook/2026-11-15_stage262_r1_muon_working_points_and_time_handoff.md)。
 
 资源安排采用**尽快启动、兼容即可**的原则：HTCondor 与 Kubeflow 并用，接受不同 GPU、平台提供的共享设备和 MIG。当前 LCG108/Torch2.7.1 包含 SM75 起的内核，T4 使用 FP32，A100/H100 可使用 BF16；V100 的 SM70 启动失败属于本构建兼容性问题。具体操作、同计算比较口径和失败恢复见[资源执行说明](v2/07_resources_and_operations.md)。
 

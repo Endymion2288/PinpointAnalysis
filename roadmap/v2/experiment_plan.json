@@ -303,7 +303,7 @@
       "planned_device_hours": 18,
       "status": "in_progress",
       "progress_report": "../../workbook/2026-11-14_stage246_r1_b4_paired_task_and_tracker_results.md",
-      "measured_progress": "seed42 ranking and paired pointwise intervals complete; B1/B4/B0 three-seed18-model40-pair main-task evaluation complete (573 independent checks); B1 T4 tau gain satisfies development criteria versusB4/HGB; B1 T3 fails practical BA3 gain versusHGB and mu noninferiority versusB4; B2 seeds moved safely to faster2g MIG after Train-only probes; final41-model133-pair nominal evaluation/compute/acceptance pending",
+      "measured_progress": "seed42 ranking and paired pointwise intervals complete; B1/B4/B0 three-seed18-model40-pair main-task evaluation complete (1185 independent array/count/working-point checks); B1 T4 tau criteria pass versus B4/HGB; B1 T3 practical BA3 gain versus HGB and mu argmax noninferiority versus B4 do not pass; B1 class-score mu working points improve versus B4; B2 remaining-time handoffs in progress; final41-model133-pair nominal/compute/acceptance pending",
       "interim_results": "r1_interim_b4.json",
       "ranking_result": "r1_architecture_ranking.json",
       "interim_training_control": "r1_b1_compute_controls.json",
@@ -315,7 +315,9 @@
         "interpretation": "heterogeneous allocation hours, not FLOP equivalent; historical SSL separate; aborted1g attempts and replacement probes included"
       },
       "three_seed_B1_result": "r1_b1_three_seed.json",
-      "ranking_uncertainty": "r1_ranking_uncertainty.json"
+      "ranking_uncertainty": "r1_ranking_uncertainty.json",
+      "collaboration_report": "08_r1_collaboration.md",
+      "muon_decision_review": "r1_muon_decision_review.json"
     },
     {
       "id": "R2",
@@ -324,7 +326,15 @@
       ],
       "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
       "planned_device_hours": 18,
-      "status": "pending"
+      "status": "pending",
+      "execution_policy": "Freeze after complete R1; first run D1/D2 for one selected family (currently B1 priority), with precision-matched D0; add only question-driven second-family controls if the measured remaining budget supports them; no R2 training started",
+      "illustrative_D1_D2_cost_projection": {
+        "source": "actual R1 four-pass operation wall for B1 seed17 and B2 seed42",
+        "B1_1g_MIG_T3_T4_hours": 10.08676280040003,
+        "B2_full_H100_T3_T4_hours": 13.40628906291677,
+        "sum_heterogeneous_device_hours": 23.4930518633168,
+        "scope": "linear planning estimate; not measured R2 wall or FLOP equivalence; excludes new D0, 300k conversion, failures and added profiles"
+      }
     },
     {
       "id": "R3",

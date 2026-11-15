@@ -40,6 +40,19 @@ B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel
 
 [stage258](../../workbook/2026-11-15_stage258_r1_ranking_and_training_tradeoffs.md)补充了同结构的有效训练对照：B1 seed42 fresh计算控制在391,633次曝光、wall-based schedule下，低occupancy μ多识别879个，域内recall差+31.38 pp [29.53,33.04]；同组e/NC分别少识别703/367个，全域BA反而下降0.493 pp。全空事件仍全部判NC。结构和投影相同，预算与schedule共同改变，说明训练配方和决策取舍必须与压缩假设一起排查。R2先跟踪逐类概率、recall与AP/ROC；必要时在Train-inner或Tune内按family交叉拟合低维logit-bias/冻结readout诊断，检验固定表示的可读性。该诊断不打开Cal-A，也不重写R1排名。
 
+### 2.2 μ的多类决策与分数辨别能力
+
+[三seed读回](r1_muon_decision_review.json)表明，B1的argmax μ recall损失与one-versus-rest分数的表现不同：
+
+| B1 minus B4 | Mu argmax recall difference | Mu efficiency difference at 1% FPR | Mu efficiency difference at 90% benchmark purity |
+| --- | --- | --- | --- |
+| T3 training | −2.410 pp [−3.209,−1.690] | +4.850 pp [+4.057,+5.823] | +8.503 pp [+6.486,+10.052] |
+| T4 conditional | −1.853 pp [−2.611,−1.063] | +5.383 pp [+4.560,+6.297] | +8.720 pp [+7.431,+10.288] |
+
+T3 μ的1% FPR效率逐seed增益均为正：+5.36/+4.32/+4.87 pp；argmax recall差为+1.37/−6.91/−1.69 pp。B1/B4 T3平均μ AP为.6483/.6000，AUROC为.7591/.7278。这些是同Tune的post-hoc开发读回，区间条件于三个已拟合seed及实际设备/精度，不能当成种子总体区间。
+
+因此R2的决策诊断应在保留原始概率的同时，检查类间offset/决策规则、逐类排序和训练schedule；当前尚不能把μ argmax损失认定为不可逆投影信息缺失。各类fixed-cut选择不构成互斥的三类输出，需另定义多cut冲突/拒判及coverage，不能把单类效率增益写成已经修复argmax。R1预设μ非劣条件仍未通过，不因新增指标改写晋级规则。
+
 ## 3. 优先架构 G1：显式几何与跨层稀疏关系
 
 ```mermaid
