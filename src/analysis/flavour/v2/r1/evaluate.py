@@ -151,9 +151,13 @@ def main():
     output.mkdir(exist_ok=True)
     config = json.loads(args.config.read_text())
     catalog = pd.read_parquet(args.root/'data/catalog.parquet', filters=[('split', '=', 'validation')]).sort_values(KEY).reset_index(drop=True)
-    frames, reports = {}, {}
+    frames, reports, runtime = {}, {}, {}
     rows = []
     for entry in config['models']:
+        manifest = json.loads((args.root/'experiments'/entry['name']/'manifest.json').read_text())
+        runtime[entry['name']] = {'seed': entry['seed'], 'GPU': manifest.get('GPU', 'CPU'),
+            'precision': manifest['config'].get('precision', 'CPU'),
+            'allocation_id': manifest.get('allocation_id')}
         frame = pd.read_parquet(args.root/entry['predictions']).sort_values(KEY).reset_index(drop=True)
         if not equal_identity_rows(frame, catalog) or not np.array_equal(frame.label, catalog.label):
             raise ValueError('R1 candidates must use exactly the same frozen Tune rows and labels')
@@ -214,19 +218,21 @@ def main():
             metrics[name]['training_seed_sample_SD'] = float(points[finite, c].std(ddof=1)) if finite.sum()>1 else None
         mean_seed_pairs.append({'a_family_task_kind': key[0], 'b_family_task_kind': key[1],
             'domain': key[2], 'reason': key[3], 'seeds': seeds, 'metrics': metrics,
-            'scope': 'paired physical-event interval conditional on these three trained seeds; seed SD separate'})
+            'scope': 'paired physical-event interval conditional on these three trained seeds and actual runtime recipes; sample SD includes runtime variation, with devices/precision recorded separately'})
     spread = []
     table = pd.DataFrame(rows)
     for key, group in table[table.domain.eq('all') & table.kind.eq('main')].groupby(['family', 'task']):
         if group.seed.nunique() > 1:
             spread.append({'family': key[0], 'task': key[1], 'seeds': group.seed.tolist(),
                 'BA3_values': group.BA3.tolist(), 'BA3_mean': float(group.BA3.mean()),
-                'BA3_sample_SD': float(group.BA3.std(ddof=1)), 'NLL3_mean': float(group.NLL3.mean())})
+                'BA3_sample_SD': float(group.BA3.std(ddof=1)), 'NLL3_mean': float(group.NLL3.mean()),
+                'runtime_by_seed': [dict(name=name, **runtime[name]) for name in group.name],
+                'scope': 'sample SD across realized seeds and runtime recipes; it does not isolate RNG variation'})
     table.to_csv(output/'model_domain_metrics.csv', index=False)
     write_json(output/'results.json', {'status': 'complete', 'models': reports, 'pairs': comparisons,
         'metrics_revision': METRICS_REVISION,
         'mean_seed_pairs': mean_seed_pairs,
-        'seed_spread': spread, 'bootstrap': design, 'replicates': args.replicates,
+        'seed_spread': spread, 'runtime_by_model': runtime, 'bootstrap': design, 'replicates': args.replicates,
         'benchmark_prior': {'T3': [1/3]*3, 'T4': [.25]*4},
         'bootstrap_workers': args.workers,
         'scope': 'development Tune; raw uncalibrated probabilities; descriptive score-selected operating points',

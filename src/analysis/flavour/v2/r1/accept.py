@@ -89,6 +89,9 @@ def main():
             'wall_seconds': record['wall_seconds'], 'training_seconds': record['counters']['train_seconds'],
             'validation_seconds': record['counters']['validation_seconds']})
     evaluation = json.loads((root/'evaluation/results.json').read_text())
+    review = json.loads((root/'evaluation/independent_review.json').read_text())
+    check('independent_full_probability_count_exposure_review',
+          review['status']=='complete' and review['require_full'] and not review['failed'])
     check('400_paired_physical_block_bootstraps', evaluation['status']=='complete' and evaluation['replicates']==400)
     check('roundoff_aware_operating_points', evaluation.get('metrics_revision')==METRICS_REVISION)
     for entry in [e for e in config['models'] if e['task']=='T4']:

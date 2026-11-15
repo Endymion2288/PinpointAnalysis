@@ -36,6 +36,8 @@ def condor_event_device(root, submission):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--cached-kubeflow', action='store_true',
+                        help='Read saved Pod/Job evidence without requesting Kubeflow authentication')
     args = parser.parse_args()
     now = time.time()
     previous_path = args.root/'resources.json'
@@ -128,7 +130,10 @@ def main():
     kube = [s for s in submissions if s.get('submitted') and s.get('backend')=='kubeflow']
     all_pods, all_jobs = [], []
     kube_query = {'status': 'not_needed'}
-    if kube:
+    if kube and args.cached_kubeflow:
+        kube_query = {'status': 'cached_only',
+                      'accounting': 'explicit saved Pod/Job evidence; nonterminal or missing evidence stays unresolved'}
+    elif kube:
         try:
             all_pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-o', 'json'])['items']
             all_jobs = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'jobs', '-o', 'json'])['items']

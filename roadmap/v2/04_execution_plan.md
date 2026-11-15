@@ -8,6 +8,8 @@
 
 25/55条条件路径的实际配对及工作点修复见[stage250](../../workbook/2026-11-15_stage250_r1_condition_interactions_and_operating_point_repair.md)：MAE相对Scratch的noise退化多3.00 pp，CI95[−5.20,−0.92]；相关中期400次统计已修正浮点边界，主要BA/NLL结论不变。该描述性条件分析不修改冻结的架构排名。
 
+六个T4模型的中期比较见[stage252](../../workbook/2026-11-15_stage252_r1_t4_architecture_contrasts_and_independent_review.md)：B1相对B4的BA3/τ工作点提高1.82/2.40 pp，但全域μ recall低5.30 pp；283项独立概率/人数/曝光读回通过。CNN成本参照、B1精度对齐的无tracker控制已完成。完整排名、必要seed扩展及最终R1交付仍待完成。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |

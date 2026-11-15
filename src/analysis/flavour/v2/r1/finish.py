@@ -77,6 +77,8 @@ def advance(root):
     results = [root/'evaluation'/f'{name}.json' for name in ['results', 'stress_results']]
     if not all(p.exists() and json.loads(p.read_text()).get('status')=='complete' for p in results):
         return False
+    submit(root, 'r1_independent_full_a1', 'analysis.flavour.v2.r1.review',
+        ['--require-full'], cpus=1, memory='3GB', flavour='microcentury')
     submit(root, 'r1_figures_a1', 'analysis.flavour.v2.r1.plots', ['--results'], cpus=2, memory='8GB')
     write_json(root/'runtime/finish_dependencies.json', {'status': 'submitted',
         'scope': 'dependent batch operations submitted; final acceptance, interpretation and backend closure remain'})

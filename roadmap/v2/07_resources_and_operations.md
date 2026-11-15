@@ -34,7 +34,7 @@ V100本身支持FP32；本次失败的原因是当前Torch二进制没有SM70内
 
 ## 3. Kubeflow
 
-沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`；已有登录可用。token过期时提醒用户登录，继续推进不依赖登录的分析。
+沿用[归档操作指南](../archive/2026-11-14_v1/08_kubeflow.md)的CERN flavor/resource、挂载与准入细节。context=`ml-prod`、namespace=`xcheng`。R1已实际使用该服务；2026-11-15约00:08 UTC凭据过期，已提醒用户重新登录。当前没有active Kubeflow allocation，继续由Condor推进训练。
 
 H100整卡和MIG使用相同`nvidia.com/gpu.product`，但resource分别为`nvidia.com/gpu`与`nvidia.com/mig-3g.47gb`。CERN按flavor注入CPU/RAM，GPU Job不能额外手填CPU/RAM。先对真实Pod模板做server dry-run；Job对象dry-run不足以证明Pod准入。namespace当前配额与scheduler events决定可用性，归档的历史配额不是实时空闲量。
 
@@ -65,6 +65,8 @@ R1原CNN任务1582878及无tracker控制1582879在V100启动失败，均已到�
 ```bash
 python -m analysis.flavour.v2.r1.accounting --root "$R1_ROOT"
 ```
+
+已有Pod/Job终态均已保存且登录暂不可用时，可追加`--cached-kubeflow`避免重复认证；它只读取已有证据，缺失或未终止的记录仍保留unresolved。
 
 `resources.json`按GPU型号/分区分别列出allocation和CPU core-hours，包含启动、编译、失败和恢复。记录仍运行的任务时明确为截至该时点成本，不标为最终成本。MIG device-hour不折成整卡hour。18 R1/80总device-hours是规划额度，按实测预测调整候选数量与后续矩阵，不因预算数字而宣称未完成实验已有结论。
 
