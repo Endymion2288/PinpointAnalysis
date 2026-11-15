@@ -1,6 +1,10 @@
 import unittest
 
-from analysis.flavour.v2.r1.summarize import quality_criteria
+import numpy as np
+import pandas as pd
+
+from analysis.flavour.v2.r1.evaluate import domain_report
+from analysis.flavour.v2.r1.summarize import compact_domain, quality_criteria
 
 
 T3_RULE = {'delta_BA3_point_min': .02, 'primary_difference_95_lower_min_exclusive': 0.,
@@ -51,6 +55,39 @@ class QualityCriteriaTests(unittest.TestCase):
         report = quality_criteria(metrics, T3_RULE, 'T3')
         self.assertFalse(report['all_criteria_met'])
         self.assertEqual(report['failed'], ['BA3_practical_gain', 'BA3_positive_lower_bound'])
+
+
+class CompactDomainTests(unittest.TestCase):
+    def setUp(self):
+        self.frame = pd.DataFrame({
+            'label': [0, 0, 0, 1, 1, 2, 3, 3],
+            'p0': [.7, .1, .1, .1, .15, .1, .1, .7],
+            'p1': [.1, .7, .1, .7, .1, .1, .1, .1],
+            'p2': [.1, .1, .1, .1, .65, .7, .1, .1],
+            'p3': [.1, .1, .7, .1, .1, .1, .7, .1],
+        })
+
+    def test_unequal_support_keeps_event_counts_distinct_from_benchmark_weights(self):
+        summary = compact_domain(domain_report(self.frame, np.ones(8, dtype=bool)))
+        self.assertEqual(summary['raw_counts_original_labels'], [3, 2, 1, 2])
+        self.assertEqual(summary['T4']['raw_confusion_counts'],
+                         [[1, 1, 0, 1], [0, 1, 1, 0], [0, 0, 1, 0], [1, 0, 0, 1]])
+        self.assertEqual(summary['T3']['raw_confusion_counts'],
+                         [[1, 1, 1], [1, 1, 0], [1, 0, 1]])
+        np.testing.assert_allclose(summary['T4']['benchmark_weighted_counts'], [2]*4)
+        np.testing.assert_allclose(summary['T3']['benchmark_weighted_confusion_counts'],
+                                  [[7/9, 7/9, 7/9], [7/6, 7/6, 0], [7/6, 0, 7/6]])
+
+    def test_fixed_purity_and_fpr_coverage_use_benchmark_prior(self):
+        summary = compact_domain(domain_report(self.frame, np.ones(8, dtype=bool)))
+        tau = summary['T4']['per_class'][2]
+        for fpr in ['0.01', '0.001']:
+            self.assertEqual(tau['eff_FPR_'+fpr], 1.)
+            self.assertEqual(tau['actual_FPR_'+fpr], 0.)
+            self.assertEqual(tau['coverage_FPR_'+fpr], .25)
+        for purity in ['0.8', '0.9']:
+            self.assertEqual(tau['eff_purity_'+purity], 1.)
+            self.assertEqual(tau['coverage_purity_'+purity], .25)
 
 
 if __name__ == '__main__':

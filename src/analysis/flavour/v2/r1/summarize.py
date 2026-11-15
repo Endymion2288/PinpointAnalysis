@@ -55,9 +55,16 @@ def compact_domain(report):
             continue
         metrics = report[task]
         result[task] = {key: metrics[key] for key in ['BA', 'NLL', 'macro_AP', 'macro_AUROC', 'Neff']}
+        observed = report.get(task+'_observed_mixture', metrics)
+        result[task].update(raw_confusion_counts=observed['confusion_counts'],
+            benchmark_weighted_confusion_counts=metrics['confusion_counts'],
+            benchmark_weighted_prior=metrics['weighted_prior'],
+            benchmark_weighted_counts=metrics['weighted_counts'])
         result[task]['per_class'] = [{key: row[key] for key in ['recall', 'AP', 'AUROC',
             'eff_FPR_0.01', 'actual_FPR_0.01', 'threshold_FPR_0.01', 'purity_FPR_0.01',
-            'eff_FPR_0.001', 'actual_FPR_0.001', 'threshold_FPR_0.001', 'purity_FPR_0.001']}
+            'coverage_FPR_0.01', 'eff_FPR_0.001', 'actual_FPR_0.001',
+            'threshold_FPR_0.001', 'purity_FPR_0.001', 'coverage_FPR_0.001',
+            'eff_purity_0.8', 'coverage_purity_0.8', 'eff_purity_0.9', 'coverage_purity_0.9']}
             for row in metrics['per_class']]
     if 'T4_tau_prior_scenarios' in report:
         result['T4_tau_prior_scenarios'] = report['T4_tau_prior_scenarios']
@@ -83,7 +90,9 @@ def summarize(root, plan):
         record = read(f'experiments/{name}/manifest.json')
         training[name] = {key: record.get(key) for key in ['GPU', 'allocation_id', 'parameters',
             'wall_seconds', 'GPU_peak_MiB', 'unique_train_events', 'events_per_train_second',
-            'counters', 'compute_alignment', 'capability', 'memory', 'probability_diagnostics']}
+            'counters', 'compute_alignment', 'capability', 'memory', 'probability_diagnostics',
+            'fit_seconds', 'threads']}
+        training[name]['GPU'] = record.get('GPU') or record.get('device', 'CPU')
         training[name]['precision'] = record['config'].get('precision', 'CPU')
         training[name]['compile_local'] = record['config'].get('compile_local', False)
         training[name]['learning_curve'] = [{
