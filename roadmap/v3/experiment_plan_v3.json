@@ -1,0 +1,91 @@
+{
+  "schema_version": 3,
+  "document_version": "v3_2026-11-15",
+  "status": "planned_ready_for_execution",
+  "base_commit": "d4aecc5",
+  "review_through_workbook_stage": 307,
+  "superseded_v2_branches": {
+    "v2_R4_heuristic_combinatorial_tracking_as_prerequisite": "replaced_by_V2_vertex_anchored_PinpointFormer_plus_V3_GN2_dense_auxiliary_supervision",
+    "reason": "S5 segment purity (2.0%-5.4%) and R3 G2 cross-plane edge recall (10.15%-27.53%) demonstrated that origin-agnostic local greedy linking fails inside 1.43 X0/layer tungsten showers; end-to-end differentiable vertex recentering + GN2 cluster-origin/compatibility auxiliary loss provides direct gradient guidance without brittle hard matching thresholds."
+  },
+  "inherited_r0_partitions": {
+    "source_manifest_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R0/partitions",
+    "family_key": ["family_hi", "family_lo"],
+    "zero_cross_split_leakage": true,
+    "train_pools_balanced_four_class": [100000, 300000, 1000000],
+    "tune_events": 40000,
+    "cal_a_sealed_until_V5": 40000,
+    "cut_b_sealed_until_V5": 160000,
+    "confirm_sealed_until_V5": 200000
+  },
+  "paths": {
+    "input_data": "/eos/project-f/fasersim-bonn/public/pinpoint/data",
+    "g4_source": "/eos/home-x/xcheng/FASER/Pinpoint/Pinpoint_G4",
+    "v3_package": "src/analysis/flavour/v3",
+    "v3_results_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v3_2026-11-15",
+    "condor_submit_root": "~/condor/Pinpoint/flavour_v3/",
+    "frozen_v2_reference": "roadmap/v2"
+  },
+  "observable_domains": {
+    "observation_only": true,
+    "truth_coordinates_forbidden": true,
+    "vector_dim": 16,
+    "domains": [
+      {"id": 0, "name": "D_empty", "description": "Zero accepted pixel, bar, and tracker response"},
+      {"id": 1, "name": "D_pix_contained", "description": "Pixel-active, no upstream veto, first hit inside pixel depth, transverse CoG inset 15mm, edge energy fraction < 0.25"},
+      {"id": 2, "name": "D_scint_contained", "description": "Not in D_pix_contained, bar-active, no upstream veto, z_first <= 85% target depth, edge energy fraction < 0.30"},
+      {"id": 3, "name": "D_partial_or_edge", "description": "Remaining non-empty events with upstream veto activity, late start, or large lateral leakage"}
+    ]
+  },
+  "evaluation_slices": [
+    "All_Tune40k",
+    "Obs_D_pix_contained",
+    "Obs_D_scint_contained",
+    "Obs_D_partial_or_edge",
+    "Truth_pixel_centered",
+    "Truth_large_scintillator",
+    "Tune_E_le_2p3TeV_matched_spectrum",
+    "HighE_gt_2p3TeV_non_tau_FPR"
+  ],
+  "phases": {
+    "V0": "Problem formulation, observable containment conditioning, E_nu<=2.3TeV bias checks, zero-leakage truth sidecar, and zero-training regional calibration replay",
+    "V1": "B1++ zero-hole sensor matrices, z-aligned stereo backbone, corrected y-z bending sagitta spectrometer kinematics, exact x/y mirror augmentation (16-24 passes)",
+    "V2": "PinpointFormer with all-retained 16-dim sub-mm cluster moments, 32x32 large-cluster micro-conv, NuGraph2 orthogonal bar nexus, Stage-1/Stage-2 differentiable vertex-anchored polar recentering & IP bias, and ScaledQKNormAttention",
+    "V3": "FASERCal homoscedastic 4-head event supervision (7-way fine classes + explicit Charm + 3D vertex + kinematics) + ATLAS GN2 pixel-cluster 5-class origin, track/vertex compatibility & full-detector Rel",
+    "V4": "Dual-regime integration (Pixel topology + Scintillator NOMAD transverse kinematics), DRO/CVaR One-Way Partial-AUC (@1% FPR) tail finetuning, cross-model ensemble, conditional SSL if triggered",
+    "V5": "3-seed stability expansion (17, 42, 2026) and one-shot unsealing of Cal-A40k -> Cut-B160k -> Confirm200k with multi-domain Profile-Likelihood significance"
+  },
+  "work_orders": [
+    {"id": "W3-01", "phase": "V0", "deps": [], "compute": "CPU <0.5h", "goal": "Implement observable containment domains & spectrum slice manifests"},
+    {"id": "W3-02", "phase": "V0", "deps": ["W3-01"], "compute": "CPU 1-2h", "goal": "Build isolated event & cluster truth_sidecar + pass AST/runtime zero-leakage tests"},
+    {"id": "W3-03", "phase": "V0", "deps": ["W3-01"], "compute": "CPU <0.2h", "goal": "Zero-training replay of regional OOF calibration & S_tau score on R2 D2 & S6 MAE3"},
+    {"id": "W3-04", "phase": "V1", "deps": ["W3-01"], "compute": "GPU ~0.3h", "goal": "Implement B1++ + physical mirror tests + pass 32-event 100% overfitting & branch-grad health gate"},
+    {"id": "W3-05", "phase": "V1", "deps": ["W3-02", "W3-04"], "compute": "GPU ~6-8h (est.)", "goal": "Train B1++ T3/T4 (100k x16p & 300k x24p, seed 42) + collaboration M1 aligned benchmark"},
+    {"id": "W3-06", "phase": "V2", "deps": ["W3-01", "W3-02"], "compute": "GPU ~0.5h", "goal": "Implement PinpointFormer modules & ScaledQKNormAttention + pass 32-event health gate"},
+    {"id": "W3-07", "phase": "V2", "deps": ["W3-06"], "compute": "GPU ~8-10h (est.)", "goal": "Ablate differentiable vertex anchor vs no-anchor (100k x16p) + run Occupancy Probe A & Micron-vs-1mm Probe B"},
+    {"id": "W3-08", "phase": "V3", "deps": ["W3-07"], "compute": "GPU ~6h (est.)", "goal": "Enable event-level homoscedastic 4-head supervision (7-way, Charm, 3D vertex, kinematics) on 100k x16p"},
+    {"id": "W3-09", "phase": "V3", "deps": ["W3-08"], "compute": "GPU ~10-12h (est.)", "goal": "Enable GN2 dense pixel-cluster origin, track/vertex compatibility & full Rel on 300k x24p"},
+    {"id": "W3-10", "phase": "V4", "deps": ["W3-05", "W3-09"], "compute": "GPU ~5-6h (est.)", "goal": "Add Scintillator NOMAD kinematics, B1++ x PinpointFormer-GN2 ensemble & 5-pass DRO Partial-AUC tail finetuning"},
+    {"id": "W3-11", "phase": "V5", "deps": ["W3-10"], "compute": "GPU ~12-16h (est.)", "goal": "Expand top <=2 winning architectures to seeds {17, 2026} alongside seed 42"},
+    {"id": "W3-12", "phase": "V5", "deps": ["W3-11"], "compute": "GPU/CPU ~3h (est.)", "goal": "Freeze candidates, unseal Cal-A40k -> Cut-B160k -> Confirm200k and deliver Profile-Likelihood nu_tau significance"}
+  ],
+  "mandatory_physics_probes": {
+    "probe_a_occupancy_sharpness": {
+      "pixel_hit_bins": [[0, 0], [1, 100], [100, 1000], [1000, 10000], [10000, 100000]],
+      "metrics": ["tau_eff_at_1pct_FPR", "normalized_attention_entropy", "learned_per_head_qk_scales"],
+      "exit_criterion": "Eliminate the S6 20x collapse in [1000, 10000] bin (0.29% vs 6.25%)"
+    },
+    "probe_b_micron_vs_1mm_quantization": {
+      "domain": "Truth_pixel_centered",
+      "intervention": "Quantize raw 20.8x22.8 um pixel hit xy coordinates onto 1.0x1.0 mm bin centers before clustering",
+      "exit_criterion": "Native micron delta_BA4 >= +2.0 pp and delta_tau_eff_at_1pct >= +2.0 pp over 1mm quantized inputs"
+    }
+  },
+  "promotion_gates": {
+    "V1_b1pp_over_r1_b1": "large_scintillator BA3 >= 73.0% (vs R1 B1 68.89%) without Train/Tune collapse",
+    "V2_pinpointformer_over_b0": "Probe B passed and Pixel-centered BA4 strictly outperforms B0 HGB (55.92%)",
+    "V3_gn2_multitask": "Pixel-centered BA4 gain >= +4.0 pp over B0 HGB and measurable charm false-positive reduction",
+    "V4_tau_discovery_readiness": "Global calibrated tau eff @ 1% FPR >= 12% (double R2 D2 6.05%) with non-inferior common BA3",
+    "V4_5_conditional_ssl_trigger": "Disabled by default; triggers only after V3 beats B0 by >= +4.0 pp in Pixel-centered, using >=30 epochs on contained-only events with matched-compute supervised control"
+  }
+}

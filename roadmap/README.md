@@ -1,83 +1,58 @@
-# PINPOINT 模型评估与下一轮完整路线图（v2）
+# PINPOINT 中微子反应过程分类研究路线图（v3 总入口）
 
-更新：2026-11-15。**已有改进有数据支持，当前模型尚未达到已验证的最优效果。近期交付真实三类模型，研究主线保留四类；优先改善局部信息利用、跨层关系和对象重建，再检验 τ 分道与定向预训练。**
+更新：2026-11-15（Stage 307）。**当前模型性能尚未达到探测器物理上限：`All` 域三分类 `BA3 = 57.5%`、四分类 `BA4 = 45.8%`、`1% FPR` 下 $\tau$ 效率 `6.05%`。v3 继承 `v2` 的分区隔离与统计协议，正式终止将脆弱硬规则追踪（`v2 R4`）作为分类前置的路线，重构为“可观测包容度分域校准 + `B1++` 传感器原生强基线 + 顶点锚定混合架构 `PinpointFormer` + `ATLAS GN2 / FASERCal` 训练期密集多任务监督 + 双机制 $\nu_\tau$ 低本底发现”六阶段方案（`V0–V5`）。**
 
-原计划的14份文档已完整归档至 [archive/2026-11-14_v1](archive/2026-11-14_v1/README.md)。本轮整理覆盖旧S0–S6的236份报告，追加研究记录见[完整索引](v2/06_workbook_index.md)。已读取5份本地报告共80页、FASERCal论文源码，并联网核对论文、方法和CERN资源文档；来源、采用理由和适用条件见[文献综述](v2/05_literature.md)。
+- 核心执行入口：**[v3 路线图总览](v3/README.md)**（代码结构、`W3-01`–`W3-12` 工单、晋级门禁与资源预估）
+- 历史入口快照：[v2 总入口快照 (2026-11-15)](archive/2026-11-15_v2_entry.md) | [v1 全集归档 (2026-11-14)](archive/2026-11-14_v1/README.md) | [归档索引](archive/README.md)
+- 阶段审查报告：[stage307 ML 审查与 v3 规划](../workbook/2026-11-15_stage307_ml_audit_and_roadmap_v3.md)
 
-## 对当前结果的判断
+---
 
-| Evidence | Measured result | Interpretation |
+## 前序阶段实测基准与根因结论（Stages 01–306）
+
+| 证据来源 | 关键实测数值 | v3 审查定性 |
 | --- | --- | --- |
-| S6, independent test | MAE3 ensemble BA4=43.5226%；相对同100k监督标签的Scratch +0.3354 pp，配对区间支持正效应 | 预训练收益成立，另有预训练成本 |
-| S6, frozen tau cut | validation 1%背景阈值下，test τ效率3.5556%，实际FPR=1.2080% | 当前绝对性能不足以支持高纯稀有τ选择 |
-| R1, matched-input development comparison | 三seed的B1 ResNet T3 BA3=56.5633%，B4分层Scratch=54.3922%；B1的τ效率5.0200%，比B4高2.423 pp | 更复杂的当前backbone未在本轮预算下胜出，简单强基线必须保留 |
-| R1, matched-time T3 vs conditional T4 | B1共同BA3差+0.064 pp，区间跨零；B2为−0.313 pp；两族T3 NLL3均更差 | 删除τ没有稳定改善共同任务，困难不限于第四类 |
-| R2, data/exposure study | D2=300k×4的T3/conditional T4 BA3=57.0967%/57.1267%；T4 BA4=45.7650%，τ效率6.05% | 更多unique数据有益；相对D0的增量仍小，收敛和容量上限未建立 |
-| R3 M0, full-pass reshuffling | 对D2，BA3 +0.383 pp，但μ recall −4.08 pp，稀疏μ −14.816 pp；τ无增益 | 不采用该采样替换，后续几何实验保留原采样 |
-| R3 G1, first stride 4→2 | 对D2，BA3 −0.033 pp [−0.366,+0.353]，μ recall +1.76 pp、e recall −1.43 pp；τ无收益 | 当前干预不晋级，原生关系与对象路径另行检验 |
-| R3 C1, compact sensor rows | 对D0，BA3 +0.137 pp [−0.213,+0.504]，e recall −3.42 pp；同设备训练吞吐2.723倍 | 当前配方不晋级；成本优势保留为后续质量恢复动机 |
-| R3 G2, native relations | relations−control的BA3 −0.023 pp [−0.308,+0.219]，τ效率 −0.450 pp；no-global−relations的BA3 −0.450 pp | 当前关系层不晋级，重训移除global未改善整体质量；转向候选关联与对象证据 |
+| `R1 Tune` 细粒度 vs 树模型 | `Pixel-centered` 域：`B0 HGB (41标量)` `BA4 = 55.92%`、`τ@1% = 4.36%`；`B2/B3/B4` 仅 `55.08%–55.75%`、`1.59%–2.51%` | 原生细粒度模型（`B2–B4`）在像素中心区反输无坐标树模型，亚百微米拓扑完全未生效 |
+| `R1` `All` 域与包容区对比 | `R1 B1 T3`: `Large scintillator (46.2%)` `BA3 = 68.89%`，其余 `53.8%` 非包容区仅 `45.92%`（$\mu$ 召回仅 `28.25%`） | 过半非包容/边缘事例混入无条件训练与评价，严重稀释全域表现并掩盖物理结构 |
+| `S6 MAE3` 独立 Test (`72.4万`) | 全局 `1% FPR` 阈值 `p(τ)>0.4467`：`Target envelope` 效率 `6.13%`，黄金 `Pixel-centered` 暴跌至 **`0.35% (17/4,882)`**；`1000–10000` 击中箱暴跌至 **`0.29%`** | ① 无条件全局单阈值诱发跨区域概率倒挂；② `StableAttention` 无可学习温度（$z_{ij}\in[-4.90,+4.90]$）在长序列发生 $O(1/N)$ 弥散 |
+| `B1 / B2 / B3 / R3 C1` 结构核查 | `B1` 1mm 网格令 `10.5mm` 条留 9 列零空洞且 `GlobalPool` 抹除 $z$；`B2/B3` `dz` 压缩 `63.9:1` 且正交 X/Y 条 `common=[0,0]` | 三大主干均存在物理/数学编码硬伤；`R2` 仅 `4–12` passes 欠收敛且缺乏对称增强与正确 $y$-$z$ 谱仪矢高特征 |
+| `S5 / R3 G2` 规则追踪评估 | `s5/objects.py` 丢弃 `width>0.5mm`/`n>64` 簇，段纯度 `2.0%–5.4%`；`G2` 同 `trackID` 召回 `10.15%–27.53%` | $1.43\,X_0/\text{层}$ 钨靶簇射中启发式硬连线难以兼顾纯度与覆盖，**决定终止 `v2 R4` 作为分类前置门槛** |
 
-BA为balanced accuracy；pp为百分点。R1/R2/R3使用新Tune40k开发集，表中τ效率均在该开发集1% FPR处评价；它们与S6独立test分别解释。三seed数值为单模型指标均值；R2/R3为seed42，事件区间不代表训练seed总体波动。与合作组原研究完全匹配后的净增益仍未测量，已完成的同类方法对照及差异见[08](v2/08_r1_collaboration.md)。
+---
 
-主要不足有五项：局部窗口和投影降采样可能压缩短轨信息；显式跨层测量关系不足；旧对象重建fake较多；训练饱和、容量及更大数据收益尚未形成闭环；整体NLL/AUC与低背景τ目标不完全一致。各项的代码证据、已排除的故障和待检验假设见[01](v2/01_evidence_review.md)。目前没有证据可以据此判定探测器的四类信息上限。
-
-## 类别和模型选择
-
-三类为`CC νe / CC νμ / NC`，训练时排除τ，评价时单列τ污染。四类为`CC νe / CC νμ / CC ντ / NC`，同时在相同非τ事件上报告条件三类结果。共同输入、事件、曝光和计算分别控制，不能用删除真τ后的指标上涨替代三类重训。
-
-τ先保留flat4，与`tau gate + conditional3`、条件`τ→e/μ/had`辅助头比较。更多类别由合并四类或τ工作点的实测收益决定。had1/had3须先核对最终charged-prong、可见轨与当前direct-daughter计数的关系。拓扑采用OPERA的分道思路，未分辨衰变点的事件另检验NOMAD式可见运动学；两条路径都先验证PINPOINT实际可测量的输入。
-
-晋级标准在R1前冻结：三类候选ΔBA3至少2 pp并满足NLL和逐类质量约束；τ候选在1%背景工作点Δ效率至少1 pp、区间支持正效应且共同三类非劣。小幅正结果照实保留，不自动扩大实验矩阵。具体概率、损失、分母、先验和统计设计见[02](v2/02_tasks_and_evaluation.md)。
-
-## 执行顺序与决策
+## v3 阶段依赖图与执行顺序（`V0–V5`）
 
 ```mermaid
 flowchart TD
-    A[Accepted data and response] --> B[Matched three and four class baselines]
-    B --> C[Data and training controls]
-    C --> D[Local retention and cross-plane relations]
-    D --> E[Track and vertex reconstruction]
-    E --> F[Tau specialists and conditional decay heads]
-    D --> G[Targeted pretraining and robustness]
-    F --> H[Locked independent confirmation]
-    G --> H
-    B --> I[Three-class collaboration deliverable]
+    V0["V0 (W3-01~03):<br/>c_obs 可观测域 + Truth侧车<br/>+ R2/S6 零训练分域校准回放"] --> V1["V1 (W3-04~05):<br/>B1++ 无空洞纵向z对齐主干<br/>+ y-z磁谱仪矢高 + 镜像增强"]
+    V0 --> V2["V2 (W3-06~07):<br/>PinpointFormer 微米簇矩<br/>+ 正交条Nexus + 顶点锚定极坐标<br/>+ ScaledQKNormAttention"]
+    V2 --> V3["V3 (W3-08~09):<br/>FASERCal 同方差4头 (7类/Charm/顶点/运动学)<br/>+ ATLAS GN2 簇起源/同径迹亲和 + 全Rel"]
+    V1 --> V4["V4 (W3-10):<br/>双机制拓扑×NOMAD运动学融合<br/>+ DRO Partial-AUC尾部微调 (+条件SSL)"]
+    V3 --> V4
+    V4 --> V5["V5 (W3-11~12):<br/>Top<=2 扩三随机种子<br/>Cal-A/Cut-B/Confirm200k 一次解封交付"]
 ```
 
-| Stage | Question and minimum work | Status / exit |
-| --- | --- | --- |
-| R0 | 新分区、真实模型元数据、缓存等价和真实小样本学习 | 已完成；Cal-A40k/Cut-B160k/Confirm200k继续封存 |
-| R1 | HGB、ResNet、ParticleNet、ParT、分层模型，同输入T3/T4和必要三seed/等时控制 | 已完成41模型；452项验收通过，四类继续研究 |
-| R2 | 100k×4、100k×12、300k×4及有依据的正则化/顺序控制 | 已完成8模型和末轮控制；198项验收通过，D2为后续参考 |
-| R3 | M0采样、G0相位、G1首层stride4→2、G2压缩前原生几何关系 | 已完成六模型、四套评价和72配对，249项验收通过；无新质量晋级，保留D2，条件扩展均已决定 |
-| R4 | 多候选tracking、vertex、tracker spacing/方向，raw/object双路径 | 先验收candidate recall和整轨fake–efficiency–coverage，再测全事件分类增量 |
-| R5 | flat4、分解头、条件decay与τhad specialist；charm等背景 | 以inclusiveτ工作点和共同三类质量决定继续四类、细分或近期三类交付 |
-| R6 | 胜出encoder上的一种定向局部监督/预训练，加held-out响应条件 | 与同总计算监督控制比较；实际下游或鲁棒性收益成立后再扩展 |
-| R7 | 冻结至多两个主比较，Cal-A校准、Cut-B阈值、新Confirm和系统变化 | 新独立确认、物理条件、完整概率/工作点、代码与成本交付 |
+| 阶段 | 工单 | 核心产出与科学问题 | 状态 / 退出条件 |
+| --- | --- | --- | --- |
+| **V0** | `W3-01`–`W3-03` | 纯观测域 $c_{\text{obs}}$ (`D_pix/D_scint/D_edge`)、$E_\nu\le 2.3\,\text{TeV}$ 对齐切片、事件/簇侧车、既有 `D2`/`S6` 零训练回放 | **立即可启动**；先验证分域似然比 $S_\tau$ 消除 `0.35%` 阈值反转 |
+| **V1** | `W3-04`–`W3-05` | `B1++` 强基线与合作组 `Wu (2026)` M1 口径对齐，充足收敛 `16–24 passes` | 32-event 健康拟合通过；`large_scintillator` `BA3 >= 73%` |
+| **V2** | `W3-06`–`W3-07` | `PinpointFormer` 单因素验证顶点锚定极坐标与可学习温度 `QK-Norm` | **探针 A**（消除高占据度塌陷）+ **探针 B**（微米比 `1mm` 量化 `ΔBA4 >= +2 pp`） |
+| **V3** | `W3-08`–`W3-09` | 同方差 4 头（7 类 + Charm + 顶点 + 运动学）+ `GN2` 簇起源/亲和 + 全探测器 `Rel` | `Pixel-centered` 域 `BA4` 超 `B0` $\ge +4\text{–}6\,\text{pp}$；Charm 误报显著下降 |
+| **V4** | `W3-10` | 纯闪烁体区 NOMAD 运动学 + `B1++`×`PinpointFormer-GN2` 集成 + 5-pass DRO Partial-AUC | 全域校准后 $\tau$ 效率 `@1% FPR >= 12%`（较 D2 翻倍）且三类非劣 |
+| **V5** | `W3-11`–`W3-12` | 三随机种子稳定性 + 解封 `Cal-A40k -> Cut-B160k -> Confirm200k` 交付多域 Profile-Likelihood 显著性 | 新独立确认完整交付、英文图表、代码与可复现包归档 |
 
-R4–R6由前序证据触发，不要求先完成全部候选才能交付三类结果。未建立学习、对象覆盖或下游收益的分支先定位原因；有效负结果也形成明确决策。完整最小矩阵、实施工单、触发与停止条件见[04](v2/04_execution_plan.md)，当前科学判断集中在[09](v2/09_decisions_and_handoff.md)。
+---
 
-R3完整结论和R4–R7最小工单见[10](v2/10_r3_results_and_next_steps.md)，最终阶段报告见[stage306](../workbook/2026-11-15_stage306_r3_final_results.md)，机器结果和执行记录分别见[r3_results.json](v2/r3_results.json)与[r3_execution.json](v2/r3_execution.json)。六模型最终健康、七权重独立probe、四套统计独立复核和23张英文PNG/PDF均完成。新增材料特征已按G4源码修正：silicon header的10使用μm，换算为0.010 mm；W/scintillator厚度使用mm。修正后的五项真实学习检查全部通过，结论来自修复后的正式训练；单位修正及学习读回见[stage289](../workbook/2026-11-15_stage289_r3_material_units_and_readability.md)与[stage290](../workbook/2026-11-15_stage290_roadmap_synthesis_and_corrected_learning.md)。当前三臂native比较不是完整2×2，移除global同时减少容量，不能据此判定几何信息无用。
+## 阅读导航与资产位置
 
-## 资源与阅读入口
-
-**以预计完成时间选择资源，HTCondor和Kubeflow并用，接受异构GPU、共享设备及MIG。**不为同型号或整卡等待。并发数由真实吞吐、CPU/RAM、显存和完整validation峰值决定；同allocation共享一次输入staging，各模型独立checkpoint。当前LCG108构建包含SM75起的内核，T4用FP32，A100/H100可用BF16；不同精度需保留必要匹配控制。V100的既有失败属于软件构建兼容性问题。
-
-R1/R2/R3终态batch成本分别45.708889/7.475833/18.094167异构device-hours；R3另计223.338333 allocated CPU core-hours，39条allocation全部终态。R0已记录上界加三批累计72.363744 h，原80 h规划名义余量7.636256 h，完整交互开销未测量。后续先做R4 CPU小批次，再按实测安排有依据的GPU比较，保留R7确认资源。跨GPU/MIG的device-hours只用于记账，不等同于相同计算量。CERN flavor、配额、提交及恢复见[07](v2/07_resources_and_operations.md)与[归档Kubeflow说明](archive/2026-11-14_v1/08_kubeflow.md)。
-
-| Document | Content |
+| 文档 / 资产 | 用途与内容 |
 | --- | --- |
-| [01 证据审查](v2/01_evidence_review.md) | 改进幅度、资料对照、系统性不足与假设 |
-| [02 任务与评价](v2/02_tasks_and_evaluation.md) | T3/T4/条件分道、分区、先验、尾部统计与晋级 |
-| [03 模型和物理设计](v2/03_models_and_physics.md) | 几何关系、raw/object融合、τ、方向与定向预训练 |
-| [04 执行计划](v2/04_execution_plan.md) | R0–R7矩阵、依赖、实施工单和交付 |
-| [05 文献](v2/05_literature.md) | 本地与联网来源、采用理由和适用条件 |
-| [06 工作记录索引](v2/06_workbook_index.md) | 全部阶段记录入口 |
-| [07 计算资源](v2/07_resources_and_operations.md) | Condor/Kubeflow、混合GPU、共享与成本 |
-| [08 合作组三类对照](v2/08_r1_collaboration.md) | 已测共同域结果、原研究差异与复现所缺输入 |
-| [09 当前决策](v2/09_decisions_and_handoff.md) | 当前结论、下一批优先级与条件分流 |
-| [10 R3完整结果与下一步](v2/10_r3_results_and_next_steps.md) | 六模型终态、条件扩展决定与R4–R7最小工单 |
-| [实验规格](v2/experiment_plan.json) | 可解析研究合同；各阶段runner使用对应具体配置 |
-
-S6旧独立结论以[stage236](../workbook/2026-11-14_stage236_s6_final_results.md)为准，新开发比较以[R1 stage274](../workbook/2026-11-15_stage274_r1_final_results.md)、[R2 stage284](../workbook/2026-11-15_stage284_r2_final_results.md)和[R3 stage306](../workbook/2026-11-15_stage306_r3_final_results.md)为准。原`configs/`、`results/`、`tools/`路径继续服务历史结果；大型产物保留在仓库外的统一results目录。
+| **[v3 总导览与包结构](v3/README.md)** | 一页查看 `src/analysis/flavour/v3/` 设计边界、门禁总表与各模块位置 |
+| **[v3 01 取证与文献综述](v3/01_forensic_diagnosis_and_literature.md)** | 7 大代码/物理根因完整数学取证、`S4–S6` vs FASERCal 对照与文献落地映射 |
+| **[v3 02 问题重构与 V0 规范](v3/02_problem_formulation_and_domains.md)** | `c_obs` 16 维定义、4 个互斥可观测校准域、能谱控制、`truth_sidecar` 与分域校准 |
+| **[v3 03 B1++ 强基线规范](v3/03_b1pp_strong_baseline.md)** | 无空洞传感器二维阵、`y-z` 偏转矢高与反向外推特征、纵向 $z$ 对齐主干与镜像增强 |
+| **[v3 04 PinpointFormer 架构](v3/04_pinpointformer_architecture.md)** | 16 维亚毫米簇矩、`32×32` 微补丁、正交条立体交叉、可微顶点极坐标与 `ScaledQKNormAttention` |
+| **[v3 05 多任务与 ντ 发现优化](v3/05_multitask_gn2_and_tau_discovery.md)** | 同方差 4 头、`GN2` 簇起源/亲和头、自预测次级顶点摘要、NOMAD 变量与 DRO Partial-AUC |
+| **[v3 06 工单、探针与运维](v3/06_work_orders_probes_and_operations.md)** | `W3-01`–`W3-12` 分步命令/验收、两大物理诊断探针、反过度官僚化规范与 Condor/Kubeflow 调度 |
+| **[v3 机读规格合同](v3/experiment_plan_v3.json)** | 供后续自动化训练/评估脚本读取的 v3 参数契约 |
+| **冻结 `v2` 参考与 JSON 基线** | [R1 results](v2/r1_results.json)、[R2 results](v2/r2_results.json)、[R3 results](v2/r3_results.json)、[R3 总结](v2/10_r3_results_and_next_steps.md)（只读保留） |
