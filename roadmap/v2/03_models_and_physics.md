@@ -28,6 +28,8 @@ B0–B4基线已在R1实现，新增关系、对象及专家结构仍为待检�
 
 [stage256](../../workbook/2026-11-15_stage256_r1_sparse_muons_and_nine_model_conditions.md)实测：seed42的B1 T3相对B4，channel数<100的μ recall差为−24.24 pp，CI95[−25.76,−22.41]；该组对全域μ差贡献−6.79 pp。241个全空μ事件的正确差为0，损失来自有响应的稀疏事件。三seed重现程度仍待最终R1结果；occupancy与几何/接受度相关，当前未识别因果机制。
 
+[stage266](../../workbook/2026-11-15_stage266_r1_occupancy_three_seed_readback.md)已完成18模型三seed原始预测读回、1,980项核对：T3低occupancy μ差为−11.46/−24.24/−12.03 pp，均值−15.91 pp，对全域贡献−4.457 pp；T4 conditional同样三个seed均负。B1同结构compute−main T3在该域的μ差均正，平均+16.48 pp，e/NC却分别−10.19/−8.33 pp，不能宣布逐类问题修复。B1/B4 compute各用本族T4预算，跨族不是共同计算控制。点估计与seed SD见[读回结果](r1_occupancy_seeds.json)；没有新增事件或seed总体区间。训练/决策和压缩因素继续分开验证。
+
 B1实际输入是1mm双投影，ResNet累计stride32；它已包含八个channel totals、presence和独立tracker set分支。仅增加计数或presence不能作为新增几何信息的证据。R2先保留结构研究收敛，R3根据三seed结果安排以下最小控制：
 
 | Control | Change and question | Required measurement |

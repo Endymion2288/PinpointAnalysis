@@ -318,7 +318,8 @@
       "ranking_uncertainty": "r1_ranking_uncertainty.json",
       "collaboration_report": "08_r1_collaboration.md",
       "muon_decision_review": "r1_muon_decision_review.json",
-      "three_seed_compute_result": "r1_b1_three_seed_compute.json"
+      "three_seed_compute_result": "r1_b1_three_seed_compute.json",
+      "occupancy_seed_readback": "r1_occupancy_seeds.json"
     },
     {
       "id": "R2",
