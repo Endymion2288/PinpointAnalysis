@@ -117,6 +117,13 @@ def run(root):
         and all(v['temperature_argmax_identical'] for v in readout['models'].values()))
     score_review=read(root/'readout/independent_scores.json')
     check('independent_sklearn_score_review',score_review['status']=='complete' and not score_review['failed'])
+    if (root/'sampling/contract.json').exists():
+        sampling=read(root/'sampling/acceptance.json')
+        check('triggered_final_pass_sampling_control',sampling['status']=='complete'
+            and sampling['models']==3 and sampling['pairs']==8
+            and sampling['all_frozen_identities'] and sampling['same_prefix_events_batch_sizes_LR'])
+        check('sampling_replay_figures',all((root/'figures'/f'r2_sampling_replay.{suffix}').is_file()
+            for suffix in ['pdf','png']))
     decision=read(root/'decision.json')
     check('scientific_scaling_and_conditional_expansion_decision',decision['status']=='reviewed'
         and all(decision.get(k) for k in ['data_vs_repetition','convergence','capacity','tau_and_common_task',

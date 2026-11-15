@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "design_with_completed_R0_R1_and_running_R2_pending_R3_R7",
+  "status": "completed_R0_R1_R2_eight_models_with_triggered_sampling_control_running",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 and R1 complete; R2 fresh B1 D0/D1/D2 T3/T4 seed42 running in two heterogeneous MIG allocations; six exact sampler preflights, 300k data identities and PE checks, BF16 learning and midpass recovery gates passed; scientific R2 evaluation pending; Cal-A/Cut-B/Confirm sealed",
+  "implementation_status": "R2 prescribed8 models and16 checkpoint views/128 pairs complete; post-hoc grouped readout complete; mandatory same-prefix final-pass sampling control running after systematic last-pass bias; R2 scientific decision and acceptance pending; Cal-A/Cut-B/Confirm sealed",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -358,10 +358,10 @@
       ],
       "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
       "planned_device_hours": 18,
-      "status": "running_initial_six_models",
+      "status": "eight_models_complete_triggered_sampling_control_running",
       "execution_policy": "B1 fresh D0/D1/D2 matched BF16 recipe; four concurrent D0/D1 fits in Kubeflow H100 MIG3g47gb and two D2 fits in HTCondor H100 MIG2g24gb; conditional expansions follow measured curves and costs",
       "optimization_design": {
-        "status": "implemented_preflight_and_learning_gates_passed_scientific_fits_running",
+        "status": "fixed_exposure_fits_and_regularization_complete_order_effect_under_test",
         "fixed_within_family_task": [
           "input",
           "architecture",
@@ -398,7 +398,9 @@
       },
       "execution_record": "r2_execution.json",
       "progress_review": "r2_progress_review.json",
-      "next_decision_contract": "09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流"
+      "next_decision_contract": "09_decisions_and_handoff.md#3-当前批次完成r2并作一次有依据的分流",
+      "measured_result": "r2_regularization_review.json",
+      "progress_report": "../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md"
     },
     {
       "id": "R3",
@@ -622,12 +624,13 @@
     "R0_measured": "r0_results.json",
     "R0_workbook": "../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md",
     "operations": "07_resources_and_operations.md",
-    "latest_workbook": "../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md",
+    "latest_workbook": "../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md",
     "R1_measured": "r1_results.json",
     "R1_workbook": "../../workbook/2026-11-15_stage274_r1_final_results.md",
     "research_decisions": "09_decisions_and_handoff.md",
     "R2_progress": "r2_progress_review.json",
-    "additional_tau_sources": "source_update_stage278.json"
+    "additional_tau_sources": "source_update_stage278.json",
+    "R2_regularization": "r2_regularization_review.json"
   },
   "work_item_status": {
     "W01": "complete",
@@ -640,5 +643,5 @@
     "W08": "complete_R1_method_and_domain_comparison;strict_original_replication_inputs_pending"
   },
   "last_updated": "2026-11-15",
-  "latest_evidence_stage": 278
+  "latest_evidence_stage": 283
 }

@@ -1,5 +1,5 @@
 {
-  "status": "five_models_complete_three_training_not_R2_complete",
+  "status": "eight_models_complete_mandatory_sampling_replay_running_not_R2_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2",
   "contracts": "configs/r2/campaign.json",
   "measured_preflight": [
@@ -178,7 +178,7 @@
         "b1_d2_t3_s42",
         "b1_d2_t4_s42"
       ],
-      "status_at_snapshot": "running"
+      "status_at_snapshot": "complete"
     },
     {
       "name": "r2_d1wd_c1",
@@ -190,7 +190,7 @@
       "models": [
         "b1_d1wd_t3_s42"
       ],
-      "status_at_snapshot": "running"
+      "status_at_snapshot": "complete"
     },
     {
       "name": "pinpoint-r2-d1wd-t4-k4",
@@ -200,7 +200,7 @@
       "models": [
         "b1_d1wd_t4_s42"
       ],
-      "status_at_snapshot": "running"
+      "status_at_snapshot": "complete"
     }
   ],
   "gates": {
@@ -227,15 +227,13 @@
     "unit_tests_passed": 8
   },
   "pending": [
-    "fixed-budget endpoints and best-screen full40k Tune",
-    "400 paired block intervals and independent readback",
-    "fixed common Train gap",
-    "conditional D3/D4/width/native-family decision",
-    "allocation accounting and final R2 acceptance"
+    "conditional final-pass sampling replay and independent evaluation",
+    "evidence-based reference and R3/data/capacity decisions",
+    "all allocation terminal accounting, figures and complete R2 acceptance"
   ],
   "Cal_A_Cut_B_Confirm_payload_read": false,
-  "last_progress_UTC": "2026-11-15T12:31:41.637557+00:00",
-  "latest_stage_report": "../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md",
+  "last_progress_UTC": "2026-11-15T13:16:21.419459+00:00",
+  "latest_stage_report": "../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md",
   "intermediate_screen_progress": [
     {
       "name": "b1_d0_t3_s42",
@@ -343,39 +341,94 @@
   "completed_endpoint_summary": [
     {
       "name": "b1_d0_t3_s42",
+      "status": "complete",
       "BA3": 0.5665,
-      "NLL3": 0.8713217931394462,
-      "exposures": 300000,
-      "status": "complete"
+      "NLL3": 0.8713217931394454,
+      "exposures": 300000
     },
     {
       "name": "b1_d0_t4_s42",
+      "status": "complete",
       "BA3": 0.5653333333333334,
-      "NLL3": 0.8645861071669045,
+      "NLL3": 0.864586107166903,
       "exposures": 400000,
-      "status": "complete"
+      "BA4": 0.44784999999999997,
+      "NLL4": 1.185567840583845,
+      "tau_eff_at_1pct_FPR": 0.0511
     },
     {
       "name": "b1_d1_t3_s42",
+      "status": "complete",
       "BA3": 0.5317,
-      "NLL3": 1.1437383627193058,
-      "exposures": 900000,
-      "status": "complete"
+      "NLL3": 1.1437383627193056,
+      "exposures": 900000
     },
     {
       "name": "b1_d1_t4_s42",
+      "status": "complete",
       "BA3": 0.5373,
-      "NLL3": 1.0151061500828715,
+      "NLL3": 1.0151061500828702,
       "exposures": 1200000,
-      "status": "complete"
+      "BA4": 0.4237,
+      "NLL4": 1.3371618730916606,
+      "tau_eff_at_1pct_FPR": 0.0438
     },
     {
       "name": "b1_d2_t3_s42",
+      "status": "complete",
       "BA3": 0.5709666666666667,
-      "NLL3": 0.8558668029296831,
-      "exposures": 900000,
-      "status": "complete"
+      "NLL3": 0.8558668029296828,
+      "exposures": 900000
+    },
+    {
+      "name": "b1_d2_t4_s42",
+      "status": "complete",
+      "BA3": 0.5712666666666667,
+      "NLL3": 0.8490304835167811,
+      "exposures": 1200000,
+      "BA4": 0.45765,
+      "NLL4": 1.1662331782395383,
+      "tau_eff_at_1pct_FPR": 0.0605
+    },
+    {
+      "name": "b1_d1wd_t3_s42",
+      "status": "complete",
+      "BA3": 0.5461333333333334,
+      "NLL3": 0.9627102523931469,
+      "exposures": 900000
+    },
+    {
+      "name": "b1_d1wd_t4_s42",
+      "status": "complete",
+      "BA3": 0.5497666666666666,
+      "NLL3": 0.915119484303838,
+      "exposures": 1200000,
+      "BA4": 0.436075,
+      "NLL4": 1.2260662648240297,
+      "tau_eff_at_1pct_FPR": 0.0529
     }
   ],
-  "latest_data_scaling_review": "r2_data_scaling_review.json"
+  "latest_data_scaling_review": "r2_data_scaling_review.json",
+  "latest_regularization_review": "r2_regularization_review.json",
+  "completed_evaluation": {
+    "models": 16,
+    "pairs": 128,
+    "replicates": 400,
+    "domains": 11,
+    "independent_points": 3976,
+    "independent_core_intervals": 1808,
+    "readout_endpoint_models": 8
+  },
+  "conditional_sampling_replay": {
+    "status": "running",
+    "backend": "Kubeflow",
+    "job": "pinpoint-r2-sampling-k5",
+    "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+    "prefix": "b1_d1wd_t4_s42 end of pass11",
+    "actual_tail_events_per_variant": 100000,
+    "actual_tail_updates_per_variant": 12513,
+    "same_events_batch_sizes_updates_LR": true,
+    "reason": "configs/r2/sampling_tail_reason.md",
+    "supplemental_to_original_eight_model_matrix": true
+  }
 }

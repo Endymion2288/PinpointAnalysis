@@ -56,6 +56,8 @@
 
 更多unique的三类结果已形成，见[stage282](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md)：D2−D1的BA3为+3.927 pp [3.381,4.439]，D2−D0则为+.447 pp [.078,.815]，后者低于2 pp实用门槛且e/NC recall下降。D2稀疏μ AUROC约.548，稀疏BA和固定FPR效率未出现已建立的净改善。全局bias仍未提高BA；温度改善NLL但不改变argmax。数据收益成立，尚不能自动决定1M或宣布容量/表示达到上限。D2 T4与两个D1WD终点仍是当前完整R2的必要依赖。
 
+[stage283](../../workbook/2026-11-15_stage283_r2_regularization_and_tail_order_control.md)随后完成全部8模型、16视图/128配对，独立points/core 3,976/1,808项通过。D2 T4共同BA3=57.1267%，τ效率6.05%；τ相对D0增加.940 pp [.419,1.566]，仍低于1 pp点值门槛。D1WD改善原D1但固定终点仍弱于D0；这两个模型的global bias分别恢复.78/1.25 pp BA，不能沿用D0/D2结果宣称所有readout无效。四个D1/D1WD模型的末轮e偏移与末段约3∶1的e/μ组成相符，已触发同prefix的末轮顺序控制；原八模型比较保留，完整R2须等待该诊断和科学判断。合同、完整实测及资源见[紧凑证据](r2_regularization_review.json)。
+
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |

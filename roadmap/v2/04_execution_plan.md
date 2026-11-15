@@ -122,6 +122,17 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 
 必须给 local/region/global 的独立可读 probe、真实训练梯度及重训 ablation，分别回答“有信息”“实际使用”“增加该分支是否有益”。多分支仍存在竞争时才启动 branch dropout/gradient modulation。随机 mask 的缺模态条件要符合实际推理，不用模拟 truth 决定 dropout。
 
+首个小批次按以下顺序执行，R2的最终参考和成本形成后再冻结配置；这里是实施计划，尚未训练R3模型。
+
+| Work | Controlled change | Required evidence / next decision |
+| --- | --- | --- |
+| G0: sampling phase | 在固定Train小样本上使用保留全部测量的padding改变卷积采样相位；记录绝对几何及边界支持 | 单点、短线和真实响应的中间激活/输出；PE及channel计数守恒。相位敏感只能提出表示假设，不当作分类净收益 |
+| G1: B1 local retention | 同一1mm投影、width16、seed42和输入；仅首层stride4→2，累计stride32→16，fresh训练 | 先32-event真实拟合、分支梯度与完整validation峰值，再同unique/曝光/LR对照。报告全域、逐类、低occupancy AP/AUROC和τ工作点及额外成本 |
+| G2: native relations | 使用本族匹配训练参照，只在压缩前加入跨窗口/跨plane测量边；保留bar区间和真实z spacing | 候选关系覆盖、边数尾部、传播可达性与实际训练增益。单列相对本族参照和相对B1的效果，不能将跨族差值解释为纯几何边收益 |
+| G3: replication / scale | 仅最有价值的一项干预补seeds17/2026，然后检验native/100μm/1mm | 依预定2 pp BA或1 pp τ工作点门槛及相应质量约束晋级；未达门槛保留精确效应，重排后续小批次 |
+
+G1首先保持R2实际数值配方和有效batch；若显存或执行方式迫使改变batch/precision，先补同设置的stride4参照。较慢结构的同曝光比较同时交付成本，需要同计算结论时另列同allocation的预算控制。保留原始概率，重复使用相同Tune开发合同；Cal-A/Cut-B/Confirm直到R7继续封存。新的低维readout、正则化或数据规模选择与几何改动分别配对。
+
 ### R4：重建对象
 
 候选图与 robust fit 先在 Train/Tune 的 10k 子样本上评价完整 fake–efficiency 曲线，比较旧 nearest-neighbor baseline。再选择一种 learned association/instance 方法。只有候选边 recall 和对象覆盖支持后续任务，才扩展全样本；未达标时保留 raw 分类，继续定位拥挤、散射、缺层或 label-quality 原因。

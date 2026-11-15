@@ -106,6 +106,8 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 
 <a id="m8"></a>**M8. I. Loshchilov, F. Hutter, Decoupled Weight Decay Regularization.** ICLR2019；[arXiv:1711.05101](https://arxiv.org/abs/1711.05101)。2026-11-15在线读取摘要，HTTP200、43,412bytes，访问记录及HTML保存在`R2/audit/literature_stage280/`。文章明确区分Adam的L2 penalty和decoupled weight decay，并给出image classification泛化证据。当前已使用AdamW，若完整R2参考表现出Train改善而Tune退化，后续只改变其decoupled衰减强度，保持LR、数据和曝光固定；论文没有替PINPOINT确定最佳系数，单个对照也不构成完整HPO。
 
+<a id="m9"></a>**M9. K. Mishchenko, A. Khaled, P. Richtárik, Random Reshuffling: Simple Analysis with Vast Improvements.** [arXiv:2006.05988](https://arxiv.org/abs/2006.05988)。2026-11-15读取官方摘要，HTTP200、43,602bytes，记录位于`R2/audit/literature_stage283/`。有限样本gradient-descent中reshuffling与顺序采样的差异支持把训练次序作为独立优化因素检查；其理论不直接推出本项目AdamW下的预期收益。stage283实测D1/D1WD末轮e偏移与末段类别组成相符后，使用同一第11轮prefix、同事件/batch大小/updates/LR的原顺序和全池随机排列重放，先检验条件末轮效应，再决定fresh训练控制。
+
 ## 5. 预训练的候选与优先级
 
 **S1. Multi-Scale Neighborhood Occupancy Masked Autoencoder for Self-Supervised Learning in LiDAR Point Clouds (NOMAE).** CVPR 2025；[正式页面](https://openaccess.thecvf.com/content/CVPR2025/html/Abdelsamad_Multi-Scale_Neighborhood_Occupancy_Masked_Autoencoder_for_Self-Supervised_Learning_in_LiDAR_CVPR_2025_paper.html)。保留多尺度正/负 occupancy query 的思想；孤立低 occupancy 结构可能是 PINPOINT 信号，不能照搬忽略 isolated points 的规则。
