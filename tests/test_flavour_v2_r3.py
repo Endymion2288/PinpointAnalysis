@@ -10,7 +10,7 @@ from analysis.flavour.s2.dataset import SpatialBatchSampler
 from analysis.flavour.v2.r2.train import OffsetSampler
 from analysis.flavour.v2.r3.sampling import GlobalBatchSampler
 from analysis.flavour.v2.r1.models import build_model as reference_model
-from analysis.flavour.v2.r3.models import build_model, relation_features
+from analysis.flavour.v2.r3.models import build_model, relation_features, PrelocalRelations
 from analysis.flavour.v2.r3.relations import candidate_edges
 from analysis.flavour.v2.r3.data import collate
 from analysis.flavour.v2.r3.phase import phase_forward
@@ -132,6 +132,24 @@ class NativeRelationTests(unittest.TestCase):
         self.assertTrue(batch['local_mask'].flatten()[target].all())
         self.assertTrue(torch.equal(batch['event_index'][source//32],batch['event_index'][target//32]))
         self.assertTrue((source>=64).any())
+
+    def test_modality_planes_bridge_interleaved_bar_planes(self):
+        nodes=self.nodes([[0,0,0],[0,0,100]]+[[0,0,z] for z in range(10,100,10)])
+        nodes[2:,12]=0;nodes[2:,13]=1
+        groups=np.arange(len(nodes))
+        old,_=candidate_edges(nodes,groups)
+        new,summary=candidate_edges(nodes,groups,plane_policy='modality_visible')
+        self.assertNotIn((0,1),set(map(tuple,old.T)))
+        self.assertIn((0,1),set(map(tuple,new.T)))
+        self.assertLessEqual(summary['maximum_out_degree'],14)
+
+    def test_nominal_material_depth_uses_real_slab_centers(self):
+        geometry={k:[0.,30.] for k in ['tungsten_Zpos','pixel_Zpos','scint_Zpos']}
+        geometry.update(tungsten_thickness=5.,silicon_thickness=10.,scint_thickness=5.)
+        layer=PrelocalRelations(16,(.0208,.0228),geometry)
+        depths=layer.nominal_depths(torch.tensor([-10.,0.,10.,30.,50.]))
+        torch.testing.assert_close(depths[:,0],torch.tensor([0.,2.5,5.,7.5,10.]))
+        torch.testing.assert_close(depths[:,1],torch.tensor([0.,5.,10.,15.,20.]))
 
     def test_native_control_is_exact_and_relations_receive_gradient(self):
         torch.set_num_threads(1)

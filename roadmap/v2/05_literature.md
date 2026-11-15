@@ -78,7 +78,7 @@ GravNet/GarNet 为不规则 geometry 的 learned neighborhoods 提供可复用�
 
 论文明确说明空间分辨率不足以分开τ衰变点，依靠可见末态运动学、候选隔离及相关性完成识别。它支持为无可分辨kink的事件保留运动学分支，不能证明PINPOINT已经有相同的能量/动量测量能力。先检验tracker和局部对象的方向/动量resolution–coverage、可见系统与接受度，再与raw分类做配对；当前弱event-level方向回归不满足这一前提。两篇全文、摘录和访问记录保存在`R2/audit/literature_stage278/`。
 
-<a id="m10"></a>**M10. R. Zhang, Making Convolutional Networks Shift-Invariant Again.** ICML2019；[arXiv:1904.11486](https://arxiv.org/abs/1904.11486)。2026-11-15读取官方摘要，HTTP200、41415 bytes，访问记录在`R3/audit/literature_stage286/retrieval.json`。
+<a id="m10"></a>**P5的R3追加读取记录（M10旧链接保留）。** 2026-11-15再次读取[arXiv:1904.11486](https://arxiv.org/abs/1904.11486)官方摘要，HTTP200、41415 bytes，记录在`R3/audit/literature_stage286/retrieval.json`；同一论文的正式引用见[P5](#p5)。
 
 论文将降采样引入的相位敏感与表示学习分开讨论，支持R3的保测量padding相位诊断及首层stride单因素控制。PINPOINT的绝对几何与边界仍保留；图像任务的anti-alias收益不能外推为探测器收益。是否增加滤波须另立对照，避免平滑削弱孤立响应。
 

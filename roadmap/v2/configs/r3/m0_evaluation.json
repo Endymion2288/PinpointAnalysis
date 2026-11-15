@@ -1,0 +1,27 @@
+{
+  "status": "frozen_before_M0_endpoint_access",
+  "experiments": [
+    {
+      "id": "b1_m0_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/experiments/b1_m0_t4_s42"
+    },
+    {
+      "id": "b1_d2_t4_s42",
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/experiments/b1_d2_t4_s42"
+    }
+  ],
+  "contrasts": [
+    {
+      "a": "b1_m0_t4_s42",
+      "b": "b1_d2_t4_s42",
+      "reason": "global_full_pass_mixing_only",
+      "domains": [
+        "all",
+        "pixel_centered",
+        "large_scintillator",
+        "occupancy_0_100"
+      ]
+    }
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--parallel',type=int,default=2)
     parser.add_argument('--real-fit',action='store_true')
     parser.add_argument('--smoke',action='store_true')
+    parser.add_argument('--train-module',default='analysis.flavour.v2.r2.train',
+        choices=['analysis.flavour.v2.r2.train','analysis.flavour.v2.r3.train'])
     args=parser.parse_args()
     configs=[json.loads(p.read_text()) for p in args.configs]
     if len({c['data_root'] for c in configs})!=1:
@@ -71,7 +73,7 @@ def main():
                 if previous and previous['status']=='complete':
                     record['completed'].append({'name':config['name'],'status':'previously_complete'})
                     continue
-                command=[sys.executable,'-m','analysis.flavour.v2.r2.train','--root',str(args.root),'--config',str(path)]
+                command=[sys.executable,'-m',args.train_module,'--root',str(args.root),'--config',str(path)]
                 if previous:command.append('--resume')
                 log=(args.root/'logs'/f"{config['name']}_{args.name}.log").open('w')
                 process=subprocess.Popen(command,env=env,stdout=log,stderr=subprocess.STDOUT)

@@ -34,7 +34,14 @@ class R3Dataset(R1Dataset):
         if self.config.get('build_relations',False):
             pitch=self.config.get('native_pixel_pitch_mm',0.)
             widths=(pitch,pitch) if pitch else (.0208,.0228)
-            item['relation_edges'],item['relation_candidate_summary']=candidate_edges(item['nodes'],item['groups'],widths)
+            item['relation_edges'],item['relation_candidate_summary']=candidate_edges(item['nodes'],item['groups'],widths,
+                plane_policy=self.config.get('relation_plane_policy','all_visible'))
+            edges=item['relation_edges'];groups=item['groups'];nodes=item['nodes']
+            cross=np.abs(nodes[edges[0],2]-nodes[edges[1],2])>1e-6
+            item['relation_candidate_summary'].update(
+                real_blocks=len(np.unique(groups[nodes[:,15]>.5])),
+                blocks_with_external_context=len(np.unique(groups[edges[0]])),
+                blocks_with_cross_plane_context=len(np.unique(groups[edges[0,cross]])))
         return item
 
     def cache_inputs(self):
@@ -54,6 +61,15 @@ class R3Dataset(R1Dataset):
             'array_bytes':sum(v.nbytes for item in items for v in item.values() if isinstance(v, np.ndarray)),
             'seconds':time.perf_counter()-started, 'scattered_exact_input_checks':min(32, len(self)),
             'storage':'allocation-local transformed arrays; no persistent EOS tensor cache'}
+        if self.config.get('build_relations',False):
+            summaries=[item['relation_candidate_summary'] for item in items]
+            totals={name:sum(s[name] for s in summaries) for name in [
+                'nodes','nodes_with_any_edge','nodes_with_cross_plane_edge','real_blocks',
+                'blocks_with_external_context','blocks_with_cross_plane_context']}
+            self.cache_audit['candidate_graph']={'totals':totals,
+                'maximum_out_degree':max(s['maximum_out_degree'] for s in summaries),
+                'edge_count_quantiles':np.quantile([item['relation_edges'].shape[1] for item in items],[0,.5,.95,.99,1]).tolist(),
+                'propagation':'one raw-node message layer followed by complete local-block pooling; block external/cross-plane context measures this actual path'}
         self.items = items
         self.native.close()
 

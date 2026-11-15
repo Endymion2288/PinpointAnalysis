@@ -53,8 +53,8 @@
       "lr_sum": 15.850313440877072
     }
   },
-  "unit_tests_passed": 33,
-  "latest_stage_report": "../../workbook/2026-11-15_stage286_r3_geometry_gates.md",
+  "unit_tests_passed": 35,
+  "latest_stage_report": "../../workbook/2026-11-15_stage287_r3_native_geometry_and_delivery_contracts.md",
   "pending": [
     "M0 fixed endpoint and independent paired evaluation;adopt/reject mixing",
     "G0 phase diagnosis",
@@ -113,14 +113,41 @@
     "parallel_operation_events_per_second": 41.21429426788975
   },
   "G2_diagnostics": {
-    "status": "submitted",
+    "status": "revised_prototype_running",
     "cluster": "1582994.0",
     "schedd": "bigbird20.cern.ch",
     "configurations": [
       "configs/r3/probe_b2_control_t4_s42.json",
       "configs/r3/probe_b2_relation_t4_s42.json"
     ],
-    "candidate_audit_cluster": "1582995.0",
-    "candidate_audit_events": 1024
+    "candidate_audit_cluster": "1582997.0",
+    "candidate_audit_events": 1024,
+    "superseded_allocations": [
+      "1582994.0_idle_cancelled",
+      "1582996.0_after_four_learning_gates"
+    ],
+    "current_allocation": "1582998.0",
+    "current_configs": [
+      "configs/r3/probe_b2_control_t4_s42_c3.json",
+      "configs/r3/probe_b2_relation_t4_s42_c3.json"
+    ],
+    "actual_revision2_learning": {
+      "T3_control_accuracy": 1.0,
+      "T4_control_accuracy": 1.0,
+      "T3_relation_accuracy": 1.0,
+      "T4_relation_accuracy": 1.0,
+      "T3_control_NLL": 0.006426918786019087,
+      "T4_control_NLL": 0.008801565505564213,
+      "T3_relation_NLL": 0.0047997538931667805,
+      "T4_relation_NLL": 0.018145566806197166
+    },
+    "candidate_audit_status": "running",
+    "kubeflow_rejected": "server Pod dry-run: namespace GPU units limit1 includes existing M0 MIG; no allocation created"
+  },
+  "delivery_implementation": {
+    "evaluation_contract": "configs/r3/m0_evaluation.json",
+    "readability_probes": "implemented; actual trained feature extraction pending",
+    "retrained_global_ablation": "implemented; formal fit pending",
+    "acceptance": "implemented; not run; missing formal results,decisions and terminal resources"
   }
 }

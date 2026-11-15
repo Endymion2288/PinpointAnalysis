@@ -18,8 +18,9 @@ import uproot
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 
-from analysis.flavour.inventory import write_json
+from analysis.flavour.inventory import COMPRESSION,write_json
 from analysis.flavour.v2.r3.data import R3Dataset
+from analysis.flavour.v2.r3.relations import candidate_edges
 
 
 def recorded_recall(nodes, edges, tids, hops=3):
@@ -52,6 +53,7 @@ def main():
     parser.add_argument('--config',type=Path,required=True)
     parser.add_argument('--attempt',required=True)
     parser.add_argument('--events',type=int,default=1024)
+    parser.add_argument('--compare-plane-policy',action='store_true')
     args=parser.parse_args()
     campaign=json.loads((args.root/'campaign.json').read_text())
     config={**json.loads(args.config.read_text()),'cache_training_inputs':False}
@@ -68,7 +70,9 @@ def main():
         plan=json.loads((Path(campaign['r1'])/'data/plan.json').read_text())
         geometry=data.geometry
         nx,ny=len(geometry['pixel_Xpos']),len(geometry['pixel_Ypos'])
-        audit=[]; opportunities=np.zeros(3,dtype='int64');success=opportunities.copy()
+        policies=['all_visible','modality_visible'] if args.compare_plane_policy else [config.get('relation_plane_policy','all_visible')]
+        audit=[];opportunities={p:np.zeros(3,dtype='int64') for p in policies}
+        success={p:np.zeros(3,dtype='int64') for p in policies}
         for (run,chunk),group in selected.groupby(['run','chunk'],sort=True):
             # Build from measured observations before opening any truth labels.
             examples={int(row.row):data[int(row.position)] for row in group.itertuples()}
@@ -98,36 +102,49 @@ def main():
                         if (ix>=len(unique)).any() or not np.array_equal(unique[ix],channel):
                             raise ValueError('native pixel/recorded-truth channel mismatch')
                         tids=np.full(len(nodes),-1,dtype='int64');tids[pixel]=hit['trackID'][first[ix]]
-                        eligible,found=recorded_recall(nodes,edges,tids)
-                        opportunities+=eligible;success+=found
-                        n=len(nodes);valid=nodes[:,15]>.5
-                        degree=np.bincount(edges[0],minlength=n)
-                        cross=np.abs(nodes[edges[0],2]-nodes[edges[1],2])>1e-6
-                        graph=coo_matrix((np.ones(edges.shape[1]),edges),shape=(n,n))
-                        components,labels=connected_components(graph,directed=False)
-                        sizes=np.bincount(labels[valid],minlength=components)
-                        audit.append({'run':int(run),'chunk':int(chunk),'row':int(row.row),'label':int(row.label),
-                            **item['relation_candidate_summary'],'edges':edges.shape[1],
-                            'pixel_nodes':len(pixel),'pixel_nodes_with_edge':int((degree[pixel]>0).sum()),
-                            'cross_plane_edges':int(cross.sum()),'largest_component_fraction':float(sizes.max(initial=0)/max(1,valid.sum())),
-                            **{f'eligible_pixel_gap{i+1}':int(v) for i,v in enumerate(eligible)},
-                            **{f'found_pixel_gap{i+1}':int(v) for i,v in enumerate(found)},
-                            'recorded_pixel_rows':len(ids),'duplicate_recorded_channels':len(ids)-len(unique)})
-            write_json(output/'progress.json',{'events':len(audit),'expected':len(selected)})
+                        for policy in policies:
+                            edges,counts=candidate_edges(nodes,item['groups'],plane_policy=policy)
+                            eligible,found=recorded_recall(nodes,edges,tids)
+                            opportunities[policy]+=eligible;success[policy]+=found
+                            n=len(nodes);valid=nodes[:,15]>.5
+                            degree=np.bincount(edges[0],minlength=n)
+                            cross=np.abs(nodes[edges[0],2]-nodes[edges[1],2])>1e-6
+                            graph=coo_matrix((np.ones(edges.shape[1]),edges),shape=(n,n))
+                            components,labels=connected_components(graph,directed=False)
+                            sizes=np.bincount(labels[valid],minlength=components)
+                            groups=item['groups'];blocks=np.unique(groups[valid])
+                            informed=np.unique(groups[edges[0]])
+                            cross_informed=np.unique(groups[edges[0,cross]])
+                            audit.append({'run':int(run),'chunk':int(chunk),'row':int(row.row),'label':int(row.label),'policy':policy,
+                                **counts,'edges':edges.shape[1],
+                                'real_blocks':len(blocks),'blocks_with_external_context':len(informed),
+                                'blocks_with_cross_plane_context':len(cross_informed),
+                                'pixel_nodes':len(pixel),'pixel_nodes_with_edge':int((degree[pixel]>0).sum()),
+                                'cross_plane_edges':int(cross.sum()),'largest_component_fraction':float(sizes.max(initial=0)/max(1,valid.sum())),
+                                **{f'eligible_pixel_gap{i+1}':int(v) for i,v in enumerate(eligible)},
+                                **{f'found_pixel_gap{i+1}':int(v) for i,v in enumerate(found)},
+                                'recorded_pixel_rows':len(ids),'duplicate_recorded_channels':len(ids)-len(unique)})
+            write_json(output/'progress.json',{'events':len(audit)//len(policies),'expected':len(selected)})
         data.native.close()
-    table=pd.DataFrame(audit);table.to_parquet(output/'events.parquet',index=False,compression='zstd')
-    summary={'status':'complete','events':len(table),'class_counts':table.label.value_counts().sort_index().tolist(),
+    complete=pd.DataFrame(audit);complete.to_parquet(output/'events.parquet',index=False,compression=COMPRESSION)
+    variants={}
+    for policy,table in complete.groupby('policy'):
+        variants[policy]={'events':len(table),'class_counts':table.label.value_counts().sort_index().tolist(),
         'edge_count_quantiles':dict(zip(['p0','p50','p95','p99','max'],np.quantile(table.edges,[0,.5,.95,.99,1]).tolist())),
         'node_weighted_any_edge_coverage':float(table.nodes_with_any_edge.sum()/table.nodes.sum()),
         'node_weighted_cross_plane_coverage':float(table.nodes_with_cross_plane_edge.sum()/table.nodes.sum()),
         'maximum_out_degree':int(table.maximum_out_degree.max()),
         'largest_component_fraction_mean':float(table.largest_component_fraction.mean()),
-        'recorded_first_contributor_recall':{'eligible_by_visible_pixel_gap':opportunities.tolist(),
-            'found_by_visible_pixel_gap':success.tolist(),
-            'recall':np.divide(success,opportunities,out=np.zeros(3),where=opportunities>0).tolist(),
+        'block_weighted_one_prelocal_layer_external_context_coverage':float(table.blocks_with_external_context.sum()/table.real_blocks.sum()),
+        'block_weighted_one_prelocal_layer_cross_plane_context_coverage':float(table.blocks_with_cross_plane_context.sum()/table.real_blocks.sum()),
+        'propagation_scope':'one raw-node relation layer followed by complete block pooling; graph weak components describe potential repeated propagation and do not claim this one-layer receptive field',
+        'recorded_first_contributor_recall':{'eligible_by_visible_pixel_gap':opportunities[policy].tolist(),
+            'found_by_visible_pixel_gap':success[policy].tolist(),
+            'recall':np.divide(success[policy],opportunities[policy],out=np.zeros(3),where=opportunities[policy]>0).tolist(),
             'definition':'source node x target visible pixel plane opportunity with at least one same recorded positive trackID; succeeds with any candidate link to that recorded track',
             'limitation':'PixelSD keeps first contributor; no complete per-channel ancestry or physical track efficiency is claimed'},
-        'duplicate_recorded_pixel_channels':int(table.duplicate_recorded_channels.sum()),
+        'duplicate_recorded_pixel_channels':int(table.duplicate_recorded_channels.sum())}
+    summary={'status':'complete','variants':variants,
         'scope':'fixed balanced Train-only sample; observation-only graph, truth read subsequently for audit',
         'config':config,'Cal_A_Cut_B_Confirm_payload_read':False}
     write_json(output/'results.json',summary)

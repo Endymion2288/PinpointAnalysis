@@ -1,5 +1,8 @@
 """Single-factor local-retention and measurement-relation adapters."""
 
+import json
+from pathlib import Path
+
 import torch
 from torch import nn
 
@@ -32,13 +35,30 @@ def relation_features(source, target, pixel_width_xy_mm):
 
 
 class PrelocalRelations(nn.Module):
-    def __init__(self, dim, pixel_width_xy_mm):
+    def __init__(self, dim, pixel_width_xy_mm, geometry=None):
         super().__init__()
         self.pixel_width_xy_mm=pixel_width_xy_mm
-        self.message=nn.Sequential(nn.Linear(36+len(RELATION_FEATURES),dim),nn.LayerNorm(dim),
+        self.materials=[]
+        if geometry is not None:
+            for centers,thickness,name in [('tungsten_Zpos','tungsten_thickness','tungsten'),
+                    ('pixel_Zpos','silicon_thickness','silicon'),('scint_Zpos','scint_thickness','scintillator')]:
+                z=torch.tensor(sorted(geometry[centers]),dtype=torch.float32)
+                width=float(geometry[thickness])
+                self.register_buffer(name+'_left',torch.cat([z-width/2,z.new_tensor([float('inf')])]))
+                self.register_buffer(name+'_right',z+width/2)
+                self.register_buffer(name+'_integral',torch.arange(len(z)+1,dtype=torch.float32)*width)
+                self.materials.append((name,width))
+        self.message=nn.Sequential(nn.Linear(36+len(RELATION_FEATURES)+len(self.materials),dim),nn.LayerNorm(dim),
             nn.SiLU(),nn.Linear(dim,dim))
         self.norm=nn.LayerNorm(dim)
         self.gate=nn.Parameter(torch.tensor(-2.))
+
+    def nominal_depths(self,z):
+        columns=[]
+        for name,width in self.materials:
+            index=torch.searchsorted(getattr(self,name+'_right'),z.contiguous())
+            columns.append(getattr(self,name+'_integral')[index]+(z-getattr(self,name+'_left')[index]).clamp(0,width))
+        return torch.stack(columns,-1)
 
     def forward(self, batch):
         raw=batch['nodes'].reshape(-1,18).float()
@@ -47,6 +67,11 @@ class PrelocalRelations(nn.Module):
         if len(source):
             a,b=raw[source],raw[target]
             relation=relation_features(a,b,self.pixel_width_xy_mm)
+            if self.materials:
+                depths=self.nominal_depths(raw[:,2]*3000.)
+                # Nominal axial slab depth, in mm. This is detector context;
+                # no momentum, track length, field propagation or X0 is inferred.
+                relation=torch.cat([relation,torch.log1p((depths[source]-depths[target]).abs())/5.],-1)
             difference=b-a
             # Finite bar intervals describe geometry, not a point measurement
             # along the unmeasured axis. Relative coordinates require two
@@ -73,7 +98,8 @@ class NativeRelationEncoder(nn.Module):
             # are identical across the native control and relation variant.
             with torch.random.fork_rng(devices=[]):
                 torch.manual_seed(config['seed']+6721)
-                self.relations=PrelocalRelations(config.get('dim',64),widths)
+                geometry=json.loads(Path(config['relation_geometry']).read_text()) if config.get('relation_material_context',False) else None
+                self.relations=PrelocalRelations(config.get('dim',64),widths,geometry)
         else:
             self.relations=None
 
@@ -91,6 +117,10 @@ def build_model(config):
             raise ValueError('R3 local-retention control requires ResNet first stride2 or4')
         model.backbone.stem[0].stride = (stride, stride)
     elif config['family'] in ['B2','B3'] and config.get('native_relation_adapter',False):
+        if config.get('native_global_ablation',False):
+            # Retrain the same observation/local relation paths with direct
+            # detector pooling, removing the inter-block message stack.
+            model.backbone.global_blocks=nn.ModuleList([])
         model.backbone=NativeRelationEncoder(model.backbone,config)
     return model
 
