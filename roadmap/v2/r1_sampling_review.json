@@ -1,0 +1,1291 @@
+{
+  "status": "complete",
+  "UTC": "2026-11-15T06:31:53.828689+00:00",
+  "scope": "metadata-only exact sampler replay for frozen 100k pool; no detector signals, model fitting or confirmation payload read",
+  "cases": [
+    {
+      "task": "T3",
+      "seed": 17,
+      "pass_number": 1,
+      "unique_rows": 75000,
+      "updates": 9386,
+      "exposures": 75000,
+      "single_class_batches": 22,
+      "single_class_fraction": 0.002343916471340294,
+      "batches_missing_some_class": 1569,
+      "window_class_fraction_min": [
+        0.2810327706057597,
+        0.0,
+        0.20244437480413663
+      ],
+      "window_class_fraction_max": [
+        0.6267281105990783,
+        0.4302726418050768,
+        0.39148681055155876
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.15112102575391767,
+        0.20250120258543308,
+        0.024539725992849197
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 3404,
+      "updates_in_windows_missing_class": 426,
+      "terminal_window": {
+        "events": 1941,
+        "counts": [
+          633,
+          675,
+          633
+        ],
+        "class_fraction": [
+          0.3261205564142195,
+          0.34775888717156106,
+          0.3261205564142195
+        ],
+        "updates": 243
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 100018,
+      "global_permutation_control_lag1": [
+        -0.009121468530415823,
+        -0.015228674437825633,
+        0.008190960372453357
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 17,
+      "pass_number": 2,
+      "unique_rows": 75000,
+      "updates": 9387,
+      "exposures": 75000,
+      "single_class_batches": 12,
+      "single_class_fraction": 0.001278363694471077,
+      "batches_missing_some_class": 1478,
+      "window_class_fraction_min": [
+        0.29582484725050917,
+        0.0,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.6085131894484412,
+        0.542319749216301,
+        0.39148681055155876
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.1324644443873287,
+        0.17479125744674337,
+        0.06905361396638453
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 2944,
+      "updates_in_windows_missing_class": 369,
+      "terminal_window": {
+        "events": 3933,
+        "counts": [
+          1256,
+          1366,
+          1311
+        ],
+        "class_fraction": [
+          0.319349097381134,
+          0.34731756928553265,
+          0.3333333333333333
+        ],
+        "updates": 492
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 100019,
+      "global_permutation_control_lag1": [
+        0.00947043477533269,
+        0.007803403052050391,
+        0.008222092446459087
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 17,
+      "pass_number": 3,
+      "unique_rows": 75000,
+      "updates": 9387,
+      "exposures": 75000,
+      "single_class_batches": 13,
+      "single_class_fraction": 0.0013848940023436667,
+      "batches_missing_some_class": 1466,
+      "window_class_fraction_min": [
+        0.2810327706057597,
+        0.1569917071775808,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.47698026880183014,
+        0.542319749216301,
+        0.3753723932472691
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.09962108456311516,
+        0.14239194750964806,
+        0.0723168319460701
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 1276,
+      "updates_in_windows_missing_class": 160,
+      "terminal_window": {
+        "events": 1901,
+        "counts": [
+          579,
+          680,
+          642
+        ],
+        "class_fraction": [
+          0.30457653866386114,
+          0.35770647027880065,
+          0.33771699105733827
+        ],
+        "updates": 238
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 100020,
+      "global_permutation_control_lag1": [
+        0.0027668508052647142,
+        -0.026094838226828156,
+        0.01031027505122691
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 17,
+      "pass_number": 4,
+      "unique_rows": 75000,
+      "updates": 9387,
+      "exposures": 75000,
+      "single_class_batches": 19,
+      "single_class_fraction": 0.0020240758495792053,
+      "batches_missing_some_class": 1413,
+      "window_class_fraction_min": [
+        0.2810327706057597,
+        0.1874486160591943,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.46642915867360923,
+        0.542319749216301,
+        0.3753723932472691
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.0718417977224156,
+        0.123177097490589,
+        0.05882737447545618
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 1276,
+      "updates_in_windows_missing_class": 160,
+      "terminal_window": {
+        "events": 2014,
+        "counts": [
+          566,
+          692,
+          756
+        ],
+        "class_fraction": [
+          0.2810327706057597,
+          0.3435948361469712,
+          0.3753723932472691
+        ],
+        "updates": 252
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 100021,
+      "global_permutation_control_lag1": [
+        -0.006048064482788123,
+        0.01574001746119997,
+        0.003609280900942756
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 42,
+      "pass_number": 1,
+      "unique_rows": 75000,
+      "updates": 9388,
+      "exposures": 75000,
+      "single_class_batches": 16,
+      "single_class_fraction": 0.0017043033659991478,
+      "batches_missing_some_class": 1331,
+      "window_class_fraction_min": [
+        0.2900882200311365,
+        0.1870643992194034,
+        0.20862177470106985
+      ],
+      "window_class_fraction_max": [
+        0.47275204359673023,
+        0.4329767149150409,
+        0.3624264141284873
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.08884471989791028,
+        0.1170533456370582,
+        0.018741097415986573
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 3802,
+        "counts": [
+          1156,
+          1382,
+          1264
+        ],
+        "class_fraction": [
+          0.30405049973698056,
+          0.3634928984744871,
+          0.33245660178853237
+        ],
+        "updates": 476
+      },
+      "maximum_deviation_from_uniform": 0.1462689341139299,
+      "global_permutation_control_seed": 100043,
+      "global_permutation_control_lag1": [
+        0.002258973667925147,
+        0.014550278854969997,
+        0.00030278197276088255
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 42,
+      "pass_number": 2,
+      "unique_rows": 75000,
+      "updates": 9387,
+      "exposures": 75000,
+      "single_class_batches": 28,
+      "single_class_fraction": 0.002982848620432513,
+      "batches_missing_some_class": 1678,
+      "window_class_fraction_min": [
+        0.29779989523310635,
+        0.0,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.6178025851938895,
+        0.542319749216301,
+        0.38219741480611047
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.16331760612175802,
+        0.22413077652106983,
+        0.06397598729265068
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 4680,
+      "updates_in_windows_missing_class": 586,
+      "terminal_window": {
+        "events": 3810,
+        "counts": [
+          1159,
+          1340,
+          1311
+        ],
+        "class_fraction": [
+          0.3041994750656168,
+          0.35170603674540685,
+          0.34409448818897637
+        ],
+        "updates": 477
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 100044,
+      "global_permutation_control_lag1": [
+        0.014020202447985805,
+        0.030959464894984613,
+        -0.004407363834591753
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 42,
+      "pass_number": 3,
+      "unique_rows": 75000,
+      "updates": 9386,
+      "exposures": 75000,
+      "single_class_batches": 12,
+      "single_class_fraction": 0.0012784998934583422,
+      "batches_missing_some_class": 1433,
+      "window_class_fraction_min": [
+        0.2900882200311365,
+        0.0,
+        0.20351758793969849
+      ],
+      "window_class_fraction_max": [
+        0.6085131894484412,
+        0.42336683417085424,
+        0.39148681055155876
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.11880640054507563,
+        0.1670690949280939,
+        0.01598098608497184
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 1668,
+      "updates_in_windows_missing_class": 209,
+      "terminal_window": {
+        "events": 1761,
+        "counts": [
+          580,
+          549,
+          632
+        ],
+        "class_fraction": [
+          0.32935831913685404,
+          0.31175468483816016,
+          0.3588869960249858
+        ],
+        "updates": 221
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 100045,
+      "global_permutation_control_lag1": [
+        -0.005809805481083113,
+        -0.010950474217118323,
+        0.01158748738554592
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 42,
+      "pass_number": 4,
+      "unique_rows": 75000,
+      "updates": 9389,
+      "exposures": 75000,
+      "single_class_batches": 22,
+      "single_class_fraction": 0.002343167536478858,
+      "batches_missing_some_class": 1306,
+      "window_class_fraction_min": [
+        0.2810327706057597,
+        0.15757749712973593,
+        0.2218070652173913
+      ],
+      "window_class_fraction_max": [
+        0.5431385869565217,
+        0.3653028692879915,
+        0.3753723932472691
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.13862985235920808,
+        0.11003484512301015,
+        0.033528888327527276
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 3917,
+        "counts": [
+          1245,
+          1356,
+          1316
+        ],
+        "class_fraction": [
+          0.3178452897625734,
+          0.34618330354863414,
+          0.33597140668879244
+        ],
+        "updates": 490
+      },
+      "maximum_deviation_from_uniform": 0.20980525362318841,
+      "global_permutation_control_seed": 100046,
+      "global_permutation_control_lag1": [
+        -0.009319879586656303,
+        -0.0033558519233400546,
+        -0.003200105431871416
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 2026,
+      "pass_number": 1,
+      "unique_rows": 75000,
+      "updates": 9387,
+      "exposures": 75000,
+      "single_class_batches": 13,
+      "single_class_fraction": 0.0013848940023436667,
+      "batches_missing_some_class": 1347,
+      "window_class_fraction_min": [
+        0.2810327706057597,
+        0.18120805369127516,
+        0.19529780564263322
+      ],
+      "window_class_fraction_max": [
+        0.4770469798657718,
+        0.42946708463949845,
+        0.3753723932472691
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.10216453534967761,
+        0.12357738592488782,
+        0.02303457280803218
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 1891,
+        "counts": [
+          578,
+          655,
+          658
+        ],
+        "class_fraction": [
+          0.3056583818085669,
+          0.3463775780010576,
+          0.34796404019037547
+        ],
+        "updates": 237
+      },
+      "maximum_deviation_from_uniform": 0.15212527964205816,
+      "global_permutation_control_seed": 102027,
+      "global_permutation_control_lag1": [
+        0.012082553887643819,
+        0.00039658759555084107,
+        -0.006061399070509081
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 2026,
+      "pass_number": 2,
+      "unique_rows": 75000,
+      "updates": 9385,
+      "exposures": 75000,
+      "single_class_batches": 11,
+      "single_class_fraction": 0.0011720831113478955,
+      "batches_missing_some_class": 1288,
+      "window_class_fraction_min": [
+        0.2900882200311365,
+        0.18412348401323042,
+        0.19757033248081843
+      ],
+      "window_class_fraction_max": [
+        0.4718853362734289,
+        0.43158567774936063,
+        0.36483454851374086
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.10499911122896934,
+        0.12671403791668717,
+        0.02824268776999417
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 3862,
+        "counts": [
+          1203,
+          1373,
+          1286
+        ],
+        "class_fraction": [
+          0.31149663386846194,
+          0.3555152770585189,
+          0.33298808907301913
+        ],
+        "updates": 483
+      },
+      "maximum_deviation_from_uniform": 0.1492098493201029,
+      "global_permutation_control_seed": 102028,
+      "global_permutation_control_lag1": [
+        0.008811641591959836,
+        0.01872047850965449,
+        -0.0011774711906892
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 2026,
+      "pass_number": 3,
+      "unique_rows": 75000,
+      "updates": 9386,
+      "exposures": 75000,
+      "single_class_batches": 9,
+      "single_class_fraction": 0.0009588749200937567,
+      "batches_missing_some_class": 1286,
+      "window_class_fraction_min": [
+        0.2917981072555205,
+        0.1806664830625172,
+        0.2297872340425532
+      ],
+      "window_class_fraction_max": [
+        0.474800330487469,
+        0.4206686930091185,
+        0.36203466894003977
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.09030786400901417,
+        0.12438751443594499,
+        0.03961373313851026
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 1852,
+        "counts": [
+          568,
+          656,
+          628
+        ],
+        "class_fraction": [
+          0.30669546436285094,
+          0.3542116630669546,
+          0.3390928725701944
+        ],
+        "updates": 232
+      },
+      "maximum_deviation_from_uniform": 0.1526668502708161,
+      "global_permutation_control_seed": 102029,
+      "global_permutation_control_lag1": [
+        0.02957368242644932,
+        -0.0032445082085654935,
+        -0.001250946877871963
+      ]
+    },
+    {
+      "task": "T3",
+      "seed": 2026,
+      "pass_number": 4,
+      "unique_rows": 75000,
+      "updates": 9386,
+      "exposures": 75000,
+      "single_class_batches": 17,
+      "single_class_fraction": 0.0018112081823993182,
+      "batches_missing_some_class": 1506,
+      "window_class_fraction_min": [
+        0.2965042102577188,
+        0.0,
+        0.1941808981657179
+      ],
+      "window_class_fraction_max": [
+        0.6500290191526408,
+        0.4361163820366856,
+        0.3686274509803922
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.13540592755395145,
+        0.16214873603073063,
+        0.02526640915822286
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 1723,
+      "updates_in_windows_missing_class": 216,
+      "terminal_window": {
+        "events": 3919,
+        "counts": [
+          1162,
+          1384,
+          1373
+        ],
+        "class_fraction": [
+          0.2965042102577188,
+          0.3531513141107425,
+          0.35034447563153864
+        ],
+        "updates": 490
+      },
+      "maximum_deviation_from_uniform": 0.3333333333333333,
+      "global_permutation_control_seed": 102030,
+      "global_permutation_control_lag1": [
+        0.0034445911226544308,
+        0.013973623894513279,
+        0.007571434424144449
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 17,
+      "pass_number": 1,
+      "unique_rows": 100000,
+      "updates": 12513,
+      "exposures": 100000,
+      "single_class_batches": 10,
+      "single_class_fraction": 0.0007991688643810437,
+      "batches_missing_some_class": 5460,
+      "window_class_fraction_min": [
+        0.20415346708905316,
+        0.0,
+        0.2086444007858546,
+        0.133388395622548
+      ],
+      "window_class_fraction_max": [
+        0.3895452918009309,
+        0.2835019615940533,
+        0.3963083604777416,
+        0.2970530451866405
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.06562710179299064,
+        0.1653968477925596,
+        0.10965602131011802,
+        0.03129755078393557
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 5556,
+      "updates_in_windows_missing_class": 696,
+      "terminal_window": {
+        "events": 2505,
+        "counts": [
+          633,
+          675,
+          564,
+          633
+        ],
+        "class_fraction": [
+          0.25269461077844313,
+          0.2694610778443114,
+          0.2251497005988024,
+          0.25269461077844313
+        ],
+        "updates": 314
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 100018,
+      "global_permutation_control_lag1": [
+        0.0008872823012388935,
+        -0.00578439275719133,
+        0.0007975792724722164,
+        0.008836005510807257
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 17,
+      "pass_number": 2,
+      "unique_rows": 100000,
+      "updates": 12512,
+      "exposures": 100000,
+      "single_class_batches": 8,
+      "single_class_fraction": 0.0006393861892583121,
+      "batches_missing_some_class": 5303,
+      "window_class_fraction_min": [
+        0.21343146274149033,
+        0.0,
+        0.2095006090133983,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.36735432500904813,
+        0.29235318969159274,
+        0.46092099704267003,
+        0.27827292533174885
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.06103331537060237,
+        0.1398587046856284,
+        0.1071171969387059,
+        0.06687280656432075
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 5130,
+      "updates_in_windows_missing_class": 642,
+      "terminal_window": {
+        "events": 5016,
+        "counts": [
+          1256,
+          1366,
+          1083,
+          1311
+        ],
+        "class_fraction": [
+          0.2503987240829346,
+          0.27232854864433814,
+          0.2159090909090909,
+          0.26136363636363635
+        ],
+        "updates": 627
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 100019,
+      "global_permutation_control_lag1": [
+        0.003936413859842826,
+        -0.005519678571939482,
+        0.004766607218050429,
+        -0.010524201598867073
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 17,
+      "pass_number": 3,
+      "unique_rows": 100000,
+      "updates": 12510,
+      "exposures": 100000,
+      "single_class_batches": 5,
+      "single_class_fraction": 0.0003996802557953637,
+      "batches_missing_some_class": 5230,
+      "window_class_fraction_min": [
+        0.2131422189128816,
+        0.09744408945686901,
+        0.2086444007858546,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.35777126099706746,
+        0.29235318969159274,
+        0.46092099704267003,
+        0.2970530451866405
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.04016277980908844,
+        0.11691791713466562,
+        0.10665911218763975,
+        0.06200200737058456
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 2367,
+      "updates_in_windows_missing_class": 296,
+      "terminal_window": {
+        "events": 2449,
+        "counts": [
+          579,
+          680,
+          548,
+          642
+        ],
+        "class_fraction": [
+          0.23642302980808494,
+          0.27766435279706003,
+          0.22376480195998366,
+          0.26214781543487137
+        ],
+        "updates": 307
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 100020,
+      "global_permutation_control_lag1": [
+        0.016628196258623804,
+        0.02381743420423154,
+        -0.013648946852795838,
+        -0.005829468642411446
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 17,
+      "pass_number": 4,
+      "unique_rows": 100000,
+      "updates": 12511,
+      "exposures": 100000,
+      "single_class_batches": 10,
+      "single_class_fraction": 0.0007992966189753017,
+      "batches_missing_some_class": 5154,
+      "window_class_fraction_min": [
+        0.19421070346684619,
+        0.12963671128107074,
+        0.2086444007858546,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.35696308724832215,
+        0.29235318969159274,
+        0.46092099704267003,
+        0.2970530451866405
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.04687450231453455,
+        0.09570529452782729,
+        0.101807047721138,
+        0.05819256710009364
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 2367,
+      "updates_in_windows_missing_class": 296,
+      "terminal_window": {
+        "events": 2545,
+        "counts": [
+          566,
+          692,
+          531,
+          756
+        ],
+        "class_fraction": [
+          0.2223968565815324,
+          0.2719056974459725,
+          0.2086444007858546,
+          0.2970530451866405
+        ],
+        "updates": 319
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 100021,
+      "global_permutation_control_lag1": [
+        -0.0012830935561867617,
+        -0.012759447188982479,
+        2.2502462137907097e-05,
+        -0.006520909541505157
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 42,
+      "pass_number": 1,
+      "unique_rows": 100000,
+      "updates": 12515,
+      "exposures": 100000,
+      "single_class_batches": 8,
+      "single_class_fraction": 0.0006392329204954055,
+      "batches_missing_some_class": 5050,
+      "window_class_fraction_min": [
+        0.2132841328413284,
+        0.1280290020988361,
+        0.2159090909090909,
+        0.1379238610359892
+      ],
+      "window_class_fraction_max": [
+        0.3644192396555346,
+        0.28624921988766383,
+        0.33888079883503225,
+        0.2826911559193452
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.036991202537071416,
+        0.09794608412172474,
+        0.04513761393146745,
+        0.019185389849913727
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 5420,
+        "counts": [
+          1156,
+          1382,
+          1618,
+          1264
+        ],
+        "class_fraction": [
+          0.2132841328413284,
+          0.25498154981549814,
+          0.2985239852398524,
+          0.23321033210332104
+        ],
+        "updates": 678
+      },
+      "maximum_deviation_from_uniform": 0.12197099790116389,
+      "global_permutation_control_seed": 100043,
+      "global_permutation_control_lag1": [
+        0.007191354973078298,
+        -0.006720038296847454,
+        0.0011335448927623827,
+        -0.000182253192229273
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 42,
+      "pass_number": 2,
+      "unique_rows": 100000,
+      "updates": 12513,
+      "exposures": 100000,
+      "single_class_batches": 9,
+      "single_class_fraction": 0.0007192519779429394,
+      "batches_missing_some_class": 5444,
+      "window_class_fraction_min": [
+        0.21277385815076122,
+        0.0,
+        0.2093206951026856,
+        0.0
+      ],
+      "window_class_fraction_max": [
+        0.3785097192224622,
+        0.29235318969159274,
+        0.46092099704267003,
+        0.2683725690890481
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.06374223803918021,
+        0.1628680679116765,
+        0.1056382687656678,
+        0.05957382760826458
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 7923,
+      "updates_in_windows_missing_class": 991,
+      "terminal_window": {
+        "events": 4885,
+        "counts": [
+          1159,
+          1340,
+          1075,
+          1311
+        ],
+        "class_fraction": [
+          0.23725690890481063,
+          0.2743091095189355,
+          0.22006141248720573,
+          0.2683725690890481
+        ],
+        "updates": 611
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 100044,
+      "global_permutation_control_lag1": [
+        0.0004748164860869187,
+        0.010959304412040155,
+        0.014750209907062396,
+        0.006590637955845831
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 42,
+      "pass_number": 3,
+      "unique_rows": 100000,
+      "updates": 12512,
+      "exposures": 100000,
+      "single_class_batches": 9,
+      "single_class_fraction": 0.000719309462915601,
+      "batches_missing_some_class": 5154,
+      "window_class_fraction_min": [
+        0.20415346708905316,
+        0.0,
+        0.2093206951026856,
+        0.13466334164588528
+      ],
+      "window_class_fraction_max": [
+        0.36735432500904813,
+        0.28559967910148415,
+        0.3963083604777416,
+        0.2755430410297667
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.06302471969754525,
+        0.125159154120816,
+        0.07404278931271728,
+        0.03270928003213206
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 2763,
+      "updates_in_windows_missing_class": 346,
+      "terminal_window": {
+        "events": 2841,
+        "counts": [
+          580,
+          549,
+          1080,
+          632
+        ],
+        "class_fraction": [
+          0.20415346708905316,
+          0.1932418162618796,
+          0.3801478352692714,
+          0.22245688137979586
+        ],
+        "updates": 356
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 100045,
+      "global_permutation_control_lag1": [
+        -0.01300250989918053,
+        0.008966671717608087,
+        3.427704132730874e-05,
+        0.0030329168279665322
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 42,
+      "pass_number": 4,
+      "unique_rows": 100000,
+      "updates": 12511,
+      "exposures": 100000,
+      "single_class_batches": 8,
+      "single_class_fraction": 0.0006394372951802414,
+      "batches_missing_some_class": 5017,
+      "window_class_fraction_min": [
+        0.20963277357446022,
+        0.10683012259194395,
+        0.2086444007858546,
+        0.12729044834307993
+      ],
+      "window_class_fraction_max": [
+        0.33080365829928,
+        0.2829920940604095,
+        0.42612085769980507,
+        0.2970530451866405
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.045924046021603195,
+        0.10690667355679496,
+        0.09923606759607337,
+        0.03189139597068561
+      ],
+      "nonempty_windows": 26,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 5008,
+        "counts": [
+          1245,
+          1356,
+          1091,
+          1316
+        ],
+        "class_fraction": [
+          0.24860223642172524,
+          0.2707667731629393,
+          0.21785143769968052,
+          0.26277955271565495
+        ],
+        "updates": 626
+      },
+      "maximum_deviation_from_uniform": 0.17612085769980507,
+      "global_permutation_control_seed": 100046,
+      "global_permutation_control_lag1": [
+        0.0066117101615009105,
+        -0.013014195495183994,
+        0.015445588492265974,
+        0.013176914685072458
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 2026,
+      "pass_number": 1,
+      "unique_rows": 100000,
+      "updates": 12511,
+      "exposures": 100000,
+      "single_class_batches": 6,
+      "single_class_fraction": 0.000479577971385181,
+      "batches_missing_some_class": 5080,
+      "window_class_fraction_min": [
+        0.21416682078786758,
+        0.12414304243098018,
+        0.2086444007858546,
+        0.12887877534133224
+      ],
+      "window_class_fraction_max": [
+        0.3679089026915114,
+        0.28559967910148415,
+        0.34009102192800994,
+        0.2970530451866405
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.04911051274148814,
+        0.10949729726266338,
+        0.0700854888320252,
+        0.028610786671105403
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 2428,
+        "counts": [
+          578,
+          655,
+          537,
+          658
+        ],
+        "class_fraction": [
+          0.23805601317957167,
+          0.2697693574958814,
+          0.22116968698517298,
+          0.27100494233937394
+        ],
+        "updates": 304
+      },
+      "maximum_deviation_from_uniform": 0.12585695756901982,
+      "global_permutation_control_seed": 102027,
+      "global_permutation_control_lag1": [
+        0.0019888735662303976,
+        0.007580180930971548,
+        -0.003721343037031071,
+        0.004167203318854965
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 2026,
+      "pass_number": 2,
+      "unique_rows": 100000,
+      "updates": 12513,
+      "exposures": 100000,
+      "single_class_batches": 9,
+      "single_class_fraction": 0.0007192519779429394,
+      "batches_missing_some_class": 5204,
+      "window_class_fraction_min": [
+        0.2152649129307151,
+        0.12414304243098018,
+        0.2093206951026856,
+        0.1293157564344005
+      ],
+      "window_class_fraction_max": [
+        0.3595883217811384,
+        0.28559967910148415,
+        0.3454697635488596,
+        0.2794619554306364
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.04774665424501331,
+        0.08747156106456501,
+        0.07862207496000337,
+        0.021682313474539475
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 4939,
+        "counts": [
+          1203,
+          1373,
+          1077,
+          1286
+        ],
+        "class_fraction": [
+          0.24357157319295403,
+          0.2779914962543025,
+          0.2180603361004252,
+          0.2603765944523183
+        ],
+        "updates": 618
+      },
+      "maximum_deviation_from_uniform": 0.12585695756901982,
+      "global_permutation_control_seed": 102028,
+      "global_permutation_control_lag1": [
+        -0.00814219308015259,
+        -0.001946310743112041,
+        0.004583606970645716,
+        -0.00031761472302338435
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 2026,
+      "pass_number": 3,
+      "unique_rows": 100000,
+      "updates": 12508,
+      "exposures": 100000,
+      "single_class_batches": 4,
+      "single_class_fraction": 0.0003197953309881676,
+      "batches_missing_some_class": 5028,
+      "window_class_fraction_min": [
+        0.21457564575645757,
+        0.12876607177125313,
+        0.2095006090133983,
+        0.15390879478827363
+      ],
+      "window_class_fraction_max": [
+        0.36348302761965,
+        0.2819533762057878,
+        0.3302117263843648,
+        0.27172131147540984
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.05489520648963355,
+        0.09458123372481038,
+        0.05288197991543533,
+        0.03664332916210305
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 0,
+      "updates_in_windows_missing_class": 0,
+      "terminal_window": {
+        "events": 2401,
+        "counts": [
+          568,
+          656,
+          549,
+          628
+        ],
+        "class_fraction": [
+          0.23656809662640566,
+          0.273219491878384,
+          0.22865472719700125,
+          0.2615576842982091
+        ],
+        "updates": 301
+      },
+      "maximum_deviation_from_uniform": 0.12123392822874687,
+      "global_permutation_control_seed": 102029,
+      "global_permutation_control_lag1": [
+        0.0021304508018769636,
+        0.004634868175638626,
+        0.0016529506998365598,
+        -0.010881639825389039
+      ]
+    },
+    {
+      "task": "T4",
+      "seed": 2026,
+      "pass_number": 4,
+      "unique_rows": 100000,
+      "updates": 12512,
+      "exposures": 100000,
+      "single_class_batches": 6,
+      "single_class_fraction": 0.00047953964194373403,
+      "batches_missing_some_class": 5250,
+      "window_class_fraction_min": [
+        0.19421070346684619,
+        0.0,
+        0.21431435445068164,
+        0.12807676261994158
+      ],
+      "window_class_fraction_max": [
+        0.48738033072236725,
+        0.287651230705048,
+        0.3801478352692714,
+        0.2752606255012029
+      ],
+      "lag1_batch_class_fraction_correlation": [
+        0.07479160694157044,
+        0.13618158756840554,
+        0.07793811662811721,
+        0.04017992982059029
+      ],
+      "nonempty_windows": 25,
+      "events_in_windows_missing_class": 2298,
+      "updates_in_windows_missing_class": 288,
+      "terminal_window": {
+        "events": 4988,
+        "counts": [
+          1162,
+          1384,
+          1069,
+          1373
+        ],
+        "class_fraction": [
+          0.2329591018444266,
+          0.2774659182036889,
+          0.21431435445068164,
+          0.2752606255012029
+        ],
+        "updates": 624
+      },
+      "maximum_deviation_from_uniform": 0.25,
+      "global_permutation_control_seed": 102030,
+      "global_permutation_control_lag1": [
+        -0.0028933816557276727,
+        -0.0026955386878310867,
+        -0.003193943575924822,
+        0.007735758219136222
+      ]
+    }
+  ],
+  "metadata_rows": 100000,
+  "single_class_fraction_range": [
+    0.0003197953309881676,
+    0.002982848620432513
+  ],
+  "maximum_absolute_lag1_correlation": 0.22413077652106983,
+  "hypothesis": "two-shard sampler could create class-segregated windows; measured R1 shards are explicitly mixed by prepare.assign_shards",
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "global_permutation_control_maximum_absolute_lag1": 0.030959464894984613,
+  "interpretation": "R1 shards deliberately mix classes, so class-segregated training is not supported; a small number of two-shard windows omit a class and batch class proportions show positive serial correlation; classification impact is unmeasured. Global label-order replay is a metadata control, not a detector I/O profile or model experiment.",
+  "all_case_exposure_totals_match_pool_size": true,
+  "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/audit/sampler_class_mix_stage271.json"
+}

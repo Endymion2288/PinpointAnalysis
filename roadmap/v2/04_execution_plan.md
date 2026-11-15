@@ -118,6 +118,8 @@ B1计算控制说明增加曝光与改变wall-based schedule可以显著改变�
 
 现有sampler保留各mixed-shard window的尾批，D1/D2同曝光不保证精确同updates。提交前从冻结清单实算U，保存batch-size分布、LR轨迹及`sum(lr)`；首批D2−D1明确称同曝光比较。精确fixed-update控制需要另列实际停止步数/曝光，不能同时宣称固定passes、固定曝光及精确同updates。每75k非τ Train曝光评价同一4k Tune screen，终点评价完整40k Tune并保留固定预算checkpoint；best-screen checkpoint单列。新D0还需匹配实际数值配方。详见[stage264](../../workbook/2026-11-15_stage264_r2_schedule_and_data_design.md)，300k的U与运行成本尚未测量。
 
+[stage271](../../workbook/2026-11-15_stage271_r1_sampling_metadata_review.md)的24种metadata重放不支持大段单类别训练：single-class batch均少于.3%。Two-shard窗口仍有类比例自相关，少数缺类窗口每轮最多覆盖T3的6.24%或T4的7.923%事件；分类影响未测量。R2 preflight同时保存窗口/滚动类频率及末段组成，检查head/logit偏移是否对应局部先验。只有出现模型证据，才追加一个同事件、曝光、batch-size序列、updates与LR的重混控制，先profile其I/O；不因metadata差异自动扩矩阵或重写R1结论。
+
 按R1实测wall线性估算，B1在1g MIG完成D1+D2的T3/T4四项约需10.087 device-hours；B2在H100 NVL约13.406 h，两族直接全跑约23.493 h，尚未含新D0、300k转换、失败及额外profile。它们来自不同设备，属于排期估算，不能当FLOP等效成本；300k的实际I/O和训练wall尚未测量。原R2的18 h规划应采用分批执行：完整R1后先冻结最有实际收益的一族（当前优先B1），完成D1/D2并补数值配方匹配的D0；第二族只在首批结果能回答一个尚未解决的问题且实际剩余预算支持时追加相应控制。保持现有可运行分区，不为达到估算吞吐等待整卡；实际设备较慢时缩小下一批矩阵并重新计时。
 
 ## 5. R3–R6：按证据逐步增加结构

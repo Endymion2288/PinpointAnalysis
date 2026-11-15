@@ -322,3 +322,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 268 | [r1 B3 compute complete](../../workbook/2026-11-15_stage268_r1_b3_compute_complete.md) |
 | 269 | [r1 B2 T4 seed17 readback](../../workbook/2026-11-15_stage269_r1_b2_t4_seed17_readback.md) |
 | 270 | [r1 B2 four-class seeds complete](../../workbook/2026-11-15_stage270_r1_b2_four_class_seeds_complete.md) |
+| 271 | [r1 sampling metadata review](../../workbook/2026-11-15_stage271_r1_sampling_metadata_review.md) |
