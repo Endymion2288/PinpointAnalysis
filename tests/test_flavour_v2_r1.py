@@ -125,6 +125,48 @@ class ObservationTests(unittest.TestCase):
 
 
 class MetricTests(unittest.TestCase):
+    def test_fpr_boundary_is_invariant_to_weight_normalization(self):
+        y = np.repeat(np.arange(4), 400)
+        target = y.copy()
+        target[y==2] = np.repeat(np.arange(4), 100)
+        target[np.flatnonzero(y!=2)[:12]] = 2
+        p = np.full((len(y), 4), .05)
+        p[np.arange(len(y)), target] = .85
+        raw = Metrics(y, p).report()['per_class'][2]
+        self.assertEqual(raw['eff_FPR_0.01'], .25)
+        for scale in [1/400, 1e-4, 1e-9, 1000.]:
+            with self.subTest(scale=scale):
+                weighted = Metrics(y, p).report(np.full(len(y), scale))['per_class'][2]
+                self.assertAlmostEqual(weighted['eff_FPR_0.01'], .25)
+                self.assertAlmostEqual(weighted['actual_FPR_0.01'], .01)
+                self.assertEqual(weighted['threshold_FPR_0.01'], raw['threshold_FPR_0.01'])
+
+    def test_condition_interaction_cancels_shared_event_fluctuations(self):
+        from analysis.flavour.v2.r1.evaluate import scalar_summary, SCALARS
+        from analysis.flavour.v2.r1.stress_evaluate import model_condition_contrasts
+        y = np.arange(48) % 4
+        rng = np.random.default_rng(42)
+        weights = rng.integers(1, 4, (32, len(y)))
+        caches = []
+        for signal in [.7, .4]:
+            current = {}
+            for condition in ['nominal', 'noise']:
+                p = np.full((len(y), 4), (1-signal)/3)
+                target = y.copy()
+                if condition=='noise':
+                    target[:12] = (target[:12]+1) % 4
+                p[np.arange(len(y)), target] = signal
+                frame = pd.DataFrame({'label': y, **{f'p{c}': p[:, c] for c in range(4)}})
+                compute = scalar_summary(frame)
+                current[condition] = compute(), np.asarray([compute(w) for w in weights])
+            caches.append(current)
+        ba = SCALARS.index('BA3')
+        effect = caches[0]['noise'][1][:, ba]-caches[0]['nominal'][1][:, ba]
+        self.assertGreater(effect.std(), .005)
+        result = model_condition_contrasts(*caches)['noise']['condition_shift_a_minus_b']['BA3']
+        self.assertEqual(result['difference_a_minus_b'], 0.)
+        self.assertEqual(result['95pct'], [0., 0.])
+
     def test_condition_keeps_nominal_tau_threshold(self):
         from analysis.flavour.v2.r1.stress_evaluate import frozen_points
         from analysis.flavour.v2.r1.metrics import quick_report

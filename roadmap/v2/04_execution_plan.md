@@ -6,6 +6,8 @@
 
 本文件与 [experiment_plan.json](experiment_plan.json) 记录研究合同及执行状态。W01–W03由`analysis.flavour.v2`实现并完成HTCondor验证，见[stage238](../../workbook/2026-11-14_stage238_r0_partitions_and_pipeline.md)与[r0_results.json](r0_results.json)；W04–W06已开始实现与验证，W08待实际完整结果。R1入口位于`analysis.flavour.v2.r1`，本JSON不能直接交给旧训练CLI。已有accepted samples、response参数和路径工具继续复用。阶段编号使用R0–R7，与已完成的旧S0–S6区分。
 
+25/55条条件路径的实际配对及工作点修复见[stage250](../../workbook/2026-11-15_stage250_r1_condition_interactions_and_operating_point_repair.md)：MAE相对Scratch的noise退化多3.00 pp，CI95[−5.20,−0.92]；相关中期400次统计已修正浮点边界，主要BA/NLL结论不变。该描述性条件分析不修改冻结的架构排名。
+
 ## 1. 分阶段依赖与交付
 
 | Stage | Estimated window | Main experiment | Required deliverable / gate |

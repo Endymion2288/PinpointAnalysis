@@ -12,7 +12,7 @@ import pandas as pd
 from analysis.flavour.inventory import COMPRESSION, write_json
 from analysis.flavour.s3.metrics import bootstrap_weights
 from analysis.flavour.v2.partitions import KEY, FAMILY, equal_identity_rows
-from analysis.flavour.v2.r1.metrics import Metrics, three_from_four, three_targets
+from analysis.flavour.v2.r1.metrics import METRICS_REVISION, Metrics, three_from_four, three_targets
 
 
 def probability_columns(frame):
@@ -205,6 +205,7 @@ def main():
                 'BA3_sample_SD': float(group.BA3.std(ddof=1)), 'NLL3_mean': float(group.NLL3.mean())})
     table.to_csv(output/'model_domain_metrics.csv', index=False)
     write_json(output/'results.json', {'status': 'complete', 'models': reports, 'pairs': comparisons,
+        'metrics_revision': METRICS_REVISION,
         'mean_seed_pairs': mean_seed_pairs,
         'seed_spread': spread, 'bootstrap': design, 'replicates': args.replicates,
         'benchmark_prior': {'T3': [1/3]*3, 'T4': [.25]*4},

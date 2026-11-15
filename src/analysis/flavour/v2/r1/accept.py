@@ -9,6 +9,7 @@ import pandas as pd
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.v2.partitions import KEY, equal_identity_rows
+from analysis.flavour.v2.r1.metrics import METRICS_REVISION
 
 
 def main():
@@ -89,6 +90,7 @@ def main():
             'validation_seconds': record['counters']['validation_seconds']})
     evaluation = json.loads((root/'evaluation/results.json').read_text())
     check('400_paired_physical_block_bootstraps', evaluation['status']=='complete' and evaluation['replicates']==400)
+    check('roundoff_aware_operating_points', evaluation.get('metrics_revision')==METRICS_REVISION)
     ranking = json.loads((root/'architecture_ranking.json').read_text())
     check('Scratch_ranking_and_expansion', set(ranking['expanded_families'])==
           {r['family'] for r in ranking['ranking'][:2]}|{'B4'})
@@ -104,6 +106,12 @@ def main():
             check(f'{family}_{task}_three_seeds', set(row.get('seeds', []))=={17,42,2026})
     stress = json.loads((root/'evaluation/stress_results.json').read_text())
     check('400_paired_stress_bootstraps', stress['status']=='complete' and stress['replicates']==400)
+    check('roundoff_aware_stress_operating_points', stress.get('metrics_revision')==METRICS_REVISION)
+    stress_pairs = [p for p in config['pairs'] if p.get('domain', 'all')=='all'
+                    and p['a'] in stress['models'] and p['b'] in stress['models']]
+    check('paired_stress_model_condition_contrasts', len(stress.get('paired_model_comparisons', []))==len(stress_pairs)
+          and all(set(p['conditions'])=={'nominal', 'noise', 'combined', 'remove_pixel', 'remove_tracker'}
+                  for p in stress.get('paired_model_comparisons', [])))
     for entry in [e for e in config['models'] if e.get('kind', 'main')=='main' and e['seed']==42]:
         report = stress['models'].get(entry['name'], {})
         check(entry['name']+'_all_stress_conditions', set(report.get('conditions', {}))==

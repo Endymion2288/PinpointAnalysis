@@ -3,6 +3,9 @@
 import numpy as np
 
 
+METRICS_REVISION = 'r1-tie-aware-float-boundary-2'
+
+
 class Metrics:
     def __init__(self, labels, probabilities):
         self.y = np.asarray(labels, dtype='int64')
@@ -23,6 +26,10 @@ class Metrics:
         matrix = np.bincount(self.y*self.k+self.pred, weights=w, minlength=self.k**2).reshape(self.k, self.k)
         support = matrix.sum(1)
         recall = np.divide(matrix.diagonal(), support, out=np.zeros(self.k), where=support>0)
+        # cumsum, bincount and sum use different accumulation orders. Permit
+        # their O(n*eps) roundoff at an exact FPR/purity boundary so uniform
+        # rescaling of weights cannot remove an otherwise admissible tie group.
+        relative_roundoff = 4*max(1, len(w))*np.finfo(np.float64).eps
         per_class = []
         for c, (order, ends, truth) in enumerate(self.orders):
             tp = np.cumsum(w[order]*truth)[ends]
@@ -35,7 +42,7 @@ class Metrics:
             if positive > 0 and negative > 0:
                 row['AUROC'] = float(np.dot(tp+np.r_[0., tp[:-1]], np.diff(np.r_[0., fp]))/(2*positive*negative))
                 for fpr in [.01, .001]:
-                    allowed = np.flatnonzero(fp <= fpr*negative)
+                    allowed = np.flatnonzero(fp <= fpr*negative*(1+relative_roundoff))
                     j = allowed[-1] if len(allowed) else None
                     row[f'eff_FPR_{fpr}'] = float(tp[j]/positive) if j is not None else 0.
                     row[f'actual_FPR_{fpr}'] = float(fp[j]/negative) if j is not None else 0.
@@ -43,7 +50,7 @@ class Metrics:
                     row[f'purity_FPR_{fpr}'] = float(tp[j]/(tp[j]+fp[j])) if j is not None and tp[j]+fp[j]>0 else None
                     row[f'coverage_FPR_{fpr}'] = float((tp[j]+fp[j])/w.sum()) if j is not None else 0.
                 for purity in [.8, .9]:
-                    eligible = np.flatnonzero((precision >= purity) & (tp+fp > 0))
+                    eligible = np.flatnonzero((precision >= purity*(1-relative_roundoff)) & (tp+fp > 0))
                     j = eligible[np.argmax(tp[eligible])] if len(eligible) else None
                     row[f'eff_purity_{purity}'] = float(tp[j]/positive) if j is not None else 0.
                     row[f'coverage_purity_{purity}'] = float((tp[j]+fp[j])/w.sum()) if j is not None else 0.

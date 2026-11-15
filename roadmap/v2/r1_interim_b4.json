@@ -18,7 +18,7 @@
     }
   },
   "replicates": 400,
-  "seconds": 48.233885452966206,
+  "seconds": 54.90588226006366,
   "scope": "development Tune; raw uncalibrated probabilities; descriptive score-selected operating points",
   "models": {
     "final_b4_t3_s42": {
@@ -474,7 +474,7 @@
           ]
         },
         "e_eff_purity_0.9": {
-          "difference_a_minus_b": -0.005799999999999722,
+          "difference_a_minus_b": -0.005899999999999711,
           "95pct": [
             -0.01870587935240237,
             0.010397228727249068
@@ -502,7 +502,7 @@
           ]
         },
         "NC_eff_purity_0.9": {
-          "difference_a_minus_b": 0.034700000000002895,
+          "difference_a_minus_b": 0.03440000000000288,
           "95pct": [
             0.019023097780612085,
             0.04940713766014137
@@ -604,7 +604,7 @@
           "difference_a_minus_b": -0.002150537634408478,
           "95pct": [
             -0.08432719897528111,
-            0.034786285738199994
+            0.03641142427223789
           ]
         },
         "mu_eff_FPR_0.01": {
@@ -1481,7 +1481,7 @@
           ]
         },
         "e_eff_purity_0.8": {
-          "difference_a_minus_b": 0.013499999999999346,
+          "difference_a_minus_b": 0.013299999999999368,
           "95pct": [
             0.0008860610211984485,
             0.025235046801796484
@@ -1495,7 +1495,7 @@
           ]
         },
         "mu_eff_purity_0.8": {
-          "difference_a_minus_b": -0.005899999999999711,
+          "difference_a_minus_b": -0.0059999999999997,
           "95pct": [
             -0.018791057686531748,
             0.009069707266657567
@@ -1516,7 +1516,7 @@
           ]
         },
         "NC_eff_purity_0.9": {
-          "difference_a_minus_b": 0.0312000000000027,
+          "difference_a_minus_b": 0.03080000000000268,
           "95pct": [
             0.003991188481016266,
             0.05163975025173988
@@ -1632,7 +1632,7 @@
           "difference_a_minus_b": 0.00285714285714303,
           "95pct": [
             -0.11411126054370234,
-            0.10670548388937208
+            0.10722935412691681
           ]
         },
         "NC_eff_FPR_0.01": {
@@ -1988,14 +1988,14 @@
           ]
         },
         "e_eff_purity_0.8": {
-          "difference_a_minus_b": 0.011599999999999444,
+          "difference_a_minus_b": 0.011399999999999466,
           "95pct": [
             -0.0020267120088543573,
             0.021928926197554995
           ]
         },
         "e_eff_purity_0.9": {
-          "difference_a_minus_b": -0.0003999999999999837,
+          "difference_a_minus_b": -0.0002999999999999947,
           "95pct": [
             -0.023045214332836527,
             0.016736340370689856
@@ -2023,7 +2023,7 @@
           ]
         },
         "NC_eff_purity_0.9": {
-          "difference_a_minus_b": -0.01600000000000122,
+          "difference_a_minus_b": -0.015700000000001206,
           "95pct": [
             -0.03947023934774971,
             0.006787059974096017
@@ -2125,7 +2125,7 @@
           "difference_a_minus_b": -0.0021505376344086308,
           "95pct": [
             -0.08336395437709472,
-            0.13190302575788232
+            0.13155932938285778
           ]
         },
         "mu_eff_FPR_0.01": {
@@ -2377,5 +2377,7 @@
       }
     }
   ],
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "metrics_revision": "r1-tie-aware-float-boundary-2",
+  "operating_point_correction": "stage250: exact-boundary comparisons tolerate O(n*eps) accumulation roundoff; source snapshot before correction is results_before_boundary_fix.json"
 }

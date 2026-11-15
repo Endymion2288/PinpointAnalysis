@@ -2,6 +2,8 @@
 
 **Tracker对共同三类识别有明确增益；目前三类重训与四类条件三类的整体BA接近，但逐类取舍不同。B4尚未显示对summary HGB的全面优势。**本阶段只完成seed42 B4及HGB的中期比较，R1完整架构排名、三seed和同计算控制继续运行。
 
+工作点数值更正：相关400次配对统计已在[stage250](2026-11-15_stage250_r1_condition_interactions_and_operating_point_repair.md)修复浮点边界后重算；BA/NLL等核心结果逐项不变，FPR/purity工作点以小型JSON修订值为准，原始统计保留于results。
+
 ## 阶段目标
 
 使用已完成的真实四pass模型，先回答tracker是否增加信息，以及移除τ训练是否改善共同三类。以物理块配对统计替代单点比较，为后续完整R1及R2提供可核对证据，不改变冻结的架构排名或seed扩展规则。

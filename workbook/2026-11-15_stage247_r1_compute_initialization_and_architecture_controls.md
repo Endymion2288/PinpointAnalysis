@@ -2,6 +2,8 @@
 
 **ParticleNet T4比当前B4有约1个百分点的共同三类BA增益；MAE改善四类BA和NLL，但两者的τ尾部提升尚未建立。**B4相同总wall预算下，T3多训练约98k次曝光后共同BA接近T4。本阶段是seed42的开发比较，完整架构排名和三seed结果仍在执行。
 
+工作点数值更正：相关400次配对统计已在[stage250](2026-11-15_stage250_r1_condition_interactions_and_operating_point_repair.md)修复浮点边界后重算；BA/NLL等核心结果逐项不变，FPR/purity工作点以小型JSON修订值为准，原始统计保留于results。
+
 ## 阶段目标
 
 区分训练资源、预训练初始化和架构差异对分类的影响，并检查实际wall预算是否对齐。使用新增完整分数开展400次物理块配对统计；补齐失败作业的设备成本归属，继续利用最早释放的资源。

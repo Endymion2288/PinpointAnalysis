@@ -14,7 +14,7 @@ from analysis.flavour.inventory import write_json
 
 
 def read_json(command):
-    value = subprocess.check_output(command, text=True)
+    value = subprocess.check_output(command, text=True, stderr=subprocess.PIPE)
     return json.loads(value) if value.strip() else []
 
 
@@ -126,8 +126,16 @@ def main():
                 'allocated_CPU_core_hours': seconds*ad.get('RequestCpus', row['cpus'])/3600,
                 'GPU': device, 'GPU_model_provenance': provenance})
     kube = [s for s in submissions if s.get('submitted') and s.get('backend')=='kubeflow']
-    all_pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-o', 'json'])['items'] if kube else []
-    all_jobs = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'jobs', '-o', 'json'])['items'] if kube else []
+    all_pods, all_jobs = [], []
+    kube_query = {'status': 'not_needed'}
+    if kube:
+        try:
+            all_pods = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'pods', '-o', 'json'])['items']
+            all_jobs = read_json(['kubectl', '--request-timeout=20s', '-n', 'xcheng', 'get', 'jobs', '-o', 'json'])['items']
+            kube_query = {'status': 'live'}
+        except subprocess.CalledProcessError as error:
+            kube_query = {'status': 'unavailable', 'returncode': error.returncode,
+                          'accounting': 'use saved Pod/Job evidence; nonterminal or missing evidence stays unresolved'}
     live_pod_names = {p['metadata']['name'] for p in all_pods}
     jobs = {j['metadata']['name']: j for j in all_jobs}
     for row in kube:
@@ -148,6 +156,10 @@ def main():
             job = json.loads(stored_job.read_text())
         write_json(args.root/'audit'/f"{row['name']}.pods.json", {'items': pods})
         write_json(args.root/'audit'/f"{row['name']}.job.json", job)
+        if not pods and not job:
+            allocations.append({'name': row['name'], 'backend': 'kubeflow', 'status': 'unresolved',
+                'flavor': row['flavor'], 'accounting': 'no live or cached Pod/Job evidence'})
+            continue
         if not pods and job:
             end = next((c.get('lastTransitionTime') for c in job.get('status', {}).get('conditions', [])
                         if c['type'] in ['Complete', 'Failed'] and c['status'] == 'True'), None)
@@ -181,7 +193,7 @@ def main():
                 'allocated_CPU_core_hours': seconds*cpu/3600,
                 'accounting': ('cached PodScheduled through terminal Job transition: conservative allocation upper bound'
                     if inferred_terminal else 'from PodScheduled through last app/sidecar termination; includes image/init/failures')})
-            if ended and phase in ['Succeeded', 'Failed']:
+            if ended and phase in ['Succeeded', 'Failed'] and pod['metadata']['name'] in live_pod_names:
                 response = subprocess.run(['kubectl', '--request-timeout=20s', '-n', 'xcheng',
                     'logs', pod['metadata']['name'], '-c', 'v2'], capture_output=True, text=True)
                 if response.returncode == 0:
@@ -192,6 +204,7 @@ def main():
         if row.get('device_hours'):
             by_device[row.get('GPU') or row.get('flavor') or 'unspecified_failed_or_early_attempt'] += row['device_hours']
     write_json(args.root/'resources.json', {'UTC': datetime.now(timezone.utc).isoformat(), 'allocations': allocations,
+        'Kubeflow_live_query': kube_query,
         'device_hours': sum(r.get('device_hours', 0.) for r in allocations),
         'allocated_CPU_core_hours': sum(r.get('allocated_CPU_core_hours', 0.) for r in allocations),
         'device_hours_by_model_or_partition': dict(by_device),

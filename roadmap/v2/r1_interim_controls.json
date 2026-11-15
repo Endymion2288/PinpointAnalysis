@@ -15,7 +15,7 @@
       "(3,)": 1535
     }
   },
-  "seconds": 52.45231278380379,
+  "seconds": 70.48847242211923,
   "pairs": [
     {
       "a": "compute_b4_t3_s42",
@@ -618,5 +618,7 @@
       }
     }
   ],
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "metrics_revision": "r1-tie-aware-float-boundary-2",
+  "operating_point_correction": "stage250: exact-boundary comparisons tolerate O(n*eps) accumulation roundoff; source snapshot before correction is results_before_boundary_fix.json"
 }

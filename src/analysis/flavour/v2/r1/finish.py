@@ -73,7 +73,7 @@ def advance(root):
     if not all(p.exists() and json.loads(p.read_text()).get('status')=='complete' for p in paths):
         return False
     submit(root, 'r1_stress_evaluate_a1', 'analysis.flavour.v2.r1.stress_evaluate',
-        ['--replicates', '400'], memory='12GB')
+        ['--replicates', '400'], cpus=1, memory='3GB')
     results = [root/'evaluation'/f'{name}.json' for name in ['results', 'stress_results']]
     if not all(p.exists() and json.loads(p.read_text()).get('status')=='complete' for p in results):
         return False
