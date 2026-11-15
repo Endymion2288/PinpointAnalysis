@@ -332,3 +332,4 @@ MAE/EMA/Rel、空响应、梯度/solver 修复与 matched-compute；主要结果
 | 278 | [研究结论整理、τ物理路线与R2稀疏μ进展读回](../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md) |
 | 279 | [R2 D0完整评价、独立排序与五折readout诊断](../../workbook/2026-11-15_stage279_r2_d0_readout_diagnostic.md) |
 | 280 | [R2同数据长曝光过拟合与单因素正则化对照](../../workbook/2026-11-15_stage280_r2_repetition_overfit_and_regularization.md) |
+| 281 | [R2四类正则化控制、收敛窗口与泛化诊断](../../workbook/2026-11-15_stage281_r2_four_class_regularization_and_diagnostics.md) |

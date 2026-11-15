@@ -146,6 +146,8 @@ def convergence(record, root):
     tail = history[-3:]
     nll = np.array([row['metrics'][task]['NLL'] for row in tail])
     ba = np.array([row['metrics']['T3']['BA'] for row in tail])
+    four = history[-4:]
+    changes = np.diff([row['metrics'][task]['NLL'] for row in four])
     gaps = {}
     for kind, key in [('endpoint', 'metrics'), ('best_screen', 'best_metrics')]:
         path = root/'gap'/record['config']['name']/kind/'report.json'
@@ -161,8 +163,11 @@ def convergence(record, root):
         'adjacent_tail_NLL_differences': np.diff(nll).tolist(),
         'last_window_NLL_change': float(nll[-1]-nll[-2]) if len(nll)>1 else None,
         'tail_all_NLL_changes_below_0p001': bool(len(tail)==3 and (np.abs(np.diff(nll))<.001).all()),
+        'last_four_screen_exposures': [h['non_tau_exposures'] for h in four],
+        'three_successive_window_NLL_changes': changes.tolist(),
+        'three_successive_NLL_changes_below_0p001': bool(len(changes)==3 and (np.abs(changes)<.001).all()),
         'tail_BA_range': float(np.ptp(ba)), 'Train_Tune_gaps': gaps,
-        'scope': 'three screen points give two differences; engineering plateau aid, no asymptotic convergence claim'}
+        'scope': 'four screen points give three successive changes; engineering plateau aid, no asymptotic convergence claim'}
 
 
 def run(root, partial=False):

@@ -52,6 +52,8 @@
 
 [stage280](../../workbook/2026-11-15_stage280_r2_repetition_overfit_and_regularization.md)记录随后形成的D1终点：T3/conditional T4 BA3为53.17%/53.73%，均低于D0；T3共同Train BA3=69.63%、NLL=.627而Tune NLL=1.144，支持过拟合分流。已启动fresh D1WD T3，只改变weight decay .01→.1；具体理由、精确预算和单任务执行见[合同](configs/r2/d1wd_reason.md)。该扩展与尚在运行的D2并行，原六模型主比较保留；正式交付扩为七模型、14视图、96配对。D3/1M/第二族仍未冻结。
 
+随后T4完整Train gap也显示过拟合，已按相同系数补上对应T4控制，见[stage281](../../workbook/2026-11-15_stage281_r2_four_class_regularization_and_diagnostics.md)。当前实际矩阵为8模型、16视图、128配对；上一段七模型为当时的启动次序。正式图新增Train/Tune gap及稀疏μ排序，收敛摘要用四个screen点计算三个连续窗口变化。D1WD两项控制仍在运行，尚未形成最终正则化结论。
+
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |

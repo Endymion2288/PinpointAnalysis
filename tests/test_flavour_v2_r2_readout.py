@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -7,10 +9,19 @@ from scipy.special import softmax
 from analysis.flavour.v2.r1.metrics import Metrics
 from analysis.flavour.v2.r2.evaluate import independent_ranking
 from analysis.flavour.v2.r2.accept import learning_gate_matches
-from analysis.flavour.v2.r2.readout import crossfit, grouped_folds
+from analysis.flavour.v2.r2.readout import convergence, crossfit, grouped_folds
 
 
 class ReadoutDiagnosticTests(unittest.TestCase):
+    def test_three_stable_points_do_not_establish_three_stable_window_changes(self):
+        history = [{'non_tau_exposures': (i+1)*75000,
+            'metrics': {'T3': {'NLL': loss, 'BA': .5}}} for i, loss in enumerate([1., .9, .8998, .8997])]
+        record = {'config': {'task': 'T3', 'name': 'example'}, 'history': history}
+        with tempfile.TemporaryDirectory() as folder:
+            summary = convergence(record, Path(folder))
+        self.assertTrue(summary['tail_all_NLL_changes_below_0p001'])
+        self.assertFalse(summary['three_successive_NLL_changes_below_0p001'])
+
     def test_capacity_control_cannot_reuse_narrow_architecture_fit_gate(self):
         recipe = {'family': 'B1', 'task': 'T4', 'precision': 'BF16_encoder_FP32_head',
             'cnn_width': 16, 'cnn_variant': 'resnet'}

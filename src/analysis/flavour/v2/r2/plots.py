@@ -46,6 +46,21 @@ def readout_figures(root, partial):
     axes[0,0].legend(fontsize=8)
     fig.suptitle('Five grouped folds on Tune; development diagnostic; sparse = occupancy < 100',fontsize=12)
     save(fig,root/'figures','r2_readout_diagnostic_partial' if partial else 'r2_readout_diagnostic')
+    fig,axes=plt.subplots(1,2,figsize=(12,4.5))
+    for ax,metric,scale in [(axes[0],'BA',100.),(axes[1],'NLL',1.)]:
+        train,tune=[],[]
+        for name in names:
+            gap=result['models'][name]['convergence']['Train_Tune_gaps'].get('endpoint',{}).get('T3',{})
+            train.append(gap.get(metric,{}).get('Train',np.nan)*scale)
+            tune.append(gap.get(metric,{}).get('Tune',np.nan)*scale)
+        ax.plot(x,train,'o-',label='Common Train sample (eval mode)')
+        ax.plot(x,tune,'s--',label='Complete Tune')
+        ax.set_xticks(x,[name.replace('b1_','').replace('_s42','').upper() for name in names],rotation=40)
+        ax.set(title='Common three-class '+metric,ylabel='Percent' if metric=='BA' else 'NLL')
+        ax.grid(alpha=.2)
+        ax.legend(fontsize=8)
+    fig.suptitle('Fixed-budget endpoints; Train sample has 1,000 events per class',fontsize=12)
+    save(fig,root/'figures','r2_train_tune_gap_partial' if partial else 'r2_train_tune_gap')
 
 
 def run(root,partial):
@@ -97,7 +112,7 @@ def run(root,partial):
     axes[1].bar(labels,primary.NLL3,color=[COLORS.get(d,'#555555') for d in primary.design])
     axes[1].set(title='Fixed-budget endpoints',ylabel='Common NLL3')
     pairs=[p for p in result['pairs'] if p['domain']=='all' and p['a'].endswith('_endpoint')
-        and p['reason'] in ['same_unique_extended_budget','same_exposures_more_unique']]
+        and p['reason'] in ['same_unique_extended_budget','same_exposures_more_unique','D1WD_minus_D1']]
     for i,pair in enumerate(pairs):
         value=pair['metrics']['BA3']
         point=value['difference_a_minus_b']*100
@@ -111,14 +126,19 @@ def run(root,partial):
     for ax in axes[:2]:ax.tick_params(axis='x',labelrotation=45)
     save(fig,folder,'r2_scaling_endpoints_partial' if partial else 'r2_scaling_endpoints')
     low=table[table.kind.eq('endpoint')&table.domain.eq('occupancy_0_100')].sort_values(['task','design'])
-    fig,axes=plt.subplots(1,2,figsize=(10,4))
+    fig,axes=plt.subplots(2,2,figsize=(11,7))
     for task,marker in [('T3','o'),('T4','s')]:
         rows=low[low.task.eq(task)]
-        axes[0].plot(rows.design,100*rows['T3_recall_1'],marker=marker,label=task)
-        axes[1].plot(rows.design,100*rows['BA3'],marker=marker,label=task)
-    axes[0].set(title='Low occupancy: muon argmax recall',ylabel='Recall (%)',xlabel='Scaling design')
-    axes[1].set(title='Low occupancy: common BA3',ylabel='Balanced accuracy (%)',xlabel='Scaling design')
-    for ax in axes:ax.grid(alpha=.22);ax.legend()
+        axes[0,0].plot(rows.design,100*rows['T3_recall_1'],marker=marker,label=task)
+        axes[0,1].plot(rows.design,100*rows['BA3'],marker=marker,label=task)
+        for ax,metric in [(axes[1,0],'AP'),(axes[1,1],'AUROC')]:
+            values=[result['models'][name]['occupancy_0_100']['T3']['per_class'][1][metric] for name in rows.name]
+            ax.plot(rows.design,values,marker=marker,label=task)
+    axes[0,0].set(title='Low occupancy: muon argmax recall',ylabel='Recall (%)',xlabel='Scaling design')
+    axes[0,1].set(title='Low occupancy: common BA3',ylabel='Balanced accuracy (%)',xlabel='Scaling design')
+    axes[1,0].set(title='Low occupancy: muon average precision',ylabel='Balanced-prior AP',xlabel='Scaling design')
+    axes[1,1].set(title='Low occupancy: muon ranking',ylabel='Balanced-prior AUROC',xlabel='Scaling design')
+    for ax in axes.flat:ax.grid(alpha=.22);ax.legend()
     save(fig,folder,'r2_low_occupancy_partial' if partial else 'r2_low_occupancy')
     readout_figures(root,partial)
 
