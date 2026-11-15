@@ -20,6 +20,7 @@ from sklearn.preprocessing import StandardScaler
 from analysis.flavour.inventory import COMPRESSION,write_json
 from analysis.flavour.v2.profile import device_batch,shutdown_loader
 from analysis.flavour.v2.r1.evaluate import domain_report
+from analysis.flavour.v2.r1.tasks import probabilities
 from analysis.flavour.v2.r2.evaluate import domains
 from analysis.flavour.v2.r2.train import subset
 from analysis.flavour.v2.r3.data import R3Dataset
@@ -79,16 +80,17 @@ class ReadableFeatures:
         for handle in self.handles:handle.remove()
 
 
-def extract(model,data,config):
+def extract(model,data,config,reference=None):
     loader,_,_=make_loader(data,config,False)
     hooks=ReadableFeatures(model)
-    arrays={};indices=[]
+    arrays={};indices=[];scores=[]
     model.eval()
     with torch.inference_mode():
         for batch in loader:
             gpu=device_batch(batch,'cuda:0')
             with torch.autocast('cuda',dtype=torch.bfloat16,enabled=config['bf16']):
-                model(gpu)
+                logits=model(gpu).float()
+            if reference is not None:scores.append(probabilities(logits,config['task']).cpu().numpy())
             features=hooks.collect(gpu)
             for name,value in features.items():arrays.setdefault(name,[]).append(value)
             indices.extend(batch['index'].tolist())
@@ -96,7 +98,23 @@ def extract(model,data,config):
     order=np.argsort(indices)
     if not np.array_equal(np.asarray(indices)[order],np.arange(len(data))):
         raise ValueError('probe features lost or duplicated selected events')
-    return {name:np.concatenate(values)[order] for name,values in arrays.items()}
+    readback=None
+    if reference is not None:
+        keys=['run','chunk','row']
+        columns=['p0','p1','p2','p3'] if config['task']=='T4' else ['p0','p1','p3']
+        reference=reference.set_index(keys).loc[pd.MultiIndex.from_frame(data.metadata[keys])]
+        values=np.concatenate(scores)[order]
+        expected=reference[columns].to_numpy()
+        delta=np.abs(values-expected)
+        maximum=float(delta.max())
+        agreement=float((values.argmax(1)==expected.argmax(1)).mean())
+        readback={'status':'complete' if np.isfinite(values).all() and maximum<.01 and agreement>.99 else 'failed',
+            'events':len(values),'GPU':torch.cuda.get_device_name(),
+            'maximum_probability_abs_difference':maximum,'mean_probability_abs_difference':float(delta.mean()),
+            'argmax_agreement':agreement,'minimum_argmax_agreement':.99,
+            'tolerance':.01,'scope':'all fixed Tune rows reforwarded from saved exposure weights and freshly prepared accepted inputs; numerical device/batch variation tolerance, not a scientific comparison'}
+        if readback['status']!='complete':raise ValueError('checkpoint/readout probability readback failed')
+    return {name:np.concatenate(values)[order] for name,values in arrays.items()},readback
 
 
 def main():
@@ -107,6 +125,8 @@ def main():
     parser.add_argument('--cache-workers',type=int,default=4)
     args=parser.parse_args()
     torch.set_num_threads(1)
+    torch.backends.cuda.matmul.allow_tf32=True
+    torch.backends.cudnn.allow_tf32=True
     campaign=json.loads((args.root/'campaign.json').read_text())
     selected=pd.read_parquet(Path(campaign['r2'])/'gap/train_screen.parquet')
     output=args.root/'probes'/args.attempt;output.mkdir(parents=True,exist_ok=False)
@@ -123,7 +143,8 @@ def main():
         # raw-node inputs and candidate cache with its relation counterpart.
         input_config={**config,'cache_workers':args.cache_workers,'cache_storage':'mmap'}
         if config['family'] in ['B2','B3']:input_config['build_relations']=True
-        signature={k:input_config.get(k) for k in ['family','task','image','native_pixel_pitch_mm','relation_plane_policy','drop_modality']}
+        signature={k:input_config.get(k) for k in ['family','task','image','sensor_row_image',
+            'native_pixel_pitch_mm','relation_plane_policy','drop_modality','architecture_revision']}
         if cached_signature!=signature:
             cached=None
             train=R3Dataset(Path(campaign['r1'])/'data','train',input_config,cache_dir=scratch.name)
@@ -137,7 +158,8 @@ def main():
         model=build_model(config).cuda()
         state=torch.load(experiment/'exposure.pt',map_location='cpu',weights_only=False)
         model.load_state_dict(state['model']);del state
-        x=extract(model,train,config);z=extract(model,tune,config)
+        x,_=extract(model,train,config)
+        z,readback=extract(model,tune,config,pd.read_parquet(experiment/'predictions.parquet'))
         y=train.metadata.label.to_numpy()
         reports={}
         for branch in x:
@@ -148,6 +170,7 @@ def main():
             reports[branch]={domain:domain_report(frame,mask) for domain,mask in domains(frame).items()}
             frame.to_parquet(output/(experiment.name+'_'+branch+'_predictions.parquet'),index=False,compression=COMPRESSION)
         models[experiment.name]={'config':config,'reports':reports,'Train_events':len(train),'Tune_events':len(tune),
+            'checkpoint_probability_readback':readback,
             'feature_dimensions':{name:value.shape[1] for name,value in x.items()}}
         del model;torch.cuda.empty_cache()
         write_json(output/'results.json',{'status':'running','models':models})

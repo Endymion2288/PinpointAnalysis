@@ -1,7 +1,7 @@
 {
-  "status": "M0_evaluated_G1_running_G2_three_allocated_preparing_inputs_C1_frozen_and_submitted_R3_not_complete",
+  "status": "M0_C1_evaluated_G1_G2_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T16:00:31.860405+00:00",
+  "UTC": "2026-11-15T16:34:00.696472+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -70,12 +70,11 @@
     "optimizer_Train_fixture_events": 24,
     "synthetic_validation_fixture_events": 8
   },
-  "unit_tests_passed": 40,
-  "latest_stage_report": "../../workbook/2026-11-15_stage292_r3_formal_launch_and_sensor_validation.md",
+  "unit_tests_passed": 41,
+  "latest_stage_report": "../../workbook/2026-11-15_stage294_r3_compact_results_and_matched_cost.md",
   "pending": [
     "G1 fixed-exposure endpoint and full Tune comparison against matched D2 stride4",
     "G2 formal control/relations/retrained-ablation endpoints and exact100k cached input coverage",
-    "C1 compact image100k x4 endpoint versus matched D0",
     "trained-model local/regional/global/tracker probes and gradient/ablation review",
     "evidence-triggered seed,resolution,anchor/fusion choices",
     "final scientific decisions,terminal resource accounting,figures and complete R3 acceptance"
@@ -484,7 +483,7 @@
     "terminal_cost": false
   },
   "G2_formal": {
-    "status": "three_allocations_running_shared_Train_Tune_mmap_preparation",
+    "status": "all_Train100k_and_Tune40k_mmap_complete_formal_training_started",
     "models": [
       "b2_g2_control_t4_s42",
       "b2_g2_relations_t4_s42",
@@ -551,7 +550,7 @@
     "scope": "Train10k128updates; corrected revision3, vectorized collation, in-memory inputs; full Tune gate provided separately; native mmap formal path recovered exactly"
   },
   "C1": {
-    "status": "all_pretraining_validation_complete_formal_submitted",
+    "status": "complete_evaluated_not_promoted_cost_candidate_retained",
     "cluster": "1583011.0",
     "config": "configs/r3/b1_c1_sensor_rows_t4_s42.json",
     "reference": "R2 b1_d0_t4_s42; same100k x4",
@@ -635,6 +634,52 @@
       "actual_Tune_used": false,
       "Cal_A_Cut_B_Confirm_payload_read": false
     },
-    "classification_gain_measured": false
+    "classification_gain_measured": true,
+    "scientific_result": {
+      "BA3": 0.5667,
+      "NLL3": 0.8617469458462124,
+      "tau_eff_1pct": 0.0484,
+      "paired_BA3": {
+        "difference_a_minus_b": 0.00136666666666585,
+        "95pct": [
+          -0.0021336090500376796,
+          0.005036198465951934
+        ]
+      },
+      "paired_e_recall": {
+        "difference_a_minus_b": -0.034200000000000674,
+        "95pct": [
+          -0.04031809777404792,
+          -0.02802540242017594
+        ]
+      },
+      "paired_mu_recall": {
+        "difference_a_minus_b": 0.036199999999998234,
+        "95pct": [
+          0.02958976399830977,
+          0.04299754176017404
+        ]
+      },
+      "paired_tau_eff_1pct": {
+        "difference_a_minus_b": -0.0027000000000001953,
+        "95pct": [
+          -0.0074157284546308684,
+          0.001932795005982716
+        ]
+      },
+      "adopt_current_recipe": false,
+      "matched_cost": {
+        "status": "complete",
+        "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/audit/profile_c1_cost_c1/results.json",
+        "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+        "matched_exposures_and_class_counts": true,
+        "training_throughput_ratio": 2.722996779727322,
+        "operation_throughput_ratio_including_preparation": 1.7469030374232382,
+        "peak_GPU_allocated_memory_ratio": 0.344416646527053,
+        "scope": "same allocation sequential Train10k,1024updates; operation includes preparation/process startup; independent restart variation not measured; not a full formal-training speedup measurement"
+      },
+      "checkpoint_readback_Tune_events": 40000,
+      "checkpoint_readback_max_probability_delta": 0.0
+    }
   }
 }

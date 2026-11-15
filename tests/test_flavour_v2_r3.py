@@ -24,6 +24,7 @@ from analysis.flavour.v2.r3.evaluate import configuration
 from analysis.flavour.v2.r3.sensor_rows import sensor_row_geometry, sensor_projection
 from analysis.flavour.v2.r1.data import projection
 from analysis.flavour.v2.r3.mapped_inputs import MappedItems,write_mapped_items
+from analysis.flavour.v2.r3.scientific_review import promotion_checks
 
 
 class GlobalOrderTests(unittest.TestCase):
@@ -200,6 +201,24 @@ class NativeRelationTests(unittest.TestCase):
 
 
 class DeliveryContractTests(unittest.TestCase):
+    def test_compensating_recalls_and_tau_common_task_loss_do_not_pass_promotion(self):
+        def metric(point,low,high):return {'difference_a_minus_b':point,'95pct':[low,high]}
+        values={'BA3':metric(.025,.021,.029),'NLL3':metric(-.02,-.03,-.01),
+            'recall_e':metric(.025,.020,.030),'recall_mu':metric(.025,.020,.030),
+            'recall_NC':metric(.025,.020,.030),'tau_eff_1pct':metric(.015,.011,.019),
+            'NLL4':metric(-.01,-.02,0)}
+        good=promotion_checks(values)
+        self.assertTrue(good['common_three_class']['passed'])
+        self.assertTrue(good['tau']['passed'])
+        # Positive aggregate BA does not compensate for a class-quality loss.
+        values['recall_e']=metric(-.0342,-.0403,-.0280)
+        self.assertFalse(promotion_checks(values)['common_three_class']['passed'])
+        # A positive tau working point cannot waive the common-task guard.
+        values['BA3']=metric(-.002,-.006,.002)
+        self.assertFalse(promotion_checks(values)['tau']['passed'])
+        values['BA3']=metric(.025,None,.03)
+        self.assertFalse(promotion_checks(values)['common_three_class']['passed'])
+
     def test_learning_gate_rejects_different_stride_and_relation_geometry(self):
         base={'family':'B1','task':'T4','precision':'BF16_encoder_FP32_head','cnn_width':16,
             'image':{'height':32,'width':32}}

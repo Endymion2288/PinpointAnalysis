@@ -7,8 +7,18 @@ from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
+
+
+def model_label(name):
+    name=name.removesuffix('_endpoint').removesuffix('_best_screen')
+    labels={'b1_m0_t4_s42':'M0 mixing','b1_g1_stride2_t4_s42':'G1 stride 2',
+        'b1_d2_t4_s42':'D2 stride 4','b1_d0_t4_s42':'D0 stride 4',
+        'b2_g2_control_t4_s42':'G2 control','b2_g2_relations_t4_s42':'G2 relations',
+        'b2_g2_global_ablation_t4_s42':'G2 no global','b1_c1_sensor_rows_t4_s42':'C1 sensor rows'}
+    return labels.get(name,name)
 
 
 def save(fig,folder,name):
@@ -70,13 +80,13 @@ def endpoint_figures(root,path):
     for ax,key,scale,title in [(axes[0],'BA3',100.,'Common three-class BA (%)'),
             (axes[1],'NLL3',1.,'Common three-class NLL'),(axes[2],'tau_eff_0.01',100.,'Tau efficiency at 1% FPR (%)')]:
         ax.bar(np.arange(len(selected)),selected[key]*scale)
-        ax.set(title=title,xticks=np.arange(len(selected)),xticklabels=[name.replace('_endpoint','') for name in selected.name])
-        ax.tick_params(axis='x',labelrotation=70);ax.grid(axis='y',alpha=.2)
+        ax.set(title=title,xticks=np.arange(len(selected)),xticklabels=[model_label(name) for name in selected.name])
+        ax.tick_params(axis='x',labelrotation=35);ax.grid(axis='y',alpha=.2)
     fig.suptitle('Fixed-exposure endpoints on development Tune; raw scores',fontsize=11)
     save(fig,folder,'r3_endpoints_'+path.parent.name)
     rows=[p for p in result['pairs'] if p['domain']=='all' and p['a'].endswith('_endpoint')]
     if rows:
-        fig,axes=plt.subplots(1,3,figsize=(13,4.7))
+        fig,axes=plt.subplots(1,3,figsize=(14,max(3.8,.65*len(rows)+1.5)))
         for ax,key,scale,title in [(axes[0],'BA3',100.,'Common BA difference (pp)'),
                 (axes[1],'NLL3',1.,'Common NLL difference'),(axes[2],'tau_eff_1pct',100.,'Tau efficiency difference (pp)')]:
             # Scalar keys follow the shared evaluation contract.
@@ -85,12 +95,53 @@ def endpoint_figures(root,path):
             for i,row in enumerate(rows):
                 item=row['metrics'][key];point=item['difference_a_minus_b'];bounds=item['95pct']
                 if point is None or any(v is None for v in bounds):continue
-                ax.vlines(i,bounds[0]*scale,bounds[1]*scale)
-                ax.plot(i,point*scale,'o')
-            ax.axhline(0,color='gray',lw=1)
-            ax.set(title=title,xticks=range(len(rows)),xticklabels=[p['reason'] for p in rows]);ax.tick_params(axis='x',labelrotation=70);ax.grid(axis='y',alpha=.2)
+                ax.hlines(i,bounds[0]*scale,bounds[1]*scale)
+                ax.plot(point*scale,i,'o')
+            ax.axvline(0,color='gray',lw=1)
+            ax.set(title=title,yticks=range(len(rows)),yticklabels=[model_label(p['a'])+'\nminus '+model_label(p['b']) for p in rows])
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+            ax.tick_params(axis='y',labelsize=8);ax.grid(axis='x',alpha=.2)
         fig.suptitle('Paired physical-block 95% intervals; development comparisons',fontsize=11)
         save(fig,folder,'r3_contrasts_'+path.parent.name)
+
+    # Per-class guards expose compensating changes hidden by a common BA.
+    for row in rows:
+        matching=[p for p in result['pairs'] if p['a']==row['a'] and p['b']==row['b']
+            and p['reason']==row['reason'] and p['domain'] in ['all','occupancy_0_100']]
+        fig,axes=plt.subplots(1,len(matching),figsize=(5.2*len(matching),3.8),squeeze=False)
+        for ax,pair in zip(axes[0],matching):
+            for i,key in enumerate(['recall_e','recall_mu','recall_NC']):
+                item=pair['metrics'][key];point=item['difference_a_minus_b'];bounds=item['95pct']
+                if point is None or any(v is None for v in bounds):continue
+                ax.hlines(i,100*bounds[0],100*bounds[1]);ax.plot(100*point,i,'o')
+            ax.axvline(0,color='gray',lw=1)
+            ax.axvline(-1,color='red',ls='--',lw=1,label='1 pp loss guard')
+            ax.set(xlabel='Recall difference (pp)',yticks=range(3),yticklabels=['Electron','Muon','NC'],
+                title='All Tune' if pair['domain']=='all' else 'Pixel occupancy 0–100')
+            ax.grid(axis='x',alpha=.2)
+        fig.suptitle(model_label(row['a'])+' minus '+model_label(row['b'])+
+            '\nFixed endpoints; paired block 95% intervals; red dashed: 1 pp recall-loss guard',fontsize=10)
+        save(fig,folder,'r3_class_guards_'+row['a'].removesuffix('_endpoint')+'_vs_'+row['b'].removesuffix('_endpoint'))
+
+
+def matched_cost(root,path):
+    (root/'figures').mkdir(exist_ok=True)
+    profile=json.loads(path.read_text());phases=profile['results']
+    if profile['status']!='complete' or len(phases)!=2 or any(p['concurrent_jobs']!=1 for p in phases):
+        raise ValueError('matched compact-image cost figure requires two sequential single-model phases')
+    workers=[p['workers'][0] for p in phases]
+    fig,axes=plt.subplots(1,3,figsize=(11.5,4))
+    labels=['Physical grid\nstride 4','Sensor rows\nstride 2']
+    for ax,values,title,unit in [
+            (axes[0],[w['events_per_train_second'] for w in workers],'Training throughput','Events / training second'),
+            (axes[1],[p['aggregate_operation_events_per_second'] for p in phases],'Including preparation','Events / operation second'),
+            (axes[2],[w['GPU_peak_MiB'] for w in workers],'GPU allocated peak','MiB')]:
+        bars=ax.bar(labels,values,color=['#4477aa','#228833'])
+        ax.bar_label(bars,fmt='%.1f',padding=3);ax.set(title=title,ylabel=unit)
+        ax.set_ylim(0,max(values)*1.2);ax.grid(axis='y',alpha=.2)
+    fig.suptitle(profile['GPU']+'; same Train10k, 1024 updates, batch 8, BF16\n'
+        'Sequential resource probe; classification quality assessed separately',fontsize=10)
+    save(fig,root/'figures','r3_compact_matched_cost')
 
 
 def main():
@@ -99,9 +150,11 @@ def main():
     parser.add_argument('--phase',type=Path)
     parser.add_argument('--profile',type=Path)
     parser.add_argument('--evaluations',type=Path,nargs='*',default=[])
+    parser.add_argument('--matched-cost',type=Path)
     args=parser.parse_args()
     if args.phase and args.profile:diagnostics(args.root,args.phase,args.profile)
     for path in args.evaluations:endpoint_figures(args.root,path)
+    if args.matched_cost:matched_cost(args.root,args.matched_cost)
 
 
 if __name__=='__main__':main()

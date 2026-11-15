@@ -37,6 +37,8 @@ def main():
     parser.add_argument('--cache-workers',type=int,default=4)
     parser.add_argument('--train-only',action='store_true',
         help='Measure independent-model concurrency without repeating full Tune; not a full-validation gate')
+    parser.add_argument('--sequential-only',action='store_true',
+        help='Compare models on the same allocation without a redundant concurrent phase')
     args=parser.parse_args()
     torch.set_num_threads(1)
     torch.zeros(1,device='cuda:0').sum().item()
@@ -73,7 +75,8 @@ def main():
         del common;gc.collect()
         write_json(output/'shared_inputs.json',shared_audit)
     results=[]
-    phases=[[i] for i in range(len(configs))]+[list(range(len(configs)))]
+    phases=[[i] for i in range(len(configs))]
+    if not args.sequential_only:phases.append(list(range(len(configs))))
     for phase,active in enumerate(phases):
         children=[]
         monitor=MemoryMonitor()
