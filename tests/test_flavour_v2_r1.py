@@ -125,6 +125,28 @@ class ObservationTests(unittest.TestCase):
 
 
 class MetricTests(unittest.TestCase):
+    def test_tau_prior_purity_uses_conditional_response_in_unequal_domain(self):
+        from analysis.flavour.v2.r1.evaluate import domain_report
+        y = np.repeat(np.arange(4), [100, 200, 40, 300])
+        selected = np.zeros(len(y), dtype=bool)
+        for label, accepted in enumerate([1, 2, 20, 3]):
+            selected[np.flatnonzero(y==label)[:accepted]] = True
+        tau = np.where(selected, .9, .1)
+        p = np.repeat(((1-tau)/3)[:, None], 4, axis=1)
+        p[:, 2] = tau
+        frame = pd.DataFrame({'label': y, **{f'p{c}': p[:, c] for c in range(4)}})
+        report = domain_report(frame, np.ones(len(y), dtype=bool))
+        row = report['T4_tau_prior_scenarios']['0.01']
+        self.assertEqual(row['raw_selected_original_labels'], [1, 2, 20, 3])
+        self.assertAlmostEqual(report['T4']['per_class'][2]['actual_FPR_0.01'], .01)
+        for prior in [.25, .01, .001]:
+            expected = prior*.5/(prior*.5+(1-prior)*.01)
+            self.assertAlmostEqual(row['prior_scenarios'][str(prior)]['tau_fraction'], expected)
+        # Removing an unobserved background class cannot estimate that class's response.
+        absent = domain_report(frame, y!=1)['T4_tau_prior_scenarios']['0.01']['prior_scenarios']['0.001']
+        self.assertFalse(absent['all_classes_observed'])
+        self.assertIsNone(absent['tau_fraction'])
+
     def test_fpr_boundary_is_invariant_to_weight_normalization(self):
         y = np.repeat(np.arange(4), 400)
         target = y.copy()

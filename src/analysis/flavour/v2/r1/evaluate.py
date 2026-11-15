@@ -19,6 +19,24 @@ def probability_columns(frame):
     return ['p0', 'p1', 'p2', 'p3'] if 'p2' in frame else ['p0', 'p1', 'p3']
 
 
+def tau_prior_scenarios(support, selected_counts):
+    """Reweight fixed class-conditional selections, including unequal domains."""
+    support, selected_counts = np.asarray(support), np.asarray(selected_counts)
+    acceptance = np.divide(selected_counts, support, out=np.zeros(4), where=support>0)
+    supported = bool((support>0).all())
+    scenarios = {}
+    for prior_tau in [.25, .01, .001]:
+        prior = np.array([(1-prior_tau)/3, (1-prior_tau)/3, prior_tau, (1-prior_tau)/3])
+        weighted_selected = prior*acceptance
+        scenarios[str(prior_tau)] = {'prior_e_mu_tau_NC': prior.tolist(),
+            'all_classes_observed': supported,
+            'tau_fraction': float(weighted_selected[2]/weighted_selected.sum())
+                if supported and weighted_selected.sum()>0 else None,
+            'input_coverage': float(weighted_selected.sum()) if supported else None,
+            'interpretation': 'benchmark prior scenario, fixed scores/cut and class-conditional response; not a physical flux estimate'}
+    return scenarios
+
+
 def domain_report(frame, mask):
     y = frame.label.to_numpy()
     p = frame[probability_columns(frame)].to_numpy()
@@ -39,6 +57,17 @@ def domain_report(frame, mask):
         if (support > 0).all():
             result['T4_observed_mixture'] = result['T4']
             result['T4'] = Metrics(y[mask], p[mask]).report(mask.sum()/(4*support[y[mask]]))
+        result['T4_tau_prior_scenarios'] = {}
+        for fpr in [.01, .001]:
+            threshold = result['T4']['per_class'][2].get(f'threshold_FPR_{fpr}')
+            selected = mask & (p[:, 2]>=threshold) if threshold is not None else np.zeros(len(y), dtype=bool)
+            selected_counts = np.bincount(y[selected], minlength=4)
+            result['T4_tau_prior_scenarios'][str(fpr)] = {'threshold': threshold,
+                'cut_source': ('same-domain uniform four-class development benchmark' if (support>0).all()
+                               else 'same-domain observed mixture; incomplete class support'),
+                'raw_selected_original_labels': selected_counts.tolist(),
+                'raw_support_original_labels': support.tolist(),
+                'prior_scenarios': tau_prior_scenarios(support, selected_counts)}
     # Conditional T3 decisions are forced for true taus; they are not relabeled NC.
     conditional = p if p.shape[1] == 3 else three_from_four(p)
     assigned = conditional.argmax(1)
@@ -56,21 +85,11 @@ def domain_report(frame, mask):
                 n_total = int(selected.sum())
                 selected_counts = np.bincount(y[selected], minlength=4)
                 support = np.bincount(y[mask], minlength=4)
-                acceptance = np.divide(selected_counts, support, out=np.zeros(4), where=support>0)
-                scenarios = {}
-                supported = bool((support>0).all())
-                for prior_tau in [.25, .01, .001]:
-                    prior = np.array([(1-prior_tau)/3, (1-prior_tau)/3, prior_tau, (1-prior_tau)/3])
-                    weighted_selected = prior*acceptance
-                    scenarios[str(prior_tau)] = {'prior_e_mu_tau_NC': prior.tolist(),
-                        'all_classes_observed': supported,
-                        'tau_fraction': float(weighted_selected[2]/weighted_selected.sum()) if supported and weighted_selected.sum()>0 else None,
-                        'input_coverage': float(weighted_selected.sum()) if supported else None,
-                        'interpretation': 'benchmark prior scenario, conditional response held fixed; not a physical flux estimate'}
                 row[str(target)] = {'threshold': threshold, 'selected_total': n_total, 'selected_tau': n_tau,
                     'tau_fraction_observed_domain_mixture': n_tau/n_total if n_total else None,
                     'tau_acceptance': n_tau/int(tau.sum()) if tau.any() else None,
-                    'raw_selected_original_labels': selected_counts.tolist(), 'prior_scenarios': scenarios}
+                    'raw_selected_original_labels': selected_counts.tolist(),
+                    'prior_scenarios': tau_prior_scenarios(support, selected_counts)}
             contamination.append(row)
     result['tau_contamination'] = contamination
     return result

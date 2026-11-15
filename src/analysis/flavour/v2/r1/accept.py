@@ -91,6 +91,10 @@ def main():
     evaluation = json.loads((root/'evaluation/results.json').read_text())
     check('400_paired_physical_block_bootstraps', evaluation['status']=='complete' and evaluation['replicates']==400)
     check('roundoff_aware_operating_points', evaluation.get('metrics_revision')==METRICS_REVISION)
+    for entry in [e for e in config['models'] if e['task']=='T4']:
+        scenarios = evaluation['models'][entry['name']]['all'].get('T4_tau_prior_scenarios', {})
+        check(entry['name']+'_fixed_score_tau_prior_scenarios', set(scenarios)=={'0.01', '0.001'}
+              and all(set(row['prior_scenarios'])=={'0.25', '0.01', '0.001'} for row in scenarios.values()))
     ranking = json.loads((root/'architecture_ranking.json').read_text())
     check('Scratch_ranking_and_expansion', set(ranking['expanded_families'])==
           {r['family'] for r in ranking['ranking'][:2]}|{'B4'})

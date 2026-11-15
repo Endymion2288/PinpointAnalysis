@@ -67,12 +67,18 @@ def evaluation_config(root):
     model(mae, 'B4-MAE', 'T4', 42)
     pair(mae, 'final_b4_t4_s42', 'MAE initialization control; SSL cost separate', geometry=True)
     b0 = json.loads((root/'b0_selected.json').read_text())['selected']
+    b0_names = {}
     for task, entry in b0.items():
         for name in entry['models']:
             record = load(root, name)
             seed = record['config']['seed']
+            b0_names[(task, seed)] = name
             model(name, 'B0', task, seed)
             pair(name, f'final_b4_{task.lower()}_s{seed}', 'observation-summary baseline', geometry=seed==42)
+    for entry in list(models):
+        if entry['family'] in ['B1', 'B2', 'B3'] and entry['kind']=='main':
+            pair(entry['name'], b0_names[(entry['task'], entry['seed'])],
+                 'Scratch versus observation-summary baseline', geometry=entry['seed']==42)
     for family in ['B1', 'B4']:
         name = f'final_{family.lower()}_t3_s42_without_tracker'
         full = load(root, f'final_{family.lower()}_t3_s42')
@@ -86,7 +92,12 @@ def evaluation_config(root):
         model(name, 'B1-CNN', task.upper(), 42, 'cnn_cost_control')
         pair(name, f'final_b1_{task}_s42', 'plain CNN versus ResNet with the B1-selected recipe', geometry=True)
     best = next(row['family'].lower() for row in ranks['ranking'] if row['family'] in ['B2', 'B3', 'B4'])
-    pair(f'final_{best}_t3_s42', 'final_b1_t3_s42', 'native versus projection homologous baseline', geometry=True)
+    model_names = {e['name'] for e in models}
+    for seed in [17, 42, 2026]:
+        for task in ['t3', 't4']:
+            native, projection = f'final_{best}_{task}_s{seed}', f'final_b1_{task}_s{seed}'
+            if native in model_names and projection in model_names:
+                pair(native, projection, 'native versus projection homologous baseline', geometry=seed==42)
     write_json(root/'evaluation_config.json', {'models': models, 'pairs': pairs,
         'Cal_A_Cut_B_Confirm_payload_read': False})
 
