@@ -77,18 +77,76 @@ def preflight(root, path):
     print(json.dumps({k:v for k,v in result.items() if k not in ['windows','per_pass']}),flush=True)
 
 
+def extend(root, design, mixing, cache_workers, reason):
+    campaign=json.loads((root/'campaign.json').read_text())
+    m0=json.loads((root/'evaluation_m0/results.json').read_text())
+    if m0['status']!='complete':raise ValueError('freeze geometry fits after the M0 endpoint comparison')
+    for name in ['independent_points.json','independent_core_intervals.json']:
+        review=json.loads((root/'evaluation_m0'/name).read_text())
+        if review['status']!='complete' or review['failed']:raise ValueError('M0 independent metric review must pass before geometry freezing')
+    r2,r1=Path(campaign['r2']),Path(campaign['r1'])
+    if design=='G1':
+        base=json.loads((r2/'configs/b1_d2_t4_s42.json').read_text())
+        candidates=[{**base,'name':'b1_g1_stride2_t4_s42','design':'G1','cnn_first_stride':2,
+            'reference_experiment':str(root/'experiments/b1_m0_t4_s42') if mixing=='global' else str(r2/'experiments/b1_d2_t4_s42'),
+            'scientific_change':'first convolution stride4 to2 only; total stride32 to16'}]
+    elif design=='G2':
+        base=json.loads((root/'configs/probe_b2_relation_t4_s42_c3.json').read_text())
+        candidates=[]
+        for variant in ['control','relations','global_ablation']:
+            name=f'b2_g2_{variant}_t4_s42'
+            related=variant!='control'
+            candidates.append({**base,'name':name,'design':'G2_'+variant,
+                'data_root':str(r1/'data'),'native_relations':related,
+                'build_relations':related,'native_global_ablation':variant=='global_ablation',
+                'scientific_change':{'control':'fresh native control for matched data/sampling/exposure/precision',
+                    'relations':'observation-only signed measurement/material-aware messages before native local compression',
+                    'global_ablation':'retrain relations model without the inter-block stack; preserve prelocal,block/event pooling and tracker'}[variant]})
+    elif design=='M0T3':
+        if mixing!='global':raise ValueError('M0T3 tests the adopted global order')
+        base=json.loads((r2/'configs/b1_d2_t3_s42.json').read_text())
+        candidates=[{**base,'name':'b1_m0_t3_s42','design':'M0T3',
+            'reference_experiment':str(r2/'experiments/b1_d2_t3_s42'),
+            'scientific_change':'global full-pass mixing for the actual T3 task'}]
+    else:raise ValueError('unknown R3 extension')
+    frozen=[]
+    for config in candidates:
+        config.update(event_mixing=mixing,order_seed=20261119,cache_training_inputs=True,
+            cache_workers=cache_workers,freeze_reason=reason,freeze_UTC=datetime.now(timezone.utc).isoformat(),
+            preflight=str(root/'preflight'/f"{config['name']}.json"))
+        path=root/'configs'/f"{config['name']}.json"
+        if path.exists():raise FileExistsError('formal R3 recipe already frozen')
+        write_json(path,config)
+        frozen.append(config['name'])
+    write_json(root/'contracts'/f'{design.lower()}_freeze.json',{
+        'status':'frozen','UTC':datetime.now(timezone.utc).isoformat(),'models':frozen,
+        'reason':reason,'event_mixing':mixing,'scope':'fixed fresh exposures and original per-update batch sizes; endpoint primary',
+        'Cal_A_Cut_B_Confirm_payload_read':False})
+    previous=campaign.get('formal_models',campaign['initial_models'])
+    campaign['formal_models']=previous+frozen
+    campaign.setdefault('extensions',[]).append({'design':design,'models':frozen,'reason':reason})
+    write_json(root/'campaign.json',campaign)
+    print(json.dumps({'status':'frozen_extension','models':frozen}),flush=True)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command',choices=['freeze','preflight'])
+    parser.add_argument('command',choices=['freeze','preflight','G1','G2','M0T3'])
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--r2',type=Path)
     parser.add_argument('--configs',type=Path,nargs='*')
+    parser.add_argument('--mixing',choices=['global','spatial'])
+    parser.add_argument('--cache-workers',type=int,default=2)
+    parser.add_argument('--reason')
     args=parser.parse_args()
     if args.command=='freeze':
         freeze(args.root,args.r2)
-    else:
+    elif args.command=='preflight':
         for path in args.configs:
             preflight(args.root,path)
+    else:
+        if not args.reason or not args.mixing:parser.error('extension requires an evidence reason and selected sampling')
+        extend(args.root,args.command,args.mixing,args.cache_workers,args.reason)
 
 
 if __name__=='__main__':

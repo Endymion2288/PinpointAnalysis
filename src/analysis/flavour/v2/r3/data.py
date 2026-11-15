@@ -1,5 +1,8 @@
 """Allocation-local transformed inputs and exact-cache evidence."""
 
+import os
+import pickle
+from pathlib import Path
 import time
 
 import numpy as np
@@ -21,7 +24,19 @@ class R3Dataset(R1Dataset):
         super().__init__(root, split, config, cache_dir)
         self.items = None
         if split == 'train' and config.get('cache_training_inputs', False):
-            self.cache_inputs()
+            shared=os.environ.get('PINPOINT_R3_PROFILE_INPUTS')
+            if shared:
+                started=time.perf_counter()
+                with Path(shared).open('rb') as stream:payload=pickle.load(stream)
+                expected={key:config.get(key) for key in payload['input_config']}
+                if (payload['input_config']!=expected or payload['root']!=str(Path(root).resolve())
+                        or not np.array_equal(payload['keys'],self.metadata[['run','chunk','row','label']].to_numpy())):
+                    raise ValueError('shared profile cache differs from actual model input contract')
+                self.items=payload['items'];self.native.close()
+                self.cache_audit={**payload['audit'],'shared_profile_inputs':True,
+                    'shared_original_build_seconds':payload['audit']['seconds'],'seconds':time.perf_counter()-started}
+            else:
+                self.cache_inputs()
 
     def __getitem__(self, index):
         if self.items is not None:

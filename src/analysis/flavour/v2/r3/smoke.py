@@ -50,9 +50,13 @@ def main():
     for name in ['predictions.parquet','best_predictions.parquet','train_exposures.parquet']:
         x,y=[pd.read_parquet(output/'experiments'/kind/name) for kind in ['continuous','recovered']]
         pd.testing.assert_frame_equal(x,y,check_exact=True)
+    source_rows=pd.read_parquet(source/'catalog.parquet')
+    train_events=int(source_rows.split.eq('train').sum())
+    validation_events=int(source_rows.split.eq('validation').sum())
     result={'status':'complete','maximum_parameter_delta':delta,'same_exact_probability_and_exposure_tables':True,
         'precision':base['precision'],'GPU':torch.cuda.get_device_name(),
-        'scope':'32 frozen Train rows with synthetic validation; tests actual cache,global sampler,screen,checkpoint and recovery',
+        'source_Train_rows':len(source_rows),'optimizer_Train_events':train_events,'synthetic_validation_events':validation_events,
+        'scope':'frozen source Train rows split into optimizer Train and synthetic validation; tests actual cache,global sampler,screen,checkpoint and recovery',
         'actual_Tune_used':False,'Cal_A_Cut_B_Confirm_payload_read':False}
     write_json(output/'integrity.json',result)
     print(json.dumps(result),flush=True)

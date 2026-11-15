@@ -1,5 +1,5 @@
 {
-  "status": "M0_running_R3_not_complete",
+  "status": "M0_evaluated_G1_formal_running_G2_profile_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
   "UTC": "2026-11-15T14:26:29.421053+00:00",
   "campaign": "configs/r3/campaign.json",
@@ -35,8 +35,23 @@
       "scattered_exact_input_checks": 32,
       "storage": "allocation-local transformed arrays; no persistent EOS tensor cache"
     },
-    "scientific_result": "not yet measured",
-    "status": "running",
+    "scientific_result": {
+      "BA3": 0.5751,
+      "NLL3": 0.8457252082771918,
+      "BA4": 0.460275,
+      "NLL4": 1.1635314182399183,
+      "tau_eff_1pct": 0.0603,
+      "paired_BA3_difference": 0.0038333333333336883,
+      "paired_BA3_CI95": [
+        0.0003533787286104401,
+        0.00735032899112981
+      ],
+      "common_mu_recall_difference": -0.04079999999999795,
+      "sparse_mu_recall_difference": -0.14816137093895282,
+      "adopt_global_sampling": false,
+      "reason": "mu/non-tau quality guard fails; tau does not improve"
+    },
+    "status": "complete",
     "counters": {
       "updates": 62522,
       "training_exposures": 499780,
@@ -51,10 +66,12 @@
       "validation_seconds": 48.83260170998983,
       "data_wait_seconds": 21.94734056526795,
       "lr_sum": 15.850313440877072
-    }
+    },
+    "optimizer_Train_fixture_events": 24,
+    "synthetic_validation_fixture_events": 8
   },
   "unit_tests_passed": 35,
-  "latest_stage_report": "../../workbook/2026-11-15_stage287_r3_native_geometry_and_delivery_contracts.md",
+  "latest_stage_report": "../../workbook/2026-11-15_stage288_r3_m0_and_candidate_results.md",
   "pending": [
     "M0 fixed endpoint and independent paired evaluation;adopt/reject mixing",
     "G0 phase diagnosis",
@@ -113,7 +130,7 @@
     "parallel_operation_events_per_second": 41.21429426788975
   },
   "G2_diagnostics": {
-    "status": "revised_prototype_running",
+    "status": "shared_input_profile_running_four_learning_gates_already_complete",
     "cluster": "1582994.0",
     "schedd": "bigbird20.cern.ch",
     "configurations": [
@@ -126,7 +143,7 @@
       "1582994.0_idle_cancelled",
       "1582996.0_after_four_learning_gates"
     ],
-    "current_allocation": "1582998.0",
+    "current_allocation": "1583000.0",
     "current_configs": [
       "configs/r3/probe_b2_control_t4_s42_c3.json",
       "configs/r3/probe_b2_relation_t4_s42_c3.json"
@@ -149,5 +166,45 @@
     "readability_probes": "implemented; actual trained feature extraction pending",
     "retrained_global_ablation": "implemented; formal fit pending",
     "acceptance": "implemented; not run; missing formal results,decisions and terminal resources"
+  },
+  "G1_formal": {
+    "status": "running",
+    "job": "pinpoint-r3-g1-k1",
+    "pod": "pinpoint-r3-g1-k1-r26ns",
+    "flavor": "h100-47gb",
+    "config": "configs/r3/b1_g1_stride2_t4_s42.json",
+    "reference": "R2 b1_d2_t4_s42",
+    "sampling": "spatial"
+  },
+  "G2_candidate_audit": {
+    "status": "complete",
+    "events": 1024,
+    "class_counts": [
+      256,
+      256,
+      256,
+      256
+    ],
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/diagnostics/graph_plane_policy_c2/results.json",
+    "all_visible_recorded_recall": [
+      0.25632320488881344,
+      0.0859231596936515,
+      0.0
+    ],
+    "modality_visible_recorded_recall": [
+      0.2752688330762475,
+      0.10146211785556047,
+      0.17480553154710457
+    ],
+    "scope": "Train first-contributor candidate opportunity recall; no complete ancestry",
+    "classification_gain_measured": false
+  },
+  "G2_ablation_fit": {
+    "status": "complete",
+    "allocation": "1582999.0",
+    "events": 32,
+    "steps": 160,
+    "accuracy": 1.0,
+    "NLL": 0.025631815195083618
   }
 }

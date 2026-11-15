@@ -104,44 +104,59 @@ def main():
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--experiments',type=Path,nargs='+',required=True)
     parser.add_argument('--attempt',required=True)
+    parser.add_argument('--cache-workers',type=int,default=4)
     args=parser.parse_args()
     torch.set_num_threads(1)
     campaign=json.loads((args.root/'campaign.json').read_text())
     selected=pd.read_parquet(Path(campaign['r2'])/'gap/train_screen.parquet')
     output=args.root/'probes'/args.attempt;output.mkdir(parents=True,exist_ok=False)
     models={}
+    cached=None;cached_signature=None
+    scratch=tempfile.TemporaryDirectory(prefix='r3-probe-inputs-')
     for experiment in args.experiments:
         record=json.loads((experiment/'manifest.json').read_text())
         if record['status']!='complete':raise ValueError('readability requires completed fixed-endpoint weights')
         config={**record['config'],'cache_training_inputs':False}
         if config.get('native_global_ablation'):raise ValueError('probe contract expects intact control/candidate')
         rows=selected[selected.label.ne(2)] if config['task']=='T3' else selected
-        with tempfile.TemporaryDirectory(prefix='r3-probes-') as scratch:
-            train=R3Dataset(Path(campaign['r1'])/'data','train',config,cache_dir=scratch)
-            subset(train,rows)
-            tune=R3Dataset(Path(campaign['r1'])/'data','validation',config,cache_dir=scratch)
-            model=build_model(config).cuda()
-            state=torch.load(experiment/'exposure.pt',map_location='cpu',weights_only=False)
-            model.load_state_dict(state['model']);del state
-            x=extract(model,train,config);z=extract(model,tune,config)
-            y=train.metadata.label.to_numpy()
-            reports={}
-            for branch in x:
-                classifier=make_pipeline(StandardScaler(),LogisticRegression(C=1.,max_iter=1000,random_state=20261121))
-                classifier.fit(x[branch],y)
-                p=classifier.predict_proba(z[branch]);frame=tune.metadata.copy()
-                for c,value in zip(classifier.classes_,p.T):frame[f'p{c}']=value
-                reports[branch]={domain:domain_report(frame,mask) for domain,mask in domains(frame).items()}
-                frame.to_parquet(output/(experiment.name+'_'+branch+'_predictions.parquet'),index=False,compression=COMPRESSION)
-            models[experiment.name]={'config':config,'reports':reports,'Train_events':len(train),'Tune_events':len(tune),
-                'feature_dimensions':{name:value.shape[1] for name,value in x.items()}}
-            train.native.close();tune.native.close();del model;torch.cuda.empty_cache()
+        # A native control ignores edge tensors, so it can share the exact
+        # raw-node inputs and candidate cache with its relation counterpart.
+        input_config={**config,'cache_workers':args.cache_workers}
+        if config['family'] in ['B2','B3']:input_config['build_relations']=True
+        signature={k:input_config.get(k) for k in ['family','task','image','native_pixel_pitch_mm','relation_plane_policy','drop_modality']}
+        if cached_signature!=signature:
+            cached=None
+            train=R3Dataset(Path(campaign['r1'])/'data','train',input_config,cache_dir=scratch.name)
+            subset(train,rows);train.cache_inputs()
+            tune=R3Dataset(Path(campaign['r1'])/'data','validation',input_config,cache_dir=scratch.name)
+            tune.cache_inputs()
+            cached=(train,tune);cached_signature=signature
+            write_json(output/'input_cache.json',{'Train':train.cache_audit,'Tune':tune.cache_audit,
+                'scope':'allocation-local exact arrays reused for matched frozen-feature probes; not persisted'})
+        train,tune=cached
+        model=build_model(config).cuda()
+        state=torch.load(experiment/'exposure.pt',map_location='cpu',weights_only=False)
+        model.load_state_dict(state['model']);del state
+        x=extract(model,train,config);z=extract(model,tune,config)
+        y=train.metadata.label.to_numpy()
+        reports={}
+        for branch in x:
+            classifier=make_pipeline(StandardScaler(),LogisticRegression(C=1.,max_iter=1000,random_state=20261121))
+            classifier.fit(x[branch],y)
+            p=classifier.predict_proba(z[branch]);frame=tune.metadata.copy()
+            for c,value in zip(classifier.classes_,p.T):frame[f'p{c}']=value
+            reports[branch]={domain:domain_report(frame,mask) for domain,mask in domains(frame).items()}
+            frame.to_parquet(output/(experiment.name+'_'+branch+'_predictions.parquet'),index=False,compression=COMPRESSION)
+        models[experiment.name]={'config':config,'reports':reports,'Train_events':len(train),'Tune_events':len(tune),
+            'feature_dimensions':{name:value.shape[1] for name,value in x.items()}}
+        del model;torch.cuda.empty_cache()
         write_json(output/'results.json',{'status':'running','models':models})
     write_json(output/'results.json',{'status':'complete','models':models,
         'probe_recipe':'StandardScaler + multinomial logistic C1, max_iter1000; fit only common frozen balanced Train4k; no Tune hyperparameter choice',
         'scope':'readability of frozen features; actual branch use requires training gradients and utility requires retrained ablation',
         'native_regional_definition':'first inter-block geometry-message stage; no independent region branch in B2/B3',
         'Cal_A_Cut_B_Confirm_payload_read':False})
+    scratch.cleanup()
 
 
 if __name__=='__main__':main()

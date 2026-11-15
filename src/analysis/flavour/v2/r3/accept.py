@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 
 from analysis.flavour.inventory import write_json
 from analysis.flavour.v2.partitions import KEY,equal_identity_rows
@@ -64,6 +65,11 @@ def run(root):
             check(name+'_'+kind+'_valid_nonconstant_outputs',np.isfinite(p).all() and (p>=0).all()
                 and (p<=1).all() and np.allclose(p.sum(1),1.,atol=2e-6) and p.std(0).max()>.001
                 and len(np.unique(p,axis=0))>=100)
+            state=torch.load(folder/('exposure.pt' if kind=='endpoint' else 'best.pt'),map_location='cpu',weights_only=False)
+            check(name+'_'+kind+'_finite_checkpoint',all(torch.isfinite(v).all() for v in state['model'].values()))
+            check(name+'_'+kind+'_checkpoint_position',state['record']['counters']['updates']==
+                (counters['updates'] if kind=='endpoint' else manifest['best_screen']['updates']))
+            del state
         history=manifest['history'];best=manifest['best_screen']
         check(name+'_own_task_best_screen',best['criterion']==config['task']+'_NLL'
             and abs(best['NLL']-min(h['metrics'][config['task']]['NLL'] for h in history))<1e-12)
