@@ -1,0 +1,213 @@
+{
+  "status": "initial_six_models_running_not_R2_complete",
+  "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2",
+  "contracts": "configs/r2/campaign.json",
+  "measured_preflight": [
+    {
+      "name": "b1_d0_t3_s42",
+      "total_updates": 37550,
+      "total_exposures": 300000,
+      "non_tau_exposures": 300000,
+      "unique_events": 75000,
+      "passes": 4,
+      "batch_size_distribution": {
+        "1": 14,
+        "2": 17,
+        "3": 14,
+        "4": 12,
+        "5": 13,
+        "6": 16,
+        "7": 11,
+        "8": 37453
+      },
+      "lr_sum": 5.900605657863721,
+      "minimum_row_exposures": 4,
+      "maximum_row_exposures": 4
+    },
+    {
+      "name": "b1_d0_t4_s42",
+      "total_updates": 50051,
+      "total_exposures": 400000,
+      "non_tau_exposures": 300000,
+      "unique_events": 100000,
+      "passes": 4,
+      "batch_size_distribution": {
+        "1": 22,
+        "2": 10,
+        "3": 12,
+        "4": 22,
+        "5": 9,
+        "6": 6,
+        "7": 7,
+        "8": 49963
+      },
+      "lr_sum": 7.865059679070928,
+      "minimum_row_exposures": 4,
+      "maximum_row_exposures": 4
+    },
+    {
+      "name": "b1_d1_t3_s42",
+      "total_updates": 112645,
+      "total_exposures": 900000,
+      "non_tau_exposures": 900000,
+      "unique_events": 75000,
+      "passes": 12,
+      "batch_size_distribution": {
+        "1": 38,
+        "2": 39,
+        "3": 43,
+        "4": 53,
+        "5": 32,
+        "6": 48,
+        "7": 41,
+        "8": 112351
+      },
+      "lr_sum": 17.701315577074674,
+      "minimum_row_exposures": 12,
+      "maximum_row_exposures": 12
+    },
+    {
+      "name": "b1_d1_t4_s42",
+      "total_updates": 150153,
+      "total_exposures": 1200000,
+      "non_tau_exposures": 900000,
+      "unique_events": 100000,
+      "passes": 12,
+      "batch_size_distribution": {
+        "1": 69,
+        "2": 29,
+        "3": 39,
+        "4": 55,
+        "5": 32,
+        "6": 16,
+        "7": 24,
+        "8": 149889
+      },
+      "lr_sum": 23.595463349912084,
+      "minimum_row_exposures": 12,
+      "maximum_row_exposures": 12
+    },
+    {
+      "name": "b1_d2_t3_s42",
+      "total_updates": 112630,
+      "total_exposures": 900000,
+      "non_tau_exposures": 900000,
+      "unique_events": 225000,
+      "passes": 4,
+      "batch_size_distribution": {
+        "1": 44,
+        "2": 39,
+        "3": 30,
+        "4": 38,
+        "5": 35,
+        "6": 31,
+        "7": 29,
+        "8": 112384
+      },
+      "lr_sum": 17.698958418676586,
+      "minimum_row_exposures": 4,
+      "maximum_row_exposures": 4
+    },
+    {
+      "name": "b1_d2_t4_s42",
+      "total_updates": 150117,
+      "total_exposures": 1200000,
+      "non_tau_exposures": 900000,
+      "unique_events": 300000,
+      "passes": 4,
+      "batch_size_distribution": {
+        "1": 29,
+        "2": 35,
+        "3": 35,
+        "4": 40,
+        "5": 29,
+        "6": 38,
+        "7": 25,
+        "8": 149886
+      },
+      "lr_sum": 23.589806175917296,
+      "minimum_row_exposures": 4,
+      "maximum_row_exposures": 4
+    }
+  ],
+  "parallel_profile_H100_MIG3g47gb": {
+    "updates_per_child": 512,
+    "events_per_child": 4096,
+    "concurrent": [
+      1,
+      2,
+      4,
+      1
+    ],
+    "aggregate_operation_events_per_second": [
+      190.03790280012566,
+      257.97176580451804,
+      311.3977453324975,
+      190.88268720407294
+    ]
+  },
+  "data": {
+    "train_events": 300000,
+    "Tune_events": 40000,
+    "reused_shards": 56,
+    "new_shards": 80,
+    "identity_and_PE_checks": "passed"
+  },
+  "allocations": [
+    {
+      "name": "pinpoint-r2-d01-k3",
+      "backend": "Kubeflow",
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "parallel": 4,
+      "models": [
+        "b1_d0_t3_s42",
+        "b1_d0_t4_s42",
+        "b1_d1_t3_s42",
+        "b1_d1_t4_s42"
+      ]
+    },
+    {
+      "name": "r2_d2_c2",
+      "backend": "HTCondor",
+      "schedd": "bigbird20.cern.ch",
+      "cluster": 1582961,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "parallel": 2,
+      "models": [
+        "b1_d2_t3_s42",
+        "b1_d2_t4_s42"
+      ]
+    }
+  ],
+  "gates": {
+    "BF16_end_to_end_T3_T4": "passed",
+    "midpass_resume_max_parameter_delta": 0.0,
+    "real_fit_T3_T4_accuracy": [
+      1.0,
+      1.0
+    ],
+    "real_fit_T3_T4_NLL": [
+      3.8002111978130415e-05,
+      0.0001624649012228474
+    ],
+    "deterministic_FP32_end_to_end_T3_T4": "passed; maximum parameter delta0",
+    "evaluation_integration": {
+      "models": 12,
+      "pairs": 72,
+      "domains": 11,
+      "replicates": 400,
+      "independent_point_checks": 1152,
+      "independent_core_checks": 1020,
+      "scope": "Train-only synthetic validation, not generalization"
+    },
+    "unit_tests_passed": 6
+  },
+  "pending": [
+    "fixed-budget endpoints and best-screen full40k Tune",
+    "400 paired block intervals and independent readback",
+    "fixed common Train gap",
+    "conditional D3/D4/width/native-family decision",
+    "allocation accounting and final R2 acceptance"
+  ],
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

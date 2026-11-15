@@ -1,6 +1,6 @@
 # 下一轮执行路线、实验矩阵与工单
 
-**R0、R1已完成，R2尚未启动。**R1完整交付41模型、133项配对、21项三seed平均配对、11域和55条压力路径；452项验收全部通过，独立nominal/core-interval/stress检查分别通过2,557/2,512/5,666项。最终数值、统计口径及成本见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
+**R0、R1已完成，R2首批六模型正在执行。**R1完整交付41模型、133项配对、21项三seed平均配对、11域和55条压力路径；452项验收全部通过，独立nominal/core-interval/stress检查分别通过2,557/2,512/5,666项。最终数值、统计口径及成本见[stage274](../../workbook/2026-11-15_stage274_r1_final_results.md)和[r1_results.json](r1_results.json)。Cal-A/Cut-B/Confirm继续封存。
 
 本轮B1 ResNet最强：T3平均BA3为56.5633%，T4 conditional为56.3044%，τ效率在1% FPR下为5.0200%。相对B4的τ效率增益2.423 pp [1.941,2.977]满足预定τ研究门槛；T3相对HGB的1.973333 pp低于2 pp实用门槛，相对B4则未满足μ recall非劣。完整交付不等于全部科学门槛通过。
 
@@ -78,6 +78,8 @@ R1 交付包含全域/pixel-centered/large 三类表、三类训练与四类条�
 
 ## 4. R2：用小矩阵确定训练规模
 
+执行状态（2026-11-15）：300k Train+40k Tune身份及PE守恒核对通过，D0/D1/D2共六份精确sampler preflight已冻结。BF16三/四类真实拟合均100%，中途恢复与连续训练参数差值为0。Kubeflow H100 MIG 3g.47gb四并行执行D0/D1，HTCondor H100 MIG 2g.24gb双并行执行D2；完整科学结果尚未产出。配置、实算U和后续验收见[r2_execution.json](r2_execution.json)、[configs/r2](configs/r2/campaign.json)及[stage275](../../workbook/2026-11-15_stage275_r2_execution_and_parallel_gates.md)。
+
 根据R1最终四pass与三seed结果，首批优先B1一族；B2为原生第二族候选，先profile并按明确问题决定是否扩展。B4保留R1 D0及逐类共同参考；是否追加其长训练由前两族的实测问题和费用决定，不自动运行三族全矩阵。B3末轮仍明显改善，若B2的规模收益有限且资源支持，再考虑其长训练控制。优先在seed42做：
 
 表中N是冻结四类pool的事件数；T4实际监督N个unique labels，T3使用其中3N/4个非τlabels。D1/D2的总曝光在T4均为1.2M，在T3均为0.9M，标签预算按真正训练的行数报告。
@@ -146,7 +148,7 @@ Detector augmentation 使用已接受幅度；名义和 held-out pattern 同时�
 
 ## 7. 资源与运行规则
 
-原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0、R1已有终态成本，R2–R7尚未消耗其训练额度；表中的剩余矩阵需要按实际结果分批重排：
+原首轮80 device-hours分配如下，保留作规划与实测偏差的参照。R0、R1已有终态成本，R2已进入执行，其终态成本待统计；R3–R7尚未启动；表中的剩余矩阵需要按实际结果分批重排：
 
 | Stage | Planned device-hours ceiling |
 | --- | ---: |

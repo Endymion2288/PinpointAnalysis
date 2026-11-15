@@ -109,12 +109,12 @@ def scalar_summary(frame):
         r3 = cache3.report(balanced(cache3.y, w[keep], 3))
         r4 = cache4.report(balanced(y, w, 4)) if cache4 is not None else None
         return np.array([r3['BA'], r3['NLL'], r3['macro_AP'], r3['macro_AUROC'],
-            *(r3['per_class'][c]['recall'] for c in range(3)),
-            r4['per_class'][2]['eff_FPR_0.01'] if r4 else np.nan,
-            r4['per_class'][2]['eff_FPR_0.001'] if r4 else np.nan,
+            *(r3['per_class'][c]['recall'] if r3['weighted_counts'][c]>0 else np.nan for c in range(3)),
+            r4['per_class'][2].get('eff_FPR_0.01', np.nan) if r4 else np.nan,
+            r4['per_class'][2].get('eff_FPR_0.001', np.nan) if r4 else np.nan,
             r4['NLL'] if r4 else np.nan,
-            *(r3['per_class'][c][f'eff_FPR_{fpr}'] for c in range(3) for fpr in [.01, .001]),
-            *(r3['per_class'][c][f'eff_purity_{purity}'] for c in range(3) for purity in [.8, .9]),
+            *(r3['per_class'][c].get(f'eff_FPR_{fpr}', np.nan) for c in range(3) for fpr in [.01, .001]),
+            *(r3['per_class'][c].get(f'eff_purity_{purity}', np.nan) for c in range(3) for purity in [.8, .9]),
             r4['BA'] if r4 else np.nan])
     return compute
 

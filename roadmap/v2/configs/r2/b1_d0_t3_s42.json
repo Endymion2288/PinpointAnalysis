@@ -1,0 +1,56 @@
+{
+  "family": "B1",
+  "task": "T3",
+  "image": {
+    "origin_mm": [
+      -133.0,
+      -222.0,
+      -2996.0
+    ],
+    "height": 1322,
+    "width": 420,
+    "pitch_mm": 1.0,
+    "channels_per_view": [
+      "pixel_count",
+      "bar_count",
+      "bar_edep_MeV",
+      "bar_PE"
+    ],
+    "bar_projection": "vertical bars in XZ; horizontal bars in YZ; unmeasured coordinate never localized"
+  },
+  "cnn_width": 16,
+  "dim": 96,
+  "modalities": [
+    "pixel",
+    "bar",
+    "tracker"
+  ],
+  "train_domain": "all",
+  "batch_size": 8,
+  "workers": 2,
+  "cache_shards": 2,
+  "bucket_size": 0,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.01,
+  "clip_grad_norm": 1.0,
+  "local_chunk_blocks": 2048,
+  "architecture_revision": 3,
+  "empty_response_bypass": true,
+  "seed": 42,
+  "initialization": "scratch",
+  "compile_local": false,
+  "bf16": true,
+  "precision": "BF16_encoder_FP32_head",
+  "main_threads": 1,
+  "schedule": "prescribed_total_updates_5pct_warmup_cosine_5pct_floor",
+  "warmup_fraction": 0.05,
+  "learning_rate_floor_fraction": 0.05,
+  "name": "b1_d0_t3_s42",
+  "design": "D0",
+  "pool_events": 100000,
+  "passes": 4,
+  "data_root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/data",
+  "tune_screen": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1/data/tune_screen.parquet",
+  "validation_non_tau_exposures": 75000,
+  "preflight": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2/preflight/b1_d0_t3_s42.json"
+}

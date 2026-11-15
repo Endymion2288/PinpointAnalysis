@@ -1,0 +1,65 @@
+{
+  "stage": "R2",
+  "status": "frozen_before_R2_Tune_access",
+  "UTC": "2026-11-15T09:37:13.675174+00:00",
+  "r1": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R1",
+  "r0": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14",
+  "initial_family": "B1",
+  "seed": 42,
+  "tasks": [
+    "T3",
+    "T4"
+  ],
+  "initial_models": [
+    "b1_d0_t3_s42",
+    "b1_d0_t4_s42",
+    "b1_d1_t3_s42",
+    "b1_d1_t4_s42",
+    "b1_d2_t3_s42",
+    "b1_d2_t4_s42"
+  ],
+  "matrix": {
+    "D0": [
+      100000,
+      4
+    ],
+    "D1": [
+      100000,
+      12
+    ],
+    "D2": [
+      300000,
+      4
+    ]
+  },
+  "initialization": "fresh matched seed for all budgets; no continuation from annealed D0",
+  "optimizer": "unchanged selected R1 LR,AdamW,weight_decay,batch and sampler within each task",
+  "schedule": "each prescribed total optimizer U;5% warmup,cosine,5% floor; wall only accounting/deadline",
+  "primary_comparisons": [
+    "D1-D0 same unique data extended schedule/exposure",
+    "D2-D1 same label exposures more unique data; tails may change updates",
+    "T3-T4 same non-tau rows/exposures within each design"
+  ],
+  "checkpoint_policy": {
+    "primary": "fixed prescribed endpoint",
+    "secondary": "minimum own-task NLL on fixed4k screen; no full-Tune checkpoint selection"
+  },
+  "screen_every_non_tau_exposures": 75000,
+  "full_Tune": "same40k at endpoint and best-screen only",
+  "diagnostics": [
+    "rolling class proportions,logit means,NLL",
+    "screen per-class recall,AP,AUROC and raw probability means",
+    "fixed observed occupancy groups",
+    "internal activations,gradients,updates",
+    "Train/Tune gaps and plateau"
+  ],
+  "expansion": "after actual D0/D1/D2, inspect convergence,overfit and cost; conditional D3,D4,width32 or native-family control only for a concrete unresolved question",
+  "concurrency": "profile1/2 concurrent real-input workers; choose aggregate throughput subject to memory and valid learning; shared compressed staging per allocation",
+  "resources": "earliest compatible HTCondor/Kubeflow/full/shared/MIG; heterogeneous cost and concurrent count recorded",
+  "planned_initial_stage_hours": 18,
+  "bootstrap": {
+    "replicates": 400,
+    "unit": "same frozen physical blocks as R1; paired"
+  },
+  "Cal_A_Cut_B_Confirm_payload_read": false
+}

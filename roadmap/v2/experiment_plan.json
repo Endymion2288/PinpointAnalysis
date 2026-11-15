@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "document_version": "v2_2026-11-14",
-  "status": "design_with_completed_R0_R1_and_pending_R2_R7_not_runner_config",
+  "status": "design_with_completed_R0_R1_and_running_R2_pending_R3_R7",
   "review_base_commit": "37dd763",
   "review_through_workbook_stage": 236,
-  "implementation_status": "R0 and R1 complete; 41 models,133 pairs,21 mean-seed pairs,11 domains,55 stress paths;452 delivery checks passed; independent nominal/core/stress reviews2557/2512/5666 passed; Cal-A/Cut-B/Confirm sealed; R2-R7 training not started",
+  "implementation_status": "R0 and R1 complete; R2 fresh B1 D0/D1/D2 T3/T4 seed42 running in two heterogeneous MIG allocations; six exact sampler preflights, 300k data identities and PE checks, BF16 learning and midpass recovery gates passed; scientific R2 evaluation pending; Cal-A/Cut-B/Confirm sealed",
   "accepted_foundation": {
     "samples": "reuse existing accepted samples",
     "source_family": "reuse accepted family keys; ledger checks research use",
@@ -358,10 +358,10 @@
       ],
       "work": "100k/300k unique data versus 4/12 passes; conditional 1M and width study",
       "planned_device_hours": 18,
-      "status": "pending",
-      "execution_policy": "Design only after completed R1; first profile and freeze B1 fresh D0/D1/D2 with matched actual precision and update-normalized schedule; add only question-driven second-family controls if measured remaining budget supports them; no R2 training started",
+      "status": "running_initial_six_models",
+      "execution_policy": "B1 fresh D0/D1/D2 matched BF16 recipe; four concurrent D0/D1 fits in Kubeflow H100 MIG3g47gb and two D2 fits in HTCondor H100 MIG2g24gb; conditional expansions follow measured curves and costs",
       "optimization_design": {
-        "status": "design_only_not_implemented_or_run",
+        "status": "implemented_preflight_and_learning_gates_passed_scientific_fits_running",
         "fixed_within_family_task": [
           "input",
           "architecture",
@@ -394,7 +394,8 @@
         "B2_full_H100_T3_T4_hours": 13.40628906291677,
         "sum_heterogeneous_device_hours": 23.4930518633168,
         "scope": "linear planning estimate; not measured R2 wall or FLOP equivalence; excludes new D0, 300k conversion, failures and added profiles"
-      }
+      },
+      "execution_record": "r2_execution.json"
     },
     {
       "id": "R3",

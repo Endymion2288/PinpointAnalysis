@@ -17,6 +17,16 @@ from analysis.flavour.v2.partitions import KEY, equal_identity_rows
 CORE = ['BA3', 'NLL3', 'recall_e', 'recall_mu', 'recall_NC', 'BA4', 'NLL4']
 
 
+def domain_mask(catalog, domain):
+    if domain == 'all':
+        return np.ones(len(catalog), dtype=bool)
+    if domain.startswith('occupancy_'):
+        _, left, right = domain.split('_')
+        channels = catalog.pixel_channels+catalog.bar_channels+catalog.tracker_channels
+        return channels.ge(float(left)).to_numpy() & channels.lt(float(right)).to_numpy()
+    return catalog[domain].to_numpy(dtype=bool)
+
+
 def class_statistics(labels, probabilities, weights):
     """Return per-draw BA, NLL and recall without calling the evaluation metrics."""
     p = np.asarray(probabilities, dtype='float64')
@@ -75,7 +85,7 @@ def review_intervals(root, config, evaluation):
         if len(columns) == 4:
             common = common/np.maximum(common.sum(1, keepdims=True), 1e-15)
         for _, domain in [key for key in needed if key[0] == name]:
-            mask = np.ones(len(y), dtype=bool) if domain == 'all' else catalog[domain].to_numpy(dtype=bool)
+            mask = domain_mask(catalog, domain)
             non_tau = mask & (y != 2)
             labels = np.searchsorted([0, 1, 3], y[non_tau])
             three = class_statistics(labels, common[non_tau], weights[:, non_tau])
