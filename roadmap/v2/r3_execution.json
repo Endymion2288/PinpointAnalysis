@@ -1,7 +1,7 @@
 {
   "status": "M0_running_R3_not_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3",
-  "UTC": "2026-11-15T14:04:19.541105+00:00",
+  "UTC": "2026-11-15T14:26:29.421053+00:00",
   "campaign": "configs/r3/campaign.json",
   "first_config": "configs/r3/b1_m0_t4_s42.json",
   "M0": {
@@ -35,10 +35,26 @@
       "scattered_exact_input_checks": 32,
       "storage": "allocation-local transformed arrays; no persistent EOS tensor cache"
     },
-    "scientific_result": "not yet measured"
+    "scientific_result": "not yet measured",
+    "status": "running",
+    "counters": {
+      "updates": 62522,
+      "training_exposures": 499780,
+      "non_tau_exposures": 375003,
+      "exposure_by_class": [
+        125060,
+        124984,
+        124777,
+        124959
+      ],
+      "train_seconds": 1201.2848244919442,
+      "validation_seconds": 48.83260170998983,
+      "data_wait_seconds": 21.94734056526795,
+      "lr_sum": 15.850313440877072
+    }
   },
-  "unit_tests_passed": 29,
-  "latest_stage_report": "../../workbook/2026-11-15_stage285_r3_m0_execution_and_contract.md",
+  "unit_tests_passed": 33,
+  "latest_stage_report": "../../workbook/2026-11-15_stage286_r3_geometry_gates.md",
   "pending": [
     "M0 fixed endpoint and independent paired evaluation;adopt/reject mixing",
     "G0 phase diagnosis",
@@ -48,5 +64,63 @@
     "evidence-triggered seed/resolution/anchor/fusion choices",
     "final scientific decision,terminal accounting,figures and acceptance"
   ],
-  "Cal_A_Cut_B_Confirm_payload_read": false
+  "Cal_A_Cut_B_Confirm_payload_read": false,
+  "G0": {
+    "status": "complete",
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/diagnostics/phase_g1_c1/results.json",
+    "reference_forward_max_difference": 0.0,
+    "real_Train_events": 256,
+    "largest_phase_mean_max_probability_difference": 0.07141868400867679,
+    "minimum_argmax_agreement": 0.8515625
+  },
+  "G1_diagnostics": {
+    "status": "complete",
+    "GPU": "NVIDIA H100L-1-12C MIG 1g.12gb",
+    "BF16": true,
+    "source": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R3/audit/profile_g1_c1/results.json",
+    "full_validation": [
+      {
+        "config": "probe_b1_stride4_t4_s42",
+        "events": 40000,
+        "seconds": 154.32703543300158,
+        "GPU_peak_MiB": 409.67138671875,
+        "memory": {
+          "parent_RSS_MiB": 1544.58203125,
+          "children_RSS_MiB": 3501.85546875,
+          "aggregate_RSS_MiB": 5044.265625
+        },
+        "finite": true,
+        "classification_metrics_used_for_selection": false
+      },
+      {
+        "config": "probe_b1_stride2_t4_s42",
+        "events": 40000,
+        "seconds": 421.4318067179993,
+        "GPU_peak_MiB": 851.962890625,
+        "memory": {
+          "parent_RSS_MiB": 1655.3046875,
+          "children_RSS_MiB": 3496.9375,
+          "aggregate_RSS_MiB": 5151.43359375
+        },
+        "finite": true,
+        "classification_metrics_used_for_selection": false
+      }
+    ],
+    "single_operation_events_per_second": [
+      45.65803047124439,
+      26.29099665135932
+    ],
+    "parallel_operation_events_per_second": 41.21429426788975
+  },
+  "G2_diagnostics": {
+    "status": "submitted",
+    "cluster": "1582994.0",
+    "schedd": "bigbird20.cern.ch",
+    "configurations": [
+      "configs/r3/probe_b2_control_t4_s42.json",
+      "configs/r3/probe_b2_relation_t4_s42.json"
+    ],
+    "candidate_audit_cluster": "1582995.0",
+    "candidate_audit_events": 1024
+  }
 }

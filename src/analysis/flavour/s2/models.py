@@ -175,8 +175,10 @@ class PointClassifier(nn.Module):
         # families; geometry/response masks are identical in every ablation.
         self.head=nn.Sequential(nn.Linear(dim*6+8,dim*2),nn.GELU(),nn.Dropout(.1),nn.Linear(dim*2,4))
 
-    def encode_local(self,nodes,local_mask):
+    def encode_local(self,nodes,local_mask,context=None):
         x=self.input(nodes)
+        if context is not None:
+            x=x+context
         distance=physical_distance(nodes) if self.architecture=='particlenet' else None
         for i,block in enumerate(self.local):
             if self.architecture=='part':
@@ -192,11 +194,15 @@ class PointClassifier(nn.Module):
         chunk=getattr(self,'local_chunk_blocks',256)
         compiled=getattr(self,'compiled_local',None)
         encode=compiled if compiled is not None and nodes.is_cuda else self.encode_local
+        context=batch.get('prelocal_context')
         for start in range(0,len(nodes),chunk):
+            values=(nodes[start:start+chunk],local_mask[start:start+chunk])
+            if context is not None:
+                values=(*values,context[start:start+chunk])
             if self.training and torch.is_grad_enabled():
-                encoded=checkpoint(encode,nodes[start:start+chunk],local_mask[start:start+chunk],use_reentrant=False)
+                encoded=checkpoint(encode,*values,use_reentrant=False)
             else:
-                encoded=encode(nodes[start:start+chunk],local_mask[start:start+chunk])
+                encoded=encode(*values)
             parts.append(encoded)
         local=torch.cat(parts)
         # Scatter complete block summaries into the event dimension.

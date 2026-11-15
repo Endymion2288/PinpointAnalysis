@@ -14,7 +14,7 @@ from analysis.flavour.inventory import COMPRESSION, write_json
 from analysis.flavour.s3.metrics import bootstrap_weights
 from analysis.flavour.v2.partitions import KEY, FAMILY, equal_identity_rows
 from analysis.flavour.v2.r1.accept import DOMAINS
-from analysis.flavour.v2.r1.evaluate import domain_report, scalar_summary, interval
+from analysis.flavour.v2.r1.evaluate import domain_report, scalar_summary, interval, SCALARS
 from analysis.flavour.v2.r1.interval_review import review_intervals
 from analysis.flavour.v2.r1.metrics import METRICS_REVISION
 from analysis.flavour.v2.r1.review import conditional_probabilities, direct_metrics, selected_rates
@@ -119,11 +119,36 @@ def independent_ranking(labels, probabilities):
     return values
 
 
-def run(root,replicates,workers,complete_only):
+def mean_seed_intervals(config, cache):
+    entries={e['name']:e for e in config['models']}
+    groups={}
+    for pair in config['pairs']:
+        a,b=entries[pair['a']],entries[pair['b']]
+        if a['seed']!=b['seed']:continue
+        key=tuple((e['family'],e['task'],e['kind']) for e in [a,b])+(pair['domain'],pair['reason'])
+        left,right=cache[(pair['a'],pair['domain'])],cache[(pair['b'],pair['domain'])]
+        groups.setdefault(key,[]).append((a['seed'],left[0]-right[0],left[1]-right[1]))
+    means=[]
+    for key,values in groups.items():
+        seeds=[v[0] for v in values]
+        if len(seeds)!=3 or set(seeds)!={17,42,2026}:continue
+        points=np.asarray([v[1] for v in values])
+        metrics=interval(points.mean(0),np.asarray([v[2] for v in values]).mean(0))
+        for c,name in enumerate(SCALARS):
+            finite=np.isfinite(points[:,c])
+            metrics[name]['per_seed_differences']=[float(v) if np.isfinite(v) else None for v in points[:,c]]
+            metrics[name]['training_seed_sample_SD']=float(points[finite,c].std(ddof=1)) if finite.sum()>1 else None
+        means.append({'a_family_task_kind':key[0],'b_family_task_kind':key[1],
+            'domain':key[2],'reason':key[3],'seeds':seeds,'metrics':metrics,
+            'scope':'paired physical-event intervals conditional on three realized trained seeds; training-seed SD and device/precision reported separately'})
+    return means
+
+
+def run(root,replicates,workers,complete_only,*,evaluation_config=None,output_name=None):
     started=time.perf_counter()
-    config=configuration(root,complete_only)
+    config=evaluation_config if evaluation_config is not None else configuration(root,complete_only)
     if not config['models']:raise ValueError('no completed scaling candidates')
-    destination=root/('evaluation_partial' if complete_only else 'evaluation')
+    destination=root/(output_name or ('evaluation_partial' if complete_only else 'evaluation'))
     destination.mkdir(exist_ok=True)
     write_json(destination/'config.json',config)
     catalog=pd.read_parquet(root/'data/catalog.parquet',filters=[('split','=','validation')]).sort_values(KEY).reset_index(drop=True)
@@ -163,7 +188,7 @@ def run(root,replicates,workers,complete_only):
     for pair in config['pairs']:
         a,b=cache[(pair['a'],pair['domain'])],cache[(pair['b'],pair['domain'])]
         pairs.append({**pair,'metrics':interval(a[0]-b[0],a[1]-b[1])})
-    result={'status':'complete','models':reports,'pairs':pairs,'mean_seed_pairs':[],
+    result={'status':'complete','models':reports,'pairs':pairs,'mean_seed_pairs':mean_seed_intervals(config,cache),
         'replicates':replicates,'bootstrap':design,'metrics_revision':METRICS_REVISION,
         'scope':'development Tune; endpoint primary, best-screen secondary; score-selected cuts descriptive',
         'seed_scope':config['seed_scope'],'seconds':time.perf_counter()-started,

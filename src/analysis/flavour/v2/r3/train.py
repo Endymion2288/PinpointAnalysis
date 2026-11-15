@@ -8,9 +8,8 @@ from torch.utils.data import DataLoader
 
 from analysis.flavour.s2.dataset import SpatialBatchSampler
 from analysis.flavour.v2.profile import init_worker
-from analysis.flavour.v2.r1.data import collate
 from analysis.flavour.v2.r2.train import OffsetSampler, run
-from analysis.flavour.v2.r3.data import R3Dataset
+from analysis.flavour.v2.r3.data import R3Dataset, collate
 from analysis.flavour.v2.r3.sampling import GlobalBatchSampler
 from analysis.flavour.v2.r3.models import build_model, branch_groups
 

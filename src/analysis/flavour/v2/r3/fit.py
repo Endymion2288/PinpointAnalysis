@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from analysis.flavour.v2.r1.fit import run
-from analysis.flavour.v2.r3.data import R3Dataset
+from analysis.flavour.v2.r3.data import R3Dataset, collate
 from analysis.flavour.v2.r3.models import build_model, branch_groups
 
 
@@ -34,7 +34,7 @@ def main():
             'bf16':bf16,'precision':'BF16_encoder_FP32_head' if bf16 else 'FP32'}
         return result
     run(settings,config_transform=transform,model_factory=build_model,
-        group_factory=branch_groups,dataset_factory=R3Dataset)
+        group_factory=branch_groups,dataset_factory=R3Dataset,collate_fn=collate)
 
 
 if __name__=='__main__':
