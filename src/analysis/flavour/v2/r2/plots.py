@@ -138,6 +138,8 @@ def run(root,partial):
     axes[0,1].set(title='Low occupancy: common BA3',ylabel='Balanced accuracy (%)',xlabel='Scaling design')
     axes[1,0].set(title='Low occupancy: muon average precision',ylabel='Balanced-prior AP',xlabel='Scaling design')
     axes[1,1].set(title='Low occupancy: muon ranking',ylabel='Balanced-prior AUROC',xlabel='Scaling design')
+    axes[1,0].axhline(1/3,color='gray',linestyle=':',label='Chance AP (1/3)')
+    axes[1,1].axhline(.5,color='gray',linestyle=':',label='Chance AUROC (0.5)')
     for ax in axes.flat:ax.grid(alpha=.22);ax.legend()
     save(fig,folder,'r2_low_occupancy_partial' if partial else 'r2_low_occupancy')
     readout_figures(root,partial)

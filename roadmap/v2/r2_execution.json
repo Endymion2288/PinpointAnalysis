@@ -1,5 +1,5 @@
 {
-  "status": "initial_six_models_running_not_R2_complete",
+  "status": "five_models_complete_three_training_not_R2_complete",
   "root": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/R2",
   "contracts": "configs/r2/campaign.json",
   "measured_preflight": [
@@ -164,7 +164,8 @@
         "b1_d0_t4_s42",
         "b1_d1_t3_s42",
         "b1_d1_t4_s42"
-      ]
+      ],
+      "status_at_snapshot": "complete"
     },
     {
       "name": "r2_d2_c2",
@@ -176,7 +177,30 @@
       "models": [
         "b1_d2_t3_s42",
         "b1_d2_t4_s42"
-      ]
+      ],
+      "status_at_snapshot": "running"
+    },
+    {
+      "name": "r2_d1wd_c1",
+      "backend": "HTCondor",
+      "schedd": "bigbird20.cern.ch",
+      "cluster": 1582978,
+      "GPU": "NVIDIA H100L-2-24C MIG 2g.24gb",
+      "parallel": 1,
+      "models": [
+        "b1_d1wd_t3_s42"
+      ],
+      "status_at_snapshot": "running"
+    },
+    {
+      "name": "pinpoint-r2-d1wd-t4-k4",
+      "backend": "Kubeflow",
+      "GPU": "NVIDIA H100 NVL MIG 3g.47gb",
+      "parallel": 1,
+      "models": [
+        "b1_d1wd_t4_s42"
+      ],
+      "status_at_snapshot": "running"
     }
   ],
   "gates": {
@@ -210,8 +234,8 @@
     "allocation accounting and final R2 acceptance"
   ],
   "Cal_A_Cut_B_Confirm_payload_read": false,
-  "last_progress_UTC": "2026-11-15T10:51:48.885896+00:00",
-  "latest_stage_report": "../../workbook/2026-11-15_stage278_research_synthesis_and_r2_progress.md",
+  "last_progress_UTC": "2026-11-15T12:31:41.637557+00:00",
+  "latest_stage_report": "../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md",
   "intermediate_screen_progress": [
     {
       "name": "b1_d0_t3_s42",
@@ -280,5 +304,78 @@
       "scope": "fixed4k Tune screen; not full40k endpoint evaluation"
     }
   ],
-  "progress_review": "r2_progress_review.json"
+  "progress_review": "r2_progress_review.json",
+  "conditional_extension_models": [
+    "b1_d1wd_t3_s42",
+    "b1_d1wd_t4_s42"
+  ],
+  "current_matrix": {
+    "models": 8,
+    "checkpoint_views": 16,
+    "pairs": 128,
+    "domains": 11,
+    "original_six_model_primary_pairs_retained": 72
+  },
+  "extension_preflight": [
+    {
+      "name": "b1_d1wd_t3_s42",
+      "total_updates": 112645,
+      "total_exposures": 900000,
+      "non_tau_exposures": 900000,
+      "unique_events": 75000,
+      "passes": 12,
+      "lr_sum": 17.701315577074674,
+      "minimum_row_exposures": 12,
+      "maximum_row_exposures": 12
+    },
+    {
+      "name": "b1_d1wd_t4_s42",
+      "total_updates": 150153,
+      "total_exposures": 1200000,
+      "non_tau_exposures": 900000,
+      "unique_events": 100000,
+      "passes": 12,
+      "lr_sum": 23.595463349912084,
+      "minimum_row_exposures": 12,
+      "maximum_row_exposures": 12
+    }
+  ],
+  "completed_endpoint_summary": [
+    {
+      "name": "b1_d0_t3_s42",
+      "BA3": 0.5665,
+      "NLL3": 0.8713217931394462,
+      "exposures": 300000,
+      "status": "complete"
+    },
+    {
+      "name": "b1_d0_t4_s42",
+      "BA3": 0.5653333333333334,
+      "NLL3": 0.8645861071669045,
+      "exposures": 400000,
+      "status": "complete"
+    },
+    {
+      "name": "b1_d1_t3_s42",
+      "BA3": 0.5317,
+      "NLL3": 1.1437383627193058,
+      "exposures": 900000,
+      "status": "complete"
+    },
+    {
+      "name": "b1_d1_t4_s42",
+      "BA3": 0.5373,
+      "NLL3": 1.0151061500828715,
+      "exposures": 1200000,
+      "status": "complete"
+    },
+    {
+      "name": "b1_d2_t3_s42",
+      "BA3": 0.5709666666666667,
+      "NLL3": 0.8558668029296831,
+      "exposures": 900000,
+      "status": "complete"
+    }
+  ],
+  "latest_data_scaling_review": "r2_data_scaling_review.json"
 }

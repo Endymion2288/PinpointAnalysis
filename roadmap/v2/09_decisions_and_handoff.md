@@ -54,6 +54,8 @@
 
 随后T4完整Train gap也显示过拟合，已按相同系数补上对应T4控制，见[stage281](../../workbook/2026-11-15_stage281_r2_four_class_regularization_and_diagnostics.md)。当前实际矩阵为8模型、16视图、128配对；上一段七模型为当时的启动次序。正式图新增Train/Tune gap及稀疏μ排序，收敛摘要用四个screen点计算三个连续窗口变化。D1WD两项控制仍在运行，尚未形成最终正则化结论。
 
+更多unique的三类结果已形成，见[stage282](../../workbook/2026-11-15_stage282_r2_more_unique_data_results.md)：D2−D1的BA3为+3.927 pp [3.381,4.439]，D2−D0则为+.447 pp [.078,.815]，后者低于2 pp实用门槛且e/NC recall下降。D2稀疏μ AUROC约.548，稀疏BA和固定FPR效率未出现已建立的净改善。全局bias仍未提高BA；温度改善NLL但不改变argmax。数据收益成立，尚不能自动决定1M或宣布容量/表示达到上限。D2 T4与两个D1WD终点仍是当前完整R2的必要依赖。
+
 ## 4. R3–R7的继续路线
 
 | Stage | Concrete work | Exit criterion |

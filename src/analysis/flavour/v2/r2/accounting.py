@@ -55,6 +55,9 @@ def main():
         interactive_operation_lower_bound_device_hours=sum(r['operation_lower_bound_seconds'] for r in interactive)/3600,
         interactive_total_allocation_seconds='not measured; operation lower bounds reported separately',
         worker_wall_seconds_are_not_summed_as_device_hours=True)
+    submissions=[json.loads(p.read_text()) for p in (args.root/'runtime').glob('*.submission.json')]
+    resources['rejected_before_allocation']=[{k:r.get(k) for k in ['name','backend','schedd','returncode','stderr']}
+        for r in submissions if r.get('submitted') is False]
     write_json(args.root/'resources.json',resources)
     print(json.dumps({k:resources[k] for k in ['device_hours','device_hours_by_model_or_partition',
         'active_or_unresolved','interactive_operation_lower_bound_device_hours']}),flush=True)
