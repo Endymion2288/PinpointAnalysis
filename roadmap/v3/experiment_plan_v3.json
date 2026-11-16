@@ -1,10 +1,11 @@
 {
   "schema_version": 3,
   "document_version": "v3_2026-11-15",
-  "status": "V0_V1_complete_ready_for_V2",
-  "completed_phases": ["V0", "V1"],
-  "completed_work_orders": ["W3-01", "W3-02", "W3-03", "W3-04", "W3-05"],
+  "status": "V0_V1_V2_V3_complete_ready_for_V4",
+  "completed_phases": ["V0", "V1", "V2", "V3"],
+  "completed_work_orders": ["W3-01", "W3-02", "W3-03", "W3-04", "W3-05", "W3-06", "W3-07", "W3-08", "W3-09"],
   "v0_v1_results": "roadmap/v3/v0_v1_results.json",
+  "v2_v3_results": "roadmap/v3/v2_v3_results.json",
   "base_commit": "d4aecc5",
   "review_through_workbook_stage": 307,
   "superseded_v2_branches": {

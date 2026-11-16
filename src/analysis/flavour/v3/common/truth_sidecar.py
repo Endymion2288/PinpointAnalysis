@@ -157,17 +157,20 @@ def extract_shard_sidecar(
     geometry: dict,
     bounds: dict,
     out_dir: Path,
+    target_split: str = 'train',
 ) -> dict:
-    """Extract event & cluster/bar truth sidecars for all train events in one shard."""
+    """Extract event & cluster/bar truth sidecars for allowed splits (train or validation audit)."""
+    if target_split not in ('train', 'validation'):
+        raise ValueError(f'truth sidecar extraction refuses split={target_split!r}; sealed splits forbidden')
     started = time.perf_counter()
     prov = pd.read_parquet(shard_path / 'provenance.parquet')
-    train_mask = (prov['split'] == 'train').to_numpy()
-    train_indices = np.flatnonzero(train_mask)
-    if len(train_indices) == 0:
+    target_mask = (prov['split'] == target_split).to_numpy()
+    target_indices = np.flatnonzero(target_mask)
+    if len(target_indices) == 0:
         return {
             'shard': shard_path.name,
             'events': 0,
-            'skipped_validation_only': True,
+            'skipped_empty_split': True,
             'seconds': time.perf_counter() - started,
         }
 
@@ -176,7 +179,7 @@ def extract_shard_sidecar(
     n_scint = bounds['n_scint_panels']
     n_bars = bounds['n_bars']
 
-    sub_prov = prov.iloc[train_indices].copy().reset_index(drop=True)
+    sub_prov = prov.iloc[target_indices].copy().reset_index(drop=True)
     n_ev = len(sub_prov)
 
     # Preallocate output buffers
@@ -213,7 +216,7 @@ def extract_shard_sidecar(
     bar_rels: list[np.ndarray] = [None] * n_ev  # type: ignore[list-item]
 
     sub_prov['local_idx'] = np.arange(n_ev)
-    sub_prov['shard_idx'] = train_indices
+    sub_prov['shard_idx'] = target_indices
 
     for (run, chunk), group in sub_prov.groupby(['run', 'chunk'], sort=True):
         root_path = input_root / str(int(run)) / f'{int(run)}_{int(chunk):03d}.root'

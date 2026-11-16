@@ -56,12 +56,26 @@ def collect_v3_resources(root: Path) -> dict:
     kf_pods: list[dict] = []
     kf_jobs: list[dict] = []
     if any(ev.get('backend') == 'kubeflow' for _, ev in parsed):
-        p_res = subprocess.run(['kubectl', '--request-timeout=30s', 'get', 'pods', '-n', 'xcheng', '-l', 'app=pinpoint-v3', '-o', 'json'], capture_output=True, text=True)
-        if p_res.returncode == 0 and p_res.stdout.strip():
-            kf_pods = json.loads(p_res.stdout).get('items', [])
-        j_res = subprocess.run(['kubectl', '--request-timeout=30s', 'get', 'jobs', '-n', 'xcheng', '-l', 'app=pinpoint-v3', '-o', 'json'], capture_output=True, text=True)
-        if j_res.returncode == 0 and j_res.stdout.strip():
-            kf_jobs = json.loads(j_res.stdout).get('items', [])
+        for target, cmd in (
+            (kf_pods, ['kubectl', '--request-timeout=5s', 'get', 'pods', '-n', 'xcheng', '-l', 'app=pinpoint-v3', '-o', 'json']),
+            (kf_jobs, ['kubectl', '--request-timeout=5s', 'get', 'jobs', '-n', 'xcheng', '-l', 'app=pinpoint-v3', '-o', 'json']),
+        ):
+            try:
+                res = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=10)
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                res = None
+            if res is not None and res.returncode == 0 and res.stdout.strip():
+                target.extend(json.loads(res.stdout).get('items', []))
+
+    grp_by_alloc: dict[str, dict] = {}
+    for gp in sorted(root.rglob('groups/*.json')):
+        try:
+            gd = json.loads(gp.read_text())
+        except Exception:
+            continue
+        alloc = gd.get('allocation_id')
+        if alloc:
+            grp_by_alloc[str(alloc)] = gd
 
     rows = []
     active_or_unresolved = []
@@ -147,6 +161,15 @@ def collect_v3_resources(root: Path) -> dict:
                 if end_t is None and job.get('status', {}).get('completionTime'):
                     end_t = datetime.fromisoformat(job['status']['completionTime'].replace('Z', '+00:00'))
             wall_s = max(0.0, ((end_t or now) - sched_t).total_seconds()) if sched_t else 0.0
+            grp_rec = grp_by_alloc.get(name)
+            if phase == 'Unknown' and grp_rec is not None:
+                gst = grp_rec.get('status')
+                if gst == 'complete':
+                    phase = 'Succeeded'
+                elif gst == 'failed':
+                    phase = 'Failed'
+            if wall_s == 0.0 and grp_rec is not None:
+                wall_s = float(grp_rec.get('wall_seconds') or 0.0)
             gpu_h = wall_s / 3600.0 if ev.get('gpu') else 0.0
             if phase not in ('Succeeded', 'Failed', 'AbortedSnapshot'):
                 active_or_unresolved.append({'name': name, 'backend': 'kubeflow', 'phase': phase})
