@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
 import os
@@ -24,27 +25,44 @@ from analysis.flavour.v2.profile import init_worker, shutdown_loader
 from analysis.flavour.v2.r3.mapped_inputs import write_mapped_items
 from analysis.flavour.v3.common.datasets import V3EvalDataset
 from analysis.flavour.v3.v1_b1pp.representation import extract_b1pp_item
+from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import extract_pf_item
+
+
+CLUSTER_SIDECAR_FILES = (
+    'pix_offsets.bin',
+    'bar_offsets.bin',
+    'cluster_first_channel_id.bin',
+    'cluster_origin.bin',
+    'cluster_ancestry_id.bin',
+    'pixel_rel_target.bin',
+    'bar_rel_target.bin',
+    'manifest.json',
+)
 
 
 def _identity_collate(xs: list[dict]) -> list[dict]:
     return xs
 
 
-def _build_shared_b1pp_split(
+def _build_shared_split(
     data_root: Path,
     split: str,
     out_dir: Path,
     pkl_path: Path,
     scratch: Path,
     workers: int,
+    item_transform,
+    ds_config: dict | None = None,
 ) -> dict:
     t0 = time.perf_counter()
+    cfg = dict(ds_config or {})
+    cfg.setdefault('cache_shards', 2)
     ds = V3EvalDataset(
         data_root,
         split=split,
-        config={'cache_shards': 2},
+        config=cfg,
         cache_dir=scratch,
-        item_transform=extract_b1pp_item,
+        item_transform=item_transform,
     )
     loader_kw: dict = {
         'batch_sampler': BatchSampler(SequentialSampler(ds), batch_size=64, drop_last=False),
@@ -70,6 +88,25 @@ def _build_shared_b1pp_split(
     }
 
 
+def _stage_cluster_sidecar_dir(src_dir: Path, dst_dir: Path, workers: int = 4) -> dict:
+    t0 = time.perf_counter()
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    files = [name for name in CLUSTER_SIDECAR_FILES if (src_dir / name).exists()]
+
+    def _copy_one(name: str) -> int:
+        shutil.copyfile(src_dir / name, dst_dir / name)
+        return int((dst_dir / name).stat().st_size)
+
+    with ThreadPoolExecutor(max_workers=min(4, max(1, workers))) as pool:
+        sizes = list(pool.map(_copy_one, files))
+    return {
+        'source': str(src_dir),
+        'local_dir': str(dst_dir),
+        'bytes': int(sum(sizes)),
+        'seconds': float(time.perf_counter() - t0),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
@@ -77,6 +114,8 @@ def main() -> None:
     parser.add_argument('--configs', type=Path, nargs='+', required=True)
     parser.add_argument('--parallel', type=int, default=2)
     parser.add_argument('--share-b1pp-inputs', action='store_true')
+    parser.add_argument('--share-pf-inputs', action='store_true')
+    parser.add_argument('--stage-cluster-sidecar', type=Path, default=None)
     parser.add_argument('--cache-workers', type=int, default=4)
     parser.add_argument('--train-module', default='analysis.flavour.v3.v1_b1pp.train')
     args = parser.parse_args()
@@ -120,24 +159,39 @@ def main() -> None:
         write_json(record_path, record)
 
         env = dict(os.environ, PINPOINT_V3_SHARED_STAGE=stage['local_shard_root'])
-        if args.share_b1pp_inputs:
+        if args.share_b1pp_inputs and args.share_pf_inputs:
+            raise ValueError('Use at most one of --share-b1pp-inputs or --share-pf-inputs')
+
+        if args.share_b1pp_inputs or args.share_pf_inputs:
             if any(c.get('drop_modality') is not None for c in configs):
-                raise ValueError('--share-b1pp-inputs requires drop_modality=None for all configs')
+                raise ValueError('Shared input caching requires drop_modality=None for all configs')
+            if args.share_pf_inputs and len({c.get('quantize_xy_mm') for c in configs}) != 1:
+                raise ValueError('--share-pf-inputs requires matching quantize_xy_mm across configs')
             old_stage = os.environ.get('PINPOINT_V3_SHARED_STAGE')
             os.environ['PINPOINT_V3_SHARED_STAGE'] = stage['local_shard_root']
             try:
                 prep = {}
-                for split, var in (
-                    ('train', 'PINPOINT_V3_SHARED_TRAIN_B1PP'),
-                    ('validation', 'PINPOINT_V3_SHARED_TUNE_B1PP'),
-                ):
-                    out_dir = scratch_dir / f'shared_{split}_b1pp'
-                    pkl_path = scratch_dir / f'shared_{split}_b1pp.pkl'
-                    prep[split] = _build_shared_b1pp_split(
-                        data_root, split, out_dir, pkl_path, scratch_dir, args.cache_workers
+                if args.share_b1pp_inputs:
+                    spec_vars = (
+                        ('train', 'PINPOINT_V3_SHARED_TRAIN_B1PP', 'b1pp', extract_b1pp_item, {}),
+                        ('validation', 'PINPOINT_V3_SHARED_TUNE_B1PP', 'b1pp', extract_b1pp_item, {}),
+                    )
+                    rec_key = 'shared_b1pp_prep'
+                else:
+                    q_mm = configs[0].get('quantize_xy_mm')
+                    spec_vars = (
+                        ('train', 'PINPOINT_V3_SHARED_TRAIN_PF', 'pf', extract_pf_item, {'quantize_xy_mm': q_mm}),
+                        ('validation', 'PINPOINT_V3_SHARED_TUNE_PF', 'pf', extract_pf_item, {'quantize_xy_mm': q_mm}),
+                    )
+                    rec_key = 'shared_pf_prep'
+                for split, var, tag, fn, ds_cfg in spec_vars:
+                    out_dir = scratch_dir / f'shared_{split}_{tag}'
+                    pkl_path = scratch_dir / f'shared_{split}_{tag}.pkl'
+                    prep[split] = _build_shared_split(
+                        data_root, split, out_dir, pkl_path, scratch_dir, args.cache_workers, fn, ds_cfg
                     )
                     env[var] = str(pkl_path)
-                    record['shared_b1pp_prep'] = prep
+                    record[rec_key] = prep
                     write_json(record_path, record)
             finally:
                 if old_stage is None:
@@ -145,6 +199,16 @@ def main() -> None:
                 else:
                     os.environ['PINPOINT_V3_SHARED_STAGE'] = old_stage
             shutil.rmtree(scratch_dir / 'native', ignore_errors=True)
+
+        if args.stage_cluster_sidecar is not None:
+            sc_rep = _stage_cluster_sidecar_dir(
+                args.stage_cluster_sidecar,
+                scratch_dir / 'cluster_sidecar',
+                workers=args.cache_workers,
+            )
+            env['PINPOINT_V3_LOCAL_CLUSTER_SIDECAR'] = sc_rep['local_dir']
+            record['cluster_sidecar_staging'] = sc_rep
+            write_json(record_path, record)
 
         pending = list(zip(args.configs, configs))
         live: list[tuple[subprocess.Popen, dict, object, Path]] = []

@@ -135,6 +135,7 @@ class V3TrainDataset(V3EvalDataset):
         self.sidecar_root = Path(sidecar_root) if sidecar_root is not None else None
         self.event_sidecar: pd.DataFrame | None = None
         self.sample_weights: np.ndarray | None = None
+        self.cluster_sidecar_dir: Path | None = None
         self.cluster_memmap: dict | None = None
 
         if self.sidecar_root is not None and (self.sidecar_root / 'event_sidecar.parquet').exists():
@@ -146,6 +147,13 @@ class V3TrainDataset(V3EvalDataset):
                 raise ValueError('train rows missing from truth_sidecar event_sidecar.parquet')
             self.event_sidecar = sc_df.iloc[pos].reset_index(drop=True)
 
+        if self.config.get('load_cluster_sidecar', False):
+            local_sc = os.environ.get('PINPOINT_V3_LOCAL_CLUSTER_SIDECAR')
+            if local_sc and Path(local_sc).exists():
+                self.cluster_sidecar_dir = Path(local_sc)
+            elif self.sidecar_root is not None and (self.sidecar_root / 'cluster_sidecar').exists():
+                self.cluster_sidecar_dir = self.sidecar_root / 'cluster_sidecar'
+
         if self.config.get('sample_weight_path'):
             w_df = pd.read_parquet(self.config['sample_weight_path'], columns=KEY + ['energy_match_weight'])
             w_pos = pd.MultiIndex.from_frame(w_df[KEY]).get_indexer(
@@ -154,6 +162,35 @@ class V3TrainDataset(V3EvalDataset):
             if (w_pos < 0).any():
                 raise ValueError('train rows missing from sample_weight_path')
             self.sample_weights = w_df['energy_match_weight'].to_numpy(dtype=np.float32)[w_pos]
+
+    def _get_cluster_memmaps(self) -> dict | None:
+        if self.cluster_sidecar_dir is None:
+            return None
+        if self.cluster_memmap is None:
+            pix_off = np.memmap(self.cluster_sidecar_dir / 'pix_offsets.bin', dtype='<i8', mode='r')
+            bar_off = np.memmap(self.cluster_sidecar_dir / 'bar_offsets.bin', dtype='<i8', mode='r')
+            n_pix = int(pix_off[-1])
+            n_bar = int(bar_off[-1])
+            self.cluster_memmap = {
+                'pix_off': pix_off,
+                'bar_off': bar_off,
+                'first_cid': np.memmap(
+                    self.cluster_sidecar_dir / 'cluster_first_channel_id.bin', dtype='<u8', mode='r', shape=(n_pix,)
+                ),
+                'origin': np.memmap(
+                    self.cluster_sidecar_dir / 'cluster_origin.bin', dtype='|i1', mode='r', shape=(n_pix,)
+                ),
+                'ancestry': np.memmap(
+                    self.cluster_sidecar_dir / 'cluster_ancestry_id.bin', dtype='<i4', mode='r', shape=(n_pix, 2)
+                ),
+                'pix_rel': np.memmap(
+                    self.cluster_sidecar_dir / 'pixel_rel_target.bin', dtype='<f2', mode='r', shape=(n_pix, 3)
+                ),
+                'bar_rel': np.memmap(
+                    self.cluster_sidecar_dir / 'bar_rel_target.bin', dtype='<f2', mode='r', shape=(n_bar, 3)
+                ),
+            }
+        return self.cluster_memmap
 
     def __getitem__(self, index: int) -> dict:
         item = super().__getitem__(index)
@@ -167,6 +204,21 @@ class V3TrainDataset(V3EvalDataset):
                 [row['vertex_x_mm'], row['vertex_y_mm'], row['vertex_z_mm']], dtype=np.float32
             )
             item['vertex_valid'] = int(row['vertex_valid'])
+            item['vis_kinematics'] = np.array(
+                [row['vis_pz_log1p'], row['vis_pt_log1p'], row['vis_cos_dphi'], row['vis_sin_dphi']],
+                dtype=np.float32,
+            )
+            item['kin_valid'] = int(row['kin_valid'])
+            mm = self._get_cluster_memmaps()
+            if mm is not None:
+                si = int(row['sidecar_index'])
+                ps, pe = int(mm['pix_off'][si]), int(mm['pix_off'][si + 1])
+                bs, be = int(mm['bar_off'][si]), int(mm['bar_off'][si + 1])
+                item['sc_first_cid'] = np.array(mm['first_cid'][ps:pe], copy=True)
+                item['sc_origin'] = np.array(mm['origin'][ps:pe], copy=True)
+                item['sc_ancestry'] = np.array(mm['ancestry'][ps:pe], copy=True)
+                item['sc_pix_rel'] = np.array(mm['pix_rel'][ps:pe], copy=True)
+                item['sc_bar_rel'] = np.array(mm['bar_rel'][bs:be], copy=True)
         if self.sample_weights is not None:
             item['sample_weight'] = float(self.sample_weights[index])
         return item
