@@ -19,9 +19,11 @@ from analysis.flavour.v3.v5_confirm.freeze import require_v5_freeze
 from analysis.flavour.v3.v5_confirm.infer_unsealed import _StressVariantDataset
 from analysis.flavour.v3.v5_confirm.significance import (
     apply_frozen_pipeline,
+    compute_locked_slice_report,
     fit_cal_a_calibrators,
     lock_cut_b_operating_points,
     profile_likelihood_significance,
+    vectorized_family_block_bootstrap,
 )
 
 
@@ -103,7 +105,7 @@ class TestV5Confirm(unittest.TestCase):
     def test_cal_a_cut_b_confirm_zero_retune_and_empty_domain(self) -> None:
         ref_cal, mem_cal = _synthetic_split(800, seed=101)
         ref_cut, mem_cut = _synthetic_split(1200, seed=102)
-        ref_conf, mem_conf = _synthetic_split(1500, seed=103)
+        ref_conf, mem_conf = _synthetic_split(5000, seed=103)
 
         cal_params = fit_cal_a_calibrators(mem_cal, ref_cal, member_names=['m_strong', 'm_weak'])
         cal_snapshot = json.dumps(cal_params, sort_keys=True)
@@ -122,6 +124,17 @@ class TestV5Confirm(unittest.TestCase):
         self.assertTrue(np.allclose(applied['s_tau'][empty], -25.0, atol=1e-7))
         self.assertFalse(applied['pass_global_1pct'][empty].any())
         self.assertFalse(applied['pass_np_1pct'][empty].any())
+
+        # Bootstrap cond_BA3 and tail 0.1% ROC CIs must bracket the point estimates (regression check)
+        labels_c = ref_conf['label'].to_numpy(dtype=np.int64)
+        all_m = np.ones(len(labels_c), dtype=bool)
+        rep_all = compute_locked_slice_report(labels_c, applied['probs'], applied['s_tau'], applied, all_m)
+        boot_all = vectorized_family_block_bootstrap(
+            labels_c, applied['probs'], applied['s_tau'], applied, ref_conf['family_lo'].to_numpy(), all_m, n_boot=60, seed=42
+        )
+        self.assertGreater(boot_all['cond_BA3']['ci95'][0], rep_all['cond_BA3'] - 0.15)
+        self.assertLess(boot_all['cond_BA3']['ci95'][1], rep_all['cond_BA3'] + 0.15)
+        self.assertGreater(boot_all['within_slice_S_tau_0p1pct']['ci95'][0], 0.0)
 
     def test_profile_likelihood_monotonicity_under_systematics(self) -> None:
         rng = np.random.default_rng(77)

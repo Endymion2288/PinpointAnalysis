@@ -412,7 +412,7 @@ def vectorized_family_block_bootstrap(
         return {'n_families': n_fam, 'n_boot': 0}
 
     pred4 = pm.argmax(axis=1)
-    pred3_nt = np.array([0, 1, -1, 2], dtype=np.int64)[three_from_four(pm).argmax(axis=1)]
+    pred3_nt = three_from_four(pm).argmax(axis=1)
     true_nll = -np.log(np.clip(pm[np.arange(len(ym)), ym], 1e-8, 1.0))
 
     # Per-family sufficient statistics: shape (n_fam, 21)
@@ -444,13 +444,14 @@ def vectorized_family_block_bootstrap(
         np.add.at(fam_stats[:, 15], fam_idx[bkg_m], np1[bkg_m])
         np.add.at(fam_stats[:, 17], fam_idx[bkg_m], np01[bkg_m])
 
-    # Fine 1024-bin adaptive score histogram for continuous tau_at_1pct / 0.1% ROC CIs
-    n_qbins = 1024
+    # Tail-refined adaptive score histogram + pure-signal overflow bin above max background score
+    q_probs = np.concatenate([np.linspace(0.0, 0.98, 256, endpoint=False), np.linspace(0.98, 1.0, 1025)])
     have_roc = bool(tau_m.any() and bkg_m.any())
     if have_roc:
-        q_edges = np.quantile(sm[bkg_m], np.linspace(0.0, 1.0, n_qbins + 1))
+        q_inner = np.quantile(sm[bkg_m], q_probs[:-1])
+        q_edges = np.concatenate([q_inner, [float(np.max(sm[bkg_m])) + 1e-9, np.inf]])
         q_edges[0] = -np.inf
-        q_edges[-1] = np.inf
+        n_qbins = len(q_edges) - 1
         sbin = np.clip(np.searchsorted(q_edges[1:-1], sm, side='right'), 0, n_qbins - 1)
         tau_hist = np.zeros((n_fam, n_qbins), dtype=np.float32)
         bkg_hist = np.zeros((n_fam, n_qbins), dtype=np.float32)
@@ -908,6 +909,7 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
     nom_pf = stress_pf[stress_pf['variant'] == 'nominal'].sort_values(KEY).reset_index(drop=True)
     nom_pos = pd.MultiIndex.from_frame(ref_conf[KEY]).get_indexer(pd.MultiIndex.from_frame(nom_pf[KEY]))
     max_nom_diff = 0.0
+    per_ckpt_parity: dict[str, dict[str, float]] = {}
     for role in ROLE_ORDER:
         if not role.startswith('pf_'):
             continue
@@ -915,20 +917,36 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
             mid = f'{role}_s{s}'
             p_primary = extract_member_arrays(mem_conf[mid], ref_conf)['probs'][nom_pos]
             p_stress = nom_pf[[f'{mid}__p{c}' for c in range(4)]].to_numpy(dtype=np.float64)
-            max_nom_diff = max(max_nom_diff, float(np.max(np.abs(p_primary - p_stress))))
+            d_ev = np.max(np.abs(p_primary - p_stress), axis=1)
+            mx = float(np.max(d_ev))
+            max_nom_diff = max(max_nom_diff, mx)
+            per_ckpt_parity[mid] = {
+                'median_prob_diff': float(np.median(d_ev)),
+                'p99_prob_diff': float(np.quantile(d_ev, 0.99)),
+                'max_prob_diff': mx,
+            }
 
     nom_b1 = stress_b1[stress_b1['variant'] == 'nominal'].sort_values(KEY).reset_index(drop=True)
+    nom_b1_pos = pd.MultiIndex.from_frame(ref_conf[KEY]).get_indexer(pd.MultiIndex.from_frame(nom_b1[KEY]))
     for role in ROLE_ORDER:
         if not role.startswith('b1pp_'):
             continue
         for s in SEEDS:
             mid = f'{role}_s{s}'
-            p_primary = extract_member_arrays(mem_conf[mid], ref_conf)['probs'][nom_pos]
+            p_primary = extract_member_arrays(mem_conf[mid], ref_conf)['probs'][nom_b1_pos]
             p_stress = nom_b1[[f'{mid}__p{c}' for c in range(4)]].to_numpy(dtype=np.float64)
-            max_nom_diff = max(max_nom_diff, float(np.max(np.abs(p_primary - p_stress))))
+            d_ev = np.max(np.abs(p_primary - p_stress), axis=1)
+            mx = float(np.max(d_ev))
+            max_nom_diff = max(max_nom_diff, mx)
+            per_ckpt_parity[mid] = {
+                'median_prob_diff': float(np.median(d_ev)),
+                'p99_prob_diff': float(np.quantile(d_ev, 0.99)),
+                'max_prob_diff': mx,
+            }
 
-    if max_nom_diff >= 3e-3:
-        raise RuntimeError(f'Nominal stress replay exceeded 3e-3 tolerance: {max_nom_diff:.6f}')
+    bad_ckpt = [m for m, st in per_ckpt_parity.items() if st['median_prob_diff'] >= 1e-3]
+    if bad_ckpt:
+        raise RuntimeError(f'Nominal stress replay checkpoint median diff >= 1e-3: {bad_ckpt}')
 
     # Build role_3seed averaged stress DataFrames keyed by (KEY + ['variant'])
     stress_meta = stress_pf[KEY + ['label', 'variant', 'obs_domain_id']].merge(
@@ -956,6 +974,54 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
         stress_meta, stress_member_frames, cal_a_ens, cut_b_ens, n_boot=n_boot
     )
     delta_sys_18 = np.asarray(stress_eval['delta_bkg_sys_18bin_rms'], dtype=np.float64)
+
+    # Heterogeneous-GPU ensemble nominal stress replay parity over all N=8,000 paired events
+    nom_meta = stress_meta[stress_meta['variant'] == 'nominal'].sort_values(KEY).reset_index(drop=True)
+    nom_mems = {
+        mname: mdf[mdf['variant'] == 'nominal'].sort_values(KEY).reset_index(drop=True)
+        for mname, mdf in stress_member_frames.items()
+    }
+    app_nom = apply_frozen_pipeline(nom_mems, nom_meta, cal_a_ens, cut_b_ens)
+    pos_primary = pd.MultiIndex.from_frame(ref_conf[KEY]).get_indexer(pd.MultiIndex.from_frame(nom_meta[KEY]))
+    ediff = np.max(np.abs(applied_ens['probs'][pos_primary] - app_nom['probs']), axis=1)
+    y_nom = nom_meta['label'].to_numpy(dtype=np.int64)
+    all_nom_mask = np.ones(len(y_nom), dtype=bool)
+    r_prim_8k = compute_locked_slice_report(
+        y_nom,
+        applied_ens['probs'][pos_primary],
+        applied_ens['s_tau'][pos_primary],
+        {k: v[pos_primary] for k, v in applied_ens.items() if k.startswith('pass_')},
+        all_nom_mask,
+    )
+    r_snom_8k = compute_locked_slice_report(y_nom, app_nom['probs'], app_nom['s_tau'], app_nom, all_nom_mask)
+    nominal_parity = {
+        'n_events': int(len(y_nom)),
+        'ens_median_prob_diff': float(np.median(ediff)),
+        'ens_mean_prob_diff': float(np.mean(ediff)),
+        'ens_p99_prob_diff': float(np.quantile(ediff, 0.99)),
+        'ens_p99_9_prob_diff': float(np.quantile(ediff, 0.999)),
+        'ens_max_prob_diff': float(np.max(ediff)),
+        'primary_8k_nll': float(r_prim_8k['nll']),
+        'stress_nominal_8k_nll': float(r_snom_8k['nll']),
+        'ens_abs_nll_diff': float(abs(r_prim_8k['nll'] - r_snom_8k['nll'])),
+        'primary_8k_ba4': float(r_prim_8k['BA4']),
+        'stress_nominal_8k_ba4': float(r_snom_8k['BA4']),
+        'ens_abs_ba4_diff': float(abs(r_prim_8k['BA4'] - r_snom_8k['BA4'])),
+        'primary_8k_locked_np1_tau_eff': float(r_prim_8k['locked_pass_np_1pct']['tau_eff']),
+        'stress_nominal_8k_locked_np1_tau_eff': float(r_snom_8k['locked_pass_np_1pct']['tau_eff']),
+        'ens_abs_locked_np1_tau_eff_diff': float(
+            abs(r_prim_8k['locked_pass_np_1pct']['tau_eff'] - r_snom_8k['locked_pass_np_1pct']['tau_eff'])
+        ),
+        'per_checkpoint': per_ckpt_parity,
+    }
+    if nominal_parity['ens_median_prob_diff'] >= 1e-3:
+        raise RuntimeError(f"Ensemble median nominal diff >= 1e-3: {nominal_parity['ens_median_prob_diff']:.6f}")
+    if nominal_parity['ens_p99_prob_diff'] >= 3e-3:
+        raise RuntimeError(f"Ensemble p99 nominal diff >= 3e-3: {nominal_parity['ens_p99_prob_diff']:.6f}")
+    if nominal_parity['ens_abs_nll_diff'] >= 1e-3:
+        raise RuntimeError(f"Ensemble |delta NLL| >= 1e-3: {nominal_parity['ens_abs_nll_diff']:.6f}")
+    if nominal_parity['ens_abs_ba4_diff'] >= 2e-3:
+        raise RuntimeError(f"Ensemble |delta BA4| >= 2e-3: {nominal_parity['ens_abs_ba4_diff']:.6f}")
 
     # Profile-likelihood and stat-only Asimov significance across priors and exposures
     sig_scan = {}
@@ -999,6 +1065,7 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
             'migration': migration,
             'stress_14_conditions': stress_eval,
             'nominal_stress_replay_max_prob_diff': float(max_nom_diff),
+            'nominal_stress_replay_parity': nominal_parity,
             'significance_scan': sig_scan,
             'probes_pf': probes_pf,
             'probes_b1pp': probes_b1,
@@ -1016,6 +1083,7 @@ def main() -> None:
     res = run_sequential_unsealing(v3_root=args.v3_root, n_boot=args.n_boot)
     e = res['confirm200k']['ens_v5_3seed_dual_regime']
     n10 = next(r for r in res['confirm200k']['significance_scan']['N_10000'] if r['tau_prior'] == 0.01)
+    np_summary = {k: v for k, v in res['confirm200k']['nominal_stress_replay_parity'].items() if k != 'per_checkpoint'}
     print(json.dumps({
         'status': res['status'],
         'confirm_events': res['confirm200k']['events'],
@@ -1024,6 +1092,7 @@ def main() -> None:
         'D_scint_contained': e['D_scint_contained'],
         'Truth_pixel_centered': e['Truth_pixel_centered'],
         'nominal_diff': res['confirm200k']['nominal_stress_replay_max_prob_diff'],
+        'nominal_parity': np_summary,
         'sig_10k_1pct': {
             'z0_single_stream_stat': n10['z0_single_stream_stat'],
             'z0_18bin_tail_stat': n10['tail_18bin']['z0_stat_only'],

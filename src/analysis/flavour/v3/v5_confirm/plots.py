@@ -113,7 +113,7 @@ def plot_fig1_multiseed_stability(w3_11: dict, w3_12: dict, out_dir: Path) -> li
         ax.set_title(title)
         ax.grid(True, alpha=0.28, linestyle='--')
 
-    axes[0].legend(loc='lower right', frameon=True)
+    axes[0].legend(loc='lower left', frameon=True, fontsize=8.0)
     fig.suptitle('W3-11 Three-Seed Stability and Zero-Overfitting Transfer to Confirm200k', y=1.02)
     fig.tight_layout()
     return _save_fig(fig, out_dir / 'fig1_w3_11_multiseed_stability')
@@ -232,7 +232,7 @@ def plot_fig3_migration_matrices(w3_12: dict, out_dir: Path) -> list[str]:
     ax1.set_xlabel(r'$\nu_\tau$-Selection Pass Rate on Confirm200k (%)')
     ax1.set_title('Physics Subchannel Signal Efficiency vs Charm/NC Leakage')
     ax1.grid(True, axis='x', alpha=0.25, linestyle='--')
-    ax1.legend(loc='lower right', frameon=True)
+    ax1.legend(loc='upper right', frameon=True)
 
     fig.tight_layout()
     return _save_fig(fig, out_dir / 'fig3_confirm200k_migration_matrices')
@@ -279,8 +279,9 @@ def plot_fig4_stress_conditions(w3_12: dict, out_dir: Path) -> list[str]:
     axes[1].axvline(1.0, color='#d62728', linestyle=':', linewidth=1.1, label='Nominal 1.0% FPR target')
     axes[1].set_xlabel('Realized Rate (%) under Unchanged Cal-A + Cut-B Locks')
     axes[1].set_title('Frozen Operating Point Stability (N=8,000 Paired Events)')
+    axes[1].set_xlim(-0.3, max(eff_hi[i] + eff[i] for i in range(len(eff))) * 1.15)
     axes[1].grid(True, alpha=0.25, linestyle='--')
-    axes[1].legend(loc='lower right')
+    axes[1].legend(loc='upper center', bbox_to_anchor=(0.40, 0.98), frameon=True, fontsize=8.0)
 
     fig.tight_layout()
     return _save_fig(fig, out_dir / 'fig4_confirm200k_14_stress_conditions')
@@ -300,17 +301,19 @@ def plot_fig5_profile_likelihood(w3_12: dict, out_dir: Path) -> list[str]:
     ax0.bar(bx - 0.18, b_exp, width=0.36, color='#aec7e8', label=r'Non-$\tau$ Background ($b_i$)')
     ax0.bar(bx + 0.18, s_exp, width=0.36, color='#d62728', label=r'$\nu_\tau$ CC Signal ($s_i$, 1% prior)')
     ax0.set_yscale('log')
+    y_top = max(b_exp) * 14.0
+    ax0.set_ylim(0.15, y_top)
     ax0.axvline(5.5, color='#333333', linestyle='--', linewidth=1.0)
     ax0.axvline(11.5, color='#333333', linestyle='--', linewidth=1.0)
-    ax0.text(2.5, max(b_exp) * 1.15, 'D_pix_contained\n(bins 0-5)', ha='center', va='top', fontsize=8.5)
-    ax0.text(8.5, max(b_exp) * 1.15, 'D_scint_contained\n(bins 6-11)', ha='center', va='top', fontsize=8.5)
-    ax0.text(14.5, max(b_exp) * 1.15, 'D_partial_or_edge\n(bins 12-17)', ha='center', va='top', fontsize=8.5)
+    ax0.text(2.5, y_top * 0.88, 'D_pix_contained\n(bins 0-5)', ha='center', va='top', fontsize=8.3)
+    ax0.text(8.5, y_top * 0.88, 'D_scint_contained\n(bins 6-11)', ha='center', va='top', fontsize=8.3)
+    ax0.text(14.5, y_top * 0.88, 'D_partial_or_edge\n(bins 12-17)', ha='center', va='top', fontsize=8.3)
     ax0.set_xticks(bx)
     ax0.set_xticklabels([f'B{i}' for i in range(len(bins))], fontsize=8)
     ax0.set_ylabel('Expected Events (10,000 Total, 1% Tau Prior)')
     ax0.set_title('Cut-B Locked 18-Bin Multi-Domain Discovery Template on Confirm200k')
     ax0.grid(True, which='both', axis='y', alpha=0.25, linestyle='--')
-    ax0.legend(loc='lower left', frameon=True)
+    ax0.legend(loc='upper left', bbox_to_anchor=(0.015, 0.83), frameon=True, fontsize=8.0)
 
     # Panel B: Stat-only vs Profile-Likelihood Z0 across tau prior & exposure
     ax1 = axes[1]

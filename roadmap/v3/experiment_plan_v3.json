@@ -1,13 +1,14 @@
 {
   "schema_version": 3,
   "document_version": "v3_2026-11-15",
-  "status": "V0_V1_V2_V3_V4_complete_ready_for_V5",
+  "status": "V0_V1_V2_V3_V4_V5_complete",
   "completed_phases": [
     "V0",
     "V1",
     "V2",
     "V3",
-    "V4"
+    "V4",
+    "V5"
   ],
   "completed_work_orders": [
     "W3-01",
@@ -19,7 +20,9 @@
     "W3-07",
     "W3-08",
     "W3-09",
-    "W3-10"
+    "W3-10",
+    "W3-11",
+    "W3-12"
   ],
   "v0_v1_results": "roadmap/v3/v0_v1_results.json",
   "v2_v3_results": "roadmap/v3/v2_v3_results.json",
@@ -254,5 +257,6 @@
     "V4_tau_discovery_readiness": "Global calibrated tau eff @ 1% FPR >= 12% (double R2 D2 6.05%) with non-inferior common BA3",
     "V4_5_conditional_ssl_trigger": "Disabled by default; triggers only after V3 beats B0 by >= +4.0 pp in Pixel-centered, using >=30 epochs on contained-only events with matched-compute supervised control"
   },
-  "v4_results": "roadmap/v3/v4_results.json"
+  "v4_results": "roadmap/v3/v4_results.json",
+  "v5_results": "roadmap/v3/v5_results.json"
 }
