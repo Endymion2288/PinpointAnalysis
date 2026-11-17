@@ -154,6 +154,10 @@ def require_v5_freeze(
                 raise FileNotFoundError(f'Frozen checkpoint missing: {cp}')
     if verify_git_commit:
         root = repo_root or Path(__file__).resolve().parents[5]
+        if not (root / '.git').exists():
+            eos_repo = Path('/eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis')
+            if (eos_repo / '.git').exists():
+                root = eos_repo
         res = subprocess.run(
             ['git', 'merge-base', '--is-ancestor', commit, 'HEAD'],
             cwd=root,
