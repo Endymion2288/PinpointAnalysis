@@ -281,10 +281,10 @@ class ZAlignedStereoNet(nn.Module):
         )
 
         # Head outputs requested task dimension ('T3': 3, 'T4': 4)
-        fused_dim = 4 * 96 + 128 + dim + 48
+        self.fused_dim = 4 * 96 + 128 + dim + 48
         self.head = nn.Sequential(
-            nn.LayerNorm(fused_dim),
-            nn.Linear(fused_dim, 256),
+            nn.LayerNorm(self.fused_dim),
+            nn.Linear(self.fused_dim, 256),
             nn.SiLU(),
             nn.Dropout(0.15),
             nn.Linear(256, output_size(config['task'])),
@@ -344,7 +344,7 @@ class ZAlignedStereoNet(nn.Module):
         plane_density = dense[:, 0].sum(dim=-1)  # (B, 15)
         return dense, plane_active, plane_density
 
-    def forward(self, batch: dict) -> torch.Tensor:
+    def forward_fused(self, batch: dict) -> torch.Tensor:
         b = len(batch['label'])
         device = batch['c_obs'].device
 
@@ -427,7 +427,10 @@ class ZAlignedStereoNet(nn.Module):
         )
         cobs_feat = self.cobs_emb(batch['c_obs'])
 
-        fused = torch.cat([cal_feat, stereo_2d_feat, spec_feat, cobs_feat], dim=-1)
+        return torch.cat([cal_feat, stereo_2d_feat, spec_feat, cobs_feat], dim=-1)
+
+    def forward(self, batch: dict) -> torch.Tensor:
+        fused = self.forward_fused(batch)
         with torch.autocast(device_type=fused.device.type, enabled=False):
             return self.head(fused.float())
 

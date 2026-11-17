@@ -691,15 +691,26 @@ def run_pf_training(
         )
 
         model = model_builder(geometry, config).to(device)
+        init_ckpt = config.get('init_checkpoint')
+        if init_ckpt:
+            ckpt_p = Path(init_ckpt)
+            if hasattr(model, 'load_pretrained_backbone'):
+                model.load_pretrained_backbone(ckpt_p, device)
+            else:
+                st = torch.load(ckpt_p, map_location=device, weights_only=False)
+                model.load_state_dict(st.get('model', st), strict=False)
         ema_model = copy.deepcopy(model).eval()
         for p in ema_model.parameters():
             p.requires_grad_(False)
 
         groups = branch_groups_fn(model)
+        base_lr = float(config['learning_rate'])
+        wd = float(config.get('weight_decay', 0.03))
+        opt_params = model.build_param_groups(base_lr, wd) if hasattr(model, 'build_param_groups') else model.parameters()
         opt = torch.optim.AdamW(
-            model.parameters(),
-            lr=float(config['learning_rate']),
-            weight_decay=float(config.get('weight_decay', 0.03)),
+            opt_params,
+            lr=base_lr,
+            weight_decay=wd,
             betas=(0.9, 0.98),
         )
         steps_per_pass = math.ceil(len(train_ds) / batch_size)
@@ -858,6 +869,8 @@ def run_pf_training(
         'Cal_A_Cut_B_Confirm_payload_read': False,
     }
     write_json(manifest_path, manifest)
+    if resume_pt.exists():
+        resume_pt.unlink()
     return manifest
 
 

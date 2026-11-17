@@ -19,7 +19,7 @@ def _query_condor_jobs(schedd: str) -> tuple[dict[str, dict], dict[str, dict]]:
 
     for cmd, target in (
         (['condor_q', '-name', schedd, '-json', '-attributes', ','.join(fields)], q_map),
-        (['condor_history', '-name', schedd, 'xcheng', '-limit', '200', '-json', '-attributes', ','.join(fields)], h_map),
+        (['condor_history', '-name', schedd, 'xcheng', '-limit', '2000', '-json', '-attributes', ','.join(fields)], h_map),
     ):
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0 and res.stdout.strip():
@@ -31,6 +31,39 @@ def _query_condor_jobs(schedd: str) -> tuple[dict[str, dict], dict[str, dict]]:
             except json.JSONDecodeError:
                 pass
     return q_map, h_map
+
+
+def _query_single_condor_history(schedd: str, cid: str) -> dict | None:
+    fields = ['ClusterId', 'ProcId', 'JobStatus', 'ExitCode', 'RemoteWallClockTime', 'RequestCpus', 'RequestGPUs', 'CpusUsage', 'CommittedTime', 'EnteredCurrentStatus', 'QDate', 'JobStartDate', 'LastRemoteHost']
+    res = subprocess.run(
+        ['condor_history', '-name', schedd, cid, '-limit', '1', '-json', '-attributes', ','.join(fields)],
+        capture_output=True,
+        text=True,
+    )
+    if res.returncode == 0 and res.stdout.strip():
+        try:
+            rows = json.loads(res.stdout)
+            if rows:
+                return rows[0]
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
+def _parse_condor_user_log(log_path: Path) -> dict | None:
+    if not log_path.exists():
+        return None
+    text = log_path.read_text(errors='ignore')
+    m_term = re.search(r'Job terminated\.\s+\(\d+\)\s+Normal termination \(return value (\d+)\)', text)
+    if not m_term:
+        return None
+    m_wall = re.search(r'TimeExecute \(s\)\s*:\s*(\d+(?:\.\d+)?)', text)
+    return {
+        'JobStatus': 4,
+        'ExitCode': int(m_term.group(1)),
+        'RemoteWallClockTime': float(m_wall.group(1)) if m_wall else 0.0,
+        'LastRemoteHost': None,
+    }
 
 
 def collect_v3_resources(root: Path) -> dict:
@@ -90,8 +123,12 @@ def collect_v3_resources(root: Path) -> dict:
             m = re.search(r'submitted to cluster (\d+)', ev.get('stdout', ''))
             cid = f"{m.group(1)}.0" if m else None
             info = condor_q_all.get(cid) or condor_h_all.get(cid) if cid else None
-            if info is None and cid in condor_q_all:
-                info = condor_q_all[cid]
+            if info is None and cid is not None and ev.get('schedd'):
+                info = _query_single_condor_history(ev['schedd'], cid)
+                if info is not None:
+                    condor_h_all[cid] = info
+            if info is None and m is not None:
+                info = _parse_condor_user_log(root / 'logs' / f"{name}.{m.group(1)}.log")
             in_queue = cid in condor_q_all if cid else True
             wall_s = float(info.get('RemoteWallClockTime') or info.get('CommittedTime') or 0.0) if info else 0.0
             cpus = int(ev.get('cpus', 1))
