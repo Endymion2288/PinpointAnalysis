@@ -197,6 +197,11 @@ def collect_v3_resources(root: Path) -> dict:
                     sched_t = datetime.fromisoformat(job['status']['startTime'].replace('Z', '+00:00'))
                 if end_t is None and job.get('status', {}).get('completionTime'):
                     end_t = datetime.fromisoformat(job['status']['completionTime'].replace('Z', '+00:00'))
+                if end_t is None:
+                    for c in job_conds:
+                        if c.get('type') in ('Complete', 'Failed') and c.get('status') == 'True' and c.get('lastTransitionTime'):
+                            end_t = datetime.fromisoformat(c['lastTransitionTime'].replace('Z', '+00:00'))
+                            break
             wall_s = max(0.0, ((end_t or now) - sched_t).total_seconds()) if sched_t else 0.0
             grp_rec = grp_by_alloc.get(name)
             if phase == 'Unknown' and grp_rec is not None:

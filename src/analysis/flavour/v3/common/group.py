@@ -90,8 +90,12 @@ def _build_shared_split(
 
 def _stage_cluster_sidecar_dir(src_dir: Path, dst_dir: Path, workers: int = 4) -> dict:
     t0 = time.perf_counter()
-    dst_dir.mkdir(parents=True, exist_ok=True)
+    if not src_dir.is_dir():
+        raise FileNotFoundError(f'cluster sidecar directory not found: {src_dir}')
     files = [name for name in CLUSTER_SIDECAR_FILES if (src_dir / name).exists()]
+    if 'pix_offsets.bin' not in files:
+        raise FileNotFoundError(f'cluster sidecar missing pix_offsets.bin in {src_dir}')
+    dst_dir.mkdir(parents=True, exist_ok=True)
 
     def _copy_one(name: str) -> int:
         shutil.copyfile(src_dir / name, dst_dir / name)
@@ -129,6 +133,8 @@ def main() -> None:
     cap = torch.cuda.get_device_capability(0)
     if any(c.get('bf16', True) for c in configs) and cap[0] < 8:
         raise RuntimeError(f'BF16 configs require SM80+, found SM{cap[0]}{cap[1]}')
+    if args.stage_cluster_sidecar is not None and not (args.stage_cluster_sidecar / 'pix_offsets.bin').is_file():
+        raise FileNotFoundError(f'Invalid --stage-cluster-sidecar directory: {args.stage_cluster_sidecar}')
 
     (args.root / 'groups').mkdir(parents=True, exist_ok=True)
     (args.root / 'logs').mkdir(parents=True, exist_ok=True)
@@ -213,8 +219,55 @@ def main() -> None:
         pending = list(zip(args.configs, configs))
         live: list[tuple[subprocess.Popen, dict, object, Path]] = []
         while pending or live:
+            failed_names = {entry['name'] for entry in record['failed']}
             while pending and len(live) < args.parallel:
-                cfg_path, cfg = pending.pop(0)
+                picked = None
+                for idx, (cand_path, cand_cfg) in enumerate(pending):
+                    ic_raw = cand_cfg.get('init_checkpoint')
+                    if not ic_raw:
+                        picked = idx
+                        break
+                    ic_path = Path(ic_raw)
+                    dep_name = ic_path.parent.name
+                    if dep_name in failed_names:
+                        pending.pop(idx)
+                        record['failed'].append({
+                            'name': cand_cfg['name'],
+                            'returncode': -1,
+                            'skipped_failed_dependency': dep_name,
+                        })
+                        write_json(record_path, record)
+                        picked = -1
+                        break
+                    in_local_exps = (args.root / 'experiments') in ic_path.resolve().parents
+                    if in_local_exps:
+                        dep_manifest = ic_path.parent / 'manifest.json'
+                        if (
+                            ic_path.exists()
+                            and dep_manifest.exists()
+                            and json.loads(dep_manifest.read_text()).get('status') == 'complete'
+                        ):
+                            picked = idx
+                            break
+                    elif ic_path.exists():
+                        picked = idx
+                        break
+
+                if picked == -1:
+                    continue
+                if picked is None:
+                    if not live:
+                        for _, blocked_cfg in pending:
+                            record['failed'].append({
+                                'name': blocked_cfg['name'],
+                                'returncode': -1,
+                                'unmet_init_checkpoint': blocked_cfg.get('init_checkpoint'),
+                            })
+                        pending.clear()
+                        write_json(record_path, record)
+                    break
+
+                cfg_path, cfg = pending.pop(picked)
                 manifest = args.root / 'experiments' / cfg['name'] / 'manifest.json'
                 if manifest.exists() and json.loads(manifest.read_text()).get('status') == 'complete':
                     record['completed'].append({'name': cfg['name'], 'returncode': 0, 'skipped_already_complete': True})
@@ -222,8 +275,9 @@ def main() -> None:
                     continue
                 log_path = args.root / 'logs' / f"{args.name}_{cfg['name']}.log"
                 log_fh = log_path.open('a')
+                train_mod = str(cfg.get('train_module', args.train_module))
                 cmd = [
-                    sys.executable, '-m', args.train_module,
+                    sys.executable, '-m', train_mod,
                     '--root', str(args.root),
                     '--config', str(cfg_path),
                     '--resume',

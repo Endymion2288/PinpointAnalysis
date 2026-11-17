@@ -56,6 +56,20 @@ def _submit_kubeflow(args: argparse.Namespace, root: Path, script: list[str], ar
             }],
         }],
     }
+    if getattr(args, 'exclude_nodes', None):
+        spec['affinity'] = {
+            'nodeAffinity': {
+                'requiredDuringSchedulingIgnoredDuringExecution': {
+                    'nodeSelectorTerms': [{
+                        'matchExpressions': [{
+                            'key': 'kubernetes.io/hostname',
+                            'operator': 'NotIn',
+                            'values': list(args.exclude_nodes),
+                        }],
+                    }],
+                },
+            },
+        }
     metadata = {'name': args.name, 'namespace': 'xcheng', 'labels': labels}
     job = {
         'apiVersion': 'batch/v1',
@@ -110,6 +124,7 @@ def submit_job(
     *,
     backend: str = 'condor',
     flavor: str = 'h100-47gb',
+    exclude_nodes: list[str] | None = None,
     cpus: int = 4,
     memory: str = '15GB',
     gpu: bool = False,
@@ -141,6 +156,7 @@ def submit_job(
         'which() { command -v "$@"; }',
         'source /cvmfs/sft.cern.ch/lcg/views/LCG_108_cuda/x86_64-el9-gcc13-opt/setup.sh',
         'set -e',
+        'ls /eos/home-x/xcheng/FASER/Pinpoint/results >/dev/null',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1',
         'export PINPOINT_V3_SCRATCH="${_CONDOR_SCRATCH_DIR:-/tmp}/pinpoint_v3_${PINPOINT_JOB_ID}"',
         'export PINPOINT_V2_SCRATCH="$PINPOINT_V3_SCRATCH"',
@@ -155,6 +171,7 @@ def submit_job(
         stage=stage,
         name=name,
         flavor=flavor,
+        exclude_nodes=exclude_nodes,
         deadline_seconds=deadline_seconds,
         command=command,
     )
@@ -233,6 +250,7 @@ def main() -> None:
     parser.add_argument('--stage', default='V0')
     parser.add_argument('--backend', choices=('condor', 'kubeflow'), default='condor')
     parser.add_argument('--flavor', default='h100-47gb')
+    parser.add_argument('--exclude-nodes', nargs='*', default=None)
     parser.add_argument('--cpus', type=int, default=4)
     parser.add_argument('--memory', default='15GB')
     parser.add_argument('--gpu', action='store_true')
@@ -257,6 +275,7 @@ def main() -> None:
         cmd,
         backend=args.backend,
         flavor=args.flavor,
+        exclude_nodes=args.exclude_nodes,
         cpus=args.cpus,
         memory=args.memory,
         gpu=args.gpu,
