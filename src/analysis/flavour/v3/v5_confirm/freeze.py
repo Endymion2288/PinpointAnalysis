@@ -9,7 +9,6 @@ from pathlib import Path
 import subprocess
 
 from analysis.flavour.inventory import write_json
-from analysis.flavour.v3.v4_tau.evaluate import _primary_tag_from_manifest
 from analysis.flavour.v3.v5_confirm import (
     DEFAULT_V3_ROOT,
     ROLE_ORDER,
@@ -17,6 +16,35 @@ from analysis.flavour.v3.v5_confirm import (
     experiment_dir_for,
     model_family_kind,
 )
+
+
+def _primary_tag_from_manifest(mdir: Path) -> str:
+    """Select primary checkpoint ('best' vs 'ema') solely from 4k tune_screen NLL in manifest.json."""
+    best_pq = mdir / 'best_predictions.parquet'
+    ema_pq = mdir / 'predictions.parquet'
+    if not best_pq.exists():
+        return 'ema'
+    if not ema_pq.exists():
+        return 'best'
+    mp = mdir / 'manifest.json'
+    if not mp.exists():
+        return 'ema'
+    m = json.loads(mp.read_text())
+    sh = m.get('screen_history') or m.get('history') or []
+    best_nll = m.get('best_ema_screen_NLL', m.get('best_screen_nll'))
+    final_nll = None
+    for row in reversed(sh):
+        val = row.get('tune_screen_ema_NLL', row.get('ema_nll'))
+        if val is not None:
+            final_nll = float(val)
+            break
+    if best_nll is not None and final_nll is not None:
+        return 'best' if float(best_nll) < float(final_nll) else 'ema'
+    best_pass = m.get('best_pass')
+    passes = m.get('config', {}).get('passes', m.get('last_pass'))
+    if best_pass is not None and passes is not None and int(best_pass) < int(passes):
+        return 'best'
+    return 'ema'
 
 
 def resolve_primary_checkpoint(exp_dir: Path) -> tuple[str, Path]:
