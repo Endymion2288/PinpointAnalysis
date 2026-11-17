@@ -98,20 +98,30 @@ class _StressVariantDataset(Dataset):
             raise ValueError('stress_manifest rows missing from confirm shards')
         picked = all_prov.iloc[pos].reset_index(drop=True)
 
-        self.base_obs: list[dict] = []
-        self.base_ideal: list[dict] = []
-        self.base_meta: list[dict] = []
-        ideal_cache: dict[int, list[dict]] = {}
-        for rec in picked.to_dict('records'):
+        recs = picked.to_dict('records')
+        n_picked = len(recs)
+        base_obs: list[dict | None] = [None] * n_picked
+        base_ideal: list[dict | None] = [None] * n_picked
+        order = np.argsort(picked['_native_idx'].to_numpy(dtype=np.int64), kind='mergesort')
+        cur_s_idx = -1
+        cur_ideal: list[dict] = []
+        for pos_i in order:
+            rec = recs[int(pos_i)]
             n_idx = int(rec['_native_idx'])
             s_idx = int(rec['_shard_idx'])
             l_idx = int(rec['_local_idx'])
-            if s_idx not in ideal_cache:
-                ideal_cache[s_idx] = pq.read_table(native_paths[s_idx] / 'ideal_tracker.parquet').to_pylist()
-            self.base_obs.append(native[n_idx]['observations'])
-            self.base_ideal.append(ideal_cache[s_idx][l_idx])
-            self.base_meta.append(rec)
+            if s_idx != cur_s_idx:
+                ideal_pq = native_paths[s_idx] / 'ideal_tracker.parquet'
+                if not ideal_pq.exists():
+                    ideal_pq = paths[s_idx] / 'ideal_tracker.parquet'
+                cur_ideal = pq.read_table(ideal_pq).to_pylist()
+                cur_s_idx = s_idx
+            base_obs[int(pos_i)] = native[n_idx]['observations']
+            base_ideal[int(pos_i)] = cur_ideal[l_idx]
         native.close()
+        self.base_obs = base_obs  # type: ignore[assignment]
+        self.base_ideal = base_ideal  # type: ignore[assignment]
+        self.base_meta = recs
 
         self.meta_out = picked.loc[picked.index.repeat(len(variants))].reset_index(drop=True)
         self.meta_out['variant'] = np.tile([v['name'] for v in variants], len(picked))
@@ -378,6 +388,9 @@ def run_family_inference(
                 mid for mid in models
                 if not (out_dir / f'{mid}.parquet').exists() or pq.read_metadata(out_dir / f'{mid}.parquet').num_rows != exp_events
             ]
+            if not todo and split != 'confirm':
+                report['splits'][split] = {'events': exp_events, 'evaluated_models': 0, 'seconds': 0.0, 'cached': True}
+                continue
             shard_paths = sorted(p for p in (split_dir / 'shards').iterdir() if (p / 'observations.parquet').exists())
             stage = stage_shards(shard_paths, tmp / f'stage_{split}', workers=min(4, max(1, workers)))
             staged_dir = Path(stage['local_shard_root'])
@@ -478,14 +491,27 @@ def run_family_inference(
                         st_out = pd.read_parquet(stress_out_pq)
 
                     nom_df = st_out[st_out['variant'] == 'nominal'].reset_index(drop=True)
+                    shard_ordered_keys_pq = tmp / 'stress_keys_shard_order.parquet'
+                    if 'shard' in stress_df.columns:
+                        stress_df_shard_order = stress_df.sort_values(['shard'] + KEY).reset_index(drop=True)
+                    else:
+                        prov_rows = []
+                        for si, sp in enumerate(shard_paths):
+                            pr = pd.read_parquet(sp / 'provenance.parquet', columns=KEY)
+                            pr['_si'] = si
+                            prov_rows.append(pr)
+                        ap = pd.concat(prov_rows, ignore_index=True)
+                        mpos = pd.MultiIndex.from_frame(ap[KEY]).get_indexer(pd.MultiIndex.from_frame(stress_df[KEY]))
+                        stress_df_shard_order = stress_df.iloc[np.argsort(mpos, kind='mergesort')].reset_index(drop=True)
+                    stress_df_shard_order[KEY].to_parquet(shard_ordered_keys_pq, index=False, compression=COMPRESSION)
                     if family == 'pf':
                         probes = _run_pf_probes(
-                            split_dir, staged_dir, stress_manifest_path, stress_df, models, geometry, bounds, device, use_bf16, workers, nom_df
+                            split_dir, staged_dir, shard_ordered_keys_pq, stress_df, models, geometry, bounds, device, use_bf16, workers, nom_df
                         )
                         write_json(w3_12 / 'probes_confirm_pf.json', probes)
                     else:
                         probes = _run_b1pp_probes(
-                            split_dir, staged_dir, stress_manifest_path, stress_df, models, device, use_bf16, workers, nom_df
+                            split_dir, staged_dir, shard_ordered_keys_pq, stress_df, models, device, use_bf16, workers, nom_df
                         )
                         write_json(w3_12 / 'probes_confirm_b1pp.json', probes)
             finally:

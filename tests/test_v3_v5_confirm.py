@@ -11,8 +11,12 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
+from analysis.flavour.v3.common.domains import detector_bounds
 from analysis.flavour.v3.v5_confirm.freeze import require_v5_freeze
+from analysis.flavour.v3.v5_confirm.infer_unsealed import _StressVariantDataset
 from analysis.flavour.v3.v5_confirm.significance import (
     apply_frozen_pipeline,
     fit_cal_a_calibrators,
@@ -141,6 +145,98 @@ class TestV5Confirm(unittest.TestCase):
         self.assertLessEqual(r_mid['z0_profile_likelihood'], r0['z0_stat_only'] + 1e-6)
         self.assertLessEqual(r_hi['z0_profile_likelihood'], r_mid['z0_profile_likelihood'] + 1e-6)
         self.assertGreater(r_hi['z0_profile_likelihood'], 0.0)
+
+    def test_stress_dataset_ideal_tracker_fallback_and_order(self) -> None:
+        geometry = {
+            'pixel_Xpos': [-10.0, 0.0, 10.0],
+            'pixel_Ypos': [-22.0, -12.0, -2.0],
+            'pixel_Zpos': [-3000.0, -2990.0],
+            'scint_bar_Xcenter': [-2.0, 2.0],
+            'scint_bar_Ycenter': [-14.0, -10.0],
+            'scint_Zpos': [-2900.0, -2895.0, -2890.0],
+            'tungsten_Zpos': [-3000.0, -2950.0],
+            'tungsten_thickness': 5.0,
+            'scint_thickness': 5.0,
+            'silicon_thickness': 50.0,
+            'nPinpointBlocks': 1,
+            'nFortuneBlocks': 1,
+            'numScintLayers': 1,
+            'num_scint_panels_layer': 2,
+            'scint_detector_width': 100.0,
+            'scint_detector_height': 100.0,
+            'scint_bar_width': 5.0,
+            'scint_bar_height': 5.0,
+            'scint_bar_thickness': 2.0,
+            'tracker_Zpos': [-2700.0, -2600.0, -2500.0],
+        }
+        bounds = detector_bounds(geometry)
+        hw_map = {'triples_layer_panel_horizontal': [[0, 0, 0], [0, 1, 1]]}
+        variants = [
+            {'name': 'nominal', 'parameters': {}},
+            {'name': 'tracker_degrade', 'parameters': {'tracker_efficiency': 0.5}},
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_root = root / 'data_confirm'
+            staged_root = root / 'stage_confirm'
+            shard_defs = [
+                ('0000', [(10001, 0, 0, 0), (10001, 0, 1, 1)]),
+                ('0001', [(10002, 0, 0, 2), (10002, 0, 1, 3)]),
+            ]
+            for sname, rows in shard_defs:
+                sdir = data_root / 'shards' / sname
+                gdir = staged_root / sname
+                sdir.mkdir(parents=True)
+                gdir.mkdir(parents=True)
+                obs_rows, tgt_rows, prov_rows, ideal_rows = [], [], [], []
+                for run_id, ch_id, r_id, lbl in rows:
+                    obs_rows.append({
+                        'pixel': {'channel_id': [10 + r_id], 'xyz_mm': [[float(r_id), -12.0, -2995.0]]},
+                        'bar': {'channel_id': [], 'layer': [], 'panel': [], 'horizontal': [], 'bar': [], 'bounds_mm': [], 'edep_proxy_MeV': [], 'pe_proxy': []},
+                        'tracker_hypothesis': {'station': [0], 'xy_mm': [[0.5 + run_id - 10001, -12.0]], 'sigma_xy_mm': [[0.05, 0.05]]},
+                        'has_response': [True, False, True],
+                        'outside_acceptance': [],
+                        'fit_attempted': True,
+                        'momentum_censored': 0,
+                    })
+                    tgt_rows.append({'label': lbl, 'label_status': 'consistent'})
+                    prov_rows.append({
+                        'run': run_id, 'chunk': ch_id, 'row': r_id,
+                        'family_hi': 0, 'family_lo': run_id, 'split': 'confirm', 'label': lbl,
+                    })
+                    ideal_rows.append({'station': [0], 'xyz_mm': [[0.5 + run_id - 10001, -12.0, -2700.0]]})
+
+                pq.write_table(pa.Table.from_pylist(obs_rows), sdir / 'observations.parquet')
+                pq.write_table(pa.Table.from_pylist(tgt_rows), sdir / 'targets.parquet')
+                pd.DataFrame(prov_rows).to_parquet(sdir / 'provenance.parquet', index=False)
+                pq.write_table(pa.Table.from_pylist(ideal_rows), sdir / 'ideal_tracker.parquet')
+                # Stage omits ideal_tracker.parquet (matching stage_shards behavior)
+                for fname in ('observations.parquet', 'targets.parquet', 'provenance.parquet'):
+                    (gdir / fname).write_bytes((sdir / fname).read_bytes())
+
+            # Request events in cross-shard alternating order: shard 1 -> shard 0 -> shard 1
+            stress_manifest = pd.DataFrame({
+                'run': [10002, 10001, 10002],
+                'chunk': [0, 0, 0],
+                'row': [1, 0, 0],
+            })
+            ds = _StressVariantDataset(
+                data_root,
+                stress_manifest,
+                variants,
+                geometry,
+                bounds,
+                hw_map,
+                family='b1pp',
+                staged_dir=staged_root,
+            )
+            self.assertEqual(len(ds), 6)
+            self.assertEqual([(m['run'], m['row']) for m in ds.base_meta], [(10002, 1), (10001, 0), (10002, 0)])
+            self.assertEqual(ds.base_ideal[0]['xyz_mm'][0][0], 1.5)
+            self.assertEqual(ds.base_ideal[1]['xyz_mm'][0][0], 0.5)
+            item0 = ds[0]
+            self.assertEqual(item0['label'], 3)
 
 
 if __name__ == '__main__':
