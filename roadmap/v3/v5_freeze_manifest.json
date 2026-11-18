@@ -4,7 +4,7 @@
   "created_UTC": "2026-11-17T17:44:16.680440+00:00",
   "sealed_payloads_touched_at_freeze": false,
   "calibration_and_threshold_rules_frozen": true,
-  "pre_unsealing_git_commit": null,
+  "pre_unsealing_git_commit": "1f89d279cc420f93b802bd1ff80975dcbc287c2b",
   "seeds": [
     17,
     42,

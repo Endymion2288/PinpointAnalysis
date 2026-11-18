@@ -14,6 +14,7 @@ from analysis.flavour.v3.v2_pinpointformer.stereo_bars import static_scint_stati
 
 
 NOMAD_FEAT_DIM = 10
+SAGITTA_CONST_MEV_MM = 100705.0
 NOMAD_FEATURE_NAMES = (
     'cos_dphi_l_had',
     'acoplanarity_norm',
@@ -31,8 +32,17 @@ NOMAD_FEATURE_NAMES = (
 class NomadTransverseExtractor(nn.Module):
     """Extract Y-mirror-invariant 10-dim transverse NOMAD variables from stereo bars + spectrometer."""
 
-    def __init__(self, geometry: dict, bounds: dict | None = None) -> None:
+    def __init__(
+        self,
+        geometry: dict,
+        bounds: dict | None = None,
+        *,
+        phys_calibrated: bool = True,
+        pe_per_mip_mev: float = 40.0,
+    ) -> None:
         super().__init__()
+        self.phys_calibrated = bool(phys_calibrated)
+        self.pe_per_mip_mev = float(pe_per_mip_mev)
         if bounds is None:
             bounds = detector_bounds(geometry)
         stations = static_scint_stations(geometry, bounds)
@@ -134,12 +144,13 @@ class NomadTransverseExtractor(nn.Module):
             )
 
             # Pseudo-transverse-momentum vectors relative to observable shower apex
+            cal_e_scale = 12.5 if self.phys_calibrated else 1.0
             dx = x_grid - x_start[:, None, None, None]  # (B, 1, n_bars, 1)
             dy = y_grid - y_start[:, None, None, None]  # (B, 1, 1, n_bars)
             dz = (z_dbl - z_start[:, None]).clamp_min(25.0)[:, :, None, None]  # (B, n_dbl, 1, 1)
             inv_r = torch.rsqrt(dx.square() + dy.square() + dz.square())
-            qx_vox = w3d * dx * inv_r
-            qy_vox = w3d * dy * inv_r
+            qx_vox = (cal_e_scale * w3d) * dx * inv_r
+            qy_vox = (cal_e_scale * w3d) * dy * inv_r
 
             # Spectrometer leading track axis & momentum estimate (purely from trk_cand[:, 0])
             cand0 = trk_cand[:, 0, :].float()
@@ -149,15 +160,26 @@ class NomadTransverseExtractor(nn.Module):
             tx = 0.1 * cand0[:, 4]
             ty = 0.1 * cand0[:, 5]
             is_3st = cand0[:, 0] > 0.75
-            p_spec_mev = torch.where(
-                has_spec & is_3st,
-                1000.0 * torch.expm1((5.0 * cand0[:, 8]).clamp(0.0, 10.0)),
-                torch.where(
-                    has_spec,
-                    5000.0 * cand0[:, 1].clamp_min(0.0),
-                    torch.zeros_like(e_stereo),
-                ),
-            )
+            has_p_spec = (has_spec & is_3st) if self.phys_calibrated else has_spec
+            if self.phys_calibrated:
+                # Resolve Audit P1-3: cand0[:, 13] = log1p(|s_y| / 0.05) / 5.0 (exact mm sagitta).
+                # First-principles & Geant4 calibrated constant: |s_y| * p = 100705 MeV*mm.
+                # 2-station tracks lack a 3rd station to measure bending sagitta -> p_spec = 0.
+                sy_abs_mm = 0.05 * torch.expm1((5.0 * cand0[:, 13]).clamp(0.0, 10.0))
+                p_3st_mev = (SAGITTA_CONST_MEV_MM / (sy_abs_mm + 0.015)).clamp(min=100.0, max=5.0e6)
+                p_spec_mev = torch.where(has_p_spec, p_3st_mev, torch.zeros_like(e_stereo))
+                cal_e_scale = 12.5  # W/scintillator sampling inverse 1/f_samp -> total shower MeV
+            else:
+                p_spec_mev = torch.where(
+                    has_spec & is_3st,
+                    1000.0 * torch.expm1((5.0 * cand0[:, 8]).clamp(0.0, 10.0)),
+                    torch.where(
+                        has_spec,
+                        5000.0 * cand0[:, 1].clamp_min(0.0),
+                        torch.zeros_like(e_stereo),
+                    ),
+                )
+                cal_e_scale = 1.0
             dz_spec = z_dbl - self.z_trk0
             x_ray_spec = x_trk0[:, None] + tx[:, None] * dz_spec
             y_ray_spec = y_trk0[:, None] + ty[:, None] * dz_spec
@@ -207,8 +229,8 @@ class NomadTransverseExtractor(nn.Module):
             inv_tan = torch.rsqrt(1.0 + tx.square() + ty.square())
             q_spec_x = p_spec_mev * tx * inv_tan
             q_spec_y = p_spec_mev * ty * inv_tan
-            q_lead_x = torch.where(has_spec, q_spec_x, q_core_x)
-            q_lead_y = torch.where(has_spec, q_spec_y, q_core_y)
+            q_lead_x = torch.where(has_p_spec, q_spec_x, q_core_x)
+            q_lead_y = torch.where(has_p_spec, q_spec_y, q_core_y)
 
             q_lead_mag = torch.hypot(q_lead_x, q_lead_y)
             q_had_mag = torch.hypot(q_had_x, q_had_y)
@@ -225,7 +247,7 @@ class NomadTransverseExtractor(nn.Module):
 
             pt_sum = torch.hypot(q_lead_x + q_had_x, q_lead_y + q_had_y)
             pt_miss_frac = torch.where(
-                has_stereo | has_spec,
+                has_stereo | has_p_spec,
                 pt_sum / (q_lead_mag + q_had_mag + 1.0),
                 torch.zeros_like(pt_sum),
             )
@@ -241,8 +263,8 @@ class NomadTransverseExtractor(nn.Module):
             e_recoil = (w3d * (1.0 - m_core)).sum(dim=(1, 2, 3))
             core_30mm_iso = torch.where(has_stereo, e_core / e_stereo.clamp_min(1e-4), torch.zeros_like(e_core))
             recoil_energy_frac = torch.where(
-                has_stereo | has_spec,
-                e_recoil / (e_stereo + p_spec_mev).clamp_min(1e-4),
+                has_stereo | has_p_spec,
+                (cal_e_scale * e_recoil) / (cal_e_scale * e_stereo + p_spec_mev).clamp_min(1e-4),
                 torch.zeros_like(e_recoil),
             )
 
@@ -276,8 +298,8 @@ class NomadTransverseExtractor(nn.Module):
             )
 
             spec_to_cal_log_ratio = torch.where(
-                has_spec,
-                0.2 * torch.asinh(torch.log((p_spec_mev + 10.0) / (e_cal_tot + 10.0))),
+                has_p_spec,
+                0.2 * torch.asinh(torch.log((p_spec_mev + 10.0) / (cal_e_scale * e_cal_tot + 10.0))),
                 torch.zeros_like(p_spec_mev),
             )
             t_mag = torch.hypot(tx, ty)

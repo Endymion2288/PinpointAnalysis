@@ -5,7 +5,12 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from analysis.flavour.v3.common.domains import cumulative_radiation_length, detector_bounds
+from analysis.flavour.v3.common.domains import (
+    calibrated_bar_channels,
+    cumulative_radiation_length,
+    detector_bounds,
+    validate_finite_observation,
+)
 from analysis.flavour.v3.v1_b1pp.spectrometer import (
     CAND_Y_FLIP_IDX,
     HIT_Y_FLIP_IDX,
@@ -169,6 +174,9 @@ def extract_b1pp_item(
     config: dict,
 ) -> dict:
     """Transform one raw event observation into compact sparse B1++ arrays (~1.6 KB)."""
+    pe_only = bool((config or {}).get('pe_only', False))
+    validate_finite_observation(observation, check_edep=not pe_only)
+
     pixel = observation['pixel']
     bar = observation['bar']
     tracker = observation['tracker_hypothesis']
@@ -194,11 +202,10 @@ def extract_b1pp_item(
         p_planes, pxyz[:, 1], pxyz[:, 0], bounds['y_scint_center'], WIDE_HALF_MM, WIDE_BINS, n_pix_planes
     )
 
-    bp = np.asarray(bar['panel'], dtype=np.int64)
-    bh = np.asarray(bar['horizontal'], dtype=np.int64)
-    bi = np.asarray(bar['bar'], dtype=np.int64)
-    be = np.asarray(bar['edep_proxy_MeV'], dtype=np.float64)
-    bpe = np.asarray(bar['pe_proxy'], dtype=np.float64)
+    keep_bar, be, bpe = calibrated_bar_channels(bar, config)
+    bp = np.asarray(bar['panel'], dtype=np.int64)[keep_bar]
+    bh = np.asarray(bar['horizontal'], dtype=np.int64)[keep_bar]
+    bi = np.asarray(bar['bar'], dtype=np.int64)[keep_bar]
 
     vmask = bh == 0
     hmask = bh == 1

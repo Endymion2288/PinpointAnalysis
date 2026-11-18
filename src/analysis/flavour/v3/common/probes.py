@@ -8,7 +8,10 @@ from torch import nn
 
 from analysis.flavour.v2.r1.metrics import Metrics
 from analysis.flavour.v3.common.calibration import _tau_efficiency_at_fpr
-from analysis.flavour.v3.v2_pinpointformer.attention import collect_attention_scales
+from analysis.flavour.v3.v2_pinpointformer.attention import (
+    collect_attention_scales,
+    collect_effective_attention_sharpness,
+)
 
 
 PIXEL_OCCUPANCY_BINS = (
@@ -285,4 +288,5 @@ def run_model_with_entropy(
         'mean_entropy': stacked.mean(axis=1),
         'layer_entropy': layer_arrs,
         'learned_scales': collect_attention_scales(model),
+        'effective_sharpness': collect_effective_attention_sharpness(model),
     }

@@ -19,6 +19,13 @@ from analysis.flavour.v3.common.calibration import _tau_efficiency_at_fpr
 from analysis.flavour.v3.common.domains import OBS_DOMAIN_NAMES
 from analysis.flavour.v3.v4_tau.ensemble import _fit_domain_convex_blend, extract_member_arrays
 from analysis.flavour.v3.v5_confirm import DEFAULT_V3_ROOT, ROLE_ORDER, SEEDS
+from analysis.flavour.v3.v5_confirm.flux_significance import (
+    LHC_FORWARD_SCENARIOS,
+    assign_signal_and_charm_cr_bins,
+    build_physical_templates,
+    extract_signed_systematic_templates,
+    fit_realistic_profile_likelihood,
+)
 
 
 TEMPLATE_QUANTILES = (0.0, 0.50, 0.80, 0.92, 0.97, 0.99, 1.0)
@@ -309,6 +316,7 @@ def apply_frozen_pipeline(
     bin_unif = _assign_18_bins(s_tau, obs_dom, cut_b_locks['template_edges_uniform']['edges_by_domain'])
     return {
         'probs': probs,
+        'charm_prob': mean_charm,
         's_tau': s_tau,
         'pass_global_1pct': pass_g1,
         'pass_global_0p1pct': pass_g01,
@@ -364,17 +372,28 @@ def compute_locked_slice_report(
         'auroc_tau': float(pc[2]['AUROC']) if pc[2]['AUROC'] is not None else float('nan'),
     }
     if has_tau and has_bkg:
-        out['within_slice_S_tau_1pct'] = float(_tau_efficiency_at_fpr(sm, ym, 0.01)['tau_eff'])
-        out['within_slice_S_tau_0p1pct'] = float(_tau_efficiency_at_fpr(sm, ym, 0.001)['tau_eff'])
+        ex1 = _tau_efficiency_at_fpr(sm, ym, 0.01)
+        ex01 = _tau_efficiency_at_fpr(sm, ym, 0.001)
+        out['within_slice_S_tau_1pct'] = float(ex1['tau_eff'])
+        out['within_slice_S_tau_0p1pct'] = float(ex01['tau_eff'])
+        out['within_slice_exact_1pct_fpr'] = ex1
+        out['within_slice_exact_0p1pct_fpr'] = ex01
 
-    # Realized performance at the locked Cut-B thresholds
+    # Realized performance at the locked Cut-B thresholds (explicitly distinguish global-budget
+    # variable-local-FPR Strategy-II from within-slice fixed-FPR benchmarks per Audit P1-4)
     for key in ('pass_global_1pct', 'pass_global_0p1pct', 'pass_np_1pct', 'pass_np_0p1pct'):
         sel = applied[key][m]
         tau_tot = int((ym == 2).sum())
         bkg_tot = int(nt.sum())
         tau_pass = int((sel & (ym == 2)).sum())
         bkg_pass = int((sel & nt).sum())
+        op_type = (
+            'global_budget_variable_local_fpr'
+            if '_np_' in key
+            else 'global_uniform_score_threshold'
+        )
         out[f'locked_{key}'] = {
+            'operating_point_type': op_type,
             'tau_eff': float(tau_pass / tau_tot) if tau_tot > 0 else None,
             'actual_fpr': float(bkg_pass / bkg_tot) if bkg_tot > 0 else None,
             'tau_passed': tau_pass,
@@ -791,6 +810,7 @@ def evaluate_14_stress_conditions(
     return {
         'variants': var_results,
         'delta_bkg_sys_18bin_rms': delta_bkg_sys.tolist(),
+        'stress_bin_ids_tail': applied['bin_ids_tail'].tolist(),
     }
 
 
@@ -1045,6 +1065,43 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
 
     migration = compute_migration_matrices(ref_conf, applied_ens['probs'], applied_ens)
 
+    # Realistic forward-flux + signed morphing + Charm-CR + Barlow-Beeston lite PL scan (Audit P0-1)
+    signed_sys = extract_signed_systematic_templates(
+        stress_meta, np.asarray(stress_eval['stress_bin_ids_tail'], dtype=np.int64), n_bins=18
+    )
+    sr_bins_18, joint_bins_24 = assign_signal_and_charm_cr_bins(
+        applied_ens['s_tau'],
+        applied_ens.get('charm_prob'),
+        obs_dom,
+        cut_b_ens['template_edges_tail_resolved']['edges_by_domain'],
+    )
+    has_ch_conf = ref_conf['has_charm'].to_numpy(dtype=bool)
+    realistic_flux_scan = {}
+    for scen_name, scen in LHC_FORWARD_SCENARIOS.items():
+        tpl_18 = build_physical_templates(
+            sr_bins_18,
+            labels,
+            has_ch_conf,
+            n_bins=18,
+            total_events=scen['expected_total_events'],
+            tau_fraction=scen['tau_fraction'],
+            bkg_shares=scen['bkg_shares'],
+        )
+        tpl_24 = build_physical_templates(
+            joint_bins_24,
+            labels,
+            has_ch_conf,
+            n_bins=24,
+            total_events=scen['expected_total_events'],
+            tau_fraction=scen['tau_fraction'],
+            bkg_shares=scen['bkg_shares'],
+        )
+        realistic_flux_scan[scen_name] = {
+            'scenario': scen,
+            'sr_18bin_only': fit_realistic_profile_likelihood(tpl_18, signed_sys=signed_sys, n_sr_bins=18),
+            'sr_plus_charm_cr_24bin': fit_realistic_profile_likelihood(tpl_24, signed_sys=signed_sys, n_sr_bins=18),
+        }
+
     probes_path_pf = w3_12 / 'probes_confirm_pf.json'
     probes_path_b1 = w3_12 / 'probes_confirm_b1pp.json'
     probes_pf = json.loads(probes_path_pf.read_text()) if probes_path_pf.exists() else {}
@@ -1067,6 +1124,7 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
             'nominal_stress_replay_max_prob_diff': float(max_nom_diff),
             'nominal_stress_replay_parity': nominal_parity,
             'significance_scan': sig_scan,
+            'realistic_forward_flux_significance': realistic_flux_scan,
             'probes_pf': probes_pf,
             'probes_b1pp': probes_b1,
         },

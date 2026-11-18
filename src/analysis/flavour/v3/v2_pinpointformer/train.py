@@ -33,6 +33,7 @@ from analysis.flavour.v2.r1.tasks import probabilities, task_loss
 from analysis.flavour.v2.r3.mapped_inputs import MappedItems, write_mapped_items
 from analysis.flavour.v3.common.datasets import V3EvalDataset, V3TrainDataset
 from analysis.flavour.v3.common.domains import detector_bounds
+from analysis.flavour.v3.common.layers import split_adamw_param_groups
 from analysis.flavour.v3.v2_pinpointformer.models import PinpointFormer, pf_branch_groups
 from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import (
     collate_pf,
@@ -455,7 +456,11 @@ def _pf_v2_loss(model: nn.Module, batch: dict, ctx: dict) -> tuple[torch.Tensor,
     w_vtx = float(model.config.get('vertex_loss_weight', 0.15 if model.use_vertex_anchor else 0.0))
     if model.use_vertex_anchor and w_vtx > 0.0 and 'vertex_xyz_mm' in batch:
         l_vtx = heteroscedastic_vertex_loss(
-            aux['v_hat'], aux['log_var_v'], batch['vertex_xyz_mm'], batch['vertex_valid']
+            aux['v_hat'],
+            aux['log_var_v'],
+            batch['vertex_xyz_mm'],
+            batch['vertex_valid'],
+            legacy_biased=bool(model.config.get('legacy_vertex_bias', False)),
         )
         loss = l_cls + w_vtx * l_vtx
     else:
@@ -706,7 +711,11 @@ def run_pf_training(
         groups = branch_groups_fn(model)
         base_lr = float(config['learning_rate'])
         wd = float(config.get('weight_decay', 0.03))
-        opt_params = model.build_param_groups(base_lr, wd) if hasattr(model, 'build_param_groups') else model.parameters()
+        opt_params = (
+            model.build_param_groups(base_lr, wd)
+            if hasattr(model, 'build_param_groups')
+            else split_adamw_param_groups(model, base_lr, wd)
+        )
         opt = torch.optim.AdamW(
             opt_params,
             lr=base_lr,
@@ -751,7 +760,8 @@ def run_pf_training(
 
         ema_decay = float(config.get('ema_decay', 0.9996))
         screen_every = int(config.get('screen_every_passes', 2))
-        y_mirror = bool(config.get('y_mirror', True))
+        default_mirror = not bool(config.get('pe_only', False))
+        y_mirror = bool(config.get('y_mirror', default_mirror))
         amp_ok = use_bf16
 
         try:
@@ -864,6 +874,11 @@ def run_pf_training(
         'best_pass': best_pass,
         'best_screen_nll': best_nll,
         'learned_scales': model.learned_attention_scales() if hasattr(model, 'learned_attention_scales') else {},
+        'effective_attention_sharpness': (
+            model.effective_attention_sharpness()
+            if hasattr(model, 'effective_attention_sharpness')
+            else {}
+        ),
         'history': history,
         'wall_seconds': float(time.perf_counter() - t_start),
         'Cal_A_Cut_B_Confirm_payload_read': False,

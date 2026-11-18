@@ -11,6 +11,8 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
+from analysis.flavour.v3.common.fast_kernels import cluster_pixel_hits_fast
+
 
 CLUSTER_RADIUS_MM = 0.06
 
@@ -29,6 +31,8 @@ def cluster_pixel_hits(
     """
     cid = np.asarray(channel_id, dtype=np.uint64)
     xyz = np.asarray(xyz_mm, dtype=np.float64).reshape(-1, 3)
+    if len(xyz) and not np.isfinite(xyz).all():
+        raise ValueError('Non-finite pixel xyz_mm coordinates encountered in cluster_pixel_hits')
     n_hits = len(cid)
     if n_hits == 0:
         return {
@@ -39,6 +43,10 @@ def cluster_pixel_hits(
             'cluster_first_channel_id': np.empty(0, dtype=np.uint64),
             'hit_to_cluster': np.empty(0, dtype=np.int32),
         }
+
+    fast_out = cluster_pixel_hits_fast(cid, xyz, nx, ny, radius_mm=radius_mm)
+    if fast_out is not None:
+        return fast_out
 
     # Canonical sort by channel_id ensures permutation invariance.
     canon = np.argsort(cid, kind='mergesort')

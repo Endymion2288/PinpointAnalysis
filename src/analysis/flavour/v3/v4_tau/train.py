@@ -289,7 +289,8 @@ def train_b1pp_v4(root: Path, config: dict, resume: bool = False) -> dict:
     weight_decay = float(config.get('weight_decay', 0.03))
     warmup_frac = float(config.get('warmup_fraction', 0.05))
     ema_decay = float(config.get('ema_decay', 0.999))
-    y_mirror = bool(config.get('y_mirror', True))
+    default_mirror = not bool(config.get('pe_only', False))
+    y_mirror = bool(config.get('y_mirror', default_mirror))
     screen_every = int(config.get('screen_every_passes', 2))
     loader_workers = int(config.get('loader_workers', 3))
     cache_workers = int(config.get('cache_workers', 4))
@@ -298,7 +299,7 @@ def train_b1pp_v4(root: Path, config: dict, resume: bool = False) -> dict:
         raise RuntimeError('CUDA device is required for B1++ V4 training')
     cap = torch.cuda.get_device_capability(0)
     req_bf16 = bool(config.get('bf16', True))
-    if req_bf16 and cap[0] < 8:
+    if req_bf16 and cap[0] < 8 and bool(config.get('strict_bf16', False)):
         raise RuntimeError(f'BF16 training requires SM80+, found SM{cap[0]}{cap[1]}')
     use_bf16 = req_bf16 and cap[0] >= 8
 

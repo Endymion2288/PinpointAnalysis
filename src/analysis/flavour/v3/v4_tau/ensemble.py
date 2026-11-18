@@ -102,12 +102,28 @@ def _fit_domain_convex_blend(log_p_stack: np.ndarray, labels: np.ndarray) -> dic
         jac=True,
         method='L-BFGS-B',
         bounds=bounds,
-        options={'gtol': 1e-7, 'ftol': 1e-12, 'maxiter': 400},
+        options={'gtol': 1e-7, 'ftol': 1e-12, 'maxiter': 600},
     )
+    if not res.success:
+        rng = np.random.default_rng(29)
+        for _ in range(4):
+            cand = minimize(
+                objective,
+                rng.normal(0.0, 0.15, size=m + 4),
+                jac=True,
+                method='L-BFGS-B',
+                bounds=bounds,
+                options={'gtol': 1e-7, 'ftol': 1e-14, 'maxiter': 1200},
+            )
+            if cand.fun < res.fun or (cand.success and not res.success):
+                res = cand
+            if res.success:
+                break
     alpha = res.x[:m]
     w = softmax(alpha)
     inv_t = float(np.exp(res.x[m]))
     bias = [float(res.x[m + 1]), float(res.x[m + 2]), float(res.x[m + 3]), 0.0]
+    grad_inf = float(np.max(np.abs(res.jac))) if hasattr(res, 'jac') and res.jac is not None else float('nan')
     return {
         'weights': w.tolist(),
         'inv_T': inv_t,
@@ -115,6 +131,8 @@ def _fit_domain_convex_blend(log_p_stack: np.ndarray, labels: np.ndarray) -> dic
         'bias': bias,
         'fallback': False,
         'success': bool(res.success),
+        'optimizer_converged': bool(res.success or grad_inf < 1e-5),
+        'grad_inf_norm': grad_inf,
         'objective': float(res.fun),
     }
 

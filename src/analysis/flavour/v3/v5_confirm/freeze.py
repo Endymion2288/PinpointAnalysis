@@ -77,6 +77,13 @@ def build_v5_freeze_manifest(
     """Assemble the complete immutable V5 analysis freeze specification."""
     if repo_root is None:
         repo_root = Path(__file__).resolve().parents[5]
+    if not pre_unsealing_git_commit:
+        pre_unsealing_git_commit = (
+            subprocess.check_output(['git', '-C', str(repo_root), 'rev-parse', 'HEAD'], text=True)
+            .strip()
+        )
+    if len(pre_unsealing_git_commit) != 40:
+        raise ValueError(f'Invalid pre_unsealing_git_commit SHA: {pre_unsealing_git_commit!r}')
     members = []
     for seed in SEEDS:
         for role in ROLE_ORDER:

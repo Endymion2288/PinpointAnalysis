@@ -113,3 +113,51 @@ class ScaledQKNormAttention(nn.Module):
         denom = torch.log(valid_count)[:, None, None, :].clamp(min=1e-6)
         norm_ent = (ent / denom).mean(dim=-1)
         return out, norm_ent
+
+
+NO_WD_KEYWORDS = (
+    '.bias',
+    'norm.',
+    '.log_scale',
+    '.len_beta',
+    '.gamma_attn',
+    '.gamma_ff',
+    'polar_gate',
+    'local_scatter_scale',
+    'queries',
+    'nomad_scale',
+    'log_vars',
+    'tau_q',
+)
+
+
+def is_weight_decay_exempt(name: str, param: nn.Parameter) -> bool:
+    """Return True for 1D/scalar/norm/bias/temperature/gate/query parameters (Audit P2-3)."""
+    if param.ndim < 2 or param.numel() <= 64:
+        # Matrix weights in Linear/Conv always have ndim >= 2; 1D/scalar/head scales are exempt
+        if param.ndim < 2 or any(k in name for k in NO_WD_KEYWORDS):
+            return True
+    return any(k in name for k in NO_WD_KEYWORDS)
+
+
+def split_adamw_param_groups(
+    module: nn.Module,
+    base_lr: float,
+    weight_decay: float,
+) -> list[dict]:
+    """Build standard AdamW parameter groups exempting all 1D/scalar/norm/gate/query tensors from WD."""
+    decay_params: list[nn.Parameter] = []
+    no_decay_params: list[nn.Parameter] = []
+    for name, param in module.named_parameters():
+        if not param.requires_grad:
+            continue
+        if is_weight_decay_exempt(name, param):
+            no_decay_params.append(param)
+        else:
+            decay_params.append(param)
+    groups: list[dict] = []
+    if decay_params:
+        groups.append({'params': decay_params, 'lr': float(base_lr), 'weight_decay': float(weight_decay)})
+    if no_decay_params:
+        groups.append({'params': no_decay_params, 'lr': float(base_lr), 'weight_decay': 0.0})
+    return groups

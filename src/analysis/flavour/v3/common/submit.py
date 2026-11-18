@@ -21,6 +21,7 @@ def _package_source(repo: Path, archive: Path) -> None:
         paths = [repo / 'src/analysis/__init__.py']
         paths.extend(sorted((repo / 'src/analysis/utils').glob('*.py')))
         paths.extend(sorted((repo / 'src/analysis/flavour').rglob('*.py')))
+        paths.extend(sorted((repo / 'src/analysis/flavour').rglob('*.cpp')))
         s3_repair = repo / 'src/analysis/flavour/s3/runtime_repair.sh'
         if s3_repair.exists():
             paths.append(s3_repair)

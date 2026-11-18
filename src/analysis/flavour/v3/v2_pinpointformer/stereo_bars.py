@@ -230,21 +230,25 @@ class StereoBarNexus(nn.Module):
         st_meas_xy = torch.stack([x_act.float(), y_act_full.float()], dim=-1)
 
         # Build top-N_MAX_NEXUS stereo (X, Y) crossing nodes across doublet layers (FP32 geometry)
+        # Symmetric tie-breaking (1 - |u_bars|) avoids index-0 bias and eliminates 10.5 mm Y-mirror jumps (P2-4)
         ex_dbl = grid_x[:, 0, self.doublet_stations]  # (B, 42, 40)
         act_x_dbl = grid_x[:, 4, self.doublet_stations] > 0.5
         ey_dbl = y_ex
         act_y_dbl = y_has > 0.5
-        score_x = ex_dbl + 1e-3 * act_x_dbl.float()
-        score_y = ey_dbl + 1e-3 * act_y_dbl.float()
+        sym_tie = 1e-5 * (1.0 - self.u_bars.abs())[None, None, :]
+        score_x = torch.where(act_x_dbl, ex_dbl + 1e-3 + sym_tie, torch.full_like(ex_dbl, -1e6))
+        score_y = torch.where(act_y_dbl, ey_dbl + 1e-3 + sym_tie, torch.full_like(ey_dbl, -1e6))
         top_ex, top_ix = torch.topk(score_x, k=MAX_CROSS_PER_SIDE, dim=-1)  # (B, 42, 8)
         top_ey, top_iy = torch.topk(score_y, k=MAX_CROSS_PER_SIDE, dim=-1)  # (B, 42, 8)
         top_vx = torch.gather(act_x_dbl, dim=-1, index=top_ix)
         top_vy = torch.gather(act_y_dbl, dim=-1, index=top_iy)
+        top_ex_clean = torch.gather(ex_dbl, dim=-1, index=top_ix)
+        top_ey_clean = torch.gather(ey_dbl, dim=-1, index=top_iy)
 
         # Pairwise outer grid inside each doublet (B, 42, 8, 8)
         pair_valid = top_vx[:, :, :, None] & top_vy[:, :, None, :]
-        ex_p = top_ex[:, :, :, None].expand(-1, -1, -1, MAX_CROSS_PER_SIDE)
-        ey_p = top_ey[:, :, None, :].expand(-1, -1, MAX_CROSS_PER_SIDE, -1)
+        ex_p = top_ex_clean[:, :, :, None].expand(-1, -1, -1, MAX_CROSS_PER_SIDE)
+        ey_p = top_ey_clean[:, :, None, :].expand(-1, -1, MAX_CROSS_PER_SIDE, -1)
         pair_score = torch.where(
             pair_valid,
             2.0 * torch.minimum(ex_p, ey_p) + 0.1 * (ex_p + ey_p),
@@ -261,8 +265,8 @@ class StereoBarNexus(nn.Module):
 
         bx_id = torch.gather(top_ix.view(b, -1), 1, d_idx * MAX_CROSS_PER_SIDE + xi_slot)
         by_id = torch.gather(top_iy.view(b, -1), 1, d_idx * MAX_CROSS_PER_SIDE + yi_slot)
-        ex_val = torch.gather(top_ex.view(b, -1), 1, d_idx * MAX_CROSS_PER_SIDE + xi_slot)
-        ey_val = torch.gather(top_ey.view(b, -1), 1, d_idx * MAX_CROSS_PER_SIDE + yi_slot)
+        ex_val = torch.gather(top_ex_clean.view(b, -1), 1, d_idx * MAX_CROSS_PER_SIDE + xi_slot)
+        ey_val = torch.gather(top_ey_clean.view(b, -1), 1, d_idx * MAX_CROSS_PER_SIDE + yi_slot)
 
         st_idx_nex = self.doublet_stations[d_idx]
         nex_x = self.bar_x_mm[bx_id]

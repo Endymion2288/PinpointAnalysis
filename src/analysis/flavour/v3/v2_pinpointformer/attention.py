@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import math
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from analysis.flavour.v3.common.layers import ScaledQKNormAttention
 
@@ -15,6 +17,25 @@ def collect_attention_scales(module: nn.Module) -> dict[str, list[float]]:
         if isinstance(sub, ScaledQKNormAttention):
             scales = torch.clamp(sub.log_scale.exp(), min=1.0, max=sub.max_scale)
             out[name] = [float(x) for x in scales.detach().cpu().view(-1).tolist()]
+    return out
+
+
+def collect_effective_attention_sharpness(module: nn.Module) -> dict[str, dict[str, list[float]]]:
+    """Return base exp(log_scale), len_beta, and effective sharpness at N=20 and N=200 (Audit P2-3)."""
+    out: dict[str, dict[str, list[float]]] = {}
+    for name, sub in module.named_modules():
+        if isinstance(sub, ScaledQKNormAttention):
+            scales = torch.clamp(sub.log_scale.detach().float().exp(), min=1.0, max=sub.max_scale).view(-1)
+            lb = sub.len_beta.detach().float().view(-1)
+            sp = F.softplus(lb)
+            eff_n20 = scales * (1.0 + sp * math.log(20.0))
+            eff_n200 = scales * (1.0 + sp * math.log(200.0))
+            out[name] = {
+                'base_scale': [float(x) for x in scales.cpu().tolist()],
+                'len_beta': [float(x) for x in lb.cpu().tolist()],
+                'eff_sharpness_N20': [float(x) for x in eff_n20.cpu().tolist()],
+                'eff_sharpness_N200': [float(x) for x in eff_n200.cpu().tolist()],
+            }
     return out
 
 

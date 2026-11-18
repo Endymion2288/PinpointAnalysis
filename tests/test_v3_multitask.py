@@ -100,7 +100,9 @@ class TestMultitaskV3(unittest.TestCase):
         lv = torch.full((2, 3), -4.0)
         v = torch.zeros((2, 3))
         vtx_loss = heteroscedastic_vertex_loss(v, lv, v, torch.ones(2, dtype=torch.long))
-        self.assertGreater(float(vtx_loss), 10.0)
+        self.assertGreater(float(vtx_loss), 0.5)
+        vtx_loss_legacy = heteroscedastic_vertex_loss(v, lv, v, torch.ones(2, dtype=torch.long), legacy_biased=True)
+        self.assertGreater(float(vtx_loss_legacy), 10.0)
 
         # Zero-valid masks do not produce NaN/Inf
         hl = HomoscedasticEventLoss()

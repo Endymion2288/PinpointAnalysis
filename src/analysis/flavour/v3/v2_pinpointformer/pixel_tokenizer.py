@@ -9,7 +9,18 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from analysis.flavour.v3.common.domains import compute_observable_containment, cumulative_radiation_length
+from analysis.flavour.v3.common.domains import (
+    calibrated_bar_channels,
+    compute_observable_containment,
+    cumulative_radiation_length,
+    validate_finite_observation,
+)
+from analysis.flavour.v3.common.fast_kernels import (
+    MICRO_VTX_FEAT_DIM,
+    plane_neighborhoods_fast,
+    rasterize_patches_fast,
+    reconstruct_micron_vertex,
+)
 from analysis.flavour.v3.common.pixel_clusters import cluster_pixel_hits
 from analysis.flavour.v3.v1_b1pp.spectrometer import (
     CAND_Y_FLIP_IDX,
@@ -68,6 +79,12 @@ def _compute_plane_neighborhoods(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Compute per-cluster same-plane cKDTree counts in r <= 0.15, 0.40, 1.0 and 5.0 mm."""
     n_cl = len(cl_plane)
+    if n_cl <= 1:
+        z = np.zeros(n_cl, dtype=np.float64)
+        return z, z.copy(), z.copy(), z.copy(), z.copy(), z.copy(), z.copy()
+    fast_nb = plane_neighborhoods_fast(cl_plane, x_mean, y_mean, n_hits)
+    if fast_nb is not None:
+        return fast_nb
     cnt_r015 = np.zeros(n_cl, dtype=np.float64)
     hits_r015 = np.zeros(n_cl, dtype=np.float64)
     cnt_r040 = np.zeros(n_cl, dtype=np.float64)
@@ -75,8 +92,6 @@ def _compute_plane_neighborhoods(
     cnt_r1 = np.zeros(n_cl, dtype=np.float64)
     cnt_r5 = np.zeros(n_cl, dtype=np.float64)
     hits_r5 = np.zeros(n_cl, dtype=np.float64)
-    if n_cl <= 1:
-        return cnt_r015, hits_r015, cnt_r040, hits_r040, cnt_r1, cnt_r5, hits_r5
 
     coords = np.column_stack([x_mean, y_mean])
     for p in np.unique(cl_plane):
@@ -124,6 +139,11 @@ def _rasterize_micro_patches(
     n_p = len(sel_local)
     if n_p == 0:
         return np.empty((0, 2, PATCH_SIZE, PATCH_SIZE), dtype=np.float16), np.empty(0, dtype=np.int16)
+    fast_p = rasterize_patches_fast(
+        order, offsets, pxyz, x_mean, y_mean, sel_local, keep_idx, PATCH_SIZE, pitch_x, pitch_y
+    )
+    if fast_p is not None:
+        return fast_p
 
     patches = np.zeros((n_p, 2, PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
     half_center = 0.5 * (PATCH_SIZE - 1)  # 15.5 ensures exact Y-mirror symmetry
@@ -172,6 +192,9 @@ def extract_pf_item(
     config: dict,
 ) -> dict:
     """Extract micron-exact connected pixel clusters, patches, active bars, and spectrometer inputs."""
+    pe_only = bool((config or {}).get('pe_only', False))
+    validate_finite_observation(observation, check_edep=not pe_only)
+
     pixel = observation['pixel']
     bar = observation['bar']
     tracker = observation['tracker_hypothesis']
@@ -198,7 +221,7 @@ def extract_pf_item(
         radius_mm = 1.45 * float(quant_mm)
         obs_q = dict(observation)
         obs_q['pixel'] = {'channel_id': pcid[uniq], 'xyz_mm': xyz_cl.astype(np.float32)}
-        dom = compute_observable_containment(obs_q, geometry, bounds)
+        dom = compute_observable_containment(obs_q, geometry, bounds, config=config)
         eff_pixel_hits = len(cid_cl)
     else:
         cid_cl, xyz_cl = pcid, pxyz
@@ -390,6 +413,10 @@ def extract_pf_item(
         pix_patches, patch_cl_idx = _rasterize_micro_patches(
             order, offsets, n_hits, xyz_cl, x_mean, y_mean, trig_loc, keep_idx, pitch_x, pitch_y
         )
+        avr_xyz, avr_ok, micro_vtx_feat = reconstruct_micron_vertex(
+            cl_plane, x_mean, y_mean, z_cl, n_hits, lam2,
+            n_pix_planes, pitch_x, pitch_y, dom['cal_start'], (x_c, y_c, z_mid),
+        )
     else:
         pix_xyz = np.empty((0, 3), dtype=np.float32)
         pix_feat = np.empty((0, PIX_FEAT_DIM), dtype=np.float32)
@@ -397,14 +424,17 @@ def extract_pf_item(
         pix_first_cid = np.empty(0, dtype=np.uint64)
         pix_patches = np.empty((0, 2, PATCH_SIZE, PATCH_SIZE), dtype=np.float16)
         patch_cl_idx = np.empty(0, dtype=np.int16)
+        sz0, sx0, sy0, sv0 = dom['cal_start']
+        avr_xyz = np.array([sx0, sy0, sz0] if sv0 else [x_c, y_c, z_mid], dtype=np.float32)
+        avr_ok = False
+        micro_vtx_feat = np.zeros(MICRO_VTX_FEAT_DIM, dtype=np.float32)
 
-    # Preserve exact raw observation['bar'] ordering for 1-to-1 alignment with sidecar bar_rel_target
-    bp = np.asarray(bar['panel'], dtype=np.int16)
-    bh = np.asarray(bar['horizontal'], dtype=np.int8)
-    bi = np.asarray(bar['bar'], dtype=np.int16)
+    # Calibrated bar extraction: when config['pe_only']=True, edep_proxy_MeV is never read (Audit P1-1)
+    keep_bar, be, bpe = calibrated_bar_channels(bar, config)
+    bp = np.asarray(bar['panel'], dtype=np.int16)[keep_bar]
+    bh = np.asarray(bar['horizontal'], dtype=np.int8)[keep_bar]
+    bi = np.asarray(bar['bar'], dtype=np.int16)[keep_bar]
     if len(bp) > 0:
-        be = np.asarray(bar['edep_proxy_MeV'], dtype=np.float64)
-        bpe = np.asarray(bar['pe_proxy'], dtype=np.float64)
         bar_val = np.column_stack([
             np.log1p(np.maximum(be, 0.0)) / 10.0,
             np.log1p(np.maximum(bpe, 0.0)) / 15.0,
@@ -414,13 +444,16 @@ def extract_pf_item(
 
     spec = extract_spectrometer_kinematics(tracker, dom['cal_start'], bounds)
     sz, sx, sy, svalid = dom['cal_start']
+    avr_pv = np.array([avr_xyz[0], avr_xyz[1], avr_xyz[2], 1.0 if avr_ok else 0.0], dtype=np.float32)
 
-    return {
+    out_item = {
         'index': int(index),
         'label': int(label),
         'obs_domain_id': int(dom['obs_domain_id']),
         'c_obs': dom['c_obs'].astype(np.float32),
         'cal_start': np.array([sz, sx, sy, 1.0 if svalid else 0.0], dtype=np.float32),
+        'avr_pv_mm': avr_pv,
+        'micro_vtx_feat': micro_vtx_feat,
         'raw_pixel_hits': int(raw_pixel_hits),
         'pix_xyz_mm': pix_xyz,
         'pix_feat': pix_feat,
@@ -437,6 +470,9 @@ def extract_pf_item(
         'trk_cand_mask': spec['cand_mask'],
         'trk_hits': spec['hits'],
     }
+    if not keep_bar.all():
+        out_item['bar_keep_mask'] = keep_bar
+    return out_item
 
 
 def apply_y_mirror_pf_item(
@@ -468,6 +504,11 @@ def apply_y_mirror_pf_item(
     if cs[3] > 0.5:
         cs[2] = np.float32(2.0 * yc) - cs[2]
     out['cal_start'] = cs
+
+    if 'avr_pv_mm' in item:
+        apv = item['avr_pv_mm'].copy()
+        apv[1] = np.float32(2.0 * yc) - apv[1]
+        out['avr_pv_mm'] = apv
 
     if len(item['bar_idx']):
         bi = item['bar_idx'].copy()
@@ -618,6 +659,11 @@ def collate_pf(
         'trk_hit_mask': torch.from_numpy(trk_hit_mask),
     }
 
+    if 'avr_pv_mm' in events[0]:
+        batch['avr_pv_mm'] = torch.from_numpy(np.stack([e['avr_pv_mm'] for e in events]).astype(np.float32))
+    if 'micro_vtx_feat' in events[0]:
+        batch['micro_vtx_feat'] = torch.from_numpy(np.stack([e['micro_vtx_feat'] for e in events]).astype(np.float32))
+
     for key, dtype in (
         ('sample_weight', torch.float32),
         ('label_7', torch.long),
@@ -656,7 +702,11 @@ def collate_pf(
                     pix_rel_arr[i, v_loc] = np.asarray(e['sc_pix_rel'][m_pos], dtype=np.float32)
                     pix_rel_valid[i, v_loc] = True
             if len(e['sc_bar_rel']):
-                bar_rel_chunks.append(np.asarray(e['sc_bar_rel'], dtype=np.float32))
+                sc_br = np.asarray(e['sc_bar_rel'], dtype=np.float32)
+                if 'bar_keep_mask' in e:
+                    sc_br = sc_br[np.asarray(e['bar_keep_mask'], dtype=bool)]
+                if len(sc_br):
+                    bar_rel_chunks.append(sc_br)
         batch['pix_origin_target'] = torch.from_numpy(orig_arr)
         batch['pix_ancestry_target'] = torch.from_numpy(anc_arr)
         batch['pix_rel_target'] = torch.from_numpy(pix_rel_arr)

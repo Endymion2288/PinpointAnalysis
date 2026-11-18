@@ -12,7 +12,7 @@ from analysis.flavour.v3.common.layers import ScaledQKNormAttention
 
 K_VTX_MAX = 128
 PAIR_FEAT_DIM = 10
-VERTEX_AXIS_SCALES_MM = (1.0, 1.0, 10.0)
+VERTEX_AXIS_SCALES_MM = (0.20, 0.20, 2.50)
 
 
 def heteroscedastic_vertex_loss(
@@ -20,18 +20,31 @@ def heteroscedastic_vertex_loss(
     log_var_v: torch.Tensor,
     v_true: torch.Tensor,
     vertex_valid: torch.Tensor,
+    *,
+    legacy_biased: bool = False,
 ) -> torch.Tensor:
-    """Masked strictly-positive heteroscedastic SmoothL1+NLL vertex loss in FP32."""
+    """Unbiased heteroscedastic SmoothL1+NLL vertex loss in FP32 (resolving Audit P2-2).
+
+    At the stationary point d/d(lv) [0.5 * (exp(-lv) * L + lv) + C] = 0, exp(lv) = L without
+    any floor distortion. Placing a constant +4.0 OUTSIDE exp(-lv)*L keeps logged values > 0
+    while permitting sub-100-um transverse and mm-level longitudinal uncertainty calibration.
+    """
     valid = vertex_valid > 0
     if not valid.any():
         return v_hat.sum() * 0.0
     with torch.autocast(device_type=v_hat.device.type, enabled=False):
+        if legacy_biased:
+            scale = v_hat.new_tensor((1.0, 1.0, 10.0), dtype=torch.float32)
+            lv = torch.clamp(log_var_v[valid].float(), min=-4.0, max=4.0)
+            err = (v_hat[valid].float() - v_true[valid].float()) / scale
+            l_axis = F.smooth_l1_loss(err, torch.zeros_like(err), reduction='none') + 2.0
+            return (0.5 * torch.exp(-lv) * l_axis + 0.5 * lv).mean()
+
         scale = v_hat.new_tensor(VERTEX_AXIS_SCALES_MM, dtype=torch.float32)
-        lv = torch.clamp(log_var_v[valid].float(), min=-4.0, max=4.0)
+        lv = torch.clamp(log_var_v[valid].float(), min=-6.0, max=6.0)
         err = (v_hat[valid].float() - v_true[valid].float()) / scale
-        # +2.0 offset keeps shifted SmoothL1 >= 2.0 so exp(-u)*L + u remains strictly positive
-        l_axis = F.smooth_l1_loss(err, torch.zeros_like(err), reduction='none') + 2.0
-        nll = 0.5 * torch.exp(-lv) * l_axis + 0.5 * lv
+        l_axis = F.smooth_l1_loss(err, torch.zeros_like(err), beta=1.0, reduction='none') + 1e-4
+        nll = 0.5 * (torch.exp(-lv) * l_axis + lv) + 4.0
         return nll.mean()
 
 

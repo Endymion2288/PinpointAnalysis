@@ -171,23 +171,25 @@ def main() -> None:
         if args.share_b1pp_inputs or args.share_pf_inputs:
             if any(c.get('drop_modality') is not None for c in configs):
                 raise ValueError('Shared input caching requires drop_modality=None for all configs')
-            if args.share_pf_inputs and len({c.get('quantize_xy_mm') for c in configs}) != 1:
-                raise ValueError('--share-pf-inputs requires matching quantize_xy_mm across configs')
+            shared_readout_keys = ('quantize_xy_mm', 'pe_only', 'bar_threshold_pe', 'sipm_npix', 'apply_sipm_saturation')
+            for rk in shared_readout_keys:
+                if len({c.get(rk) for c in configs}) != 1:
+                    raise ValueError(f'Shared input caching requires matching {rk} across configs')
             old_stage = os.environ.get('PINPOINT_V3_SHARED_STAGE')
             os.environ['PINPOINT_V3_SHARED_STAGE'] = stage['local_shard_root']
             try:
                 prep = {}
+                shared_ds_cfg = {rk: configs[0].get(rk) for rk in shared_readout_keys if rk in configs[0]}
                 if args.share_b1pp_inputs:
                     spec_vars = (
-                        ('train', 'PINPOINT_V3_SHARED_TRAIN_B1PP', 'b1pp', extract_b1pp_item, {}),
-                        ('validation', 'PINPOINT_V3_SHARED_TUNE_B1PP', 'b1pp', extract_b1pp_item, {}),
+                        ('train', 'PINPOINT_V3_SHARED_TRAIN_B1PP', 'b1pp', extract_b1pp_item, dict(shared_ds_cfg)),
+                        ('validation', 'PINPOINT_V3_SHARED_TUNE_B1PP', 'b1pp', extract_b1pp_item, dict(shared_ds_cfg)),
                     )
                     rec_key = 'shared_b1pp_prep'
                 else:
-                    q_mm = configs[0].get('quantize_xy_mm')
                     spec_vars = (
-                        ('train', 'PINPOINT_V3_SHARED_TRAIN_PF', 'pf', extract_pf_item, {'quantize_xy_mm': q_mm}),
-                        ('validation', 'PINPOINT_V3_SHARED_TUNE_PF', 'pf', extract_pf_item, {'quantize_xy_mm': q_mm}),
+                        ('train', 'PINPOINT_V3_SHARED_TRAIN_PF', 'pf', extract_pf_item, dict(shared_ds_cfg)),
+                        ('validation', 'PINPOINT_V3_SHARED_TUNE_PF', 'pf', extract_pf_item, dict(shared_ds_cfg)),
                     )
                     rec_key = 'shared_pf_prep'
                 for split, var, tag, fn, ds_cfg in spec_vars:

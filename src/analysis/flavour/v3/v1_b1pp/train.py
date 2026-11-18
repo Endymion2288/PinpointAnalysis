@@ -32,6 +32,7 @@ from analysis.flavour.v2.r1.metrics import Metrics, three_from_four, three_targe
 from analysis.flavour.v2.r1.tasks import NON_TAU, output_size, probabilities, task_loss, three_labels
 from analysis.flavour.v2.r3.mapped_inputs import MappedItems, write_mapped_items
 from analysis.flavour.v3.common.datasets import V3EvalDataset, V3TrainDataset
+from analysis.flavour.v3.common.layers import split_adamw_param_groups
 from analysis.flavour.v3.common.domains import detector_bounds
 from analysis.flavour.v3.v1_b1pp.models import ZAlignedStereoNet, b1pp_branch_groups
 from analysis.flavour.v3.v1_b1pp.representation import collate_b1pp, extract_b1pp_item, static_plane_layout
@@ -495,7 +496,8 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
     weight_decay = float(config.get('weight_decay', 0.03))
     warmup_frac = float(config.get('warmup_fraction', 0.05))
     ema_decay = float(config.get('ema_decay', 0.999))
-    y_mirror = bool(config.get('y_mirror', True))
+    default_mirror = not bool(config.get('pe_only', False))
+    y_mirror = bool(config.get('y_mirror', default_mirror))
     screen_every = int(config.get('screen_every_passes', 2))
     loader_workers = int(config.get('loader_workers', 2))
     cache_workers = int(config.get('cache_workers', 4))
@@ -504,7 +506,7 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
         raise RuntimeError('CUDA device is required for B1++ training')
     cap = torch.cuda.get_device_capability(0)
     req_bf16 = bool(config.get('bf16', True))
-    if req_bf16 and cap[0] < 8:
+    if req_bf16 and cap[0] < 8 and bool(config.get('strict_bf16', False)):
         raise RuntimeError(f'BF16 training requires SM80+, found SM{cap[0]}{cap[1]}')
     use_bf16 = req_bf16 and cap[0] >= 8
 
@@ -629,7 +631,8 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
 
         groups = b1pp_branch_groups(model)
         n_params = sum(p.numel() for p in model.parameters())
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+        opt_groups = split_adamw_param_groups(model, lr, weight_decay)
+        optimizer = torch.optim.AdamW(opt_groups, lr=lr, weight_decay=weight_decay)
 
         steps_per_pass = math.ceil(len(train_ds) / batch_size)
         total_steps = max(1, passes * steps_per_pass)

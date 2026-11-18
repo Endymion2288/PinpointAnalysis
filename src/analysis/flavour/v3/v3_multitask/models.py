@@ -5,10 +5,18 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from analysis.flavour.v3.v2_pinpointformer.attention import collect_attention_scales
+from analysis.flavour.v3.common.layers import split_adamw_param_groups
+from analysis.flavour.v3.v2_pinpointformer.attention import (
+    collect_attention_scales,
+    collect_effective_attention_sharpness,
+)
 from analysis.flavour.v3.v2_pinpointformer.models import PinpointFormer, pf_branch_groups
 from analysis.flavour.v3.v3_multitask.dense_heads import DenseGN2Heads, TOPO_SUMMARY_DIM
-from analysis.flavour.v3.v3_multitask.losses import HomoscedasticEventLoss, marginal_four_from_seven
+from analysis.flavour.v3.v3_multitask.losses import (
+    FixedWeightEventLoss,
+    HomoscedasticEventLoss,
+    marginal_four_from_seven,
+)
 
 
 class PinpointFormerMultitask(nn.Module):
@@ -61,10 +69,24 @@ class PinpointFormerMultitask(nn.Module):
             nn.Dropout(0.15),
             nn.Linear(256, 7),
         )
-        self.event_loss = HomoscedasticEventLoss()
+        if bool(config.get('use_fixed_event_loss', False)):
+            self.event_loss: nn.Module = FixedWeightEventLoss(
+                w_proc=float(config.get('w_proc', 1.0)),
+                w_charm=float(config.get('w_charm', 0.25)),
+                w_vtx=float(config.get('w_vtx', 0.20)),
+                w_kin=float(config.get('w_kin', 0.15)),
+            )
+        else:
+            self.event_loss = HomoscedasticEventLoss()
+
+    def build_param_groups(self, base_lr: float, weight_decay: float) -> list[dict]:
+        return split_adamw_param_groups(self, base_lr, weight_decay)
 
     def learned_attention_scales(self) -> dict[str, list[float]]:
         return collect_attention_scales(self.backbone)
+
+    def effective_attention_sharpness(self) -> dict[str, list[dict[str, float]]]:
+        return collect_effective_attention_sharpness(self.backbone)
 
     def forward(
         self,

@@ -8,6 +8,7 @@ import torch
 from torch import nn
 
 from analysis.flavour.v2.r1.tasks import output_size
+from analysis.flavour.v3.common.layers import is_weight_decay_exempt
 from analysis.flavour.v3.v1_b1pp.models import ZAlignedStereoNet, b1pp_branch_groups
 from analysis.flavour.v3.v2_pinpointformer.train import DEFAULT_GEOMETRY
 from analysis.flavour.v3.v3_multitask.losses import marginal_four_from_seven
@@ -45,6 +46,24 @@ class NomadFusionBlock(nn.Module):
             return self.net(x) * active
 
 
+def _append_split_group(
+    groups: list[dict],
+    named_params: list[tuple[str, nn.Parameter]],
+    lr: float,
+    weight_decay: float,
+) -> None:
+    decay, no_decay = [], []
+    for name, param in named_params:
+        if is_weight_decay_exempt(name, param):
+            no_decay.append(param)
+        else:
+            decay.append(param)
+    if decay:
+        groups.append({'params': decay, 'lr': lr, 'weight_decay': weight_decay})
+    if no_decay:
+        groups.append({'params': no_decay, 'lr': lr, 'weight_decay': 0.0})
+
+
 def _init_residual_head(seq: nn.Sequential) -> None:
     last = seq[-1]
     if isinstance(last, nn.Linear):
@@ -67,7 +86,13 @@ class ZAlignedStereoNetV4(ZAlignedStereoNet):
 
         if self.enable_nomad:
             init_scale = float(config.get('nomad_init_scale', 0.25 if config.get('init_checkpoint') else 1.0))
-            self.nomad_extractor: NomadTransverseExtractor | None = NomadTransverseExtractor(geom)
+            phys_cal = not bool(config.get('legacy_nomad_scale', False))
+            pe_scale = float(config.get('nomad_pe_per_mip_mev', 40.0 if config.get('pe_only', False) else 1.0))
+            self.nomad_extractor: NomadTransverseExtractor | None = NomadTransverseExtractor(
+                geom,
+                phys_calibrated=phys_cal,
+                pe_per_mip_mev=pe_scale,
+            )
             self.nomad_block: NomadFusionBlock | None = NomadFusionBlock(out_dim=64)
             self.nomad_head: nn.Sequential | None = nn.Sequential(
                 nn.LayerNorm(self.fused_dim + 64),
@@ -112,31 +137,16 @@ class ZAlignedStereoNetV4(ZAlignedStereoNet):
             if name.startswith('pauc_loss.'):
                 pauc_params.append(param)
             elif name.startswith(('nomad_block.', 'nomad_head.', 'nomad_scale')):
-                nomad_params.append(param)
+                nomad_params.append((name, param))
             elif warm and name.startswith('head.'):
-                top_head_params.append(param)
+                top_head_params.append((name, param))
             else:
-                backbone_params.append(param)
+                backbone_params.append((name, param))
 
         groups: list[dict] = []
-        if backbone_params:
-            groups.append({
-                'params': backbone_params,
-                'lr': (0.15 * base_lr) if warm else base_lr,
-                'weight_decay': weight_decay,
-            })
-        if top_head_params:
-            groups.append({
-                'params': top_head_params,
-                'lr': 0.80 * base_lr,
-                'weight_decay': weight_decay,
-            })
-        if nomad_params:
-            groups.append({
-                'params': nomad_params,
-                'lr': (3.0 * base_lr) if warm else base_lr,
-                'weight_decay': weight_decay,
-            })
+        _append_split_group(groups, backbone_params, (0.15 * base_lr) if warm else base_lr, weight_decay)
+        _append_split_group(groups, top_head_params, 0.80 * base_lr, weight_decay)
+        _append_split_group(groups, nomad_params, (3.0 * base_lr) if warm else base_lr, weight_decay)
         if pauc_params:
             groups.append({
                 'params': pauc_params,
@@ -171,7 +181,13 @@ class PinpointFormerV4(PinpointFormerMultitask):
 
         if self.enable_nomad:
             init_scale = float(config.get('nomad_init_scale', 0.25 if config.get('init_checkpoint') else 1.0))
-            self.nomad_extractor: NomadTransverseExtractor | None = NomadTransverseExtractor(geometry)
+            phys_cal = not bool(config.get('legacy_nomad_scale', False))
+            pe_scale = float(config.get('nomad_pe_per_mip_mev', 40.0 if config.get('pe_only', False) else 1.0))
+            self.nomad_extractor: NomadTransverseExtractor | None = NomadTransverseExtractor(
+                geometry,
+                phys_calibrated=phys_cal,
+                pe_per_mip_mev=pe_scale,
+            )
             self.nomad_block: NomadFusionBlock | None = NomadFusionBlock(out_dim=64)
             self.nomad_head_7: nn.Sequential | None = nn.Sequential(
                 nn.LayerNorm(head_in_dim + 64),
@@ -224,31 +240,16 @@ class PinpointFormerV4(PinpointFormerMultitask):
             if name.startswith('pauc_loss.'):
                 pauc_params.append(param)
             elif name.startswith(('nomad_block.', 'nomad_head_7.', 'nomad_charm_head.', 'nomad_scale')):
-                nomad_params.append(param)
+                nomad_params.append((name, param))
             elif warm and name.startswith(('event_head_7.', 'charm_head.', 'topo_proj.')):
-                top_head_params.append(param)
+                top_head_params.append((name, param))
             else:
-                backbone_params.append(param)
+                backbone_params.append((name, param))
 
         groups: list[dict] = []
-        if backbone_params:
-            groups.append({
-                'params': backbone_params,
-                'lr': (0.15 * base_lr) if warm else base_lr,
-                'weight_decay': weight_decay,
-            })
-        if top_head_params:
-            groups.append({
-                'params': top_head_params,
-                'lr': 0.80 * base_lr,
-                'weight_decay': weight_decay,
-            })
-        if nomad_params:
-            groups.append({
-                'params': nomad_params,
-                'lr': (3.0 * base_lr) if warm else base_lr,
-                'weight_decay': weight_decay,
-            })
+        _append_split_group(groups, backbone_params, (0.15 * base_lr) if warm else base_lr, weight_decay)
+        _append_split_group(groups, top_head_params, 0.80 * base_lr, weight_decay)
+        _append_split_group(groups, nomad_params, (3.0 * base_lr) if warm else base_lr, weight_decay)
         if pauc_params:
             groups.append({
                 'params': pauc_params,

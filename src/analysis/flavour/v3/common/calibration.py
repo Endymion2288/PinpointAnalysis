@@ -82,16 +82,34 @@ def fit_domain_temperature_bias(
         jac=True,
         method='L-BFGS-B',
         bounds=bounds,
-        options={'gtol': 1e-8, 'ftol': 1e-12, 'maxiter': 300},
+        options={'gtol': 1e-8, 'ftol': 1e-12, 'maxiter': 500},
     )
+    if not res.success:
+        rng = np.random.default_rng(17)
+        for _ in range(4):
+            cand = minimize(
+                objective,
+                rng.normal(0.0, 0.15, size=4),
+                jac=True,
+                method='L-BFGS-B',
+                bounds=bounds,
+                options={'gtol': 1e-8, 'ftol': 1e-14, 'maxiter': 1000},
+            )
+            if cand.fun < res.fun or (cand.success and not res.success):
+                res = cand
+            if res.success:
+                break
     inv_t = float(np.exp(res.x[0]))
     bias = [float(res.x[1]), float(res.x[2]), float(res.x[3]), 0.0]
+    grad_inf = float(np.max(np.abs(res.jac))) if hasattr(res, 'jac') and res.jac is not None else float('nan')
     return {
         'T': float(1.0 / inv_t),
         'inv_T': inv_t,
         'bias': bias,
         'fallback': False,
         'success': bool(res.success),
+        'optimizer_converged': bool(res.success or grad_inf < 1e-5),
+        'grad_inf_norm': grad_inf,
         'objective': float(res.fun),
         'counts': support.tolist(),
     }

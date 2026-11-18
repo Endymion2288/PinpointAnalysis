@@ -104,7 +104,7 @@ class V3EvalDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict:
         obs, label = self._raw_observation(index)
-        dom = compute_observable_containment(obs, self.geometry, self.bounds)
+        dom = compute_observable_containment(obs, self.geometry, self.bounds, config=self.config)
         if self.item_transform is not None:
             return self.item_transform(index, obs, label, dom, self.geometry, self.bounds, self.config)
         return {

@@ -8,11 +8,14 @@ from torch import nn
 
 from analysis.flavour.v2.r1.tasks import output_size
 from analysis.flavour.v3.common.domains import cumulative_radiation_length, detector_bounds
+from analysis.flavour.v3.common.fast_kernels import MICRO_VTX_FEAT_DIM
+from analysis.flavour.v3.common.layers import split_adamw_param_groups
 from analysis.flavour.v3.v1_b1pp.models import SpectrometerEncoder
 from analysis.flavour.v3.v2_pinpointformer.attention import (
     AttentionStack,
     PerceiverCrossBlock,
     collect_attention_scales,
+    collect_effective_attention_sharpness,
 )
 from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import (
     MicroPatchConv2D,
@@ -46,6 +49,7 @@ class PinpointFormer(nn.Module):
         self.dim = dim
         self.heads = heads
         self.use_vertex_anchor = bool(config.get('use_vertex_anchor', True))
+        self.enable_micro_vertex = bool(config.get('enable_micro_vertex', False))
         self.n_queries = int(config.get('n_queries', 16))
         self.k_vtx = int(config.get('k_vtx', K_VTX_MAX))
 
@@ -173,6 +177,29 @@ class PinpointFormer(nn.Module):
             nn.SiLU(),
         )
         out_dim = int(config.get('num_classes', output_size(config.get('task', 'T4'))))
+        if self.enable_micro_vertex:
+            self.micro_vtx_token: nn.Module | None = nn.Sequential(
+                nn.LayerNorm(MICRO_VTX_FEAT_DIM),
+                nn.Linear(MICRO_VTX_FEAT_DIM, dim),
+                nn.LayerNorm(dim),
+                nn.SiLU(),
+            )
+            self.micro_vtx_proj: nn.Sequential | None = nn.Sequential(
+                nn.LayerNorm(MICRO_VTX_FEAT_DIM),
+                nn.Linear(MICRO_VTX_FEAT_DIM, 64),
+                nn.SiLU(),
+                nn.Linear(64, 3 * dim),
+            )
+            last_lin = self.micro_vtx_proj[-1]
+            if isinstance(last_lin, nn.Linear):
+                nn.init.normal_(last_lin.weight, mean=0.0, std=0.02)
+                nn.init.zeros_(last_lin.bias)
+            self.micro_vtx_gate: nn.Parameter | None = nn.Parameter(torch.tensor(0.20, dtype=torch.float32))
+        else:
+            self.micro_vtx_token = None
+            self.micro_vtx_proj = None
+            self.micro_vtx_gate = None
+
         self.head = nn.Sequential(
             nn.LayerNorm(3 * dim),
             nn.Linear(3 * dim, 256),
@@ -181,15 +208,26 @@ class PinpointFormer(nn.Module):
             nn.Linear(256, out_dim),
         )
 
+    def build_param_groups(self, base_lr: float, weight_decay: float) -> list[dict]:
+        return split_adamw_param_groups(self, base_lr, weight_decay)
+
     def learned_attention_scales(self) -> dict[str, list[float]]:
         return collect_attention_scales(self)
+
+    def effective_attention_sharpness(self) -> dict[str, list[dict[str, float]]]:
+        return collect_effective_attention_sharpness(self)
 
     def _compute_v_prior(self, batch: dict, b: int, device: torch.device) -> torch.Tensor:
         center = self.default_center_mm[None, :].expand(b, -1).to(device)
         cal_start = batch['cal_start'].float()  # (B, 4): [z, x, y, valid]
         cal_valid = (cal_start[:, 3:4] > 0.5)
         cal_xyz = torch.stack([cal_start[:, 1], cal_start[:, 2], cal_start[:, 0]], dim=-1)
-        return torch.where(cal_valid, cal_xyz, center)
+        prior = torch.where(cal_valid, cal_xyz, center)
+        if self.enable_micro_vertex and 'avr_pv_mm' in batch:
+            avr = batch['avr_pv_mm'].float()  # (B, 4): [x, y, z, valid]
+            avr_valid = avr[:, 3:4] > 0.5
+            prior = torch.where(avr_valid, avr[:, :3], prior)
+        return prior
 
     def forward_features(
         self,
@@ -308,8 +346,15 @@ class PinpointFormer(nn.Module):
 
         # 6. Heterogeneous Perceiver Fusion over all modalities + c_obs conditional query
         spec_mask = batch['trk_hit_mask'].any(dim=1, keepdim=True)
-        source = torch.cat([u_pix, pix_plane_tok, cal_tok, spec_tok.unsqueeze(1)], dim=1)
-        source_mask = torch.cat([pix_mask, pix_plane_act, cal_mask, spec_mask], dim=1)
+        if self.enable_micro_vertex and self.micro_vtx_token is not None and 'micro_vtx_feat' in batch:
+            mv_feat = batch['micro_vtx_feat'].float()
+            mv_tok = self.micro_vtx_token(mv_feat).unsqueeze(1).to(u_pix.dtype)
+            mv_mask = (mv_feat[:, 0:1] > 0.5)
+            source = torch.cat([u_pix, pix_plane_tok, cal_tok, spec_tok.unsqueeze(1), mv_tok], dim=1)
+            source_mask = torch.cat([pix_mask, pix_plane_act, cal_mask, spec_mask, mv_mask], dim=1)
+        else:
+            source = torch.cat([u_pix, pix_plane_tok, cal_tok, spec_tok.unsqueeze(1)], dim=1)
+            source_mask = torch.cat([pix_mask, pix_plane_act, cal_mask, spec_mask], dim=1)
 
         cobs_q = self.cobs_query(batch['c_obs']).unsqueeze(1)
         latents = torch.cat([self.latent_queries.expand(b, -1, -1), cobs_q], dim=1)
@@ -352,6 +397,14 @@ class PinpointFormer(nn.Module):
                     dim=-1,
                 )
             )
+            if (
+                self.enable_micro_vertex
+                and self.micro_vtx_proj is not None
+                and self.micro_vtx_gate is not None
+                and 'micro_vtx_feat' in batch
+            ):
+                mv_f = batch['micro_vtx_feat'].float()
+                fused_global = fused_global + self.micro_vtx_gate * self.micro_vtx_proj(mv_f)
 
         return {
             'fused_global': fused_global,
@@ -403,6 +456,8 @@ def pf_branch_groups(model: PinpointFormer) -> dict[str, list[tuple[str, nn.Para
             branch = 'vertex_anchor'
         elif name.startswith(('local_encoder.', 'local_scatter_scale', 'vtx_pool_gate.')):
             branch = 'local_vertex_attn'
+        elif name.startswith('micro_vtx_'):
+            branch = 'micro_vertex_reco'
         elif name.startswith((
             'latent_queries',
             'cobs_query.',

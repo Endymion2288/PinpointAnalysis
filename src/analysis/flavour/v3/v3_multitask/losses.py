@@ -107,7 +107,11 @@ class HomoscedasticEventLoss(nn.Module):
         )
         l_charm = focal_charm_bce(charm_logit, batch['charm_flag'], batch['charm_valid']) + 0.5
         l_vtx = heteroscedastic_vertex_loss(
-            v_hat, log_var_v, batch['vertex_xyz_mm'], batch['vertex_valid']
+            v_hat,
+            log_var_v,
+            batch['vertex_xyz_mm'],
+            batch['vertex_valid'],
+            legacy_biased=True,
         )
 
         kin_valid = batch['kin_valid'] > 0
@@ -139,5 +143,74 @@ class HomoscedasticEventLoss(nn.Module):
             'u_charm': u[1].detach(),
             'u_vtx': u[2].detach(),
             'u_kin': u[3].detach(),
+        }
+        return total, parts
+
+
+class FixedWeightEventLoss(nn.Module):
+    """Unbiased fixed-weight 4-head event loss (resolving Audit P2-2 +0.5/+2.0 floor bias)."""
+
+    def __init__(
+        self,
+        w_proc: float = 1.0,
+        w_charm: float = 0.25,
+        w_vtx: float = 0.20,
+        w_kin: float = 0.15,
+    ) -> None:
+        super().__init__()
+        self.w_proc = float(w_proc)
+        self.w_charm = float(w_charm)
+        self.w_vtx = float(w_vtx)
+        self.w_kin = float(w_kin)
+
+    def forward(
+        self,
+        logits7: torch.Tensor,
+        charm_logit: torch.Tensor,
+        v_hat: torch.Tensor,
+        log_var_v: torch.Tensor,
+        kin_pred: torch.Tensor,
+        batch: dict,
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        l_proc = marginal_tau_branch_ce(
+            logits7,
+            batch['label_7'],
+            batch['label'],
+            sample_weight=batch.get('sample_weight'),
+        )
+        l_charm = focal_charm_bce(charm_logit, batch['charm_flag'], batch['charm_valid'])
+        l_vtx = heteroscedastic_vertex_loss(
+            v_hat,
+            log_var_v,
+            batch['vertex_xyz_mm'],
+            batch['vertex_valid'],
+            legacy_biased=False,
+        )
+
+        kin_valid = batch['kin_valid'] > 0
+        if kin_valid.any():
+            with torch.autocast(device_type=kin_pred.device.type, enabled=False):
+                l_kin = F.smooth_l1_loss(
+                    kin_pred[kin_valid].float(),
+                    batch['vis_kinematics'][kin_valid].float(),
+                    reduction='mean',
+                )
+        else:
+            l_kin = kin_pred.sum() * 0.0
+
+        with torch.autocast(device_type=logits7.device.type, enabled=False):
+            total = (
+                self.w_proc * l_proc.float()
+                + self.w_charm * l_charm.float()
+                + self.w_vtx * l_vtx.float()
+                + self.w_kin * l_kin.float()
+            )
+
+        parts = {
+            'l_proc': l_proc.detach(),
+            'l_charm': l_charm.detach(),
+            'l_vtx': l_vtx.detach(),
+            'l_kin': l_kin.detach(),
+            'l_event': total.detach(),
         }
         return total, parts

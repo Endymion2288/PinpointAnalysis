@@ -59,6 +59,83 @@ _X0_SI_MM = 93.70
 _X0_SCINT_MM = 425.4
 _X0_AL_MM = 88.97
 
+# Mean bar-center photoelectron calibration constant (BC408: 10000/MeV * 0.10 * 0.40 * exp(-21 cm / 380 cm))
+PE_PER_MEV_CENTER_CAL = 10000.0 * 0.10 * 0.40 * float(np.exp(-21.0 / 380.0))  # 378.514 PE / MeV
+DEFAULT_BAR_THRESHOLD_PE = 2.5
+DEFAULT_SIPM_NPIX = 14400.0
+
+
+def validate_finite_observation(observation: dict, *, check_edep: bool = True) -> None:
+    """Raise ValueError immediately if any sensor coordinate or readout value is NaN/Inf (P3-2)."""
+    pxyz = np.asarray(observation['pixel']['xyz_mm'], dtype=np.float64)
+    if pxyz.size and not np.isfinite(pxyz).all():
+        raise ValueError('Non-finite pixel xyz_mm coordinate in observation')
+    bar = observation['bar']
+    bb = np.asarray(bar['bounds_mm'], dtype=np.float64)
+    if bb.size and not np.isfinite(bb).all():
+        raise ValueError('Non-finite scintillator bounds_mm in observation')
+    bpe = np.asarray(bar['pe_proxy'], dtype=np.float64)
+    if bpe.size and not np.isfinite(bpe).all():
+        raise ValueError('Non-finite scintillator pe_proxy in observation')
+    if check_edep and 'edep_proxy_MeV' in bar:
+        be = np.asarray(bar['edep_proxy_MeV'], dtype=np.float64)
+        if be.size and not np.isfinite(be).all():
+            raise ValueError('Non-finite scintillator edep_proxy_MeV in observation')
+    trk = observation['tracker_hypothesis']
+    txy = np.asarray(trk['xy_mm'], dtype=np.float64)
+    if txy.size and not np.isfinite(txy).all():
+        raise ValueError('Non-finite tracker xy_mm coordinate in observation')
+    if 'sigma_xy_mm' in trk:
+        tsig = np.asarray(trk['sigma_xy_mm'], dtype=np.float64)
+        if tsig.size and not np.isfinite(tsig).all():
+            raise ValueError('Non-finite tracker sigma_xy_mm in observation')
+
+
+def calibrated_bar_channels(
+    bar: dict,
+    config: dict | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Extract active bar mask, calibrated energy proxy (MeV), and PE signal.
+
+    When config['pe_only'] is True (resolving Audit P1-1):
+      - `edep_proxy_MeV` is NEVER read or exposed;
+      - SiPM microcell occupancy saturation is optionally applied (`sipm_npix`, default 14400);
+      - A physical photoelectron threshold (`bar_threshold_pe`, default 2.5 PE) filters sub-threshold hits;
+      - Energy proxy is derived purely from calibrated single-ended PE (`pe_sat / PE_PER_MEV_CENTER_CAL`).
+    """
+    cfg = config or {}
+    pe_only = bool(cfg.get('pe_only', False))
+    bpe_raw = np.asarray(bar['pe_proxy'], dtype=np.float64)
+    n_raw = len(bpe_raw)
+    if n_raw == 0:
+        empty_b = np.zeros(0, dtype=bool)
+        empty_f = np.empty(0, dtype=np.float64)
+        return empty_b, empty_f, empty_f
+
+    if not pe_only:
+        be = np.maximum(0.0, np.asarray(bar['edep_proxy_MeV'], dtype=np.float64))
+        bpe = np.maximum(0.0, bpe_raw)
+        keep = np.ones(n_raw, dtype=bool)
+        return keep, be, bpe
+
+    bpe = np.maximum(0.0, bpe_raw)
+    sipm_npix = float(cfg.get('sipm_npix', DEFAULT_SIPM_NPIX))
+    apply_sat = bool(cfg.get('apply_sipm_saturation', True))
+    if apply_sat and sipm_npix > 0.0:
+        bpe = sipm_npix * (1.0 - np.exp(-bpe / sipm_npix))
+
+    thr_pe = float(cfg.get('bar_threshold_pe', DEFAULT_BAR_THRESHOLD_PE))
+    keep = bpe >= thr_pe
+    bpe_kept = bpe[keep]
+    # Invert average SiPM saturation conservatively up to 95% occupancy for linear energy proxy
+    if apply_sat and sipm_npix > 0.0 and len(bpe_kept):
+        frac = np.clip(bpe_kept / sipm_npix, 0.0, 0.95)
+        pe_lin = -sipm_npix * np.log(1.0 - frac)
+    else:
+        pe_lin = bpe_kept
+    e_cal_mev = pe_lin / PE_PER_MEV_CENTER_CAL
+    return keep, e_cal_mev, bpe_kept
+
 
 def derive_panel_orientations(geometry: dict) -> np.ndarray:
     """Derive boolean horizontal flag (0=vertical/X, 1=horizontal/Y) for all scint panels."""
@@ -151,6 +228,7 @@ def detector_bounds(geometry: dict) -> dict:
         'n_bars': len(bx),
         'x_scint_center': float(bx.mean()),
         'y_scint_center': float(by.mean()),
+        'z_w0': float(tz[0]),
         'z_target_min': z_target_min,
         'z_target_max': z_target_max,
         'L_target': l_target,
@@ -170,10 +248,13 @@ def compute_observable_containment(
     observation: dict,
     geometry: dict,
     bounds: dict | None = None,
+    config: dict | None = None,
 ) -> dict:
     """Extract 16-dim c_obs and mutually exclusive obs_domain_id purely from observables."""
     if bounds is None:
         bounds = detector_bounds(geometry)
+    pe_only = bool((config or {}).get('pe_only', False))
+    validate_finite_observation(observation, check_edep=not pe_only)
 
     pixel = observation['pixel']
     bar = observation['bar']
@@ -181,11 +262,11 @@ def compute_observable_containment(
 
     pxyz = np.asarray(pixel['xyz_mm'], dtype=np.float64).reshape(-1, 3)
     pcid = np.asarray(pixel['channel_id'], dtype=np.int64)
-    bb = np.asarray(bar['bounds_mm'], dtype=np.float64).reshape(-1, 5)
-    be = np.asarray(bar['edep_proxy_MeV'], dtype=np.float64)
-    bp = np.asarray(bar['panel'], dtype=np.int64)
-    bh = np.asarray(bar['horizontal'], dtype=np.int64)
-    bi = np.asarray(bar['bar'], dtype=np.int64)
+    keep_bar, be, _ = calibrated_bar_channels(bar, config)
+    bb = np.asarray(bar['bounds_mm'], dtype=np.float64).reshape(-1, 5)[keep_bar]
+    bp = np.asarray(bar['panel'], dtype=np.int64)[keep_bar]
+    bh = np.asarray(bar['horizontal'], dtype=np.int64)[keep_bar]
+    bi = np.asarray(bar['bar'], dtype=np.int64)[keep_bar]
     tr_s = np.asarray(tracker['station'], dtype=np.int64)
 
     n_pix = len(pcid)
@@ -240,11 +321,22 @@ def compute_observable_containment(
     total_edep = float(be.sum()) if has_bar else 0.0
     c_obs[15] = float(np.log1p(total_edep) / 10.0)
 
-    # Panel 0 sits at z=-2995.5 mm upstream of tungsten plate 0 (-2990.5 mm).
-    # Soft neutron/photon backscatter into panel 0 is distinguished from true
-    # upstream/Al-wall activity by requiring > 5 MeV and > 2% of total bar edep.
-    p0_edep = float(be[bp == 0].sum()) if has_bar else 0.0
-    upstream_veto = (p0_edep > 5.0) and (p0_edep > 0.02 * max(total_edep, 1e-12))
+    # Geometry-aware upstream veto:
+    # - In legacy geometry.json, scint panel 0 (-2995.5 mm) sat upstream of W0 (-2990.5 mm).
+    # - In physical Geant4 geometry (P0-2 fixed), pixel plane 0 (-2991.995 mm) sits upstream of W0 (-2984.49 mm),
+    #   while scint panel 0 (-2979.49 mm) sits downstream of W0.
+    z_w0 = float(bounds.get('z_w0', bounds['z_target_min'] + 2.5))
+    scint_p0_upstream = float(bounds['scint_Zpos'][0]) < z_w0
+    pix_p0_upstream = float(bounds['pixel_Zpos'][0]) < z_w0
+    if scint_p0_upstream:
+        p0_edep = float(be[bp == 0].sum()) if has_bar else 0.0
+        upstream_veto = (p0_edep > 5.0) and (p0_edep > 0.02 * max(total_edep, 1e-12))
+    elif pix_p0_upstream and has_pix:
+        p0_planes = pcid // (bounds['nx'] * bounds['ny'])
+        p0_hits = int(np.count_nonzero(p0_planes == 0))
+        upstream_veto = (p0_hits >= 10) and (p0_hits > 0.05 * max(n_pix, 1))
+    else:
+        upstream_veto = False
     c_obs[6] = float(upstream_veto)
 
     if has_bar and total_edep > 0.0:
