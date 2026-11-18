@@ -12,24 +12,38 @@ class MappedItems:
         with (self.directory/'manifest.pkl').open('rb') as stream:
             self.manifest=pickle.load(stream)
         self.arrays={}
+        self._fast_specs=None
 
     def __len__(self):
         return len(self.manifest['records'])
 
     def __getstate__(self):
         # Pickle the cache identity and small metadata, never mapped contents.
-        return {'directory':self.directory,'manifest':self.manifest,'arrays':{}}
+        return {'directory':self.directory,'manifest':self.manifest,'arrays':{},'_fast_specs':None}
 
-    def __getitem__(self,index):
-        item=dict(self.manifest['records'][index])
+    def _ensure_open(self):
+        specs=[]
         for name,spec in self.manifest['arrays'].items():
             if name not in self.arrays:
                 path=self.directory/(name+'.bin')
                 self.arrays[name]=(np.memmap(path,dtype=spec['dtype'],mode='r')
                     if path.stat().st_size else np.empty(0,dtype=spec['dtype']))
-            start,stop=spec['offsets'][index:index+2]
-            item[name]=self.arrays[name][start:stop].reshape(spec['shapes'][index])
+            specs.append((name,self.arrays[name],spec['offsets'],spec['shapes']))
+        self._fast_specs=specs
+
+    def __getitem__(self,index):
+        if self._fast_specs is None:
+            self._ensure_open()
+        item=dict(self.manifest['records'][index])
+        for name,arr,offsets,shapes in self._fast_specs:
+            start=int(offsets[index])
+            stop=int(offsets[index+1])
+            item[name]=arr[start:stop].reshape(shapes[index])
         return item
+
+    def close(self):
+        self.arrays.clear()
+        self._fast_specs=None
 
 
 def write_mapped_items(groups,directory):

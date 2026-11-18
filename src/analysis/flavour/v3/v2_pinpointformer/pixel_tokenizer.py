@@ -201,9 +201,35 @@ def extract_pf_item(
 
     pcid = np.asarray(pixel['channel_id'], dtype=np.int64)
     pxyz = np.asarray(pixel['xyz_mm'], dtype=np.float64).reshape(-1, 3)
-    raw_pixel_hits = len(pcid)
 
     n_pix_planes = int(bounds['nz'])
+    nx_raw, ny_raw = int(bounds['nx']), int(bounds['ny'])
+    recompute_dom = False
+
+    active_planes = config.get('active_pixel_planes')
+    if active_planes is not None and len(pcid) > 0:
+        pl_raw = pcid // (nx_raw * ny_raw)
+        keep_pl = np.isin(pl_raw, np.asarray(active_planes, dtype=np.int64))
+        pcid = pcid[keep_pl]
+        pxyz = pxyz[keep_pl]
+        recompute_dom = True
+
+    misalign_mm = config.get('misalign_sigma_xy_mm')
+    if misalign_mm is not None and float(misalign_mm) > 0.0 and len(pcid) > 0:
+        pl_raw = pcid // (nx_raw * ny_raw)
+        m_rng = np.random.default_rng(int(config.get('misalign_seed', 20261118)))
+        plane_shifts = m_rng.normal(0.0, float(misalign_mm), size=(n_pix_planes, 2))
+        pxyz = pxyz.copy()
+        pxyz[:, :2] += plane_shifts[pl_raw]
+        recompute_dom = True
+
+    if recompute_dom:
+        obs_mod = dict(observation)
+        obs_mod['pixel'] = {'channel_id': pcid, 'xyz_mm': pxyz.astype(np.float32)}
+        dom = compute_observable_containment(obs_mod, geometry, bounds, config=config)
+
+    raw_pixel_hits = len(pcid)
+
     x_c = float(bounds['x_pix_center'])
     y_c = float(bounds['y_scint_center'])
     z_mid = float(bounds['z_mid'])

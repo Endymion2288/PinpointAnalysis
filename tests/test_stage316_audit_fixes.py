@@ -322,7 +322,7 @@ class TestStage316AuditFixes(unittest.TestCase):
         local_bin = np.clip(((s_tau + 3.0) / 6.0 * 6.0).astype(np.int64), 0, 5)
         bin_ids = (dom - 1) * 6 + local_bin
         has_charm = (labels != 2) & (rng.random(n) < 0.08)
-        scen = LHC_FORWARD_SCENARIOS['HL_LHC_3ab']
+        scen = LHC_FORWARD_SCENARIOS['HL_LHC_3ab_Trench']
         self.assertAlmostEqual(PHYSICAL_TAU_FRACTION, 502.0 / 240200.0, places=6)
         tpl = build_physical_templates(
             bin_ids,

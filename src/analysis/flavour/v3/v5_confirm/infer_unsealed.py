@@ -154,13 +154,14 @@ def _eval_pf_models_once(
     probs_out = {name: np.zeros((n_total, 4), dtype=np.float32) for name in models}
     charm_out = {name: np.zeros(n_total, dtype=np.float32) for name in models}
     obs_dom_out = np.zeros(n_total, dtype=np.int64)
+    amp_dtype = torch.bfloat16 if (use_bf16 and device.type == 'cuda' and torch.cuda.get_device_capability(device)[0] >= 8) else torch.float16
     with torch.inference_mode():
         for batch in loader:
             idx = batch['index'].numpy()
             obs_dom_out[idx] = batch['obs_domain_id'].numpy()
             db = move_batch_to_device(batch, device)
             for name, model in models.items():
-                with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
+                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=use_bf16):
                     pr = _pf_v3_predict(model, db)
                 probs_out[name][idx] = pr['probs'].cpu().numpy()
                 charm_out[name][idx] = pr['charm_prob'].cpu().numpy()
@@ -176,13 +177,14 @@ def _eval_b1pp_models_once(
     n_total = len(loader.dataset)
     probs_out = {name: np.zeros((n_total, 4), dtype=np.float32) for name in models}
     obs_dom_out = np.zeros(n_total, dtype=np.int64)
+    amp_dtype = torch.bfloat16 if (use_bf16 and device.type == 'cuda' and torch.cuda.get_device_capability(device)[0] >= 8) else torch.float16
     with torch.inference_mode():
         for batch in loader:
             idx = batch['index'].numpy()
             obs_dom_out[idx] = batch['obs_domain_id'].numpy()
             gpu = device_batch(batch, str(device))
             for name, model in models.items():
-                with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
+                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=use_bf16):
                     logits = model(gpu).float()
                 probs_out[name][idx] = probabilities(logits, 'T4').cpu().numpy()
     return probs_out, obs_dom_out

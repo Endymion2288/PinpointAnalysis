@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -11,10 +12,12 @@ import math
 import os
 from pathlib import Path
 import pickle
+import queue
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 import numpy as np
@@ -82,6 +85,79 @@ class B1PPCollator:
         return collate_b1pp(events, mirror_rng=self._rng)
 
 
+class _ThreadedB1PPLoader:
+    """Shared-memory multi-threaded B1++ batch prefetcher (0 extra PyTorch RSS)."""
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        batches: list[list[int]],
+        y_mirror: bool,
+        seed: int,
+        pin_memory: bool = True,
+        threads: int = 4,
+    ) -> None:
+        self.dataset = dataset
+        self.batches = batches
+        self.y_mirror = bool(y_mirror)
+        self.seed = int(seed)
+        self.pin_memory = bool(pin_memory)
+        self.threads = max(1, int(threads))
+        self._stop = threading.Event()
+
+    def __len__(self) -> int:
+        return len(self.batches)
+
+    def _build_one(self, b_idx: int, idxs: list[int]) -> dict:
+        events = [self.dataset[i] for i in idxs]
+        rng = np.random.default_rng(self.seed + 777 + b_idx) if self.y_mirror else None
+        batch = collate_b1pp(events, mirror_rng=rng)
+        if self.pin_memory:
+            batch = {k: v.pin_memory() if torch.is_tensor(v) else v for k, v in batch.items()}
+        return batch
+
+    def __iter__(self):
+        self._stop.clear()
+        if len(self.dataset) > 0:
+            _ = self.dataset[0]
+        out_q: queue.Queue = queue.Queue(maxsize=self.threads * 3)
+
+        def _producer() -> None:
+            try:
+                with ThreadPoolExecutor(max_workers=self.threads) as pool:
+                    in_flight = []
+                    for b_idx, idxs in enumerate(self.batches):
+                        if self._stop.is_set():
+                            break
+                        in_flight.append(pool.submit(self._build_one, b_idx, idxs))
+                        if len(in_flight) >= self.threads * 2:
+                            out_q.put(('ok', in_flight.pop(0).result()))
+                    for fut in in_flight:
+                        if self._stop.is_set():
+                            break
+                        out_q.put(('ok', fut.result()))
+            except BaseException as exc:
+                out_q.put(('err', exc))
+            finally:
+                out_q.put(('done', None))
+
+        t = threading.Thread(target=_producer, daemon=True)
+        t.start()
+        try:
+            while True:
+                tag, payload = out_q.get()
+                if tag == 'done':
+                    break
+                if tag == 'err':
+                    raise payload
+                yield payload
+        finally:
+            self._stop.set()
+
+    def close(self) -> None:
+        self._stop.set()
+
+
 def _configure_runtime() -> None:
     torch.set_num_threads(1)
     pa.set_cpu_count(1)
@@ -145,16 +221,21 @@ def _predict_dataset(
     bf16: bool,
     batch_size: int = 128,
     num_workers: int = 2,
+    amp_dtype: torch.dtype | None = None,
 ) -> dict:
     model.eval()
+    if amp_dtype is None:
+        amp_dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8) else torch.float16
+    batches_eval = list(BatchSampler(SequentialSampler(dataset), batch_size=batch_size, drop_last=False))
+    eff_w = 0 if len(dataset) < 512 else (num_workers if num_workers > 0 else 3)
     loader_kw: dict = {
-        'batch_sampler': BatchSampler(SequentialSampler(dataset), batch_size=batch_size, drop_last=False),
-        'num_workers': num_workers,
+        'batch_sampler': batches_eval,
+        'num_workers': eff_w,
         'collate_fn': B1PPCollator(y_mirror=False),
-        'pin_memory': True,
+        'pin_memory': False,
     }
-    if num_workers > 0:
-        loader_kw.update(multiprocessing_context='spawn', worker_init_fn=init_worker, prefetch_factor=2)
+    if eff_w > 0:
+        loader_kw.update(multiprocessing_context='fork', worker_init_fn=init_worker, prefetch_factor=2)
     loader = DataLoader(dataset, **loader_kw)
     all_logits = []
     all_labels = []
@@ -164,7 +245,7 @@ def _predict_dataset(
         with torch.inference_mode():
             for batch in loader:
                 gpu = device_batch(batch, 'cuda:0')
-                with torch.autocast('cuda', dtype=torch.bfloat16, enabled=bf16):
+                with torch.autocast('cuda', dtype=amp_dtype, enabled=bf16):
                     logits = model(gpu).float()
                 all_logits.append(logits.cpu().numpy())
                 all_labels.append(batch['label'].numpy())
@@ -508,7 +589,9 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
     req_bf16 = bool(config.get('bf16', True))
     if req_bf16 and cap[0] < 8 and bool(config.get('strict_bf16', False)):
         raise RuntimeError(f'BF16 training requires SM80+, found SM{cap[0]}{cap[1]}')
-    use_bf16 = req_bf16 and cap[0] >= 8
+    use_bf16 = req_bf16 and cap[0] >= 7
+    amp_dtype = torch.bfloat16 if cap[0] >= 8 else torch.float16
+    use_grad_scaler = use_bf16 and (amp_dtype == torch.float16)
 
     exp_dir = root / 'experiments' / name
     exp_dir.mkdir(parents=True, exist_ok=True)
@@ -527,7 +610,7 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
         'config': config,
         'GPU': torch.cuda.get_device_name(0),
         'capability': f'SM{cap[0]}{cap[1]}',
-        'precision': 'BF16_encoder_FP32_head' if use_bf16 else 'FP32',
+        'precision': ('BF16_encoder_FP32_head' if amp_dtype == torch.bfloat16 else 'FP16_encoder_FP32_head') if use_bf16 else 'FP32',
         'allocation_id': os.environ.get('PINPOINT_JOB_ID', 'interactive'),
         'PID': os.getpid(),
         'screen_history': [],
@@ -664,6 +747,7 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
             step1_grads = ckpt.get('step1_grads')
 
         train_eval_collator = B1PPCollator(y_mirror=y_mirror, seed=seed, n_bars=layout['n_bars'])
+        scaler = torch.amp.GradScaler('cuda', enabled=use_grad_scaler)
         torch.cuda.reset_peak_memory_stats()
 
         with MemoryMonitor() as mem_mon:
@@ -672,14 +756,15 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
                 gen = torch.Generator().manual_seed(seed * 1000 + p_idx)
                 order = torch.randperm(len(train_ds), generator=gen).tolist()
                 sampler = [order[i : i + batch_size] for i in range(0, len(order), batch_size)]
+                eff_tr_w = 0 if len(train_ds) < 512 else (loader_workers if loader_workers > 0 else 5)
                 loader_kw = {
                     'batch_sampler': sampler,
-                    'num_workers': loader_workers,
+                    'num_workers': eff_tr_w,
                     'collate_fn': train_eval_collator,
-                    'pin_memory': True,
+                    'pin_memory': False,
                 }
-                if loader_workers > 0:
-                    loader_kw.update(multiprocessing_context='spawn', worker_init_fn=init_worker, prefetch_factor=2)
+                if eff_tr_w > 0:
+                    loader_kw.update(multiprocessing_context='fork', worker_init_fn=init_worker, prefetch_factor=2)
                 loader = DataLoader(train_ds, **loader_kw)
 
                 model.train()
@@ -693,10 +778,14 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
                             pg['lr'] = cur_lr
                         gpu = device_batch(batch, 'cuda:0')
                         optimizer.zero_grad(set_to_none=True)
-                        with torch.autocast('cuda', dtype=torch.bfloat16, enabled=use_bf16):
+                        with torch.autocast('cuda', dtype=amp_dtype, enabled=use_bf16):
                             logits = model(gpu).float()
                             loss = _compute_loss(logits, gpu, task)
-                        loss.backward()
+                        if use_grad_scaler:
+                            scaler.scale(loss).backward()
+                            scaler.unscale_(optimizer)
+                        else:
+                            loss.backward()
                         if step1_grads is None:
                             step1_grads = _branch_grad_norms(groups)
                             dropped_branch = {'pixel': 'pixel_transverse', 'tracker': 'spectrometer'}.get(
@@ -711,7 +800,11 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
                                 elif g_val <= 0.0:
                                     raise RuntimeError(f'zero branch grad at step 1 for {b_name}: {step1_grads}')
                         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                        optimizer.step()
+                        if use_grad_scaler:
+                            scaler.step(optimizer)
+                            scaler.update()
+                        else:
+                            optimizer.step()
                         _update_ema(ema_model, model, global_step, ema_decay)
 
                         nb = len(batch['label'])

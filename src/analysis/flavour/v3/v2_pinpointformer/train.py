@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 import copy
 from datetime import datetime, timezone
 import json
@@ -11,8 +12,10 @@ import math
 import os
 from pathlib import Path
 import pickle
+import queue
 import shutil
 import tempfile
+import threading
 import time
 from typing import Callable
 
@@ -78,10 +81,37 @@ class CachedPFDataset(Dataset):
             self.metadata = metadata.reset_index(drop=True)
         else:
             self.metadata = metadata.iloc[self.indices].reset_index(drop=True)
-        self.sample_weights = sample_weights
+        self.sample_weights = (
+            None if sample_weights is None else np.asarray(sample_weights, dtype=np.float32)
+        )
         self.event_sidecar = event_sidecar
         self.cluster_dir = Path(cluster_sidecar_dir) if cluster_sidecar_dir is not None else None
         self._memmaps: dict | None = None
+        if event_sidecar is not None:
+            self._sc_label7 = event_sidecar['label_7'].to_numpy(dtype=np.int64, copy=True)
+            self._sc_tb = event_sidecar['tau_branch_valid'].to_numpy(dtype=np.int64, copy=True)
+            self._sc_cf = event_sidecar['charm_flag'].to_numpy(dtype=np.int64, copy=True)
+            self._sc_cv = event_sidecar['charm_valid'].to_numpy(dtype=np.int64, copy=True)
+            self._sc_vtx = np.column_stack([
+                event_sidecar['vertex_x_mm'].to_numpy(dtype=np.float32),
+                event_sidecar['vertex_y_mm'].to_numpy(dtype=np.float32),
+                event_sidecar['vertex_z_mm'].to_numpy(dtype=np.float32),
+            ]).astype(np.float32, copy=True)
+            self._sc_vv = event_sidecar['vertex_valid'].to_numpy(dtype=np.int64, copy=True)
+            self._sc_kin = np.column_stack([
+                event_sidecar['vis_pz_log1p'].to_numpy(dtype=np.float32),
+                event_sidecar['vis_pt_log1p'].to_numpy(dtype=np.float32),
+                event_sidecar['vis_cos_dphi'].to_numpy(dtype=np.float32),
+                event_sidecar['vis_sin_dphi'].to_numpy(dtype=np.float32),
+            ]).astype(np.float32, copy=True)
+            self._sc_kv = event_sidecar['kin_valid'].to_numpy(dtype=np.int64, copy=True)
+            self._sc_sidx = (
+                event_sidecar['sidecar_index'].to_numpy(dtype=np.int64, copy=True)
+                if 'sidecar_index' in event_sidecar.columns
+                else None
+            )
+        else:
+            self._sc_label7 = None
 
     def _get_memmaps(self) -> dict | None:
         if self.cluster_dir is None:
@@ -121,24 +151,18 @@ class CachedPFDataset(Dataset):
         item['index'] = int(pos)
         if self.sample_weights is not None:
             item['sample_weight'] = float(self.sample_weights[pos])
-        if self.event_sidecar is not None:
-            row = self.event_sidecar.iloc[pos]
-            item['label_7'] = int(row['label_7'])
-            item['tau_branch_valid'] = int(row['tau_branch_valid'])
-            item['charm_flag'] = int(row['charm_flag'])
-            item['charm_valid'] = int(row['charm_valid'])
-            item['vertex_xyz_mm'] = np.array(
-                [row['vertex_x_mm'], row['vertex_y_mm'], row['vertex_z_mm']], dtype=np.float32
-            )
-            item['vertex_valid'] = int(row['vertex_valid'])
-            item['vis_kinematics'] = np.array(
-                [row['vis_pz_log1p'], row['vis_pt_log1p'], row['vis_cos_dphi'], row['vis_sin_dphi']],
-                dtype=np.float32,
-            )
-            item['kin_valid'] = int(row['kin_valid'])
+        if self._sc_label7 is not None:
+            item['label_7'] = int(self._sc_label7[pos])
+            item['tau_branch_valid'] = int(self._sc_tb[pos])
+            item['charm_flag'] = int(self._sc_cf[pos])
+            item['charm_valid'] = int(self._sc_cv[pos])
+            item['vertex_xyz_mm'] = self._sc_vtx[pos]
+            item['vertex_valid'] = int(self._sc_vv[pos])
+            item['vis_kinematics'] = self._sc_kin[pos]
+            item['kin_valid'] = int(self._sc_kv[pos])
             mm = self._get_memmaps()
-            if mm is not None:
-                si = int(row['sidecar_index'])
+            if mm is not None and self._sc_sidx is not None:
+                si = int(self._sc_sidx[pos])
                 ps, pe = int(mm['pix_off'][si]), int(mm['pix_off'][si + 1])
                 bs, be = int(mm['bar_off'][si]), int(mm['bar_off'][si + 1])
                 item['sc_first_cid'] = np.array(mm['first_cid'][ps:pe], copy=True)
@@ -166,6 +190,84 @@ def move_batch_to_device(batch: dict, device: torch.device) -> dict:
     }
 
 
+class _ThreadedPFLoader:
+    """Zero-fork shared-memory multi-threaded batch prefetcher (0 extra PyTorch RSS)."""
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        batch_sampler: BatchSampler,
+        seed: int,
+        y_scint_center: float,
+        n_bars: int,
+        mirror: bool,
+        pin_memory: bool,
+        threads: int = 2,
+    ) -> None:
+        self.dataset = dataset
+        self.batch_sampler = batch_sampler
+        self.seed = int(seed)
+        self.y_c = float(y_scint_center)
+        self.n_bars = int(n_bars)
+        self.mirror = bool(mirror)
+        self.pin_memory = bool(pin_memory)
+        self.threads = max(1, int(threads))
+        self._stop = threading.Event()
+
+    def __len__(self) -> int:
+        return len(self.batch_sampler)
+
+    def _build_one(self, b_idx: int, indices: list[int]) -> dict:
+        events = [self.dataset[i] for i in indices]
+        rng = np.random.default_rng(self.seed + 999 + b_idx) if self.mirror else None
+        batch = collate_pf(events, mirror_rng=rng, y_scint_center=self.y_c, n_bars=self.n_bars)
+        if self.pin_memory:
+            batch = {k: v.pin_memory() if torch.is_tensor(v) else v for k, v in batch.items()}
+        return batch
+
+    def __iter__(self):
+        self._stop.clear()
+        batches = list(self.batch_sampler)
+        if len(self.dataset) > 0:
+            _ = self.dataset[0]  # pre-open MappedItems & sidecar memmaps before thread fanout
+        out_q: queue.Queue = queue.Queue(maxsize=self.threads * 3)
+
+        def _producer() -> None:
+            try:
+                with ThreadPoolExecutor(max_workers=self.threads) as pool:
+                    in_flight = []
+                    for b_idx, idxs in enumerate(batches):
+                        if self._stop.is_set():
+                            break
+                        in_flight.append(pool.submit(self._build_one, b_idx, idxs))
+                        if len(in_flight) >= self.threads * 2:
+                            out_q.put(('ok', in_flight.pop(0).result()))
+                    for fut in in_flight:
+                        if self._stop.is_set():
+                            break
+                        out_q.put(('ok', fut.result()))
+            except BaseException as exc:
+                out_q.put(('err', exc))
+            finally:
+                out_q.put(('done', None))
+
+        t = threading.Thread(target=_producer, daemon=True)
+        t.start()
+        try:
+            while True:
+                tag, payload = out_q.get()
+                if tag == 'done':
+                    break
+                if tag == 'err':
+                    raise payload
+                yield payload
+        finally:
+            self._stop.set()
+
+    def close(self) -> None:
+        self._stop.set()
+
+
 def make_pf_loader(
     dataset: Dataset,
     batch_size: int,
@@ -175,21 +277,32 @@ def make_pf_loader(
     y_scint_center: float = -12.0,
     n_bars: int = 40,
     mirror: bool = False,
-) -> DataLoader:
+):
     if shuffle:
         gen = torch.Generator()
         gen.manual_seed(seed)
         sampler = RandomSampler(dataset, generator=gen)
     else:
         sampler = SequentialSampler(dataset)
+    b_sampler = BatchSampler(sampler, batch_size=batch_size, drop_last=False)
+    if len(dataset) < 512:
+        return DataLoader(
+            dataset,
+            batch_sampler=b_sampler,
+            num_workers=0,
+            collate_fn=_PFCollator(seed + 999 if mirror else None, y_scint_center, n_bars),
+            pin_memory=False,
+        )
+    eff_workers = workers if workers > 0 else (3 if shuffle else 2)
     kw: dict = {
-        'batch_sampler': BatchSampler(sampler, batch_size=batch_size, drop_last=False),
-        'num_workers': workers,
+        'batch_sampler': b_sampler,
+        'num_workers': eff_workers,
         'collate_fn': _PFCollator(seed + 999 if mirror else None, y_scint_center, n_bars),
-        'pin_memory': torch.cuda.is_available(),
+        'pin_memory': False,
+        'multiprocessing_context': 'fork',
+        'worker_init_fn': init_worker,
+        'prefetch_factor': 2,
     }
-    if workers > 0:
-        kw.update(multiprocessing_context='spawn', worker_init_fn=init_worker, prefetch_factor=2)
     return DataLoader(dataset, **kw)
 
 
@@ -208,6 +321,9 @@ def build_pf_mapped_split(
         'cache_shards': 2,
         'quantize_xy_mm': config.get('quantize_xy_mm'),
     }
+    for k_fwd in ('pe_only', 'bar_threshold_pe', 'sipm_npix', 'apply_sipm_saturation', 'active_pixel_planes', 'misalign_sigma_xy_mm'):
+        if k_fwd in config:
+            ds_cfg[k_fwd] = config[k_fwd]
     ds = V3EvalDataset(
         data_root,
         split=split,
@@ -762,7 +878,10 @@ def run_pf_training(
         screen_every = int(config.get('screen_every_passes', 2))
         default_mirror = not bool(config.get('pe_only', False))
         y_mirror = bool(config.get('y_mirror', default_mirror))
-        amp_ok = use_bf16
+        amp_dtype = torch.bfloat16 if cap[0] >= 8 else torch.float16
+        amp_ok = bool(config.get('bf16', True)) and cap[0] >= 7
+        use_fp16_scaler = amp_ok and (amp_dtype == torch.float16)
+        scaler = torch.amp.GradScaler('cuda', enabled=use_fp16_scaler)
 
         try:
             for p_idx in range(start_pass, passes + 1):
@@ -786,11 +905,18 @@ def run_pf_training(
                         grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
                         db = move_batch_to_device(batch, device)
                         opt.zero_grad(set_to_none=True)
-                        with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=amp_ok):
+                        with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
                             loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
-                        loss.backward()
-                        torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                        opt.step()
+                        if use_fp16_scaler:
+                            scaler.scale(loss).backward()
+                            scaler.unscale_(opt)
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                            scaler.step(opt)
+                            scaler.update()
+                        else:
+                            loss.backward()
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                            opt.step()
                         scheduler.step()
                         _update_ema(ema_model, model, ema_decay)
                         bs_n = len(db['label'])

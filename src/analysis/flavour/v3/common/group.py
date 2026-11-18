@@ -131,8 +131,8 @@ def main() -> None:
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA device not available inside allocation')
     cap = torch.cuda.get_device_capability(0)
-    if any(c.get('bf16', True) for c in configs) and cap[0] < 8:
-        raise RuntimeError(f'BF16 configs require SM80+, found SM{cap[0]}{cap[1]}')
+    if any(c.get('strict_bf16', False) for c in configs) and cap[0] < 8:
+        raise RuntimeError(f'Strict BF16 configs require SM80+, found SM{cap[0]}{cap[1]}')
     if args.stage_cluster_sidecar is not None and not (args.stage_cluster_sidecar / 'pix_offsets.bin').is_file():
         raise FileNotFoundError(f'Invalid --stage-cluster-sidecar directory: {args.stage_cluster_sidecar}')
 
@@ -171,9 +171,19 @@ def main() -> None:
         if args.share_b1pp_inputs or args.share_pf_inputs:
             if any(c.get('drop_modality') is not None for c in configs):
                 raise ValueError('Shared input caching requires drop_modality=None for all configs')
-            shared_readout_keys = ('quantize_xy_mm', 'pe_only', 'bar_threshold_pe', 'sipm_npix', 'apply_sipm_saturation')
+            shared_readout_keys = (
+                'quantize_xy_mm',
+                'pe_only',
+                'bar_threshold_pe',
+                'sipm_npix',
+                'apply_sipm_saturation',
+                'active_pixel_planes',
+                'misalign_sigma_xy_mm',
+                'misalign_seed',
+            )
             for rk in shared_readout_keys:
-                if len({c.get(rk) for c in configs}) != 1:
+                vals = {tuple(v) if isinstance(v, list) else v for v in (c.get(rk) for c in configs)}
+                if len(vals) != 1:
                     raise ValueError(f'Shared input caching requires matching {rk} across configs')
             old_stage = os.environ.get('PINPOINT_V3_SHARED_STAGE')
             os.environ['PINPOINT_V3_SHARED_STAGE'] = stage['local_shard_root']

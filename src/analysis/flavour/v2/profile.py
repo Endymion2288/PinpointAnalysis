@@ -93,6 +93,10 @@ def device_batch(batch, device):
 
 
 def shutdown_loader(loader):
+    close_fn = getattr(loader, 'close', None)
+    if callable(close_fn):
+        close_fn()
+        return
     iterator = getattr(loader, '_iterator', None)
     if iterator is not None:
         iterator._shutdown_workers()

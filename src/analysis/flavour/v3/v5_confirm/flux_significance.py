@@ -44,46 +44,73 @@ PHYSICAL_BKG_SHARES = {
     'nc': TRENCH_10AB_YIELDS['nc'] / (TRENCH_10AB_TOTAL - TRENCH_10AB_YIELDS['nutau_cc']),
 }
 
+FIDUCIAL_2T_BKG_SHARES = {
+    'nue_cc': 0.170 / 0.997,
+    'numu_cc': 0.580 / 0.997,
+    'nc': 0.247 / 0.997,
+}
+
 LHC_FORWARD_SCENARIOS = {
-    'FASER_Run3_250fb': {
+    'FASER_Run3_250fb_Trench': {
         'luminosity_fb_inv': 250.0,
         'expected_total_events': TRENCH_10AB_TOTAL * (250.0 / 10000.0),
         'tau_fraction': PHYSICAL_TAU_FRACTION,
         'bkg_shares': PHYSICAL_BKG_SHARES,
+        'fiducial_slice': False,
     },
-    'FASER_Run4_680fb': {
+    'FASER_Run4_680fb_Trench': {
         'luminosity_fb_inv': 680.0,
         'expected_total_events': TRENCH_10AB_TOTAL * (680.0 / 10000.0),
         'tau_fraction': PHYSICAL_TAU_FRACTION,
         'bkg_shares': PHYSICAL_BKG_SHARES,
+        'fiducial_slice': False,
     },
-    'HL_LHC_3ab': {
+    'HL_LHC_3ab_Trench': {
         'luminosity_fb_inv': 3000.0,
         'expected_total_events': TRENCH_10AB_TOTAL * (3000.0 / 10000.0),
         'tau_fraction': PHYSICAL_TAU_FRACTION,
         'bkg_shares': PHYSICAL_BKG_SHARES,
+        'fiducial_slice': False,
     },
     'FPF_Trench_10ab': {
         'luminosity_fb_inv': 10000.0,
         'expected_total_events': TRENCH_10AB_TOTAL,
         'tau_fraction': PHYSICAL_TAU_FRACTION,
         'bkg_shares': PHYSICAL_BKG_SHARES,
+        'fiducial_slice': False,
     },
-    'Benchmark_10k_PhysFlux': {
-        'luminosity_fb_inv': 10000.0 * (10000.0 / TRENCH_10AB_TOTAL),
-        'expected_total_events': 10000.0,
-        'tau_fraction': PHYSICAL_TAU_FRACTION,
-        'bkg_shares': PHYSICAL_BKG_SHARES,
+    'Run3_2t_Fiducial_15k': {
+        'luminosity_fb_inv': 250.0,
+        'expected_total_events': 15000.0,
+        'tau_fraction': 0.003,
+        'bkg_shares': FIDUCIAL_2T_BKG_SHARES,
+        'fiducial_slice': True,
+    },
+    'Run4_2t_Fiducial_45k': {
+        'luminosity_fb_inv': 680.0,
+        'expected_total_events': 45000.0,
+        'tau_fraction': 0.003,
+        'bkg_shares': FIDUCIAL_2T_BKG_SHARES,
+        'fiducial_slice': True,
+    },
+    'HLLHC_2t_Fiducial_180k': {
+        'luminosity_fb_inv': 3000.0,
+        'expected_total_events': 180000.0,
+        'tau_fraction': 0.003,
+        'bkg_shares': FIDUCIAL_2T_BKG_SHARES,
+        'fiducial_slice': True,
     },
 }
 
 SYSTEMATIC_PAIRS = (
-    ('pixel_eff', 'pixel_eff_97', 'pixel_eff_93'),
-    ('bar_threshold', 'bar_thr_0p10MeV', 'bar_thr_0p25MeV'),
-    ('bar_pe_scale', 'bar_pe_plus5', 'bar_pe_minus5'),
-    ('bar_attenuation', 'bar_att_plus10', 'bar_att_minus10'),
-    ('spec_resolution', 'spec_smear_15um', 'spec_smear_30um'),
-    ('spec_efficiency', 'spec_eff_95', 'spec_drop_st1'),
+    ('scint_gain', 'gain_high', 'gain_low'),
+    ('bar_threshold', 'threshold_5pe', 'threshold_2pe'),
+    ('detector_inefficiency', 'inefficiency', None),
+    ('dead_channels', 'dead_channels', None),
+    ('sparse_noise', 'sparse_noise', None),
+    ('coordinate_bias', 'coordinate_bias', None),
+    ('tracker_resolution', 'tracker_resolution_high', 'tracker_resolution_low'),
+    ('tracker_efficiency', 'tracker_efficiency_95', None),
 )
 
 
@@ -119,13 +146,17 @@ def extract_signed_systematic_templates(
     avail = set(variants.tolist())
     signed: dict[str, dict[str, list[float]]] = {}
     for sys_name, v_up, v_dn in SYSTEMATIC_PAIRS:
-        if v_up not in avail and v_dn not in avail:
+        has_up = v_up is not None and v_up in avail
+        has_dn = v_dn is not None and v_dn in avail
+        if not has_up and not has_dn:
             continue
-        h_up = _variant_bkg_hist(v_up) if v_up in avail else nom
-        h_dn = _variant_bkg_hist(v_dn) if v_dn in avail else (2.0 * nom - h_up)
-        # Signed log-ratio shifts (preserving exact anti-correlations across bins!)
-        d_up = np.clip(np.log(np.maximum(h_up, 1e-6) / nom), -0.60, 0.60)
-        d_dn = np.clip(np.log(np.maximum(h_dn, 1e-6) / nom), -0.60, 0.60)
+        h_up = _variant_bkg_hist(v_up) if has_up else nom
+        d_up = np.clip(np.log(np.maximum(h_up, 1e-6) / nom), -1.20, 1.20)
+        if has_dn:
+            h_dn = _variant_bkg_hist(v_dn)
+            d_dn = np.clip(np.log(np.maximum(h_dn, 1e-6) / nom), -1.20, 1.20)
+        else:
+            d_dn = -d_up
         signed[sys_name] = {
             'up_variant': v_up,
             'down_variant': v_dn,

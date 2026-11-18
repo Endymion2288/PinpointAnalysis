@@ -12,8 +12,8 @@ import tarfile
 
 
 def gpu_requirement(minimum_capability, device_name=None, minimum_memory_mb=10000):
-    """Accept known SM90 MIG ads when CERN omits their Capability property."""
-    minimum = max(7.5, minimum_capability)
+    """Accept known SM90 MIG ads when CERN omits their Capability property; SM70 runs on LCG_107_cuda."""
+    minimum = max(7.0, minimum_capability)
     capability = f'(Capability >= {minimum})'
     if minimum<=9.0:
         capability = (f'({capability} || ((Capability =?= UNDEFINED) && '

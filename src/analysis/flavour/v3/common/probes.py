@@ -249,12 +249,13 @@ def run_model_with_entropy(
     ent_per_layer: list[list[np.ndarray]] | None = None
 
     amp_enabled = use_bf16 and device.type == 'cuda'
+    amp_dtype = torch.bfloat16 if (amp_enabled and torch.cuda.get_device_capability(device)[0] >= 8) else torch.float16
     for batch in loader:
         dev_batch = {
             k: v.to(device, non_blocking=True) if torch.is_tensor(v) else v
             for k, v in batch.items()
         }
-        with torch.amp.autocast('cuda', dtype=torch.bfloat16, enabled=amp_enabled):
+        with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_enabled):
             out = model(dev_batch, return_aux=True, return_entropy=True)
         logits_ev = out['logits']
         if logits_ev.shape[-1] == 7:
