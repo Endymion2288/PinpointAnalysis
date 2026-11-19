@@ -1,0 +1,447 @@
+{
+  "protocol": "Stage 321 Clean v2 one-shot sealed calibration/cut/confirmation freeze (CleanCalA -> CleanCutB -> CleanConfirm)",
+  "UTC_frozen": "2026-11-19T14:56:28.409711+00:00",
+  "pre_unsealing_git_commit": "357c66fa19b50458a3f691e3c6a9b1d791b1abd8",
+  "Cal_A_Cut_B_Confirm_read_before_freeze": false,
+  "primary_pf_group": "s321-pf-hybrid-uvtx",
+  "primary_pf_prefix": "v2_pf_hybrid_uvtx",
+  "primary_ensemble_members": [
+    "v2_pf_hybrid_uvtx_s17",
+    "v2_pf_hybrid_uvtx_s42",
+    "v2_pf_hybrid_uvtx_s2026",
+    "v2_b1pp_clean_s17",
+    "v2_b1pp_clean_s42",
+    "v2_b1pp_clean_s2026"
+  ],
+  "tune8k_selection_summary": {
+    "s321-pf-20um": {
+      "prefix": "v2_pf_pitch_20um",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.05480682839173405,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.014375561545372867,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.045893841768874,
+      "mass_weighted_2t_BA4": 0.5579753297529607,
+      "all_tune8k_BA4": 0.591125,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": -0.15149587341398005,
+          "bias_y_mm": 0.2280971043391619,
+          "bias_z_mm": -0.43546321105956926,
+          "median_abs_dx_mm": 1.0214796066284162,
+          "median_abs_dy_mm": 1.1035250027974444,
+          "median_abs_dz_mm": 6.6097412109375,
+          "median_3d_mm": 8.3147141820647,
+          "p68_abs_dz_mm": 11.30604166666677
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.05543979846479841,
+          "bias_y_mm": 0.19044824209610328,
+          "bias_z_mm": 2.416523827446834,
+          "median_abs_dx_mm": 0.8390909830729161,
+          "median_abs_dy_mm": 0.8205474217732753,
+          "median_abs_dz_mm": 5.14013671875,
+          "median_3d_mm": 6.604249658610276,
+          "p68_abs_dz_mm": 8.41757812499991
+        }
+      }
+    },
+    "s321-pf-hybrid-uvtx": {
+      "prefix": "v2_pf_hybrid_uvtx",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.06918238993710692,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.011680143755615454,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.050883187050646796,
+      "mass_weighted_2t_BA4": 0.5531358322807003,
+      "all_tune8k_BA4": 0.58875,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": -0.24851115617528552,
+          "bias_y_mm": 0.2346230707422365,
+          "bias_z_mm": -1.1283069763183624,
+          "median_abs_dx_mm": 0.9387251536051409,
+          "median_abs_dy_mm": 1.0091629028320312,
+          "median_abs_dz_mm": 6.1946614583332575,
+          "median_3d_mm": 7.645337665365388,
+          "p68_abs_dz_mm": 11.009820963541516
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.04350433763423672,
+          "bias_y_mm": 0.1706767942359084,
+          "bias_z_mm": 1.6684222935478434,
+          "median_abs_dx_mm": 0.6514994303385429,
+          "median_abs_dy_mm": 0.6240806579589844,
+          "median_abs_dz_mm": 4.7281087239582575,
+          "median_3d_mm": 5.837378378359583,
+          "p68_abs_dz_mm": 7.66844075520822
+        }
+      }
+    },
+    "s321-pf-hybrid-shuffled": {
+      "prefix": "v2_pf_hybrid_shuffled",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.06199460916442048,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.008086253369272238,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.043574623922500715,
+      "mass_weighted_2t_BA4": 0.54830900055808,
+      "all_tune8k_BA4": 0.5895,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.009221751201276973,
+          "bias_y_mm": 0.12957922373052375,
+          "bias_z_mm": -1.9232606201171887,
+          "median_abs_dx_mm": 1.0023222366968743,
+          "median_abs_dy_mm": 1.0362596511840811,
+          "median_abs_dz_mm": 6.3690185546875,
+          "median_3d_mm": 7.964597524310214,
+          "p68_abs_dz_mm": 11.501987304687502
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.15720396363969383,
+          "bias_y_mm": 0.07154165184030264,
+          "bias_z_mm": 1.3032607295086998,
+          "median_abs_dx_mm": 0.7444515228271449,
+          "median_abs_dy_mm": 0.6972211201985665,
+          "median_abs_dz_mm": 4.9609781901042425,
+          "median_3d_mm": 6.096232042189836,
+          "p68_abs_dz_mm": 8.142789713541697
+        }
+      }
+    },
+    "s321-pf-hybrid-nomad": {
+      "prefix": "v2_pf_hybrid_nomad",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.0673854447439353,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.017969451931716084,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.04531552482607419,
+      "mass_weighted_2t_BA4": 0.5499317227785647,
+      "all_tune8k_BA4": 0.590375,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.04082705142380047,
+          "bias_y_mm": 0.20201811666654731,
+          "bias_z_mm": -2.0882797139485656,
+          "median_abs_dx_mm": 0.9856790304183912,
+          "median_abs_dy_mm": 1.022566477457687,
+          "median_abs_dz_mm": 6.4047444661457575,
+          "median_3d_mm": 8.057762780047863,
+          "p68_abs_dz_mm": 11.477500000000061
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.24031425591424366,
+          "bias_y_mm": 0.1523142619431637,
+          "bias_z_mm": 0.963627193285073,
+          "median_abs_dx_mm": 0.6927919387817383,
+          "median_abs_dy_mm": 0.6716994941234576,
+          "median_abs_dz_mm": 4.9132893880207575,
+          "median_3d_mm": 6.019940697612691,
+          "p68_abs_dz_mm": 8.095556640625
+        }
+      }
+    },
+    "s321-pf-100um": {
+      "prefix": "v2_pf_pitch_100um_tgtonly",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.07547169811320754,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.02336028751123091,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.05337128790809229,
+      "mass_weighted_2t_BA4": 0.5509758281342817,
+      "all_tune8k_BA4": 0.5911249999999999,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": -0.14387250369073198,
+          "bias_y_mm": 0.18773458199971352,
+          "bias_z_mm": -1.0974270528157577,
+          "median_abs_dx_mm": 1.052272796630863,
+          "median_abs_dy_mm": 1.1382420857747384,
+          "median_abs_dz_mm": 6.6673177083332575,
+          "median_3d_mm": 8.402454723677787,
+          "p68_abs_dz_mm": 11.781230468750001
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": -0.008155951562960713,
+          "bias_y_mm": 0.18676129337509859,
+          "bias_z_mm": 1.9221944855031157,
+          "median_abs_dx_mm": 0.8573837280273491,
+          "median_abs_dy_mm": 0.8387970924377468,
+          "median_abs_dz_mm": 5.282958984375,
+          "median_3d_mm": 6.857910765152294,
+          "p68_abs_dz_mm": 8.714908854166701
+        }
+      }
+    },
+    "s321-pf-300um": {
+      "prefix": "v2_pf_pitch_300um_tgtonly",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.06199460916442048,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.017070979335130278,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.06091841859850239,
+      "mass_weighted_2t_BA4": 0.5484451813268488,
+      "all_tune8k_BA4": 0.5885,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": -0.027710878975534158,
+          "bias_y_mm": 0.202388974219483,
+          "bias_z_mm": -1.1004188791910807,
+          "median_abs_dx_mm": 1.0037307739257724,
+          "median_abs_dy_mm": 1.0591173171997044,
+          "median_abs_dz_mm": 6.2176920572917425,
+          "median_3d_mm": 7.8146948562026015,
+          "p68_abs_dz_mm": 10.890865885416773
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.10066427584992867,
+          "bias_y_mm": 0.18941674299652303,
+          "bias_z_mm": 2.2175817812122576,
+          "median_abs_dx_mm": 0.7937695185343401,
+          "median_abs_dy_mm": 0.7737681070963554,
+          "median_abs_dz_mm": 4.7886149088542425,
+          "median_3d_mm": 6.0755266881594885,
+          "p68_abs_dz_mm": 7.863053385416699
+        }
+      }
+    },
+    "s321-pf-1mm": {
+      "prefix": "v2_pf_pitch_1mm_tgtonly",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.0853548966756514,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.03234501347708895,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.05928266622998342,
+      "mass_weighted_2t_BA4": 0.5574113934126348,
+      "all_tune8k_BA4": 0.5932499999999999,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.0959263693063211,
+          "bias_y_mm": 0.13493409724836244,
+          "bias_z_mm": -0.36372672017415286,
+          "median_abs_dx_mm": 1.0174067815144858,
+          "median_abs_dy_mm": 1.1132329305012973,
+          "median_abs_dz_mm": 6.351643880208485,
+          "median_3d_mm": 7.911345896981993,
+          "p68_abs_dz_mm": 10.976298828125127
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.1963318297701352,
+          "bias_y_mm": 0.1484877411505277,
+          "bias_z_mm": 2.2644186618823365,
+          "median_abs_dx_mm": 0.8729693094889299,
+          "median_abs_dy_mm": 0.8783760070800817,
+          "median_abs_dz_mm": 5.050699869791515,
+          "median_3d_mm": 6.357457442047272,
+          "p68_abs_dz_mm": 8.169401041666562
+        }
+      }
+    },
+    "s321-pf-layers-6t": {
+      "prefix": "v2_pf_6layer_20um",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.0664869721473495,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.008984725965858042,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.05417701220466564,
+      "mass_weighted_2t_BA4": 0.5534576342363398,
+      "all_tune8k_BA4": 0.588375,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": -0.0657368938258539,
+          "bias_y_mm": 0.269138818502038,
+          "bias_z_mm": -0.5798548024495428,
+          "median_abs_dx_mm": 1.102672497431437,
+          "median_abs_dy_mm": 1.1976559956868478,
+          "median_abs_dz_mm": 7.5310465494792425,
+          "median_3d_mm": 9.27290826451296,
+          "p68_abs_dz_mm": 12.511085611979215
+        },
+        "Truth_pixel_centered": {
+          "count": 4416,
+          "bias_x_mm": 0.1318588645992112,
+          "bias_y_mm": 0.32947796526191203,
+          "bias_z_mm": 1.4913460275401245,
+          "median_abs_dx_mm": 0.9455544153849278,
+          "median_abs_dy_mm": 0.9231236775716098,
+          "median_abs_dz_mm": 7.0782470703125,
+          "median_3d_mm": 8.6969541710238,
+          "p68_abs_dz_mm": 11.490852864583214
+        }
+      }
+    },
+    "s321-b1pp-clean": {
+      "prefix": "v2_b1pp_clean",
+      "pinpoint_pix_xy_tau_eff_1pct_fpr": 0.04851752021563342,
+      "pinpoint_pix_xy_tau_eff_0p1pct_fpr": 0.0035938903863432167,
+      "mass_weighted_2t_tau_eff_1pct_fpr": 0.03740037426297332,
+      "mass_weighted_2t_BA4": 0.5399867365394431,
+      "all_tune8k_BA4": 0.577125,
+      "vertex_audit": null
+    }
+  },
+  "checkpoints": {
+    "v2_pf_pitch_20um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_20um_s17/best.pt",
+      "sha256": "86e3d79a45e810c22211a208af83df3a2b1638e073d00323a20669afb89e87d8",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_20um_s17.json"
+    },
+    "v2_pf_pitch_20um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_20um_s42/best.pt",
+      "sha256": "fc7203af61a3d46428a5aeed01e57085f1920a811aadc15ca4239df4d5b90930",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_20um_s42.json"
+    },
+    "v2_pf_pitch_20um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_20um_s2026/best.pt",
+      "sha256": "72b5bb2a5bbf2bbeaf97c4044b422915b1c84b3235f50b8bd123fb0dfe889fbf",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_20um_s2026.json"
+    },
+    "v2_pf_hybrid_uvtx_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_uvtx_s17/best.pt",
+      "sha256": "06a5c5f70be441d385d5b63313b91aef32f91b91394b5d114840be49c3a08d63",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_uvtx_s17.json"
+    },
+    "v2_pf_hybrid_uvtx_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_uvtx_s42/best.pt",
+      "sha256": "76e8068bd204eb514dda884e9671445400a9766f5474e4ffa6a96c2ede33d9a7",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_uvtx_s42.json"
+    },
+    "v2_pf_hybrid_uvtx_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_uvtx_s2026/best.pt",
+      "sha256": "48ef7f083958039349692a2888d0582b05963d81d954cec4261b861f2be2d0ed",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_uvtx_s2026.json"
+    },
+    "v2_pf_hybrid_shuffled_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_shuffled_s17/best.pt",
+      "sha256": "bfdd20973aaaa2940fe19ccc967edc0e36f2d822220b2cdfbf89bc5688c6d9c8",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_shuffled_s17.json"
+    },
+    "v2_pf_hybrid_shuffled_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_shuffled_s42/best.pt",
+      "sha256": "7dc2a48208fd8122d9080e4b2c3414999269cf142b82f61c29de5c299d60bb7a",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_shuffled_s42.json"
+    },
+    "v2_pf_hybrid_shuffled_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_shuffled_s2026/best.pt",
+      "sha256": "af1d674aa8c13c2a3395233c8ab7981476fd1d4fec111dade48e487500d1a37a",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_shuffled_s2026.json"
+    },
+    "v2_pf_hybrid_nomad_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_nomad_s17/best.pt",
+      "sha256": "248d365d29e148cf46ea1f4029dca6c0dbce324d94ddf47069159cdbe056aec8",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_nomad_s17.json"
+    },
+    "v2_pf_hybrid_nomad_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_nomad_s42/best.pt",
+      "sha256": "5fdd159d54e3da50cea6d803c803035649d83a082e91fd340a4200f1c535243f",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_nomad_s42.json"
+    },
+    "v2_pf_hybrid_nomad_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_hybrid_nomad_s2026/best.pt",
+      "sha256": "ca8278c58ed6cbdab0a93bbb35ed73c01644e9d2769c02c34d2326450d560222",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_hybrid_nomad_s2026.json"
+    },
+    "v2_pf_pitch_100um_tgtonly_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_100um_tgtonly_s17/best.pt",
+      "sha256": "f60cec72fb2d473b1c4d3cc0243bec19f18eabf1015e61c9dbd3ae49f811cfd9",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_100um_tgtonly_s17.json"
+    },
+    "v2_pf_pitch_100um_tgtonly_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_100um_tgtonly_s42/best.pt",
+      "sha256": "d4aa91e4a20b85ddb5389b01bf2816db64dc216479ae1f4031df6e719e6c9689",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_100um_tgtonly_s42.json"
+    },
+    "v2_pf_pitch_100um_tgtonly_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_100um_tgtonly_s2026/best.pt",
+      "sha256": "d9fb5c0fc7a33d80ae183b1276db568a4621cf76a3718ad62c4957d55e61e35d",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_100um_tgtonly_s2026.json"
+    },
+    "v2_pf_pitch_300um_tgtonly_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_300um_tgtonly_s17/best.pt",
+      "sha256": "5b65f17b4e5e029cca23861e1847e6fba79bad1a96eb37ffc9d211ef655cb0f0",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_300um_tgtonly_s17.json"
+    },
+    "v2_pf_pitch_300um_tgtonly_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_300um_tgtonly_s42/best.pt",
+      "sha256": "6fb249948b8f5adfee25224865410d854ca91a718d6dfd645e63566536f8111d",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_300um_tgtonly_s42.json"
+    },
+    "v2_pf_pitch_300um_tgtonly_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_300um_tgtonly_s2026/best.pt",
+      "sha256": "8ccb1b1cc52464da9a5dc75099c79fc657bea0aa22d76158e99826bc68745e87",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_300um_tgtonly_s2026.json"
+    },
+    "v2_pf_pitch_1mm_tgtonly_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_1mm_tgtonly_s17/best.pt",
+      "sha256": "30b7b62fb19decdefd90d2784b601b33ca3983feff386a162525a8654989a9f8",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_1mm_tgtonly_s17.json"
+    },
+    "v2_pf_pitch_1mm_tgtonly_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_1mm_tgtonly_s42/best.pt",
+      "sha256": "e50f6a63aa48fee6312b49726cdeb0b0500083826d54a97ad358d4b104de994d",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_1mm_tgtonly_s42.json"
+    },
+    "v2_pf_pitch_1mm_tgtonly_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_pitch_1mm_tgtonly_s2026/best.pt",
+      "sha256": "a76640cf61bc8a5de1ef3c6dc991df7073de790107774692c0dace0e00abf232",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_pitch_1mm_tgtonly_s2026.json"
+    },
+    "v2_pf_6layer_20um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_6layer_20um_s17/best.pt",
+      "sha256": "73de4a7b6bc2a7012494c21aaddc44727a315ced8244e3ccadabad394d5ff308",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_6layer_20um_s17.json"
+    },
+    "v2_pf_6layer_20um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_6layer_20um_s42/best.pt",
+      "sha256": "61f105b216adcf80214d6580a179b7c07d515c250b92f88c407697f3c2170774",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_6layer_20um_s42.json"
+    },
+    "v2_pf_6layer_20um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_pf_6layer_20um_s2026/best.pt",
+      "sha256": "9c0f7aea6d569e5484854dc38d1b319a49f08c13aff1f8c5e1456a0afa401279",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_pf_6layer_20um_s2026.json"
+    },
+    "v2_b1pp_clean_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_b1pp_clean_s17/best.pt",
+      "sha256": "c739fcb70467409171d5da665c815eb5e42b76f86a7e4666ce7f6e45928967d3",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_b1pp_clean_s17.json"
+    },
+    "v2_b1pp_clean_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_b1pp_clean_s42/best.pt",
+      "sha256": "64cc470d45bffa480aa613e2a164631bcf7bf2021537edef297c45d11b8f3326",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_b1pp_clean_s42.json"
+    },
+    "v2_b1pp_clean_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/experiments/v2_b1pp_clean_s2026/best.pt",
+      "sha256": "54487b792e5533a88a38541c9aea173e44b2b089dcfd5bfe2f53379dca0d239d",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v5_clean_v2_2026-11-19/clean_sim/stage321/configs/v2_b1pp_clean_s2026.json"
+    }
+  }
+}
