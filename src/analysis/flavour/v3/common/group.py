@@ -174,6 +174,8 @@ def main() -> None:
             shared_readout_keys = (
                 'quantize_xy_mm',
                 'quantize_target_only',
+                'quantize_target_xy_mm',
+                'quantize_ipt_xy_mm',
                 'pe_only',
                 'bar_threshold_pe',
                 'sipm_npix',

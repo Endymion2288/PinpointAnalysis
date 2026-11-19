@@ -239,7 +239,7 @@ class PinpointFormer(nn.Module):
         grad_blend: float = 1.0,
         return_entropy: bool = False,
     ) -> dict[str, torch.Tensor | list[torch.Tensor] | None]:
-        b = len(batch['label'])
+        b = int(batch['c_obs'].shape[0])
         device = batch['c_obs'].device
 
         # 1. Pixel cluster tokens + 32x32 micro-patch morphological features

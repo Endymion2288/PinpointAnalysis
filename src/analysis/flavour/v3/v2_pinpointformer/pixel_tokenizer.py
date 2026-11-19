@@ -30,7 +30,11 @@ from analysis.flavour.v3.v1_b1pp.spectrometer import (
 
 
 N_MAX_CLUSTERS = 1024
+N_MAX_TARGET_CLUSTERS = 832
+N_MAX_IPT_CLUSTERS = 192
 N_MAX_PATCHES = 64
+N_MAX_TARGET_PATCHES = 48
+N_MAX_IPT_PATCHES = 16
 PATCH_SIZE = 32
 PIX_FEAT_DIM = 22
 PIX_PLANE_SUMMARY_DIM = 12
@@ -40,69 +44,121 @@ PIX_Y_FLIP_IDX = (1, 11, 17)
 PLANE_SUMMARY_Y_FLIP_IDX = (4, 6)
 
 
+def resolve_sensor_pitches(
+    bounds: dict,
+    config: dict | None = None,
+) -> dict[str, float | None]:
+    """Resolve independent target-silicon and IPT-silicon pitch & clustering scales (Stage 322-03)."""
+    cfg = config or {}
+    q_tgt_raw = cfg.get('quantize_target_xy_mm')
+    q_ipt_raw = cfg.get('quantize_ipt_xy_mm')
+    q_all_raw = cfg.get('quantize_xy_mm')
+    q_tgt_only = bool(cfg.get('quantize_target_only', False))
+
+    q_tgt = float(q_tgt_raw) if (q_tgt_raw is not None and float(q_tgt_raw) > 0.0) else None
+    q_ipt = float(q_ipt_raw) if (q_ipt_raw is not None and float(q_ipt_raw) > 0.0) else None
+
+    if q_tgt is None and q_ipt is None and q_all_raw is not None and float(q_all_raw) > 0.0:
+        q_tgt = float(q_all_raw)
+        q_ipt = None if q_tgt_only else float(q_all_raw)
+
+    dx_nat = float(bounds['dx_mm'])
+    dy_nat = float(bounds['dy_mm'])
+
+    px_tgt = q_tgt if q_tgt is not None else dx_nat
+    py_tgt = q_tgt if q_tgt is not None else dy_nat
+    r_tgt = max(0.06, 1.45 * q_tgt) if q_tgt is not None else 0.06
+
+    px_ipt = q_ipt if q_ipt is not None else dx_nat
+    py_ipt = q_ipt if q_ipt is not None else dy_nat
+    r_ipt = max(0.06, 1.45 * q_ipt) if q_ipt is not None else 0.06
+
+    return {
+        'q_tgt': q_tgt,
+        'q_ipt': q_ipt,
+        'px_tgt': px_tgt,
+        'py_tgt': py_tgt,
+        'r_tgt': r_tgt,
+        'px_ipt': px_ipt,
+        'py_ipt': py_ipt,
+        'r_ipt': r_ipt,
+    }
+
+
 def quantize_pixel_hits(
     pcid: np.ndarray,
     pxyz: np.ndarray,
     bounds: dict,
-    quantize_xy_mm: float,
+    quantize_xy_mm: float | None = None,
     *,
     target_planes_only: bool = False,
     n_target_planes: int = 12,
+    quantize_target_xy_mm: float | None = None,
+    quantize_ipt_xy_mm: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, int, int, float, float, np.ndarray]:
-    """Snap hits to a symmetric q-mm binary cell grid and deduplicate per-cell hits.
+    """Snap hits per sensor group (target vs IPT) independently to symmetric q-mm binary grids.
 
-    When target_planes_only=True, only target silicon planes (< n_target_planes) are quantized
-    to pitch q while downstream IPT planes retain native pixel coordinates (resolving Stage 320
-    hardware-attribution concern).
+    Target planes (`plane < n_target_planes`) and IPT planes (`plane >= n_target_planes`) use
+    strictly decoupled quantization grids so varying target pitch never alters IPT hits or IDs,
+    and varying IPT pitch never alters target hits or IDs (Stage 322-03 fix).
     """
-    q = float(quantize_xy_mm)
+    q_tgt = float(quantize_target_xy_mm) if (quantize_target_xy_mm is not None and float(quantize_target_xy_mm) > 0.0) else None
+    q_ipt = float(quantize_ipt_xy_mm) if (quantize_ipt_xy_mm is not None and float(quantize_ipt_xy_mm) > 0.0) else None
+    if q_tgt is None and q_ipt is None and quantize_xy_mm is not None and float(quantize_xy_mm) > 0.0:
+        q_tgt = float(quantize_xy_mm)
+        q_ipt = None if target_planes_only else float(quantize_xy_mm)
+
     x_c = float(bounds['x_pix_center'])
     y_c = float(bounds['y_scint_center'])
     nx_raw = int(bounds['nx'])
     ny_raw = int(bounds['ny'])
     planes = pcid // (nx_raw * ny_raw)
 
-    if target_planes_only:
-        is_tgt = planes < int(n_target_planes)
-        # Use native grid stride for IPT planes and coarse grid stride for target planes
-        # by keeping a shared unique channel_id namespace (native nx_raw*ny_raw stride).
-        xyz_out = pxyz.astype(np.float64, copy=True)
+    if q_tgt is None and q_ipt is None:
+        uniq = np.arange(len(pcid), dtype=np.int64)
+        return pcid.astype(np.int64, copy=True), pxyz.astype(np.float64, copy=True), nx_raw, ny_raw, float(bounds['dx_mm']), float(bounds['dy_mm']), uniq
+
+    def _grid_dims(q_val: float) -> tuple[int, int]:
+        half_x = max(abs(bounds['px_max'] - x_c), abs(x_c - bounds['px_min'])) + q_val
+        half_y = max(abs(bounds['py_max'] - y_c), abs(y_c - bounds['py_min'])) + q_val
+        return int(math.ceil(2.0 * half_x / q_val)) | 1, int(math.ceil(2.0 * half_y / q_val)) | 1
+
+    # Compute common safe stride so target & IPT channel IDs never collide even on tiny synthetic grids
+    nx_stride, ny_stride = nx_raw, ny_raw
+    if q_tgt is not None:
+        nxg, nyg = _grid_dims(q_tgt)
+        nx_stride = max(nx_stride, nxg)
+        ny_stride = max(ny_stride, nyg)
+    if q_ipt is not None:
+        nxg, nyg = _grid_dims(q_ipt)
+        nx_stride = max(nx_stride, nxg)
+        ny_stride = max(ny_stride, nyg)
+
+    xyz_out = pxyz.astype(np.float64, copy=True)
+    if nx_stride == nx_raw and ny_stride == ny_raw:
         cid_out = pcid.astype(np.int64, copy=True)
-        if is_tgt.any():
-            half_x = max(abs(bounds['px_max'] - x_c), abs(x_c - bounds['px_min'])) + q
-            half_y = max(abs(bounds['py_max'] - y_c), abs(y_c - bounds['py_min'])) + q
-            nx_q = int(math.ceil(2.0 * half_x / q)) | 1
-            ny_q = int(math.ceil(2.0 * half_y / q)) | 1
-            hx = nx_q // 2
-            hy = ny_q // 2
-            col_q = np.clip(np.rint((pxyz[is_tgt, 0] - x_c) / q).astype(np.int64) + hx, 0, nx_q - 1)
-            row_q = np.clip(np.rint((pxyz[is_tgt, 1] - y_c) / q).astype(np.int64) + hy, 0, ny_q - 1)
-            xyz_out[is_tgt, 0] = x_c + (col_q - hx) * q
-            xyz_out[is_tgt, 1] = y_c + (row_q - hy) * q
-            # Map quantized cell uniquely into native (plane, row_raw, col_raw) slot for deduplication
-            cid_out[is_tgt] = (planes[is_tgt] * ny_raw + row_q) * nx_raw + col_q
-        _, uniq = np.unique(cid_out, return_index=True)
-        uniq = np.sort(uniq)
-        return cid_out[uniq], xyz_out[uniq], nx_raw, ny_raw, q, q, uniq
+    else:
+        col_raw = pcid % nx_raw
+        row_raw = (pcid // nx_raw) % ny_raw
+        cid_out = (planes * ny_stride + row_raw) * nx_stride + col_raw
 
-    half_x = max(abs(bounds['px_max'] - x_c), abs(x_c - bounds['px_min'])) + q
-    half_y = max(abs(bounds['py_max'] - y_c), abs(y_c - bounds['py_min'])) + q
-    nx_q = int(math.ceil(2.0 * half_x / q)) | 1
-    ny_q = int(math.ceil(2.0 * half_y / q)) | 1
-    hx = nx_q // 2
-    hy = ny_q // 2
+    is_tgt = planes < int(n_target_planes)
+    for mask, q_val in ((is_tgt, q_tgt), (~is_tgt, q_ipt)):
+        if q_val is None or not mask.any():
+            continue
+        nx_q, ny_q = _grid_dims(q_val)
+        hx = nx_q // 2
+        hy = ny_q // 2
+        col_q = np.clip(np.rint((pxyz[mask, 0] - x_c) / q_val).astype(np.int64) + hx, 0, nx_q - 1)
+        row_q = np.clip(np.rint((pxyz[mask, 1] - y_c) / q_val).astype(np.int64) + hy, 0, ny_q - 1)
+        xyz_out[mask, 0] = x_c + (col_q - hx) * q_val
+        xyz_out[mask, 1] = y_c + (row_q - hy) * q_val
+        cid_out[mask] = (planes[mask] * ny_stride + row_q) * nx_stride + col_q
 
-    col_q = np.clip(np.rint((pxyz[:, 0] - x_c) / q).astype(np.int64) + hx, 0, nx_q - 1)
-    row_q = np.clip(np.rint((pxyz[:, 1] - y_c) / q).astype(np.int64) + hy, 0, ny_q - 1)
-    xyz_q = np.empty_like(pxyz, dtype=np.float64)
-    xyz_q[:, 0] = x_c + (col_q - hx) * q
-    xyz_q[:, 1] = y_c + (row_q - hy) * q
-    xyz_q[:, 2] = pxyz[:, 2]
-    cid_q = (planes * ny_q + row_q) * nx_q + col_q
-    # Match binary digital PixelSD sensor: one hit per unique fired cell
-    _, uniq = np.unique(cid_q, return_index=True)
+    _, uniq = np.unique(cid_out, return_index=True)
     uniq = np.sort(uniq)
-    return cid_q[uniq], xyz_q[uniq], nx_q, ny_q, q, q, uniq
+    rep_q = q_tgt if q_tgt is not None else float(q_ipt)
+    return cid_out[uniq], xyz_out[uniq], nx_stride, ny_stride, rep_q, rep_q, uniq
 
 
 def _compute_plane_neighborhoods(
@@ -216,17 +272,98 @@ def _rasterize_micro_patches(
     return patches.astype(np.float16), sel_local.astype(np.int16)
 
 
+def _cluster_sensor_groups(
+    cid_cl: np.ndarray,
+    xyz_cl: np.ndarray,
+    nx_cl: int,
+    ny_cl: int,
+    n_target_planes: int,
+    r_tgt: float,
+    r_ipt: float,
+) -> dict:
+    """Cluster target planes (< n_target_planes) and IPT planes (>= n_target_planes) independently."""
+    planes = cid_cl // (int(nx_cl) * int(ny_cl))
+    tgt_idx = np.flatnonzero(planes < int(n_target_planes))
+    ipt_idx = np.flatnonzero(planes >= int(n_target_planes))
+
+    if len(ipt_idx) == 0:
+        return cluster_pixel_hits(cid_cl, xyz_cl, nx_cl, ny_cl, radius_mm=r_tgt)
+    if len(tgt_idx) == 0:
+        return cluster_pixel_hits(cid_cl, xyz_cl, nx_cl, ny_cl, radius_mm=r_ipt)
+
+    cl_t = cluster_pixel_hits(cid_cl[tgt_idx], xyz_cl[tgt_idx], nx_cl, ny_cl, radius_mm=r_tgt)
+    cl_i = cluster_pixel_hits(cid_cl[ipt_idx], xyz_cl[ipt_idx], nx_cl, ny_cl, radius_mm=r_ipt)
+
+    order_t = tgt_idx[cl_t['hit_order']].astype(np.int32)
+    order_i = ipt_idx[cl_i['hit_order']].astype(np.int32)
+    offsets = np.concatenate([
+        cl_t['cluster_offsets'],
+        cl_i['cluster_offsets'][1:] + np.int32(len(order_t)),
+    ]).astype(np.int32)
+    return {
+        'n_clusters': int(cl_t['n_clusters']) + int(cl_i['n_clusters']),
+        'hit_order': np.concatenate([order_t, order_i]),
+        'cluster_offsets': offsets,
+        'cluster_plane': np.concatenate([cl_t['cluster_plane'], cl_i['cluster_plane']]),
+        'cluster_first_channel_id': np.concatenate([
+            cl_t['cluster_first_channel_id'],
+            cl_i['cluster_first_channel_id'],
+        ]),
+    }
+
+
+def _select_group_clusters(
+    group_idx: np.ndarray,
+    cl_plane: np.ndarray,
+    n_hits: np.ndarray,
+    hits_r040: np.ndarray,
+    cnt_r5: np.ndarray,
+    max_cap: int,
+) -> np.ndarray:
+    """Plane-stratified cluster retention strictly within one sensor group (target or IPT)."""
+    if len(group_idx) <= max_cap:
+        return group_idx
+    g_plane = cl_plane[group_idx]
+    g_hits = n_hits[group_idx]
+    g_score = g_hits + 0.5 * hits_r040[group_idx]
+    g_cnt5 = cnt_r5[group_idx]
+    uniq_p = np.unique(g_plane)
+    p_hits = np.array([g_hits[g_plane == pv].sum() for pv in uniq_p], dtype=np.float64)
+    cum_p = np.cumsum(p_hits)
+    sp_idx = int(np.searchsorted(cum_p, 0.05 * max(1.0, cum_p[-1]), side='left'))
+    start_plane = int(uniq_p[min(sp_idx, len(uniq_p) - 1)])
+
+    plane_rank = np.zeros(len(group_idx), dtype=np.int64)
+    for p_val in uniq_p:
+        loc = np.flatnonzero(g_plane == p_val)
+        ord_p = np.lexsort((g_cnt5[loc], -g_score[loc]))
+        plane_rank[loc[ord_p]] = np.arange(len(loc), dtype=np.int64)
+
+    tier1 = np.flatnonzero(plane_rank < 64)
+    if len(tier1) >= max_cap:
+        ord_t1 = np.lexsort((-g_score[tier1], np.abs(g_plane[tier1] - start_plane), plane_rank[tier1]))
+        chosen_loc = np.sort(tier1[ord_t1[:max_cap]])
+    else:
+        rest = np.flatnonzero(plane_rank >= 64)
+        is_far = np.abs(g_plane[rest] - start_plane) > 5
+        ord_rest = np.lexsort((g_cnt5[rest], -g_score[rest], is_far))
+        need = max_cap - len(tier1)
+        chosen_loc = np.sort(np.concatenate([tier1, rest[ord_rest[:need]]]))
+    return group_idx[chosen_loc]
+
+
 def extract_pf_item(
     index: int,
     observation: dict,
-    label: int,
+    label: int | None,
     dom: dict,
     geometry: dict,
     bounds: dict,
     config: dict,
 ) -> dict:
     """Extract micron-exact connected pixel clusters, patches, active bars, and spectrometer inputs."""
-    pe_only = bool((config or {}).get('pe_only', False))
+    cfg = config or {}
+    pe_only = bool(cfg.get('pe_only', False))
     validate_finite_observation(observation, check_edep=not pe_only)
 
     pixel = observation['pixel']
@@ -240,7 +377,7 @@ def extract_pf_item(
     nx_raw, ny_raw = int(bounds['nx']), int(bounds['ny'])
     recompute_dom = False
 
-    active_planes = config.get('active_pixel_planes')
+    active_planes = cfg.get('active_pixel_planes')
     if active_planes is not None and len(pcid) > 0:
         pl_raw = pcid // (nx_raw * ny_raw)
         keep_pl = np.isin(pl_raw, np.asarray(active_planes, dtype=np.int64))
@@ -248,10 +385,10 @@ def extract_pf_item(
         pxyz = pxyz[keep_pl]
         recompute_dom = True
 
-    misalign_mm = config.get('misalign_sigma_xy_mm')
+    misalign_mm = cfg.get('misalign_sigma_xy_mm')
     if misalign_mm is not None and float(misalign_mm) > 0.0 and len(pcid) > 0:
         pl_raw = pcid // (nx_raw * ny_raw)
-        m_rng = np.random.default_rng(int(config.get('misalign_seed', 20261118)))
+        m_rng = np.random.default_rng(int(cfg.get('misalign_seed', 20261118)))
         plane_shifts = m_rng.normal(0.0, float(misalign_mm), size=(n_pix_planes, 2))
         pxyz = pxyz.copy()
         pxyz[:, :2] += plane_shifts[pl_raw]
@@ -260,7 +397,7 @@ def extract_pf_item(
     if recompute_dom:
         obs_mod = dict(observation)
         obs_mod['pixel'] = {'channel_id': pcid, 'xyz_mm': pxyz.astype(np.float32)}
-        dom = compute_observable_containment(obs_mod, geometry, bounds, config=config)
+        dom = compute_observable_containment(obs_mod, geometry, bounds, config=cfg)
 
     raw_pixel_hits = len(pcid)
 
@@ -273,35 +410,40 @@ def extract_pf_item(
         dtype=np.float32,
     )
 
-    quant_mm = config.get('quantize_xy_mm')
-    quant_tgt_only = bool(config.get('quantize_target_only', False))
     n_target_planes = int(geometry['nPinpointBlocks']) + max(0, int(geometry['nFortuneBlocks']) - 1)
-    if quant_mm is not None and float(quant_mm) > 0.0 and raw_pixel_hits > 0:
-        cid_cl, xyz_cl, nx_cl, ny_cl, pitch_x, pitch_y, uniq = quantize_pixel_hits(
+    sp = resolve_sensor_pitches(bounds, cfg)
+    q_tgt = sp['q_tgt']
+    q_ipt = sp['q_ipt']
+    px_tgt, py_tgt, r_tgt = float(sp['px_tgt']), float(sp['py_tgt']), float(sp['r_tgt'])
+    px_ipt, py_ipt, r_ipt = float(sp['px_ipt']), float(sp['py_ipt']), float(sp['r_ipt'])
+
+    if (q_tgt is not None or q_ipt is not None) and raw_pixel_hits > 0:
+        cid_cl, xyz_cl, nx_cl, ny_cl, _, _, uniq = quantize_pixel_hits(
             pcid,
             pxyz,
             bounds,
-            float(quant_mm),
-            target_planes_only=quant_tgt_only,
             n_target_planes=n_target_planes,
+            quantize_target_xy_mm=q_tgt,
+            quantize_ipt_xy_mm=q_ipt,
         )
-        radius_mm = 1.45 * float(quant_mm)
         obs_q = dict(observation)
         obs_q['pixel'] = {'channel_id': pcid[uniq], 'xyz_mm': xyz_cl.astype(np.float32)}
-        dom = compute_observable_containment(obs_q, geometry, bounds, config=config)
+        dom = compute_observable_containment(obs_q, geometry, bounds, config=cfg)
         eff_pixel_hits = len(cid_cl)
     else:
         cid_cl, xyz_cl = pcid, pxyz
         nx_cl, ny_cl = int(bounds['nx']), int(bounds['ny'])
-        pitch_x, pitch_y = float(bounds['dx_mm']), float(bounds['dy_mm'])
-        radius_mm = 0.06
         eff_pixel_hits = raw_pixel_hits
+
+    plane_ids = np.arange(n_pix_planes, dtype=np.int64)
+    px_plane = np.where(plane_ids < n_target_planes, px_tgt, px_ipt).astype(np.float64)
+    py_plane = np.where(plane_ids < n_target_planes, py_tgt, py_ipt).astype(np.float64)
 
     plane_summary = np.zeros((n_pix_planes, PIX_PLANE_SUMMARY_DIM), dtype=np.float32)
     plane_summary[:, 5] = pix_x0 / 50.0
 
     if eff_pixel_hits > 0:
-        cl = cluster_pixel_hits(cid_cl, xyz_cl, nx_cl, ny_cl, radius_mm=radius_mm)
+        cl = _cluster_sensor_groups(cid_cl, xyz_cl, nx_cl, ny_cl, n_target_planes, r_tgt, r_ipt)
         n_cl = int(cl['n_clusters'])
         order = cl['hit_order']
         offsets = cl['cluster_offsets']
@@ -309,6 +451,9 @@ def extract_pf_item(
         n_hits = np.diff(offsets).astype(np.float64)
         cl_plane = cl['cluster_plane'].astype(np.int64)
         cl_fcid = cl['cluster_first_channel_id'].astype(np.uint64)
+
+        px_cl = px_plane[cl_plane]
+        py_cl = py_plane[cl_plane]
 
         hx = xyz_cl[order, 0].astype(np.float64)
         hy = xyz_cl[order, 1].astype(np.float64)
@@ -326,7 +471,7 @@ def extract_pf_item(
             hits_r5,
         ) = _compute_plane_neighborhoods(cl_plane, x_mean, y_mean, n_hits)
 
-        # Whole-event per-plane summary BEFORE N_MAX_CLUSTERS cap (reflection-exact core)
+        # Whole-event per-plane summary BEFORE cluster cap (per-sensor pitch preserves IPT bit-exactness)
         p_hit_cnt = np.bincount(cl_plane, weights=n_hits, minlength=n_pix_planes)
         p_cl_cnt = np.bincount(cl_plane, minlength=n_pix_planes)
         p_xsum = np.bincount(cl_plane, weights=x_mean * n_hits, minlength=n_pix_planes)
@@ -362,8 +507,8 @@ def extract_pf_item(
         p_cxx = np.bincount(hit_pl[core25], weights=dx_hp[core25] * dx_hp[core25], minlength=n_pix_planes)
         p_cyy = np.bincount(hit_pl[core25], weights=dy_hp[core25] * dy_hp[core25], minlength=n_pix_planes)
         p_cxy = np.bincount(hit_pl[core25], weights=dx_hp[core25] * dy_hp[core25], minlength=n_pix_planes)
-        cvxx = np.maximum(0.0, p_cxx / np.maximum(1.0, h_c25) - p_cmx * p_cmx) + (pitch_x ** 2) / 12.0
-        cvyy = np.maximum(0.0, p_cyy / np.maximum(1.0, h_c25) - p_cmy * p_cmy) + (pitch_y ** 2) / 12.0
+        cvxx = np.maximum(0.0, p_cxx / np.maximum(1.0, h_c25) - p_cmx * p_cmx) + (px_plane ** 2) / 12.0
+        cvyy = np.maximum(0.0, p_cyy / np.maximum(1.0, h_c25) - p_cmy * p_cmy) + (py_plane ** 2) / 12.0
         cvxy = p_cxy / np.maximum(1.0, h_c25) - p_cmx * p_cmy
         c_tr = cvxx + cvyy
         c_df = cvxx - cvyy
@@ -386,14 +531,14 @@ def extract_pf_item(
 
         dx_raw = np.maximum.reduceat(hx, starts) - np.minimum.reduceat(hx, starts)
         dy_raw = np.maximum.reduceat(hy, starts) - np.minimum.reduceat(hy, starts)
-        dx_box = dx_raw + pitch_x
-        dy_box = dy_raw + pitch_y
-        fill_factor = np.clip(n_hits / np.maximum(1.0, (dx_box / pitch_x) * (dy_box / pitch_y)), 0.0, 1.0)
+        dx_box = dx_raw + px_cl
+        dy_box = dy_raw + py_cl
+        fill_factor = np.clip(n_hits / np.maximum(1.0, (dx_box / px_cl) * (dy_box / py_cl)), 0.0, 1.0)
 
         dhx = hx - np.repeat(x_mean, n_rep)
         dhy = hy - np.repeat(y_mean, n_rep)
-        var_x = np.add.reduceat(dhx * dhx, starts) / n_hits + (pitch_x ** 2) / 12.0
-        var_y = np.add.reduceat(dhy * dhy, starts) / n_hits + (pitch_y ** 2) / 12.0
+        var_x = np.add.reduceat(dhx * dhx, starts) / n_hits + (px_cl ** 2) / 12.0
+        var_y = np.add.reduceat(dhy * dhy, starts) / n_hits + (py_cl ** 2) / 12.0
         cov_xy = np.add.reduceat(dhx * dhy, starts) / n_hits
 
         trace = var_x + var_y
@@ -409,28 +554,13 @@ def extract_pf_item(
         skew_y = (np.add.reduceat(dhy * dhy * dhy, starts) / n_hits) / np.power(var_y, 1.5)
         skew_norm = np.clip(np.hypot(skew_x, skew_y), 0.0, 5.0) / 5.0
 
-        if n_cl <= N_MAX_CLUSTERS:
-            keep_idx = np.arange(n_cl, dtype=np.int64)
-        else:
-            # Plane-stratified retention: guarantee top-64 clusters on every active plane
-            cum_hits = np.cumsum(p_hit_cnt)
-            start_plane = int(np.searchsorted(cum_hits, 0.05 * max(1.0, cum_hits[-1]), side='left'))
-            score_cl = n_hits + 0.5 * hits_r040
-            plane_rank = np.zeros(n_cl, dtype=np.int64)
-            for p_val in np.unique(cl_plane):
-                p_idx = np.flatnonzero(cl_plane == p_val)
-                ord_p = np.lexsort((cnt_r5[p_idx], -score_cl[p_idx]))
-                plane_rank[p_idx[ord_p]] = np.arange(len(p_idx), dtype=np.int64)
-            tier1 = np.flatnonzero(plane_rank < 64)
-            if len(tier1) >= N_MAX_CLUSTERS:
-                ord_t1 = np.lexsort((-score_cl[tier1], np.abs(cl_plane[tier1] - start_plane), plane_rank[tier1]))
-                keep_idx = np.sort(tier1[ord_t1[:N_MAX_CLUSTERS]])
-            else:
-                rest = np.flatnonzero(plane_rank >= 64)
-                is_far = np.abs(cl_plane[rest] - start_plane) > 5
-                ord_rest = np.lexsort((cnt_r5[rest], -score_cl[rest], is_far))
-                need = N_MAX_CLUSTERS - len(tier1)
-                keep_idx = np.sort(np.concatenate([tier1, rest[ord_rest[:need]]]))
+        # Strictly independent target vs IPT token retention budgets (832 target + 192 IPT = 1024)
+        # so altering target pitch never adds or drops any IPT token (Stage 322-03 fix).
+        tgt_cl_all = np.flatnonzero(cl_plane < n_target_planes)
+        ipt_cl_all = np.flatnonzero(cl_plane >= n_target_planes)
+        keep_tgt = _select_group_clusters(tgt_cl_all, cl_plane, n_hits, hits_r040, cnt_r5, N_MAX_TARGET_CLUSTERS)
+        keep_ipt = _select_group_clusters(ipt_cl_all, cl_plane, n_hits, hits_r040, cnt_r5, N_MAX_IPT_CLUSTERS)
+        keep_idx = np.concatenate([keep_tgt, keep_ipt])
 
         pix_xyz = np.column_stack([
             x_mean[keep_idx],
@@ -469,25 +599,41 @@ def extract_pf_item(
         pix_plane = cl_plane[keep_idx].astype(np.int8)
         pix_first_cid = cl_fcid[keep_idx]
 
+        # Independent target vs IPT micro-patch selection & per-sensor-pitch rasterization (48 + 16 = 64)
         trig = (
             (n_hits[keep_idx] >= PATCH_TRIGGER_MIN_HITS)
             & (np.maximum(dx_raw[keep_idx], dy_raw[keep_idx]) > PATCH_TRIGGER_MIN_SPAN_MM)
         )
-        trig_loc = np.flatnonzero(trig)
-        if len(trig_loc) > N_MAX_PATCHES:
-            rank = np.argsort(-n_hits[keep_idx[trig_loc]], kind='mergesort')
-            trig_loc = np.sort(trig_loc[rank[:N_MAX_PATCHES]])
-        pix_patches, patch_cl_idx = _rasterize_micro_patches(
-            order, offsets, n_hits, xyz_cl, x_mean, y_mean, trig_loc, keep_idx, pitch_x, pitch_y
+        trig_tgt = np.flatnonzero(trig & (pix_plane < n_target_planes))
+        if len(trig_tgt) > N_MAX_TARGET_PATCHES:
+            rank_t = np.argsort(-n_hits[keep_idx[trig_tgt]], kind='mergesort')
+            trig_tgt = np.sort(trig_tgt[rank_t[:N_MAX_TARGET_PATCHES]])
+        trig_ipt = np.flatnonzero(trig & (pix_plane >= n_target_planes))
+        if len(trig_ipt) > N_MAX_IPT_PATCHES:
+            rank_i = np.argsort(-n_hits[keep_idx[trig_ipt]], kind='mergesort')
+            trig_ipt = np.sort(trig_ipt[rank_i[:N_MAX_IPT_PATCHES]])
+
+        p_t, idx_t = _rasterize_micro_patches(
+            order, offsets, n_hits, xyz_cl, x_mean, y_mean, trig_tgt, keep_idx, px_tgt, py_tgt
         )
+        p_i, idx_i = _rasterize_micro_patches(
+            order, offsets, n_hits, xyz_cl, x_mean, y_mean, trig_ipt, keep_idx, px_ipt, py_ipt
+        )
+        if len(idx_t) and len(idx_i):
+            pix_patches = np.concatenate([p_t, p_i], axis=0)
+            patch_cl_idx = np.concatenate([idx_t, idx_i], axis=0)
+        elif len(idx_t):
+            pix_patches, patch_cl_idx = p_t, idx_t
+        else:
+            pix_patches, patch_cl_idx = p_i, idx_i
+
         mv_x = x_mean
         mv_y = y_mean
-        if bool(config.get('shuffle_micro_vertex', False)) and len(cl_plane) >= 2:
-            # Stage 320 Exp-1 falsification control: destroy cross-plane micron tracklet/displacement
-            # associations by randomly rotating/shifting cluster (x, y) coordinates within each plane
-            # around the plane centroid (preserving per-plane multiplicity & radial spread, breaking
-            # cross-plane straight-line tracklet and secondary-vertex coherence).
-            sh_rng = np.random.default_rng(int(config.get('shuffle_seed', 2026321)) + int(index) * 104729)
+        if bool(cfg.get('shuffle_micro_vertex', False)) and len(cl_plane) >= 2:
+            # Stage 320/322 Exp-1 falsification control: content-derived seed ensures invariance to dataset row order
+            base_seed = int(cfg.get('shuffle_seed', 2026321))
+            content_sig = int(cl_fcid[0]) ^ (int(len(cl_plane)) * 2654435761)
+            sh_rng = np.random.default_rng([base_seed & 0xFFFFFFFF, content_sig & 0xFFFFFFFF, (content_sig >> 32) & 0xFFFFFFFF])
             mv_x = x_mean.copy()
             mv_y = y_mean.copy()
             for p_val in np.unique(cl_plane):
@@ -500,9 +646,12 @@ def extract_pf_item(
                     dy_p = mv_y[pm] - cy_p
                     mv_x[pm] = cx_p + ca * dx_p - sa * dy_p
                     mv_y[pm] = cy_p + sa * dx_p + ca * dy_p
+        has_tgt_cl = len(tgt_cl_all) > 0
+        mv_px = px_tgt if has_tgt_cl else px_ipt
+        mv_py = py_tgt if has_tgt_cl else py_ipt
         avr_xyz, avr_ok, micro_vtx_feat = reconstruct_micron_vertex(
             cl_plane, mv_x, mv_y, z_cl, n_hits, lam2,
-            n_pix_planes, pitch_x, pitch_y, dom['cal_start'], (x_c, y_c, z_mid),
+            n_pix_planes, mv_px, mv_py, dom['cal_start'], (x_c, y_c, z_mid),
         )
     else:
         pix_xyz = np.empty((0, 3), dtype=np.float32)
@@ -517,7 +666,7 @@ def extract_pf_item(
         micro_vtx_feat = np.zeros(MICRO_VTX_FEAT_DIM, dtype=np.float32)
 
     # Calibrated bar extraction: when config['pe_only']=True, edep_proxy_MeV is never read (Audit P1-1)
-    keep_bar, be, bpe = calibrated_bar_channels(bar, config)
+    keep_bar, be, bpe = calibrated_bar_channels(bar, cfg)
     bp = np.asarray(bar['panel'], dtype=np.int16)[keep_bar]
     bh = np.asarray(bar['horizontal'], dtype=np.int8)[keep_bar]
     bi = np.asarray(bar['bar'], dtype=np.int16)[keep_bar]
@@ -535,7 +684,6 @@ def extract_pf_item(
 
     out_item = {
         'index': int(index),
-        'label': int(label),
         'obs_domain_id': int(dom['obs_domain_id']),
         'c_obs': dom['c_obs'].astype(np.float32),
         'cal_start': np.array([sz, sx, sy, 1.0 if svalid else 0.0], dtype=np.float32),
@@ -558,6 +706,8 @@ def extract_pf_item(
         'trk_hits': spec['hits'],
         'bar_keep_mask': keep_bar,
     }
+    if label is not None:
+        out_item['label'] = int(label)
     return out_item
 
 
@@ -721,7 +871,6 @@ def collate_pf(
 
     batch = {
         'index': torch.tensor([e['index'] for e in events], dtype=torch.long),
-        'label': torch.tensor([e['label'] for e in events], dtype=torch.long),
         'obs_domain_id': torch.tensor([e['obs_domain_id'] for e in events], dtype=torch.long),
         'c_obs': torch.from_numpy(np.stack([e['c_obs'] for e in events])),
         'cal_start': torch.from_numpy(np.stack([e['cal_start'] for e in events])),
@@ -744,6 +893,8 @@ def collate_pf(
         'trk_hits': torch.from_numpy(trk_hits),
         'trk_hit_mask': torch.from_numpy(trk_hit_mask),
     }
+    if 'label' in events[0]:
+        batch['label'] = torch.tensor([e['label'] for e in events], dtype=torch.long)
 
     if 'avr_pv_mm' in events[0]:
         batch['avr_pv_mm'] = torch.from_numpy(np.stack([e['avr_pv_mm'] for e in events]).astype(np.float32))

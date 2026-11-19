@@ -148,7 +148,7 @@ class StereoBarNexus(nn.Module):
         )
 
     def forward(self, batch: dict) -> dict[str, torch.Tensor]:
-        b = len(batch['label'])
+        b = int(batch['c_obs'].shape[0])
         device = batch['c_obs'].device
         bar_ev = batch['bar_ev']
         bar_panel = batch['bar_panel']

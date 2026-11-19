@@ -257,10 +257,14 @@ def _build_matched_generator_records(sampler_spec: dict, per_class: int = 200) -
                     if not np.isfinite(rec[k_nan]):
                         rec[k_nan] = 0.0
                 has_ch = any(abs(p_i) in CHARM_PDGS for p_i, st_i in zip(rec['pdgc'], rec['status']) if st_i == 1)
-                hi, lo = _family_pair(tag_prefix, int(idx_row))
+                orig_p = Path(str(meta_r['path']))
+                orig_tag = f"legacy:{orig_p.parent.parent.parent.name}/{orig_p.parent.parent.name}/{orig_p.parent.name}/{orig_p.name}"
+                orig_row = int(meta_r['row'])
+                hi, lo = _family_pair(orig_tag, orig_row)
                 rec.update({
-                    'source_tag': tag_prefix,
-                    'source_row': int(idx_row),
+                    'source_tag': orig_tag,
+                    'source_row': orig_row,
+                    'sys_sample_tag': tag_prefix,
                     'family_hi': hi,
                     'family_lo': lo,
                     'label': int(meta_r['label']),

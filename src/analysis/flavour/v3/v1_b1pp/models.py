@@ -345,7 +345,7 @@ class ZAlignedStereoNet(nn.Module):
         return dense, plane_active, plane_density
 
     def forward_fused(self, batch: dict) -> torch.Tensor:
-        b = len(batch['label'])
+        b = int(batch['c_obs'].shape[0])
         device = batch['c_obs'].device
 
         xbar, xbar_act, xbar_e = self._scatter_bar(

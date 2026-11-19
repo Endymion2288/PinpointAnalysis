@@ -72,10 +72,11 @@ def bar_channels(record, geometry, *, include_truth_edep=True):
         ht = flat(record, 'hitTime', np.float64)
         if len(ht) == len(keys):
             min_t = np.full(len(unique), np.inf, dtype=np.float64)
-            valid_t = np.isfinite(ht) & (ht >= 0.0)
+            # Only records with actual photoelectrons (pe > 0) may determine aggregated channel timing (Stage 322-12).
+            valid_t = np.isfinite(ht) & (ht >= 0.0) & (pe > 0)
             if np.any(valid_t):
                 np.minimum.at(min_t, inverse[valid_t], ht[valid_t])
-            min_t[~np.isfinite(min_t)] = -1.0
+            min_t[(~np.isfinite(min_t)) | (summed_pe <= 0)] = -1.0
             hit_time_ns = min_t.astype('float32')
     h, b, p = horizontal[first], bar[first], panel[first]
     center_x, center_y = np.mean(geometry['scint_bar_Xcenter']), np.mean(geometry['scint_bar_Ycenter'])
@@ -111,24 +112,50 @@ def bar_channels(record, geometry, *, include_truth_edep=True):
 
 
 def tracker_measurements(record, seed, merge_pitch_mm=.1, efficiency=.99,
-                         sigma_x_mm=.58, sigma_y_mm=.017):
+                         sigma_x_mm=.58, sigma_y_mm=.017,
+                         dead_fraction=0.0, noise_rate_per_station=0.0):
     station = flat(record, 'trackerID', np.int64)
     require_range(station, 3, 'tracker station')
     xyz = np.column_stack([flat(record, k, np.float64) for k in ['x', 'y', 'z']])
     if not np.isfinite(xyz).all():
         raise ValueError('nonfinite tracker crossing')
-    # Grid merge is truth-free and permutation invariant, unlike a true-track
-    # highest-energy crossing selection. Cell centers avoid step-density bias.
-    cells = np.column_stack([station, np.floor(xyz[:, :2] / merge_pitch_mm).astype('int64')])
-    unique = np.unique(cells, axis=0)
-    rng = np.random.default_rng(seed)
-    keep = rng.random(len(unique)) < efficiency
-    unique = unique[keep]
-    s = unique[:, 0].astype('int8')
-    coordinates = (unique[:, 1:].astype('float64') + .5) * merge_pitch_mm
-    coordinates += rng.normal(size=coordinates.shape) * [sigma_x_mm, sigma_y_mm]
-    # No station z, field, momentum or charge is inferred from event truth.
     ideal = {'station': station.astype('int8'), 'xyz_mm': xyz.astype('float32')}
+    rng = np.random.default_rng(seed)
+
+    if len(station) > 0:
+        # Canonical ordering guarantees strict permutation invariance even in float64 summation.
+        order = np.lexsort((xyz[:, 1], xyz[:, 0], station))
+        st_s = station[order]
+        xy_s = xyz[order, :2]
+        # Two-hit cell merging uses exact crossing centroids instead of coarse cell centers
+        # so 100 um cell quantization does not inflate the calibrated 17 um Y spacepoint RMS (Stage 322-07).
+        cells = np.column_stack([st_s, np.floor(xy_s / merge_pitch_mm).astype('int64')])
+        unique, inverse = np.unique(cells, axis=0, return_inverse=True)
+        counts = np.bincount(inverse, minlength=len(unique)).astype(np.float64)
+        cx = np.bincount(inverse, weights=xy_s[:, 0], minlength=len(unique)) / counts
+        cy = np.bincount(inverse, weights=xy_s[:, 1], minlength=len(unique)) / counts
+        eff_keep = float(efficiency) * max(0.0, 1.0 - float(dead_fraction))
+        keep = rng.random(len(unique)) < eff_keep
+        s = unique[keep, 0].astype('int8')
+        coordinates = np.column_stack([cx[keep], cy[keep]])
+        if len(s):
+            coordinates += rng.normal(size=coordinates.shape) * [sigma_x_mm, sigma_y_mm]
+    else:
+        s = np.empty(0, dtype='int8')
+        coordinates = np.empty((0, 2), dtype='float64')
+
+    if noise_rate_per_station > 0.0:
+        ns_list, nc_list = [], []
+        for st_id in range(3):
+            n_noise = int(rng.poisson(float(noise_rate_per_station)))
+            if n_noise > 0:
+                ns_list.append(np.full(n_noise, st_id, dtype='int8'))
+                nc_list.append(rng.uniform(-125.0, 125.0, size=(n_noise, 2)))
+        if ns_list:
+            s = np.concatenate([s, *ns_list]) if len(s) else np.concatenate(ns_list)
+            coordinates = np.vstack([coordinates, *nc_list]) if len(coordinates) else np.vstack(nc_list)
+
+    # No station z, field, momentum or charge is inferred from event truth.
     digitized = {'station': s, 'xy_mm': coordinates.astype('float32'),
                  'sigma_xy_mm': np.tile([sigma_x_mm, sigma_y_mm], (len(s), 1)).astype('float32')}
     return ideal, digitized

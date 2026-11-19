@@ -167,7 +167,7 @@ def _project_pixel_window(
 def extract_b1pp_item(
     index: int,
     observation: dict,
-    label: int,
+    label: int | None,
     dom: dict,
     geometry: dict,
     bounds: dict,
@@ -233,9 +233,8 @@ def extract_b1pp_item(
 
     spec = extract_spectrometer_kinematics(tracker, dom['cal_start'], bounds)
 
-    return {
+    out = {
         'index': int(index),
-        'label': int(label),
         'obs_domain_id': int(dom['obs_domain_id']),
         'c_obs': dom['c_obs'].astype(np.float32),
         'fx_idx': fx_idx,
@@ -254,6 +253,9 @@ def extract_b1pp_item(
         'trk_cand_mask': spec['cand_mask'],
         'trk_hits': spec['hits'],
     }
+    if label is not None:
+        out['label'] = int(label)
+    return out
 
 
 def apply_y_mirror_to_item(item: dict, n_bars: int = 40) -> dict:
@@ -302,7 +304,6 @@ def collate_b1pp(events: list[dict], mirror_rng: np.random.Generator | None = No
 
     batch = {
         'index': torch.tensor([e['index'] for e in events], dtype=torch.long),
-        'label': torch.tensor([e['label'] for e in events], dtype=torch.long),
         'obs_domain_id': torch.tensor([e['obs_domain_id'] for e in events], dtype=torch.long),
         'c_obs': torch.from_numpy(np.stack([e['c_obs'] for e in events])),
         'trk_cand': torch.from_numpy(np.stack([e['trk_cand'] for e in events])),
@@ -310,6 +311,8 @@ def collate_b1pp(events: list[dict], mirror_rng: np.random.Generator | None = No
         'trk_hits': torch.from_numpy(trk_hits),
         'trk_hit_mask': torch.from_numpy(trk_hit_mask),
     }
+    if 'label' in events[0]:
+        batch['label'] = torch.tensor([e['label'] for e in events], dtype=torch.long)
 
     for key in ('fx', 'fy', 'wx', 'wy', 'bx', 'by'):
         idxs = [e[f'{key}_idx'] for e in events]

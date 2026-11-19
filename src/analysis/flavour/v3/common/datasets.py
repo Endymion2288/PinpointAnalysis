@@ -21,6 +21,78 @@ from analysis.flavour.v3.common.domains import compute_observable_containment, d
 EVAL_PROVENANCE_COLUMNS = tuple(KEY + FAMILY + ['split', 'label'])
 
 
+class V3ObservationDataset(Dataset):
+    """Strictly observation-only dataset for label-free deployment & mock-readout replay (Stage 322-11).
+
+    Reads ONLY `observations.parquet` + `geometry.json`. Never opens `targets.parquet`,
+    never reads any `label` column, and never touches truth sidecars.
+    """
+
+    def __init__(
+        self,
+        obs_paths: Path | str | list[Path | str],
+        geometry_json: Path | str,
+        config: dict | None = None,
+        item_transform=None,
+    ) -> None:
+        self.config = dict(config or {})
+        self.item_transform = item_transform
+        self.geometry = json.loads(Path(geometry_json).read_text())
+        self.bounds = detector_bounds(self.geometry)
+
+        if isinstance(obs_paths, (str, Path)):
+            p = Path(obs_paths)
+            if p.is_file():
+                files = [p]
+            elif (p / 'observations.parquet').is_file():
+                files = [p / 'observations.parquet']
+            elif (p / 'shards').is_dir():
+                files = sorted(
+                    d / 'observations.parquet'
+                    for d in (p / 'shards').iterdir()
+                    if (d / 'observations.parquet').is_file()
+                )
+            else:
+                files = sorted(p.rglob('observations.parquet'))
+        else:
+            files = [Path(x) for x in obs_paths]
+        if not files:
+            raise FileNotFoundError(f'No observations.parquet found in {obs_paths}')
+
+        self.files = files
+        self.lengths = [int(pq.ParquetFile(f).metadata.num_rows) for f in self.files]
+        self.boundaries = np.cumsum([0] + self.lengths)
+        self._cache_idx: int | None = None
+        self._cache_rows: list[dict] | None = None
+
+    def __len__(self) -> int:
+        return int(self.boundaries[-1])
+
+    def _get_obs(self, index: int) -> dict:
+        if index < 0 or index >= len(self):
+            raise IndexError(index)
+        shard_idx = int(np.searchsorted(self.boundaries[1:], index, side='right'))
+        local_idx = int(index - self.boundaries[shard_idx])
+        if self._cache_idx != shard_idx:
+            self._cache_rows = pq.read_table(self.files[shard_idx]).to_pylist()
+            self._cache_idx = shard_idx
+        assert self._cache_rows is not None
+        return self._cache_rows[local_idx]
+
+    def __getitem__(self, index: int) -> dict:
+        obs = self._get_obs(index)
+        dom = compute_observable_containment(obs, self.geometry, self.bounds, config=self.config)
+        if self.item_transform is not None:
+            return self.item_transform(index, obs, None, dom, self.geometry, self.bounds, self.config)
+        return {
+            'index': int(index),
+            'c_obs': dom['c_obs'],
+            'obs_domain_id': dom['obs_domain_id'],
+            'cal_start': dom['cal_start'],
+            'observation': obs,
+        }
+
+
 class V3EvalDataset(Dataset):
     """Evaluation and pure-observation dataset; signature never accepts truth sidecars."""
 
