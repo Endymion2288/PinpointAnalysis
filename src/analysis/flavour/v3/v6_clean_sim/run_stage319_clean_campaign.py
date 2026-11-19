@@ -697,7 +697,12 @@ def _fit_cala_cutb_and_score_confirm(
         best_lam = 0.0
         best_obj = -1.0
         if ch_cut_l and (y_cut[mc] == 2).any() and (y_cut[mc] != 2).any():
-            for lam in (0.0, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5):
+            sc0 = np.log(np.clip(p_cut[mc, 2], 1e-12, 1.0) / (np.clip(1.0 - p_cut[mc, 2], 1e-12, 1.0) + 1e-12))
+            base_obj = (_tau_efficiency_at_fpr(sc0, y_cut[mc], 0.01)['tau_eff'] or 0.0) + 0.5 * (
+                _tau_efficiency_at_fpr(sc0, y_cut[mc], 0.001)['tau_eff'] or 0.0
+            )
+            best_obj = base_obj + 0.005
+            for lam in (0.1, 0.25, 0.5, 0.75, 1.0):
                 sc = np.log(np.clip(p_cut[mc, 2], 1e-12, 1.0) / (np.clip(1.0 - p_cut[mc, 2], 1e-12, 1.0) + lam * ch_cut[mc] + 1e-12))
                 e1 = _tau_efficiency_at_fpr(sc, y_cut[mc], 0.01)['tau_eff'] or 0.0
                 e01 = _tau_efficiency_at_fpr(sc, y_cut[mc], 0.001)['tau_eff'] or 0.0

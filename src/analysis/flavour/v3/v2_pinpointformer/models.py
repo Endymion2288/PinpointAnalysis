@@ -194,7 +194,8 @@ class PinpointFormer(nn.Module):
             if isinstance(last_lin, nn.Linear):
                 nn.init.normal_(last_lin.weight, mean=0.0, std=0.02)
                 nn.init.zeros_(last_lin.bias)
-            self.micro_vtx_gate: nn.Parameter | None = nn.Parameter(torch.tensor(0.20, dtype=torch.float32))
+            # Small-gate initialization (0.02): preserves clean backbone stability while keeping step-1 proj gradients active
+            self.micro_vtx_gate: nn.Parameter | None = nn.Parameter(torch.tensor(0.02, dtype=torch.float32))
         else:
             self.micro_vtx_token = None
             self.micro_vtx_proj = None
@@ -225,7 +226,10 @@ class PinpointFormer(nn.Module):
         prior = torch.where(cal_valid, cal_xyz, center)
         if self.enable_micro_vertex and 'avr_pv_mm' in batch:
             avr = batch['avr_pv_mm'].float()  # (B, 4): [x, y, z, valid]
-            avr_valid = avr[:, 3:4] > 0.5
+            # Only adopt AVR prior when longitudinally consistent with cal_start (rejects +500 mm downstream IPT)
+            dz_cal = avr[:, 2:3] - cal_start[:, 0:1]
+            z_consistent = (~cal_valid) | ((dz_cal >= -50.0) & (dz_cal <= 150.0))
+            avr_valid = (avr[:, 3:4] > 0.5) & z_consistent
             prior = torch.where(avr_valid, avr[:, :3], prior)
         return prior
 

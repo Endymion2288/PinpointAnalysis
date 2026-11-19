@@ -20,7 +20,7 @@ MICRO_VTX_FEAT_DIM = 16
 MICRO_VTX_FEATURE_NAMES = (
     'log1p_n_tracklets',
     'log1p_n_3hit_tracklets',
-    'avr_pv_valid',
+    'first_plane_mip_fraction',
     'avr_pv_chi2_ndf_asinh',
     'max_ip_d0_50um_asinh',
     'second_ip_d0_50um_asinh',

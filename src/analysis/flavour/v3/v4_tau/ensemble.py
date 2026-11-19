@@ -293,7 +293,8 @@ def fit_oof_domain_ensemble(
                 oof_probs[hm] = _apply_domain_convex_blend(log_p_stack[:, hm, :], params)
         fold_records.append(rec)
 
-    # Fit per-domain OOF lambda_charm (purely cross-fitted on fit folds)
+    # Fit per-domain OOF lambda_charm (strictly cross-fitted on fit folds with 0.5 pp hysteresis
+    # and median consensus or per-fold z-quantile-consistent scaling to prevent cross-fold offset jumps)
     s_tau = np.full(len(labels), -25.0, dtype=np.float64)
     chosen_lambdas: dict[str, list[float]] = {OBS_DOMAIN_NAMES[d]: [] for d in (1, 2, 3)}
     for k in range(n_folds):
@@ -309,9 +310,15 @@ def fit_oof_domain_ensemble(
 
             best_lam = 0.0
             if mean_charm is not None and (labels[fm] == 2).any() and (labels[fm] != 2).any():
-                best_obj = -1.0
                 cf = mean_charm[fm]
+                sf0 = np.log(p_tau_f / (p_bkg_f + 1e-12))
+                base_obj = (_tau_efficiency_at_fpr(sf0, labels[fm], 0.01)['tau_eff'] or 0.0) + 0.5 * (
+                    _tau_efficiency_at_fpr(sf0, labels[fm], 0.001)['tau_eff'] or 0.0
+                )
+                best_obj = base_obj + 0.005  # require >= +0.5 pp improvement to depart from lam=0
                 for lam in lambda_grid:
+                    if lam <= 0.0:
+                        continue
                     sf = np.log(p_tau_f / (p_bkg_f + lam * cf + 1e-12))
                     e1 = _tau_efficiency_at_fpr(sf, labels[fm], 0.01)['tau_eff'] or 0.0
                     e01 = _tau_efficiency_at_fpr(sf, labels[fm], 0.001)['tau_eff'] or 0.0
@@ -322,7 +329,16 @@ def fit_oof_domain_ensemble(
             chosen_lambdas[OBS_DOMAIN_NAMES[d]].append(best_lam)
             if hm.any():
                 ch = mean_charm[hm] if mean_charm is not None else 0.0
-                s_tau[hm] = np.log(p_tau_h / (p_bkg_h + best_lam * ch + 1e-12))
+                # Center non-tau median on fit fold so varying best_lam across folds never introduces an offset jump!
+                sf_chosen = np.log(p_tau_f / (p_bkg_f + best_lam * (mean_charm[fm] if mean_charm is not None else 0.0) + 1e-12))
+                sf_zero = np.log(p_tau_f / (p_bkg_f + 1e-12))
+                bkg_f = labels[fm] != 2
+                q99_shift = (
+                    float(np.quantile(sf_chosen[bkg_f], 0.99) - np.quantile(sf_zero[bkg_f], 0.99))
+                    if bkg_f.any()
+                    else 0.0
+                )
+                s_tau[hm] = np.log(p_tau_h / (p_bkg_h + best_lam * ch + 1e-12)) - q99_shift
 
     # Build raw S_tau = logit(p_tau) as well
     p_tau_raw = np.clip(oof_probs[:, 2], 1e-8, 1.0 - 1e-8)

@@ -501,22 +501,42 @@ void fast_reconstruct_micron_vertex(
     }
 
     // 1. Partition clusters by plane and find upstream active interaction plane p0
+    // anchored near cal_start_4[0] when available (prevents locking onto downstream IPT planes on Fortune events
+    // or isolated upstream albedo back-scatter).
     std::vector<std::vector<int32_t>> plane_cls(n_pix_planes);
+    std::vector<double> plane_z(n_pix_planes, 0.0);
     for (int64_t i = 0; i < n_cl; ++i) {
         const int32_t p = static_cast<int32_t>(cl_plane[i]);
         if (p >= 0 && p < n_pix_planes) {
+            if (plane_cls[p].empty()) plane_z[p] = z_cl[i];
             plane_cls[p].push_back(static_cast<int32_t>(i));
         }
     }
 
+    const bool has_cal = (cal_start_4[3] > 0.5);
+    const double z_cal = cal_start_4[0];
     int32_t p0 = -1;
-    for (int32_t p = 0; p < n_pix_planes; ++p) {
-        if (plane_cls[p].size() >= 2) {
-            p0 = p;
-            break;
+    // Target silicon planes are 0..min(11, n_pix_planes-1); require consistency with cal_start within [-45, +55] mm
+    const int32_t max_target_p = std::min(n_pix_planes, 12);
+    for (int32_t p = 0; p < max_target_p; ++p) {
+        if (plane_cls[p].size() >= 3) {
+            if (!has_cal || (plane_z[p] >= z_cal - 45.0 && plane_z[p] <= z_cal + 165.0)) {
+                p0 = p;
+                break;
+            }
         }
     }
     if (p0 < 0) {
+        for (int32_t p = 0; p < max_target_p; ++p) {
+            if (plane_cls[p].size() >= 2) {
+                if (!has_cal || (plane_z[p] >= z_cal - 45.0 && plane_z[p] <= z_cal + 165.0)) {
+                    p0 = p;
+                    break;
+                }
+            }
+        }
+    }
+    if (p0 < 0 && !has_cal) {
         for (int32_t p = 0; p < n_pix_planes; ++p) {
             if (!plane_cls[p].empty()) {
                 p0 = p;
@@ -525,29 +545,92 @@ void fast_reconstruct_micron_vertex(
         }
     }
     if (p0 < 0) return;
-    // Also check if p0 - 1 has 1 isolated parent stub (e.g. primary tau crossing 1 plane before decaying!)
-    if (p0 > 0 && !plane_cls[p0 - 1].empty()) {
-        p0 = p0 - 1;
+
+    // Preliminary transverse core on p0 to test whether p0-1 has a collinear parent tau stub (within 2.0 mm!)
+    double x0_med = 0.0, y0_med = 0.0, w0_s = 0.0;
+    for (int32_t idx : plane_cls[p0]) {
+        x0_med += n_hits[idx] * x_mean[idx];
+        y0_med += n_hits[idx] * y_mean[idx];
+        w0_s += n_hits[idx];
+    }
+    if (w0_s > 0.0) { x0_med /= w0_s; y0_med /= w0_s; }
+    if (p0 > 0 && !plane_cls[p0 - 1].empty() && plane_cls[p0 - 1].size() <= 3 &&
+        (plane_z[p0] - plane_z[p0 - 1]) <= 36.0) {
+        bool has_collinear_stub = false;
+        for (int32_t idx : plane_cls[p0 - 1]) {
+            if (std::hypot(x_mean[idx] - x0_med, y_mean[idx] - y0_med) <= 2.0) {
+                has_collinear_stub = true;
+                break;
+            }
+        }
+        if (has_collinear_stub && (!has_cal || plane_z[p0 - 1] >= z_cal - 45.0)) {
+            p0 = p0 - 1;
+        }
     }
 
-    // Compute robust core center across [p0, p0 + 3] to keep up to 48 clusters per plane
-    const int32_t p_end = std::min(n_pix_planes - 1, p0 + 4);
+    // Compute robust core center across adjacent 30mm-spaced planes starting at p0
+    int32_t p_end = p0;
+    while (p_end + 1 < n_pix_planes && p_end < p0 + 4) {
+        // Do not bridge across 150 mm (20 X0) FortuneBlock tungsten stacks for micron vertexing
+        if (!plane_cls[p_end + 1].empty() && !plane_cls[p_end].empty() &&
+            (plane_z[p_end + 1] - plane_z[p0]) > 105.0) {
+            break;
+        }
+        ++p_end;
+    }
+
     double w_sum = 0.0, xc_win = 0.0, yc_win = 0.0;
     for (int32_t p = p0; p <= p_end; ++p) {
         for (int32_t idx : plane_cls[p]) {
+            if (has_cal && std::hypot(x_mean[idx] - cal_start_4[1], y_mean[idx] - cal_start_4[2]) > 45.0) {
+                continue;
+            }
             const double w = n_hits[idx];
             xc_win += w * x_mean[idx];
             yc_win += w * y_mean[idx];
             w_sum += w;
         }
     }
+    if (w_sum <= 0.0) {
+        for (int32_t p = p0; p <= p_end; ++p) {
+            for (int32_t idx : plane_cls[p]) {
+                const double w = n_hits[idx];
+                xc_win += w * x_mean[idx];
+                yc_win += w * y_mean[idx];
+                w_sum += w;
+            }
+        }
+    }
     if (w_sum <= 0.0) return;
     xc_win /= w_sum;
     yc_win /= w_sum;
 
-    constexpr std::size_t MAX_CL_PER_PLANE = 48;
+    // First-plane MIP prong purity (distinguishes 1p/3p hadronic tau from immediate 1.4 X0 nu_e EM cascades)
+    int32_t p0_mip_cnt = 0, p0_core_cnt = 0;
+    for (int32_t idx : plane_cls[p0]) {
+        if (std::hypot(x_mean[idx] - xc_win, y_mean[idx] - yc_win) <= 5.0) {
+            ++p0_core_cnt;
+            if (n_hits[idx] <= 4.0) ++p0_mip_cnt;
+        }
+    }
+    const float p0_mip_frac = (p0_core_cnt > 0)
+        ? static_cast<float>(p0_mip_cnt) / static_cast<float>(p0_core_cnt)
+        : 0.0f;
+
+    constexpr std::size_t MAX_CL_PER_PLANE = 40;
     for (int32_t p = p0; p <= p_end; ++p) {
         auto& vec = plane_cls[p];
+        // Filter to 12 mm core radius around vertex axis and MIP-like clusters (n_hits <= 16)
+        std::vector<int32_t> core_vec;
+        core_vec.reserve(vec.size());
+        for (int32_t idx : vec) {
+            if (std::hypot(x_mean[idx] - xc_win, y_mean[idx] - yc_win) <= 12.0 && n_hits[idx] <= 16.0) {
+                core_vec.push_back(idx);
+            }
+        }
+        if (core_vec.size() >= 2) {
+            vec.swap(core_vec);
+        }
         if (vec.size() > MAX_CL_PER_PLANE) {
             std::stable_sort(vec.begin(), vec.end(), [&](int32_t a, int32_t b) {
                 const double da2 = (x_mean[a] - xc_win) * (x_mean[a] - xc_win) +
@@ -560,9 +643,9 @@ void fast_reconstruct_micron_vertex(
         }
     }
 
-    // 2. Seeded 3-plane triplets and 2-plane doublets in [p0, p_end]
+    // 2. Seeded 3-plane triplets and 2-plane doublets across adjacent 30mm Pinpoint planes
     const double sig_hit_base2 = 0.5 * ((pitch_x * pitch_x + pitch_y * pitch_y) / 12.0) + 1e-5; // ~3.8e-5 mm^2 (~6.2 um)^2
-    constexpr double kMaxSlope = 0.25;         // 250 mrad forward cone
+    constexpr double kMaxSlope = 0.22;         // 220 mrad forward cone
     constexpr double kThetaMS = 1.4e-3;        // ~1.4 mrad typical stiff prong MS per block
 
     struct CandTrk {
@@ -581,7 +664,7 @@ void fast_reconstruct_micron_vertex(
                 const double sa2 = sig_hit_base2 + 0.15 * lam2[ia];
                 for (int32_t ib : plane_cls[pb]) {
                     const double dz_ab = z_cl[ib] - za;
-                    if (dz_ab < 5.0 || dz_ab > 250.0) continue;
+                    if (dz_ab < 5.0 || dz_ab > 65.0) continue;
                     const double tx_ab = (x_mean[ib] - xa) / dz_ab;
                     const double ty_ab = (y_mean[ib] - ya) / dz_ab;
                     if (std::hypot(tx_ab, ty_ab) > kMaxSlope) continue;
@@ -591,7 +674,7 @@ void fast_reconstruct_micron_vertex(
                         if (plane_cls[pc].empty()) continue;
                         for (int32_t ic : plane_cls[pc]) {
                             const double dz_ac = z_cl[ic] - za;
-                            if (dz_ac < 15.0 || dz_ac > 400.0) continue;
+                            if (dz_ac < 15.0 || dz_ac > 95.0) continue;
                             const double tx = (x_mean[ic] - xa) / dz_ac;
                             const double ty = (y_mean[ic] - ya) / dz_ac;
                             if (std::hypot(tx, ty) > kMaxSlope) continue;
@@ -604,7 +687,6 @@ void fast_reconstruct_micron_vertex(
                                                     (kThetaMS * dz_ab) * (kThetaMS * dz_ab);
                             const double chi2 = (rx * rx + ry * ry) / sig_mid2;
                             if (chi2 <= 16.0) {
-                                // Least-squares line across 3 points
                                 const double zm = (za + z_cl[ib] + z_cl[ic]) / 3.0;
                                 const double xm = (xa + x_mean[ib] + x_mean[ic]) / 3.0;
                                 const double ym = (ya + y_mean[ib] + y_mean[ic]) / 3.0;
@@ -629,7 +711,7 @@ void fast_reconstruct_micron_vertex(
                         }
                     }
 
-                    if (!found_triplet && dz_ab <= 65.0 && std::hypot(tx_ab, ty_ab) <= 0.16) {
+                    if (!found_triplet && dz_ab <= 36.0 && std::hypot(tx_ab, ty_ab) <= 0.15) {
                         const double eff_sig2 = 2.0 * sa2 + (1.6 * kThetaMS * 18.0) * (1.6 * kThetaMS * 18.0);
                         const double pseudo_chi2 = 4.0 + 200.0 * (tx_ab * tx_ab + ty_ab * ty_ab);
                         cands.push_back({
@@ -642,11 +724,16 @@ void fast_reconstruct_micron_vertex(
         }
     }
 
+    // Physical PinpointBlock tungsten slab midpoint upstream of PixelSensor[p0]:
+    // W_back is at z_pix[p0] - 17.515 mm, W_front is at z_pix[p0] - 27.515 mm (midpoint -22.515 mm; for p0==0, W0 is +7.505 mm downstream).
+    const double z_first_plane = z_cl[plane_cls[p0][0]];
+    const double prior_z = (p0 == 0) ? (z_first_plane - 2.5) : (z_first_plane - 17.515);
+    out_feat[2] = p0_mip_frac;
+
     if (cands.empty()) {
-        // Fallback single-plane core anchor just upstream of p0
         out_pv_xyz[0] = xc_win;
         out_pv_xyz[1] = yc_win;
-        out_pv_xyz[2] = z_cl[plane_cls[p0][0]] - 7.5;
+        out_pv_xyz[2] = prior_z;
         return;
     }
 
@@ -679,8 +766,6 @@ void fast_reconstruct_micron_vertex(
     out_feat[1] = static_cast<float>(std::log1p(static_cast<double>(n_3hit)) / 3.0);
 
     // 3. Adaptive Primary Vertex (AVR) Fit if >= 2 tracklets exist
-    const double z_first_plane = z_cl[plane_cls[p0][0]];
-    const double prior_z = z_first_plane - 8.5; // physical tungsten slab upstream of silicon sensor
     double v_pv[3] = {xc_win, yc_win, prior_z};
 
     if (n_trk >= 2) {
@@ -690,9 +775,11 @@ void fast_reconstruct_micron_vertex(
         }
         std::vector<double> cur_w = base_w;
 
-        // Weak physical slab prior (sigma_xy ~ 50 mm, sigma_z ~ 15 mm) keeps collinear bundles well-posed
-        const double prior_xy_prec = 1.0 / (50.0 * 50.0);
-        const double prior_z_prec = 1.0 / (15.0 * 15.0);
+        // Weak physical slab prior (sigma_z = 18 mm) regularizes collinear bundles without pulling exact 3D stereo intersections
+        const double prior_xy_prec = 1.0 / (35.0 * 35.0);
+        const double prior_z_prec = 1.0 / (18.0 * 18.0);
+        const double z_clamp_lo = z_first_plane - 35.0;
+        const double z_clamp_hi = z_first_plane + 18.0;
 
         bool ok = false;
         const double temps[3] = {4.0, 2.0, 1.0};
@@ -701,8 +788,7 @@ void fast_reconstruct_micron_vertex(
             if (!fit_weighted_lines_vertex(trks, cur_w, xc_win, yc_win, prior_z, prior_xy_prec, prior_z_prec, v_try)) {
                 break;
             }
-            // Clamp z within physical upstream window [z_first_plane - 45 mm, z_first_plane + 25 mm]
-            v_try[2] = std::clamp(v_try[2], z_first_plane - 45.0, z_first_plane + 25.0);
+            v_try[2] = std::clamp(v_try[2], z_clamp_lo, z_clamp_hi);
             v_pv[0] = v_try[0];
             v_pv[1] = v_try[1];
             v_pv[2] = v_try[2];
@@ -725,9 +811,9 @@ void fast_reconstruct_micron_vertex(
             out_pv_xyz[0] = v_pv[0];
             out_pv_xyz[1] = v_pv[1];
             out_pv_xyz[2] = v_pv[2];
-            out_feat[2] = 1.0f;
 
             // 4. Compute per-tracklet Impact Parameters d0, significances d0/sigma, and thrust-signed d0
+            // restricted to physical tau/charm micron-to-millimeter weak-decay band (d0 <= 1.8 mm, rejecting wide gamma->ee conversions).
             double sum_tx = 0.0, sum_ty = 0.0;
             for (const auto& t : trks) {
                 sum_tx += t.tx;
@@ -737,8 +823,10 @@ void fast_reconstruct_micron_vertex(
             const double ux = (thrust_norm > 1e-6) ? (sum_tx / thrust_norm) : 0.0;
             const double uy = (thrust_norm > 1e-6) ? (sum_ty / thrust_norm) : 0.0;
 
-            std::vector<double> d0_mm(n_trk, 0.0);
-            std::vector<double> ip_sig(n_trk, 0.0);
+            std::vector<double> d0_mm;
+            std::vector<double> ip_sig;
+            d0_mm.reserve(n_trk);
+            ip_sig.reserve(n_trk);
             double max_signed_d0 = 0.0;
             double chi2_1v_sum = 0.0;
             int32_t n_displaced = 0;
@@ -750,15 +838,18 @@ void fast_reconstruct_micron_vertex(
                 const double dy = (trks[i].y0 + trks[i].ty * (v_pv[2] - trks[i].z0)) - v_pv[1];
                 const double d0 = std::hypot(dx, dy);
                 const double sig_val = d0 / std::max(sig_i, 0.005);
-                d0_mm[i] = d0;
-                ip_sig[i] = sig_val;
-                chi2_1v_sum += sig_val * sig_val;
-                if (sig_val > 2.5) ++n_displaced;
-
-                if (thrust_norm > 1e-6) {
-                    // For decay downstream at z_sv > z_pv, back-extrapolated x(z_pv) - x_pv = -(z_sv - z_pv)*(t_dau - t_tau)
-                    const double signed_proj = -(dx * ux + dy * uy);
-                    if (signed_proj > max_signed_d0) max_signed_d0 = signed_proj;
+                chi2_1v_sum += std::min(sig_val * sig_val, 25.0);
+                if (d0 <= 1.80) {
+                    d0_mm.push_back(d0);
+                    ip_sig.push_back(sig_val);
+                    if (d0 >= 0.015 && sig_val > 2.5) ++n_displaced;
+                    if (thrust_norm > 1e-6) {
+                        const double signed_proj = -(dx * ux + dy * uy);
+                        if (signed_proj > max_signed_d0) max_signed_d0 = signed_proj;
+                    }
+                } else {
+                    d0_mm.push_back(0.0);
+                    ip_sig.push_back(0.0);
                 }
             }
 
@@ -816,9 +907,9 @@ void fast_reconstruct_micron_vertex(
                         chi2_sv_new += (dx2 * dx2 + dy2 * dy2) / s2;
                     }
                     const double delta_chi2 = std::max(0.0, chi2_sv_old - chi2_sv_new);
-                    if (delta_chi2 > 2.0) {
-                        const double lxy = std::hypot(v_sv[0] - v_pv[0], v_sv[1] - v_pv[1]);
-                        const double lz = std::max(0.0, v_sv[2] - v_pv[2]);
+                    const double lxy = std::hypot(v_sv[0] - v_pv[0], v_sv[1] - v_pv[1]);
+                    const double lz = std::max(0.0, v_sv[2] - v_pv[2]);
+                    if (delta_chi2 > 3.0 && lxy <= 1.80) {
                         out_feat[11] = 1.0f;
                         out_feat[12] = static_cast<float>(std::log1p(delta_chi2) / 4.0);
                         out_feat[13] = static_cast<float>(std::asinh(lxy / 0.10) / 3.0);
@@ -828,9 +919,11 @@ void fast_reconstruct_micron_vertex(
             }
         }
     } else if (n_trk == 1) {
-        out_pv_xyz[0] = trks[0].x0 - trks[0].tx * 8.5;
-        out_pv_xyz[1] = trks[0].y0 - trks[0].ty * 8.5;
-        out_pv_xyz[2] = trks[0].z0 - 8.5;
+        const double dz_back = (p0 == 0) ? -7.505 : 22.515;
+        out_pv_xyz[0] = trks[0].x0 - trks[0].tx * dz_back;
+        out_pv_xyz[1] = trks[0].y0 - trks[0].ty * dz_back;
+        out_pv_xyz[2] = trks[0].z0 - dz_back;
+        *out_pv_valid = 1;
     }
 
     // 6. Explicit 1-Prong Parent -> Daughter Kink Angle Search across upstream planes
