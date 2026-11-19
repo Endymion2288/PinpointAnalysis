@@ -9,12 +9,20 @@ from torch import nn
 from torch.nn import functional as F
 
 from analysis.flavour.v3.common.domains import detector_bounds
-from analysis.flavour.v3.v1_b1pp.spectrometer import TRACKER_Z_MM
+from analysis.flavour.v3.v1_b1pp.spectrometer import (
+    MAGNET0_LENGTH_MM,
+    MAGNET0_Z_CENTER_MM,
+    MAGNET0_Z_MAX_MM,
+    MAGNET0_Z_MIN_MM,
+    SAGITTA_CONST_MEV_MM,
+    SAGITTA_INTEGRAL_MM2,
+    SIGMA_SAGITTA_Y_MM,
+    TRACKER_Z_MM,
+)
 from analysis.flavour.v3.v2_pinpointformer.stereo_bars import static_scint_stations
 
 
 NOMAD_FEAT_DIM = 10
-SAGITTA_CONST_MEV_MM = 100705.0
 NOMAD_FEATURE_NAMES = (
     'cos_dphi_l_had',
     'acoplanarity_norm',
@@ -158,17 +166,18 @@ class NomadTransverseExtractor(nn.Module):
             x_trk0 = self.x_pix_center + 150.0 * cand0[:, 2]
             y_trk0 = self.y_scint_center + 150.0 * cand0[:, 3]
             tx = 0.1 * cand0[:, 4]
-            ty = 0.1 * cand0[:, 5]
+            ty_entry = 0.1 * cand0[:, 5]
             is_3st = cand0[:, 0] > 0.75
             has_p_spec = (has_spec & is_3st) if self.phys_calibrated else has_spec
             if self.phys_calibrated:
-                # Resolve Audit P1-3: cand0[:, 13] = log1p(|s_y| / 0.05) / 5.0 (exact mm sagitta).
-                # First-principles & Geant4 calibrated constant: |s_y| * p = 100705 MeV*mm.
+                # Exact Pinpoint_G4 Magnet1+Magnet2 sagitta constant: |s_y| * p = 100,820.18 MeV*mm.
                 # 2-station tracks lack a 3rd station to measure bending sagitta -> p_spec = 0.
                 sy_abs_mm = 0.05 * torch.expm1((5.0 * cand0[:, 13]).clamp(0.0, 10.0))
                 p_3st_mev = (SAGITTA_CONST_MEV_MM / (sy_abs_mm + 0.015)).clamp(min=100.0, max=5.0e6)
                 p_spec_mev = torch.where(has_p_spec, p_3st_mev, torch.zeros_like(e_stereo))
-                cal_e_scale = 12.5  # W/scintillator sampling inverse 1/f_samp -> total shower MeV
+                # Recover signed curvature kappa = -s_y / 590,000 mm^-1 to undo Magnet0 deflection!
+                sy_signed_mm = SIGMA_SAGITTA_Y_MM * torch.sinh((5.0 * cand0[:, 6]).clamp(-9.0, 9.0))
+                kappa = torch.where(has_p_spec, -sy_signed_mm / SAGITTA_INTEGRAL_MM2, torch.zeros_like(e_stereo))
             else:
                 p_spec_mev = torch.where(
                     has_spec & is_3st,
@@ -179,10 +188,20 @@ class NomadTransverseExtractor(nn.Module):
                         torch.zeros_like(e_stereo),
                     ),
                 )
-                cal_e_scale = 1.0
-            dz_spec = z_dbl - self.z_trk0
+                kappa = torch.zeros_like(e_stereo)
+            # Back-extrapolate spectrometer ray through Magnet0 [-1565.3, -65.3] mm into target calorimeter
+            dz_spec = z_dbl - self.z_trk0  # (1, n_dbl)
             x_ray_spec = x_trk0[:, None] + tx[:, None] * dz_spec
-            y_ray_spec = y_trk0[:, None] + ty[:, None] * dz_spec
+            y_ray_lin = y_trk0[:, None] + ty_entry[:, None] * dz_spec
+            u_m0 = (MAGNET0_Z_MAX_MM - z_dbl).clamp(min=0.0, max=MAGNET0_LENGTH_MM)
+            y_bend = torch.where(
+                z_dbl <= MAGNET0_Z_MIN_MM,
+                -kappa[:, None] * MAGNET0_LENGTH_MM * (z_dbl - MAGNET0_Z_CENTER_MM),
+                0.5 * kappa[:, None] * (u_m0 * u_m0),
+            )
+            y_ray_spec = y_ray_lin + y_bend
+            # Target-exit slope BEFORE Magnet0 (removes ~256 MeV/c systematic Magnet0 p_y kick!)
+            ty = ty_entry - kappa * MAGNET0_LENGTH_MM
 
             # Reflection-symmetric soft-argmax core axis in calorimeter for events without track
             w_smooth = F.avg_pool2d(

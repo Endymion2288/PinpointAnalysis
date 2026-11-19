@@ -97,11 +97,14 @@ def calibrated_bar_channels(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Extract active bar mask, calibrated energy proxy (MeV), and PE signal.
 
-    When config['pe_only'] is True (resolving Audit P1-1):
-      - `edep_proxy_MeV` is NEVER read or exposed;
-      - SiPM microcell occupancy saturation is optionally applied (`sipm_npix`, default 14400);
+    When config['pe_only'] is True (resolving Audit P1-1 & Stage 320 double-saturation P1):
+      - `edep_proxy_MeV` is NEVER read or exposed (pure experimental PE observable only);
+      - Canonical Pinpoint_G4 (`ScintSD.cc:321-354`) ALREADY applies 14,400-cell SiPM saturation,
+        so `apply_sipm_saturation` defaults to False (set True ONLY when emulating SiPM saturation
+        on legacy unsaturated pre-Stage315 data);
       - A physical photoelectron threshold (`bar_threshold_pe`, default 2.5 PE) filters sub-threshold hits;
-      - Energy proxy is derived purely from calibrated single-ended PE (`pe_sat / PE_PER_MEV_CENTER_CAL`).
+      - Energy proxy is derived purely from single-response inverse SiPM calibration
+        (`invert_sipm_saturation`, default True when `sipm_npix > 0`).
     """
     cfg = config or {}
     pe_only = bool(cfg.get('pe_only', False))
@@ -113,6 +116,8 @@ def calibrated_bar_channels(
         return empty_b, empty_f, empty_f
 
     if not pe_only:
+        if 'edep_proxy_MeV' not in bar:
+            raise ValueError('edep_proxy_MeV absent from observation; set pe_only=True for pure observable readout')
         be = np.maximum(0.0, np.asarray(bar['edep_proxy_MeV'], dtype=np.float64))
         bpe = np.maximum(0.0, bpe_raw)
         keep = np.ones(n_raw, dtype=bool)
@@ -120,21 +125,152 @@ def calibrated_bar_channels(
 
     bpe = np.maximum(0.0, bpe_raw)
     sipm_npix = float(cfg.get('sipm_npix', DEFAULT_SIPM_NPIX))
-    apply_sat = bool(cfg.get('apply_sipm_saturation', True))
+    # Default False: Pinpoint_G4 ScintSD already saturates bar PE once at N_pix=14,400!
+    apply_sat = bool(cfg.get('apply_sipm_saturation', False))
+    invert_sat = bool(cfg.get('invert_sipm_saturation', True))
+    max_occ = float(cfg.get('sipm_invert_max_occupancy', 0.98))
     if apply_sat and sipm_npix > 0.0:
         bpe = sipm_npix * (1.0 - np.exp(-bpe / sipm_npix))
 
     thr_pe = float(cfg.get('bar_threshold_pe', DEFAULT_BAR_THRESHOLD_PE))
     keep = bpe >= thr_pe
     bpe_kept = bpe[keep]
-    # Invert average SiPM saturation conservatively up to 95% occupancy for linear energy proxy
-    if apply_sat and sipm_npix > 0.0 and len(bpe_kept):
-        frac = np.clip(bpe_kept / sipm_npix, 0.0, 0.95)
+    # Invert the single physical SiPM saturation curve once (capped safely below full occupancy)
+    if invert_sat and sipm_npix > 0.0 and len(bpe_kept):
+        frac = np.clip(bpe_kept / sipm_npix, 0.0, max_occ)
         pe_lin = -sipm_npix * np.log(1.0 - frac)
     else:
         pe_lin = bpe_kept
     e_cal_mev = pe_lin / PE_PER_MEV_CENTER_CAL
     return keep, e_cal_mev, bpe_kept
+
+
+# Physical tungsten plate dimensions from Pinpoint_G4/Pinpoint/include/DetectorConstruction.hh:237-246
+# W plate is 430x430 mm (grown +10 mm from 420x420 scintillator preserving the (-X,-Y) corner -> +5 mm shift in X,Y)
+PINPOINT_W_WIDTH_MM = 430.0
+PINPOINT_W_HEIGHT_MM = 430.0
+PINPOINT_W_CORNER_SHIFT_X_MM = 5.0
+PINPOINT_W_CORNER_SHIFT_Y_MM = 5.0
+
+
+def pinpoint_slab_catalog(geometry: dict) -> dict:
+    """Build exact physical-volume catalog for all tungsten plates matching Pinpoint_G4 DetectorConstruction.cc.
+
+    Every tungsten slab k in 0..N_W-1 is mapped deterministically to its physical parent module
+    (`PinpointBlock` vs `FortuneBlock`), G4 block copy number, within-block plate index, exact 3D
+    physical box bounds in world coordinates, and nearest downstream silicon pixel plane.
+    """
+    w_z = np.asarray(geometry['tungsten_Zpos'], dtype=np.float64)
+    p_z = np.asarray(geometry['pixel_Zpos'], dtype=np.float64)
+    w_t = float(geometry['tungsten_thickness'])
+    n_pin_front = int(geometry['nPinpointBlocks'])
+    n_for = int(geometry['nFortuneBlocks'])
+    n_sl = int(geometry['numScintLayers'])
+    n_interm = max(0, n_for - 1)
+    n_w = len(w_z)
+
+    expected_w = 2 * n_pin_front + n_for * (2 * n_sl) + 2 * n_interm
+    if n_w != expected_w:
+        raise ValueError(f'tungsten_Zpos length {n_w} != DetectorConstruction expected {expected_w}')
+
+    module_type: list[str] = []
+    block_copy_no: list[int] = []
+    plate_in_block: list[int] = []
+    is_pinpoint = np.zeros(n_w, dtype=bool)
+    is_front_pinpoint = np.zeros(n_w, dtype=bool)
+    is_interm_pinpoint = np.zeros(n_w, dtype=bool)
+
+    cursor = 0
+    # 1. Front PinpointBlocks: copyNo 0 .. n_pin_front-1 (each has 2 W plates)
+    for b in range(n_pin_front):
+        for p_local in range(2):
+            module_type.append('PinpointBlock')
+            block_copy_no.append(b)
+            plate_in_block.append(p_local)
+            is_pinpoint[cursor] = True
+            is_front_pinpoint[cursor] = True
+            cursor += 1
+    # 2. Interleaved FortuneBlock i (2*n_sl W plates) + intermediate PinpointBlock (n_pin_front+i) (2 W plates)
+    for f in range(n_for):
+        for p_local in range(2 * n_sl):
+            module_type.append('FortuneBlock')
+            block_copy_no.append(f)
+            plate_in_block.append(p_local)
+            cursor += 1
+        if f < n_interm:
+            pb_copy = n_pin_front + f
+            for p_local in range(2):
+                module_type.append('PinpointBlock')
+                block_copy_no.append(pb_copy)
+                plate_in_block.append(p_local)
+                is_pinpoint[cursor] = True
+                is_interm_pinpoint[cursor] = True
+                cursor += 1
+
+    assert cursor == n_w
+
+    # Cross-check against physical G4PVPlacement offsets (+7.505 mm, +17.505 mm from PixelSensor in PinpointBlock)
+    # when geometry is clean physical G4 (pixel_Zpos[0] < tungsten_Zpos[0]).
+    is_physical_g4 = float(p_z[0]) < float(w_z[0])
+    if is_physical_g4:
+        n_target_pix = n_pin_front + n_interm
+        for idx in np.flatnonzero(is_pinpoint):
+            pb_c = block_copy_no[int(idx)]
+            pl_c = plate_in_block[int(idx)]
+            if pb_c >= n_target_pix:
+                raise ValueError(f'PinpointBlock copyNo {pb_c} exceeds target pixel planes {n_target_pix}')
+            expected_z = float(p_z[pb_c]) + (7.505 if pl_c == 0 else 17.505)
+            if abs(float(w_z[int(idx)]) - expected_z) > 0.05:
+                raise ValueError(
+                    f'PinpointBlock slab {idx} (copy={pb_c}, plate={pl_c}) z={w_z[int(idx)]:.3f} mm '
+                    f'!= DetectorConstruction expected {expected_z:.3f} mm'
+                )
+
+    bx = np.asarray(geometry['scint_bar_Xcenter'], dtype=np.float64)
+    by = np.asarray(geometry['scint_bar_Ycenter'], dtype=np.float64)
+    w_cx = float(bx.mean()) + PINPOINT_W_CORNER_SHIFT_X_MM
+    w_cy = float(by.mean()) + PINPOINT_W_CORNER_SHIFT_Y_MM
+    w_x_min = w_cx - 0.5 * PINPOINT_W_WIDTH_MM
+    w_x_max = w_cx + 0.5 * PINPOINT_W_WIDTH_MM
+    w_y_min = w_cy - 0.5 * PINPOINT_W_HEIGHT_MM
+    w_y_max = w_cy + 0.5 * PINPOINT_W_HEIGHT_MM
+
+    next_pix = np.full(n_w, -1, dtype=np.int32)
+    dz_next_pix = np.full(n_w, np.inf, dtype=np.float64)
+    for k in range(n_w):
+        ds = np.flatnonzero(p_z > w_z[k])
+        if len(ds):
+            next_pix[k] = int(ds[0])
+            dz_next_pix[k] = float(p_z[ds[0]] - w_z[k])
+
+    return {
+        'n_slabs': int(n_w),
+        'slab_id': np.arange(n_w, dtype=np.int32),
+        'module_type': module_type,
+        'block_copy_no': np.asarray(block_copy_no, dtype=np.int32),
+        'plate_in_block': np.asarray(plate_in_block, dtype=np.int32),
+        'is_pinpoint_slab': is_pinpoint,
+        'is_front_pinpoint': is_front_pinpoint,
+        'is_intermediate_pinpoint': is_interm_pinpoint,
+        'is_fortune_slab': ~is_pinpoint,
+        'pinpoint_indices': np.flatnonzero(is_pinpoint).astype(np.int32),
+        'front_pinpoint_indices': np.flatnonzero(is_front_pinpoint).astype(np.int32),
+        'intermediate_pinpoint_indices': np.flatnonzero(is_interm_pinpoint).astype(np.int32),
+        'fortune_indices': np.flatnonzero(~is_pinpoint).astype(np.int32),
+        'z_center_mm': w_z,
+        'w_thickness_mm': w_t,
+        'w_center_x_mm': w_cx,
+        'w_center_y_mm': w_cy,
+        'w_width_mm': PINPOINT_W_WIDTH_MM,
+        'w_height_mm': PINPOINT_W_HEIGHT_MM,
+        'w_x_min_mm': w_x_min,
+        'w_x_max_mm': w_x_max,
+        'w_y_min_mm': w_y_min,
+        'w_y_max_mm': w_y_max,
+        'next_pixel_plane': next_pix,
+        'dz_to_next_pixel_mm': dz_next_pix,
+        'is_physical_g4': is_physical_g4,
+    }
 
 
 def derive_panel_orientations(geometry: dict) -> np.ndarray:
@@ -161,7 +297,7 @@ def derive_panel_orientations(geometry: dict) -> np.ndarray:
 
 
 def cumulative_radiation_length(z_mm: float, geometry: dict) -> float:
-    """Approximate cumulative radiation length X0 from target entrance up to plane z_mm."""
+    """Cumulative radiation length X0 from target entrance up to plane z_mm matching DetectorConstruction.cc."""
     w_z = np.asarray(geometry['tungsten_Zpos'], dtype=np.float64)
     w_t = float(geometry['tungsten_thickness'])
     s_z = np.asarray(geometry['scint_Zpos'], dtype=np.float64)
@@ -171,11 +307,22 @@ def cumulative_radiation_length(z_mm: float, geometry: dict) -> float:
     n_pin_blocks = int(geometry['nPinpointBlocks']) + max(0, int(geometry['nFortuneBlocks']) - 1)
     pin_z = p_z[:n_pin_blocks]
 
+    if float(p_z[0]) < float(w_z[0]):
+        # Exact physical placements inside PinpointBlock relative to PixelSensor center:
+        # AlWall_Back (2 mm) at -7.005 mm, AlCoolingPlate (5 mm) at +2.505 mm, AlWall_Front (2 mm) at +21.005 mm
+        al_x0 = (
+            np.count_nonzero((pin_z - 7.005) < z_mm) * (2.0 / _X0_AL_MM)
+            + np.count_nonzero((pin_z + 2.505) < z_mm) * (5.0 / _X0_AL_MM)
+            + np.count_nonzero((pin_z + 21.005) < z_mm) * (2.0 / _X0_AL_MM)
+        )
+    else:
+        al_x0 = np.count_nonzero(pin_z < z_mm) * (9.0 / _X0_AL_MM)
+
     x0 = (
         np.count_nonzero(w_z < z_mm) * (w_t / _X0_W_MM)
         + np.count_nonzero(s_z < z_mm) * (s_t / _X0_SCINT_MM)
         + np.count_nonzero(p_z < z_mm) * (p_t / _X0_SI_MM)
-        + np.count_nonzero(pin_z < z_mm) * (9.0 / _X0_AL_MM)
+        + al_x0
     )
     return float(x0)
 
@@ -334,7 +481,9 @@ def compute_observable_containment(
     elif pix_p0_upstream and has_pix:
         p0_planes = pcid // (bounds['nx'] * bounds['ny'])
         p0_hits = int(np.count_nonzero(p0_planes == 0))
-        upstream_veto = (p0_hits >= 10) and (p0_hits > 0.05 * max(n_pix, 1))
+        # Physical Geant4 closure (Stage 321): an incoming 50-1000 GeV rock muon leaves
+        # exactly 1 hit in 10 um silicon PixelSensor[0] (-2991.995 mm, upstream of W0 -2984.49 mm).
+        upstream_veto = p0_hits >= 1
     else:
         upstream_veto = False
     c_obs[6] = float(upstream_veto)

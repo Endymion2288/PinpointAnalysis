@@ -31,19 +31,21 @@ from analysis.flavour.s6.gfaser import legacy_record
 from analysis.flavour.v3.common.domains import detector_bounds
 from analysis.flavour.v3.v6_clean_sim.produce_clean_sim import (
     CHARM_PDGS,
-    DEFAULT_CLEAN_ROOT,
+    DEFAULT_CLEAN_V2_ROOT,
     GENIE_TUNES_ROOT,
+    _build_tungsten_sampler_spec,
     _convert_subchunks_to_shard,
     _family_pair,
-    _sample_tungsten_vertex_mm,
+    _sample_tungsten_vertex_v2_mm,
     _simulate_subchunk,
 )
 
 
-def _build_external_punchthrough_records(n_mu: int = 300, n_nhad: int = 300) -> list[dict]:
-    rng = np.random.default_rng(20263185)
+def _build_external_punchthrough_records(n_mu: int = 500, n_nhad: int = 500) -> list[dict]:
+    rng = np.random.default_rng(20263215)
     recs = []
-    # 1. Upstream Rock Muons (z = -3005 mm, entering upstream veto face)
+    # 1. Upstream Rock Muons (z = -3005 mm, entering upstream face of PinpointBlock 0)
+    # 70% inside silicon PixelSensor0 XY acceptance [-132.5, 132.5] x [-109.5, 85.5], 30% outer W face
     for i in range(n_mu):
         pdg = 13 if (i % 2 == 0) else -13
         e_gev = float(np.exp(rng.uniform(np.log(50.0), np.log(2000.0))))
@@ -53,19 +55,26 @@ def _build_external_punchthrough_records(n_mu: int = 300, n_nhad: int = 300) -> 
         ty = float(rng.normal(0.0, 0.003))
         pz = p_tot / math.sqrt(1.0 + tx * tx + ty * ty)
         px, py = pz * tx, pz * ty
-        vx = float(rng.uniform(-125.0, 125.0))
-        vy = float(rng.uniform(-98.0, 74.0))
+        if i < int(0.70 * n_mu):
+            vx = float(rng.uniform(-130.0, 130.0))
+            vy = float(rng.uniform(-107.0, 83.0))
+            in_pix = True
+        else:
+            vx = float(rng.uniform(135.0, 290.0))
+            vy = float(rng.uniform(-215.0, 200.0))
+            in_pix = False
         vz = -3005.0
-        hi, lo = _family_pair('ext_rock_muon', i)
+        hi, lo = _family_pair('ext_rock_muon_v2', i)
         recs.append({
-            'source_tag': 'ext_rock_muon',
+            'source_tag': 'ext_rock_muon_v2',
             'source_row': i,
-            'ext_subtype': 'rock_muon',
+            'ext_subtype': 'rock_muon_pix_xy' if in_pix else 'rock_muon_outer_xy',
+            'is_pixel_xy_acceptance': in_pix,
             'family_hi': hi,
             'family_lo': lo,
             'label': 1,  # background non-tau (muon-like)
             'has_gen_charm': False,
-            'run': 31905,
+            'run': 32105,
             'chunk': 0,
             'row': i,
             'split': 'confirm',
@@ -113,19 +122,26 @@ def _build_external_punchthrough_records(n_mu: int = 300, n_nhad: int = 300) -> 
         ty = float(rng.normal(0.0, 0.005))
         pz = p_tot / math.sqrt(1.0 + tx * tx + ty * ty)
         px, py = pz * tx, pz * ty
-        vx = float(rng.uniform(-120.0, 120.0))
-        vy = float(rng.uniform(-92.0, 70.0))
+        if j < int(0.70 * n_nhad):
+            vx = float(rng.uniform(-130.0, 130.0))
+            vy = float(rng.uniform(-107.0, 83.0))
+            in_pix = True
+        else:
+            vx = float(rng.uniform(135.0, 290.0))
+            vy = float(rng.uniform(-215.0, 200.0))
+            in_pix = False
         vz = -3005.0
-        hi, lo = _family_pair('ext_neutral_hadron', j)
+        hi, lo = _family_pair('ext_neutral_hadron_v2', j)
         recs.append({
-            'source_tag': 'ext_neutral_hadron',
+            'source_tag': 'ext_neutral_hadron_v2',
             'source_row': j,
             'ext_subtype': 'neutron' if is_n else 'k0l',
+            'is_pixel_xy_acceptance': in_pix,
             'family_hi': hi,
             'family_lo': lo,
             'label': 3,  # background non-tau (neutral hadron shower)
             'has_gen_charm': False,
-            'run': 31905,
+            'run': 32105,
             'chunk': 0,
             'row': idx,
             'split': 'confirm',
@@ -196,12 +212,12 @@ def _scan_tune_tungsten(tune: str, max_files: int = 35) -> list[dict]:
     return items
 
 
-def _build_matched_generator_records(w_z: np.ndarray, w_t: float, per_class: int = 150) -> tuple[list[dict], list[dict]]:
+def _build_matched_generator_records(sampler_spec: dict, per_class: int = 200) -> tuple[list[dict], list[dict]]:
     with ThreadPoolExecutor(max_workers=2) as pool:
         std_cat, nux_cat = list(pool.map(_scan_tune_tungsten, ('Pythia6_Standard', 'Pythia6_NUX')))
     df_std = pd.DataFrame(std_cat)
     df_nux = pd.DataFrame(nux_cat)
-    rng = np.random.default_rng(20263186)
+    rng = np.random.default_rng(20263216)
 
     sel_std, sel_nux = [], []
     for cls_id in range(4):
@@ -226,8 +242,8 @@ def _build_matched_generator_records(w_z: np.ndarray, w_t: float, per_class: int
     sub_std = sub_std.iloc[:n_tot].reset_index(drop=True)
     sub_nux = sub_nux.iloc[:n_tot].reset_index(drop=True)
 
-    # Shared cell-matched vertices in tungsten!
-    vtxs = [_sample_tungsten_vertex_mm(20263186 + k, k * 7919, w_z, w_t) for k in range(n_tot)]
+    # Shared cell-matched physical-volume vertices in tungsten!
+    vmetas = [_sample_tungsten_vertex_v2_mm(20263216 + k, k * 7919, sampler_spec) for k in range(n_tot)]
 
     def _materialize(df_sel: pd.DataFrame, run_id: int, tag_prefix: str) -> list[dict]:
         recs: list[dict | None] = [None] * len(df_sel)
@@ -235,8 +251,8 @@ def _build_matched_generator_records(w_z: np.ndarray, w_t: float, per_class: int
             with uproot.open(path_s) as f:
                 arr = f['gFaser'].arrays(['pdgc', 'status', 'firstMother', 'px', 'py', 'pz', 'E'], library='ak')
             for idx_row, meta_r in grp.iterrows():
-                vx, vy, vz = vtxs[int(idx_row)]
-                rec = legacy_record(ak.to_list(arr[int(meta_r['row'])]), [vx, vy, vz])
+                vm = vmetas[int(idx_row)]
+                rec = legacy_record(ak.to_list(arr[int(meta_r['row'])]), [vm['vx_mm'], vm['vy_mm'], vm['vz_mm']])
                 for k_nan in ('W', 'x', 'XSec'):
                     if not np.isfinite(rec[k_nan]):
                         rec[k_nan] = 0.0
@@ -253,22 +269,32 @@ def _build_matched_generator_records(w_z: np.ndarray, w_t: float, per_class: int
                     'chunk': 0,
                     'row': int(idx_row),
                     'split': 'confirm',
+                    'slab_id': int(vm['slab_id']),
+                    'module_type': str(vm['module_type']),
+                    'block_copy_no': int(vm['block_copy_no']),
+                    'plate_in_block': int(vm['plate_in_block']),
+                    'is_pinpoint_module': bool(vm['is_pinpoint_module']),
+                    'is_front_pinpoint': bool(vm['is_front_pinpoint']),
+                    'is_interm_pinpoint': bool(vm['is_interm_pinpoint']),
+                    'is_pixel_xy_acceptance': bool(vm['is_pixel_xy_acceptance']),
+                    'sampling_stratum': int(vm['sampling_stratum']),
+                    'sampling_stratum_name': str(vm['sampling_stratum_name']),
+                    'geom_weight': float(vm['geom_weight']),
                 })
                 recs[int(idx_row)] = rec
         return [r for r in recs if r is not None]
 
-    return _materialize(sub_std, 31907, 'gen_pythia6_std'), _materialize(sub_nux, 31906, 'gen_pythia6_nux')
+    return _materialize(sub_std, 32107, 'gen_pythia6_std_v2'), _materialize(sub_nux, 32106, 'gen_pythia6_nux_v2')
 
 
 def run_all_extra_sys(clean_root: Path, cpus: int = 16) -> dict:
     t0 = time.perf_counter()
     geom = json.loads((clean_root / 'geometry.json').read_text())
     bounds = detector_bounds(geom)
-    w_z = np.asarray(geom['tungsten_Zpos'], dtype=np.float64)
-    w_t = float(geom['tungsten_thickness'])
+    sampler_spec = _build_tungsten_sampler_spec(geom, bounds)
 
-    ext_recs = _build_external_punchthrough_records(300, 300)
-    std_recs, nux_recs = _build_matched_generator_records(w_z, w_t, per_class=150)
+    ext_recs = _build_external_punchthrough_records(500, 500)
+    std_recs, nux_recs = _build_matched_generator_records(sampler_spec, per_class=200)
 
     summary = {}
     for vname, recs in (
@@ -281,13 +307,13 @@ def run_all_extra_sys(clean_root: Path, cpus: int = 16) -> dict:
             summary[vname] = {'status': 'already_done', 'events': len(recs)}
             continue
         out_dir.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix=f's318b-{vname}-', dir='/tmp') as tmp:
+        with tempfile.TemporaryDirectory(prefix=f's321b-{vname}-', dir='/tmp') as tmp:
             step = max(1, (len(recs) + cpus - 1) // cpus)
             tasks = [(recs[s : s + step], tmp, k, {}, 0.57) for k, s in enumerate(range(0, len(recs), step))]
             with ProcessPoolExecutor(max_workers=cpus) as pool:
                 rfs = list(pool.map(_simulate_subchunk, tasks))
             meta_out = clean_root / 'sys_shards' / vname / 'truth_meta.parquet'
-            _convert_subchunks_to_shard(rfs, recs, geom, bounds, out_dir, None, meta_out)
+            _convert_subchunks_to_shard(rfs, recs, geom, bounds, out_dir, None, meta_out, include_truth_edep=False)
             if vname == 'external_punchthrough':
                 mdf = pd.read_parquet(meta_out)
                 mdf['ext_subtype'] = [r['ext_subtype'] for r in recs]
@@ -303,7 +329,7 @@ def run_all_extra_sys(clean_root: Path, cpus: int = 16) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, default=DEFAULT_CLEAN_ROOT)
+    parser.add_argument('--root', type=Path, default=DEFAULT_CLEAN_V2_ROOT)
     parser.add_argument('--cpus', type=int, default=16)
     args = parser.parse_args()
     print(json.dumps(run_all_extra_sys(args.root, cpus=args.cpus), indent=2))

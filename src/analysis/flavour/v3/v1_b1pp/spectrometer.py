@@ -8,6 +8,25 @@ import numpy as np
 
 TRACKER_Z_MM = (47.4, 1237.4, 2427.4)
 DELTA_Z_MM = 1190.0
+# Exact Pinpoint_G4/Pinpoint/include/DetectorConstruction.hh magnet geometry (B_x = 0.57 T)
+# Magnet0: center -815.3 mm, length 1500 mm -> [-1565.3, -65.3] mm
+# Magnet1: center +637.4 mm, length 1000 mm -> [+137.4, +1137.4] mm
+# Magnet2: center +1837.4 mm, length 1000 mm -> [+1337.4, +2337.4] mm
+MAGNET0_Z_CENTER_MM = -815.3
+MAGNET0_LENGTH_MM = 1500.0
+MAGNET0_Z_MIN_MM = MAGNET0_Z_CENTER_MM - 0.5 * MAGNET0_LENGTH_MM  # -1565.3 mm
+MAGNET0_Z_MAX_MM = MAGNET0_Z_CENTER_MM + 0.5 * MAGNET0_LENGTH_MM  # -65.3 mm
+# Exact piecewise-magnet sagitta integral between Trackers 1, 2, 3:
+#   y1 - y0 = theta_y0 * 1190 + 600,000 * kappa
+#   y2 - y0 = theta_y0 * 2380 + 2,380,000 * kappa
+#   s_y = y1 - 0.5*(y0 + y2) = -590,000 * kappa  =>  kappa = -s_y / 590,000 mm^-1
+#   theta_y0 = (y1 - y0) / 1190 + (60 / 59) * (s_y / 1190)
+SAGITTA_INTEGRAL_MM2 = 590000.0
+ENTRY_SLOPE_SAGITTA_COEFF = 60.0 / 59.0
+B_FIELD_TESLA = 0.57
+# Exact |p * s_y| = 590,000 mm^2 * 0.299792458 MeV/(T*mm) * 0.57 T = 100,820.18 MeV*mm
+SAGITTA_CONST_MEV_MM = SAGITTA_INTEGRAL_MM2 * 0.299792458 * B_FIELD_TESLA
+
 SIGMA_X_MM = 0.58
 SIGMA_Y_MM = 0.017
 SIGMA_SAGITTA_Y_MM = math.sqrt(1.5) * SIGMA_Y_MM
@@ -17,6 +36,30 @@ SIGMA_DELTA_X_MM = math.sqrt(1.5) * SIGMA_X_MM
 CAND_Y_FLIP_IDX = (3, 5, 6, 7, 11)
 # Raw hit feature indices that negate under Y-mirror
 HIT_Y_FLIP_IDX = (2, 4)
+
+
+def back_extrapolate_y_through_magnet0(
+    y0: np.ndarray,
+    theta_y_entry: np.ndarray,
+    kappa: np.ndarray,
+    z_target: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Exact C^1 analytical back-extrapolation from Tracker 1 (z=47.4 mm) through Magnet0 [-1565.3, -65.3] mm.
+
+    Returns (y_at_z_target, theta_y_at_z_target) in (mm, rad).
+    """
+    dz = z_target - TRACKER_Z_MM[0]
+    y_lin = y0 + theta_y_entry * dz
+    if z_target >= MAGNET0_Z_MAX_MM:
+        return y_lin, theta_y_entry
+    if z_target <= MAGNET0_Z_MIN_MM:
+        y_ext = y_lin - kappa * MAGNET0_LENGTH_MM * (z_target - MAGNET0_Z_CENTER_MM)
+        ty_ext = theta_y_entry - kappa * MAGNET0_LENGTH_MM
+        return y_ext, ty_ext
+    u = MAGNET0_Z_MAX_MM - z_target
+    y_ext = y_lin + 0.5 * kappa * (u * u)
+    ty_ext = theta_y_entry - kappa * u
+    return y_ext, ty_ext
 
 
 def extract_spectrometer_kinematics(
@@ -81,15 +124,18 @@ def extract_spectrometer_kinematics(
 
         # Bending plane is y-z (B along +x); non-bending straight-line plane is x-z
         s_y = y1 - 0.5 * (y0 + y2)
+        kappa = -s_y / SAGITTA_INTEGRAL_MM2
         delta_x = x1 - 0.5 * (x0 + x2)
         chi2_x = (delta_x / SIGMA_DELTA_X_MM) ** 2
         theta_x = (x2 - x0) / (2.0 * DELTA_Z_MM)
-        theta_y_entry = (y1 - y0) / DELTA_Z_MM - (2.0 * s_y) / DELTA_Z_MM
+        # Exact entry slope at Tracker 1 derived from Pinpoint_G4 Magnet1 & Magnet2 integrals
+        theta_y_entry = (y1 - y0) / DELTA_Z_MM + ENTRY_SLOPE_SAGITTA_COEFF * (s_y / DELTA_Z_MM)
 
         if has_start:
             dz_ext = z_start - TRACKER_Z_MM[0]
             dx_ext = (x0 + theta_x * dz_ext) - x_start
-            dy_ext = (y0 + theta_y_entry * dz_ext) - y_start
+            y_ext, _ = back_extrapolate_y_through_magnet0(y0, theta_y_entry, kappa, float(z_start))
+            dy_ext = y_ext - y_start
             d_ext = np.hypot(dx_ext / 20.0, dy_ext / 20.0)
         else:
             dx_ext = np.zeros_like(s_y)

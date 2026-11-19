@@ -39,6 +39,65 @@ def extract_member_arrays(frame: pd.DataFrame, ref_df: pd.DataFrame) -> dict[str
     return {'probs': probs, 'log_p': log_p, 'charm': charm}
 
 
+def _domain_blend_objective_and_grad(
+    theta: np.ndarray,
+    log_p_stack: np.ndarray,
+    labels: np.ndarray,
+    sample_w: np.ndarray,
+    row_idx: np.ndarray,
+) -> tuple[float, np.ndarray]:
+    """Exact balanced NLL + smooth C^inf permutation-invariant regularization and analytical gradient.
+
+    Resolves Stage 320 P1 calibration gradient bug:
+      - Member weights use mean-centered L2 penalty 0.5e-4 * ||alpha - mean(alpha)||^2, whose exact
+        gradient is 1e-4 * (alpha - mean(alpha)) (smooth everywhere, shift- and permutation-invariant).
+      - Class biases use exact zero-sum parameterization b_3 = -(b_0 + b_1 + b_2) with class-symmetric
+        penalty 0.5e-3 * sum_{c=0}^3 b_c^2 and exact chain-rule gradient (r_k - r_3) + 1e-3 * (b_k - b_3).
+    """
+    m = log_p_stack.shape[0]
+    alpha = theta[:m]
+    alpha_bar = alpha - float(np.mean(alpha))
+    alpha_shift = alpha - float(np.max(alpha))
+    exp_a = np.exp(alpha_shift)
+    w = exp_a / float(np.sum(exp_a))
+
+    log_inv_t = float(theta[m])
+    inv_t = float(np.exp(log_inv_t))
+    b0, b1, b2 = float(theta[m + 1]), float(theta[m + 2]), float(theta[m + 3])
+    b3 = -(b0 + b1 + b2)
+    bias = np.array([b0, b1, b2, b3], dtype=np.float64)
+
+    mix_lp = np.tensordot(w, log_p_stack, axes=(0, 0))  # (N, 4)
+    scaled = inv_t * mix_lp + bias[None, :]
+    max_s = np.max(scaled, axis=1, keepdims=True)
+    exp_s = np.exp(scaled - max_s)
+    sum_s = np.sum(exp_s, axis=1, keepdims=True)
+    probs = exp_s / sum_s
+    lse = np.squeeze(max_s, axis=1) + np.log(np.squeeze(sum_s, axis=1))
+
+    true_scaled = scaled[row_idx, labels]
+    nll = float(np.dot(sample_w, lse - true_scaled))
+    reg = 0.5 * (
+        1e-3 * float(np.dot(bias, bias))
+        + 1e-4 * (log_inv_t ** 2)
+        + 1e-4 * float(np.dot(alpha_bar, alpha_bar))
+    )
+
+    resid = probs.copy()
+    resid[row_idx, labels] -= 1.0
+    w_resid = sample_w[:, None] * resid  # (N, 4)
+
+    g_mix = inv_t * w_resid  # (N, 4)
+    g_w = np.sum(log_p_stack * g_mix[None, :, :], axis=(1, 2))
+    g_alpha = w * (g_w - float(np.dot(w, g_w))) + 1e-4 * alpha_bar
+
+    g_log_inv_t = float(inv_t * np.sum(w_resid * mix_lp)) + 1e-4 * log_inv_t
+    sum_w_resid = np.sum(w_resid, axis=0)
+    g_bias = (sum_w_resid[:3] - sum_w_resid[3]) + 1e-3 * (bias[:3] - bias[3])
+    grad = np.concatenate([g_alpha, [g_log_inv_t], g_bias])
+    return nll + reg, grad
+
+
 def _fit_domain_convex_blend(log_p_stack: np.ndarray, labels: np.ndarray) -> dict:
     """Fit convex member weights, domain temperature, and zero-sum class bias minimizing balanced NLL."""
     # log_p_stack: (M, N, 4)
@@ -61,68 +120,44 @@ def _fit_domain_convex_blend(log_p_stack: np.ndarray, labels: np.ndarray) -> dic
     row_idx = np.arange(n)
 
     def objective(theta: np.ndarray) -> tuple[float, np.ndarray]:
-        alpha = theta[:m]
-        alpha_c = alpha - np.max(alpha)
-        exp_a = np.exp(alpha_c)
-        w = exp_a / np.sum(exp_a)
-        log_inv_t = float(theta[m])
-        inv_t = float(np.exp(log_inv_t))
-        bias = np.array([theta[m + 1], theta[m + 2], theta[m + 3], 0.0], dtype=np.float64)
+        return _domain_blend_objective_and_grad(theta, log_p_stack, labels, sample_w, row_idx)
 
-        mix_lp = np.tensordot(w, log_p_stack, axes=(0, 0))  # (N, 4)
-        scaled = inv_t * mix_lp + bias[None, :]
-        max_s = np.max(scaled, axis=1, keepdims=True)
-        exp_s = np.exp(scaled - max_s)
-        sum_s = np.sum(exp_s, axis=1, keepdims=True)
-        probs = exp_s / sum_s
-        lse = np.squeeze(max_s, axis=1) + np.log(np.squeeze(sum_s, axis=1))
-
-        true_scaled = scaled[row_idx, labels]
-        nll = float(np.dot(sample_w, lse - true_scaled))
-        reg = 0.5 * (1e-3 * float(np.dot(bias[:3], bias[:3])) + 1e-4 * (log_inv_t ** 2) + 1e-4 * float(np.dot(alpha_c, alpha_c)))
-
-        resid = probs.copy()
-        resid[row_idx, labels] -= 1.0
-        w_resid = sample_w[:, None] * resid  # (N, 4)
-
-        g_mix = inv_t * w_resid  # (N, 4)
-        g_w = np.sum(log_p_stack * g_mix[None, :, :], axis=(1, 2))
-        g_alpha = w * (g_w - float(np.dot(w, g_w))) + 1e-4 * (alpha_c - float(np.mean(alpha_c)))
-
-        g_log_inv_t = float(inv_t * np.sum(w_resid * mix_lp)) + 1e-4 * log_inv_t
-        g_bias = np.sum(w_resid, axis=0)[:3] + 1e-3 * bias[:3]
-        grad = np.concatenate([g_alpha, [g_log_inv_t], g_bias])
-        return nll + reg, grad
-
-    theta0 = np.zeros(m + 4, dtype=np.float64)
     bounds = [(-6.0, 6.0)] * m + [(float(np.log(0.25)), float(np.log(4.0)))] + [(-2.5, 2.5)] * 3
-    res = minimize(
-        objective,
-        theta0,
-        jac=True,
-        method='L-BFGS-B',
-        bounds=bounds,
-        options={'gtol': 1e-7, 'ftol': 1e-12, 'maxiter': 600},
-    )
-    if not res.success:
-        rng = np.random.default_rng(29)
-        for _ in range(4):
-            cand = minimize(
-                objective,
-                rng.normal(0.0, 0.15, size=m + 4),
-                jac=True,
-                method='L-BFGS-B',
-                bounds=bounds,
-                options={'gtol': 1e-7, 'ftol': 1e-14, 'maxiter': 1200},
-            )
-            if cand.fun < res.fun or (cand.success and not res.success):
-                res = cand
-            if res.success:
-                break
+
+    # Deterministic, strictly permutation-equivariant multi-start set:
+    # uniform init plus each single-member-dominant corner (mean-centered).
+    starts: list[np.ndarray] = [np.zeros(m + 4, dtype=np.float64)]
+    if m > 1:
+        for j in range(m):
+            th_j = np.zeros(m + 4, dtype=np.float64)
+            th_j[:m] = -2.0 / m
+            th_j[j] = 2.0 - 2.0 / m
+            starts.append(th_j)
+
+    best_res = None
+    for x0 in starts:
+        cand = minimize(
+            objective,
+            x0,
+            jac=True,
+            method='L-BFGS-B',
+            bounds=bounds,
+            options={'gtol': 1e-10, 'ftol': 1e-15, 'maxiter': 1000},
+        )
+        if best_res is None:
+            best_res = cand
+        elif cand.fun < best_res.fun - 1e-12:
+            best_res = cand
+        elif abs(cand.fun - best_res.fun) <= 1e-12 and cand.success and not best_res.success:
+            best_res = cand
+
+    assert best_res is not None
+    res = best_res
     alpha = res.x[:m]
-    w = softmax(alpha)
+    w = softmax(alpha - float(np.mean(alpha)))
     inv_t = float(np.exp(res.x[m]))
-    bias = [float(res.x[m + 1]), float(res.x[m + 2]), float(res.x[m + 3]), 0.0]
+    b0, b1, b2 = float(res.x[m + 1]), float(res.x[m + 2]), float(res.x[m + 3])
+    bias = [b0, b1, b2, -(b0 + b1 + b2)]
     grad_inf = float(np.max(np.abs(res.jac))) if hasattr(res, 'jac') and res.jac is not None else float('nan')
     return {
         'weights': w.tolist(),

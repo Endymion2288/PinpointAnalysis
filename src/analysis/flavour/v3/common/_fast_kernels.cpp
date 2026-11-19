@@ -724,10 +724,25 @@ void fast_reconstruct_micron_vertex(
         }
     }
 
-    // Physical PinpointBlock tungsten slab midpoint upstream of PixelSensor[p0]:
-    // W_back is at z_pix[p0] - 17.515 mm, W_front is at z_pix[p0] - 27.515 mm (midpoint -22.515 mm; for p0==0, W0 is +7.505 mm downstream).
+    // Physical Pinpoint_G4 DetectorConstruction.cc slab placement relative to PixelSensor[p0]:
+    // - Inside PinpointBlock (30.01 mm): PixelSensor at -7.000, W_back at +0.505 (+7.505 from Si),
+    //   W_front at +10.505 (+17.505 from Si).
+    // - Therefore for p0 in {1..5}, the upstream PinpointBlock (p0-1) has W plates at
+    //   z_pix[p0] - 22.505 mm and z_pix[p0] - 12.505 mm (midpoint: z_pix[p0] - 17.505 mm).
+    // - For p0 == 0, PixelSensor[0] (-2991.995 mm) is UPSTREAM of W0 (-2984.49 mm = z_pix[0] + 7.505 mm),
+    //   so any interaction starting at W0 has prior_z = z_pix[0] + 7.505 mm (never upstream air!).
+    // - For p0 >= 6 (intermediate Pinpoint planes immediately after a 120 mm FortuneBlock),
+    //   upstream FortuneBlock W plates span [z_pix[p0] - 130.005, z_pix[p0] - 15.005] mm;
+    //   anchor near cal_start if consistent, else z_pix[p0] - 25.0 mm.
     const double z_first_plane = z_cl[plane_cls[p0][0]];
-    const double prior_z = (p0 == 0) ? (z_first_plane - 2.5) : (z_first_plane - 17.515);
+    double prior_z = z_first_plane - 17.505;
+    if (p0 == 0) {
+        prior_z = z_first_plane + 7.505;
+    } else if (p0 >= 6) {
+        prior_z = (has_cal && z_cal < z_first_plane && z_cal >= z_first_plane - 135.0)
+            ? z_cal
+            : (z_first_plane - 25.0);
+    }
     out_feat[2] = p0_mip_frac;
 
     if (cands.empty()) {
@@ -778,8 +793,8 @@ void fast_reconstruct_micron_vertex(
         // Weak physical slab prior (sigma_z = 18 mm) regularizes collinear bundles without pulling exact 3D stereo intersections
         const double prior_xy_prec = 1.0 / (35.0 * 35.0);
         const double prior_z_prec = 1.0 / (18.0 * 18.0);
-        const double z_clamp_lo = z_first_plane - 35.0;
-        const double z_clamp_hi = z_first_plane + 18.0;
+        const double z_clamp_lo = (p0 == 0) ? (z_first_plane - 10.0) : ((p0 >= 6) ? (z_first_plane - 135.0) : (z_first_plane - 30.0));
+        const double z_clamp_hi = (p0 == 0) ? (z_first_plane + 22.0) : (z_first_plane + 18.0);
 
         bool ok = false;
         const double temps[3] = {4.0, 2.0, 1.0};
@@ -919,7 +934,7 @@ void fast_reconstruct_micron_vertex(
             }
         }
     } else if (n_trk == 1) {
-        const double dz_back = (p0 == 0) ? -7.505 : 22.515;
+        const double dz_back = (p0 == 0) ? -7.505 : ((p0 >= 6) ? (z_first_plane - prior_z) : 17.505);
         out_pv_xyz[0] = trks[0].x0 - trks[0].tx * dz_back;
         out_pv_xyz[1] = trks[0].y0 - trks[0].ty * dz_back;
         out_pv_xyz[2] = trks[0].z0 - dz_back;

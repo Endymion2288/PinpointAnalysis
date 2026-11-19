@@ -36,7 +36,7 @@ def pixel_positions(ids, geometry):
                             [('pixel_Xpos', col), ('pixel_Ypos', row), ('pixel_Zpos', plane)]])
 
 
-def bar_channels(record, geometry):
+def bar_channels(record, geometry, *, include_truth_edep=True):
     layer, panel, horizontal, row, col = [flat(record, k, np.int64) for k in
                                          ['layerID', 'panelID', 'isHorizontal', 'rowID', 'colID']]
     nbar = len(geometry['scint_bar_Xcenter'])
@@ -52,15 +52,31 @@ def bar_channels(record, geometry):
         raise ValueError('unmeasured bar coordinate is not the expected -1')
     keys = (layer * len(geometry['scint_Zpos']) + panel) * (2 * nbar) + horizontal * nbar + bar
     unique, first, inverse = np.unique(keys, return_index=True, return_inverse=True)
-    edep = flat(record, 'edep', np.float64)
     pe = flat(record, 'nPE', np.int64)
-    if np.any(~np.isfinite(edep)) or np.any(edep < 0) or np.any(pe < 0):
-        raise ValueError('negative/nonfinite simulated bar response')
-    energy = np.bincount(inverse, weights=edep, minlength=len(unique))
-    if not np.isclose(energy.astype('float32').sum(dtype='float64'), edep.sum(), rtol=2e-6, atol=1e-6):
-        raise ValueError('float32 channel storage exceeds energy tolerance')
+    if np.any(pe < 0):
+        raise ValueError('negative simulated bar PE response')
     summed_pe = np.zeros(len(unique), dtype=np.int64)
     np.add.at(summed_pe, inverse, pe)
+    if include_truth_edep:
+        edep = flat(record, 'edep', np.float64)
+        if np.any(~np.isfinite(edep)) or np.any(edep < 0):
+            raise ValueError('negative/nonfinite simulated bar response')
+        energy = np.bincount(inverse, weights=edep, minlength=len(unique))
+        if not np.isclose(energy.astype('float32').sum(dtype='float64'), edep.sum(), rtol=2e-6, atol=1e-6):
+            raise ValueError('float32 channel storage exceeds energy tolerance')
+    else:
+        edep = None
+        energy = None
+    hit_time_ns = None
+    if 'hitTime' in record:
+        ht = flat(record, 'hitTime', np.float64)
+        if len(ht) == len(keys):
+            min_t = np.full(len(unique), np.inf, dtype=np.float64)
+            valid_t = np.isfinite(ht) & (ht >= 0.0)
+            if np.any(valid_t):
+                np.minimum.at(min_t, inverse[valid_t], ht[valid_t])
+            min_t[~np.isfinite(min_t)] = -1.0
+            hit_time_ns = min_t.astype('float32')
     h, b, p = horizontal[first], bar[first], panel[first]
     center_x, center_y = np.mean(geometry['scint_bar_Xcenter']), np.mean(geometry['scint_bar_Ycenter'])
     x = np.where(h == 1, center_x, np.asarray(geometry['scint_bar_Xcenter'])[b])
@@ -69,14 +85,29 @@ def bar_channels(record, geometry):
     hy = np.where(h == 1, geometry['scint_bar_height'] / 2, geometry['scint_detector_height'] / 2)
     bounds = np.column_stack([x - hx, x + hx, y - hy, y + hy,
                               np.asarray(geometry['scint_Zpos'])[p]])
-    return {'channel_id': unique.astype('uint64'), 'layer': layer[first].astype('int16'),
-            'panel': p.astype('int16'), 'horizontal': h.astype('int8'), 'bar': b.astype('int16'),
-            'bounds_mm': bounds.astype('float32'), 'edep_proxy_MeV': energy.astype('float32'),
-            'pe_proxy': summed_pe}, {
-                'input_edep_MeV': float(edep.sum()), 'output_edep_MeV': float(energy.sum()),
-                'input_pe': int(pe.sum()), 'output_pe': int(summed_pe.sum()),
-                'records': len(keys), 'channels': len(unique),
-            }
+    out = {
+        'channel_id': unique.astype('uint64'),
+        'layer': layer[first].astype('int16'),
+        'panel': p.astype('int16'),
+        'horizontal': h.astype('int8'),
+        'bar': b.astype('int16'),
+        'bounds_mm': bounds.astype('float32'),
+        'pe_proxy': summed_pe,
+    }
+    if include_truth_edep and energy is not None:
+        out['edep_proxy_MeV'] = energy.astype('float32')
+    if hit_time_ns is not None:
+        out['hit_time_ns'] = hit_time_ns
+    audit = {
+        'input_pe': int(pe.sum()),
+        'output_pe': int(summed_pe.sum()),
+        'records': len(keys),
+        'channels': len(unique),
+    }
+    if include_truth_edep and edep is not None and energy is not None:
+        audit['input_edep_MeV'] = float(edep.sum())
+        audit['output_edep_MeV'] = float(energy.sum())
+    return out, audit
 
 
 def tracker_measurements(record, seed, merge_pitch_mm=.1, efficiency=.99,

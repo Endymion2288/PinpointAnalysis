@@ -188,7 +188,8 @@ class TestStage316AuditFixes(unittest.TestCase):
         feat = ext._compute_from_grids(e_x, e_y, trk_cand, trk_mask, obs_dom)
         self.assertLess(abs(float(feat[0, 8])), 0.01)
         self.assertEqual(float(feat[1, 8]), 0.0)
-        self.assertAlmostEqual(SAGITTA_CONST_MEV_MM, 100705.0, places=1)
+        # Exact Pinpoint_G4 Magnet1+Magnet2 sagitta constant: 590000 * 0.299792458 * 0.57 = 100820.18 MeV*mm
+        self.assertAlmostEqual(SAGITTA_CONST_MEV_MM, 100820.18, places=1)
 
     def test_p2_2_unbiased_vertex_and_fixed_event_losses(self) -> None:
         """Audit P2-2: stationary point of heteroscedastic_vertex_loss matches true residual error."""

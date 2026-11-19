@@ -321,7 +321,18 @@ def build_pf_mapped_split(
         'cache_shards': 2,
         'quantize_xy_mm': config.get('quantize_xy_mm'),
     }
-    for k_fwd in ('pe_only', 'bar_threshold_pe', 'sipm_npix', 'apply_sipm_saturation', 'active_pixel_planes', 'misalign_sigma_xy_mm'):
+    for k_fwd in (
+        'pe_only',
+        'bar_threshold_pe',
+        'sipm_npix',
+        'apply_sipm_saturation',
+        'invert_sipm_saturation',
+        'sipm_invert_max_occupancy',
+        'active_pixel_planes',
+        'misalign_sigma_xy_mm',
+        'quantize_target_only',
+        'shuffle_micro_vertex',
+    ):
         if k_fwd in config:
             ds_cfg[k_fwd] = config[k_fwd]
     ds = V3EvalDataset(
@@ -686,7 +697,14 @@ def run_pf_training(
         return json.loads(manifest_path.read_text())
 
     data_root = Path(config['data_root'])
-    geometry = json.loads(Path(config.get('geometry_json', DEFAULT_GEOMETRY)).read_text())
+    plan_path = data_root / 'plan.json'
+    if config.get('geometry_json'):
+        geom_path = Path(config['geometry_json'])
+    elif plan_path.exists():
+        geom_path = Path(json.loads(plan_path.read_text())['geometry'])
+    else:
+        geom_path = DEFAULT_GEOMETRY
+    geometry = json.loads(geom_path.read_text())
     bounds = detector_bounds(geometry)
     sidecar_root_str = config.get('sidecar_root')
     sidecar_root = Path(sidecar_root_str) if sidecar_root_str else None

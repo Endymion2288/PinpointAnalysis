@@ -69,6 +69,7 @@ class ScaledQKNormAttention(nn.Module):
         source_mask: torch.Tensor,
         pair_bias: torch.Tensor | None = None,
         return_entropy: bool = False,
+        query_mask: torch.Tensor | None = None,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         b, nq, _ = x.shape
         nk = source.shape[1]
@@ -80,7 +81,8 @@ class ScaledQKNormAttention(nn.Module):
         q_hat = F.normalize(q.float(), p=2, dim=-1, eps=1e-6)
         k_hat = F.normalize(k.float(), p=2, dim=-1, eps=1e-6)
 
-        valid_count = source_mask.sum(dim=-1, keepdim=True).clamp(min=2).float()
+        raw_valid_keys = source_mask.sum(dim=-1)  # (B,)
+        valid_count = raw_valid_keys.unsqueeze(-1).clamp(min=2).float()  # (B, 1)
         scale = torch.clamp(self.log_scale.exp(), min=1.0, max=self.max_scale)
         len_factor = 1.0 + F.softplus(self.len_beta) * torch.log(valid_count)[:, None, None, :]
 
@@ -109,9 +111,18 @@ class ScaledQKNormAttention(nn.Module):
         if not return_entropy:
             return out
         p_safe = probs.clamp(min=1e-12)
-        ent = -(probs * torch.log(p_safe)).sum(dim=-1)
-        denom = torch.log(valid_count)[:, None, None, :].clamp(min=1e-6)
-        norm_ent = (ent / denom).mean(dim=-1)
+        ent = -(probs * torch.log(p_safe)).sum(dim=-1)  # (B, H, nq)
+        denom = torch.log(raw_valid_keys.clamp(min=2).float()).view(b, 1, 1).clamp(min=1e-6)
+        has_multi_keys = (raw_valid_keys >= 2).view(b, 1, 1).to(ent.dtype)
+        norm_ent = (ent / denom) * has_multi_keys  # (B, H, nq), strictly in [0, 1]
+        if query_mask is not None:
+            qm = query_mask.to(norm_ent.dtype).unsqueeze(1)  # (B, 1, nq)
+            q_cnt = qm.sum(dim=-1, keepdim=True)  # (B, 1, 1)
+            norm_ent = torch.where(
+                q_cnt > 0.0,
+                (norm_ent * qm).sum(dim=-1, keepdim=True) / q_cnt.clamp(min=1.0),
+                torch.zeros_like(q_cnt),
+            )  # (B, H, 1)
         return out, norm_ent
 
 

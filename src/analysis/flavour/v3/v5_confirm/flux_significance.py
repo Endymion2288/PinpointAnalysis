@@ -222,44 +222,50 @@ def build_physical_templates(
     nc_charm_fraction_override: float | None = 0.035,
     nc_charm_physical_fraction: float | None = None,
     zero_bkg_jeffreys_prior: bool = True,
+    event_weights: np.ndarray | None = None,
+    external_bkg: np.ndarray | None = None,
+    external_bkg_var: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
     """Construct physical forward-flux templates & MC variance arrays across n_bins.
 
     Components:
-      s_tau:      nu_tau CC signal
-      b_nue:      nu_e CC (light + negligible charm)
-      b_numu_l:   nu_mu CC without charm
-      b_numu_c:   nu_mu CC with charmed hadron
-      b_nc_l:     NC without charm
-      b_nc_c:     NC with c-cbar pair (if GENIE input has 0 NC_charm, optionally injects a
-                  conservative charm-like tail proxy scaled to nc_charm_fraction_override=3.5%
-                  of NC; if importance-sampled NC_charm is present and nc_charm_physical_fraction
-                  is given, weights NC_charm and NC_light directly to exact physical rates).
-      var_mc_bkg: Sum of squared event weights per bin for exact Barlow-Beeston lite.
+      s_tau:        nu_tau CC signal
+      b_nue_light:  nu_e CC without charm
+      b_nue_charm:  nu_e CC with charmed hadron (scales with theta_charm)
+      b_nue:        b_nue_light + b_nue_charm (backward-compatible sum)
+      b_numu_light: nu_mu CC without charm
+      b_numu_charm: nu_mu CC with charmed hadron
+      b_nc_light:   NC without charm
+      b_nc_charm:   NC with c-cbar pair
+      b_ext:        optional independent additive external neutral-hadron background template
+      var_mc_bkg:   Sum of squared event weights per bin for exact Barlow-Beeston lite.
+      n_raw_bkg:    Raw unweighted MC background event count per bin.
+      n_eff_bkg:    Effective MC background count (sum w)^2 / sum(w^2) per bin.
     """
     shares = PHYSICAL_BKG_SHARES if bkg_shares is None else bkg_shares
     valid = (bin_ids >= 0) & (bin_ids < n_bins)
     y = np.asarray(labels, dtype=np.int64)
     hc = np.asarray(has_charm, dtype=bool)
+    base_w = np.ones(len(y), dtype=np.float64) if event_weights is None else np.maximum(0.0, np.asarray(event_weights, dtype=np.float64))
 
     n_sig_exp = float(total_events) * float(tau_fraction)
     n_bkg_exp = float(total_events) * (1.0 - float(tau_fraction))
 
-    # Event-level physical weights
+    # Event-level physical weights (incorporating exact 3D geometric importance weights when supplied)
     w = np.zeros(len(y), dtype=np.float64)
     m_tau = y == 2
-    if m_tau.any():
-        w[m_tau] = n_sig_exp / float(m_tau.sum())
+    if m_tau.any() and float(base_w[m_tau].sum()) > 0.0:
+        w[m_tau] = base_w[m_tau] * (n_sig_exp / float(base_w[m_tau].sum()))
     for cls_id, key in ((0, 'nue_cc'), (1, 'numu_cc'), (3, 'nc')):
         mc = y == cls_id
         if cls_id == 3 and nc_charm_physical_fraction is not None and (mc & hc).any() and (mc & (~hc)).any():
             f_c = float(nc_charm_physical_fraction)
             mc_c = mc & hc
             mc_l = mc & (~hc)
-            w[mc_c] = (n_bkg_exp * float(shares['nc']) * f_c) / float(mc_c.sum())
-            w[mc_l] = (n_bkg_exp * float(shares['nc']) * (1.0 - f_c)) / float(mc_l.sum())
-        elif mc.any():
-            w[mc] = (n_bkg_exp * float(shares[key])) / float(mc.sum())
+            w[mc_c] = base_w[mc_c] * ((n_bkg_exp * float(shares['nc']) * f_c) / max(float(base_w[mc_c].sum()), 1e-30))
+            w[mc_l] = base_w[mc_l] * ((n_bkg_exp * float(shares['nc']) * (1.0 - f_c)) / max(float(base_w[mc_l].sum()), 1e-30))
+        elif mc.any() and float(base_w[mc].sum()) > 0.0:
+            w[mc] = base_w[mc] * ((n_bkg_exp * float(shares[key])) / float(base_w[mc].sum()))
 
     def _hist_and_var(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         m = valid & mask
@@ -271,7 +277,8 @@ def build_physical_templates(
         return h, v
 
     s_tau, var_s = _hist_and_var(y == 2)
-    b_nue, v_nue = _hist_and_var(y == 0)
+    b_nue_l, v_nue_l = _hist_and_var((y == 0) & (~hc))
+    b_nue_c, v_nue_c = _hist_and_var((y == 0) & hc)
     b_numu_l, v_numu_l = _hist_and_var((y == 1) & (~hc))
     b_numu_c, v_numu_c = _hist_and_var((y == 1) & hc)
     b_nc_l, v_nc_l = _hist_and_var((y == 3) & (~hc))
@@ -290,13 +297,22 @@ def build_physical_templates(
             b_nc_l = (1.0 - f_ncc) * b_nc_l
             v_nc_c = (f_ncc ** 2) * v_nc_l + ((0.5 * f_ncc * tot_nc / max(float(b_numu_c.sum()), 1.0)) ** 2) * v_numu_c
 
-    var_bkg = v_nue + v_numu_l + v_numu_c + v_nc_l + v_nc_c
-    b_tot = b_nue + b_numu_l + b_numu_c + b_nc_l + b_nc_c
+    b_ext = np.zeros(n_bins, dtype=np.float64) if external_bkg is None else np.maximum(0.0, np.asarray(external_bkg, dtype=np.float64))[:n_bins]
+    v_ext = np.zeros(n_bins, dtype=np.float64) if external_bkg_var is None else np.maximum(0.0, np.asarray(external_bkg_var, dtype=np.float64))[:n_bins]
 
-    # Jeffreys Gamma(1/2, 1) zero-MC-count conjugate prior for ultra-tail bins with 0 raw MC background events:
-    # Prevents both optimistic b=0 divergence and dropping signal-populated ultra-tail bins under H0/toys.
+    n_raw_bkg = np.zeros(n_bins, dtype=np.int64)
+    m_bkg_v = valid & (y != 2)
+    if m_bkg_v.any():
+        np.add.at(n_raw_bkg, bin_ids[m_bkg_v], 1)
+
+    var_bkg = v_nue_l + v_nue_c + v_numu_l + v_numu_c + v_nc_l + v_nc_c + v_ext
+    b_tot = b_nue_l + b_nue_c + b_numu_l + b_numu_c + b_nc_l + b_nc_c + b_ext
+    n_eff_bkg = np.where(var_bkg > 1e-30, (b_tot * b_tot) / np.maximum(var_bkg, 1e-30), 0.0)
+
+    # Exact Gamma(1/2, 1) Jeffreys conjugate prior for zero-MC-background ultra-tail bins:
+    # Mean = 0.5 * w_mean, Variance = 0.5 * w_mean^2 = 2.0 * Mean^2 (rel std = sqrt(2), resolving Stage 320 P1).
     if zero_bkg_jeffreys_prior:
-        n_bkg_mc = int((valid & (y != 2)).sum())
+        n_bkg_mc = int(m_bkg_v.sum())
         if n_bkg_mc > 0:
             w_bkg_mean = n_bkg_exp / float(n_bkg_mc)
             empty_sig_bins = (b_tot <= 0.0) & (s_tau > 0.0)
@@ -304,18 +320,23 @@ def build_physical_templates(
                 b_jeff = 0.5 * w_bkg_mean
                 b_numu_l[empty_sig_bins] = b_jeff
                 b_tot[empty_sig_bins] = b_jeff
-                var_bkg[empty_sig_bins] = b_jeff * b_jeff
+                var_bkg[empty_sig_bins] = 2.0 * b_jeff * b_jeff
 
     return {
         's_tau': s_tau,
-        'b_nue': b_nue,
+        'b_nue': b_nue_l + b_nue_c,
+        'b_nue_light': b_nue_l,
+        'b_nue_charm': b_nue_c,
         'b_numu_light': b_numu_l,
         'b_numu_charm': b_numu_c,
         'b_nc_light': b_nc_l,
         'b_nc_charm': b_nc_c,
+        'b_ext': b_ext,
         'b_total': b_tot,
         'var_mc_bkg': var_bkg,
         'var_mc_sig': var_s,
+        'n_raw_bkg': n_raw_bkg,
+        'n_eff_bkg': n_eff_bkg,
     }
 
 
@@ -375,7 +396,7 @@ def _barlow_beeston_inner_deviance(
 def fit_realistic_profile_likelihood(
     templates: dict[str, np.ndarray],
     *,
-    signed_sys: dict[str, dict[str, list[float]]] | None = None,
+    signed_sys: dict[str, dict] | None = None,
     n_sr_bins: int = 18,
     sigma_lumi: float = 0.05,
     sigma_dom: float = 0.06,
@@ -383,26 +404,38 @@ def fit_realistic_profile_likelihood(
     sigma_nue_ratio: float = 0.10,
     sigma_nc_ratio: float = 0.10,
     sigma_charm: float = 0.30,
+    sigma_ext: float = 0.50,
     enable_barlow_beeston: bool = True,
     n_obs_override: np.ndarray | None = None,
     theta_obs_override: np.ndarray | None = None,
     beta_obs_override: np.ndarray | None = None,
     fit_signal_strength: bool = False,
 ) -> dict:
-    """Profile likelihood under H0 (mu=0) [and optionally free mu>=0] with full nuisance model."""
+    """Profile likelihood under H0 (mu=0) [and optionally free mu>=0] with full per-process nuisance model."""
     s_tau = np.asarray(templates['s_tau'], dtype=np.float64)
-    b_nue = np.asarray(templates['b_nue'], dtype=np.float64)
+    if 'b_nue_light' in templates and 'b_nue_charm' in templates:
+        b_nue_l = np.asarray(templates['b_nue_light'], dtype=np.float64)
+        b_nue_c = np.asarray(templates['b_nue_charm'], dtype=np.float64)
+    else:
+        b_nue_l = np.asarray(templates['b_nue'], dtype=np.float64)
+        b_nue_c = np.zeros_like(b_nue_l, dtype=np.float64)
     b_numu_l = np.asarray(templates['b_numu_light'], dtype=np.float64)
     b_numu_c = np.asarray(templates['b_numu_charm'], dtype=np.float64)
     b_nc_l = np.asarray(templates['b_nc_light'], dtype=np.float64)
     b_nc_c = np.asarray(templates['b_nc_charm'], dtype=np.float64)
-    b_tot = b_nue + b_numu_l + b_numu_c + b_nc_l + b_nc_c
+    b_ext = (
+        np.asarray(templates['b_ext'], dtype=np.float64)
+        if 'b_ext' in templates
+        else np.zeros_like(s_tau, dtype=np.float64)
+    )
+    has_ext = bool(np.sum(b_ext) > 1e-12)
+    b_tot = b_nue_l + b_nue_c + b_numu_l + b_numu_c + b_nc_l + b_nc_c + b_ext
     var_bkg = np.asarray(templates['var_mc_bkg'], dtype=np.float64)
 
     n_bins = len(b_tot)
     n_obs = (s_tau + b_tot) if n_obs_override is None else np.asarray(n_obs_override, dtype=np.float64)
     delta_sq = var_bkg / np.maximum(b_tot * b_tot, 1e-18)
-    delta_sq = np.where(b_tot > 1e-9, np.clip(delta_sq, 0.0, 2.0), 0.0)
+    delta_sq = np.where(b_tot > 1e-9, np.clip(delta_sq, 0.0, 2.5), 0.0)
 
     # Stat-only Asimov Z0
     pos_sb = (s_tau > 0.0) & (b_tot > 0.0)
@@ -429,37 +462,79 @@ def fit_realistic_profile_likelihood(
             # CR bins sit in the low-S_tau bulk (slope basis = -0.8)
             slope_basis[d_idx, cr_slice] = -0.8
 
-    # Signed systematic up/down matrices (M_sys, n_bins)
+    # Signed per-process systematic up/down matrices (M_sys, n_bins) for signal and background separately!
+    # Resolves Stage 320 P1: tau_helicity applies ONLY to signal; G4/gen morphs cover all SR+CR bins.
+    def _pad_bin_vec(arr_like: Sequence[float]) -> np.ndarray:
+        v = np.asarray(arr_like, dtype=np.float64)
+        if len(v) < n_bins:
+            v = np.pad(v, (0, n_bins - len(v)), mode='constant')
+        return v[:n_bins]
+
     sys_names: list[str] = []
-    up_list, dn_list = [], []
+    up_sig_l, dn_sig_l, up_bkg_l, dn_bkg_l = [], [], [], []
     if signed_sys:
         for k, spec in signed_sys.items():
-            u = np.asarray(spec['delta_log_up'], dtype=np.float64)
-            d = np.asarray(spec['delta_log_down'], dtype=np.float64)
-            if len(u) < n_bins:
-                u = np.pad(u, (0, n_bins - len(u)), mode='constant')
-                d = np.pad(d, (0, n_bins - len(d)), mode='constant')
+            applies = str(spec.get('applies_to', 'both'))
+            if 'delta_log_up_sig' in spec or 'delta_log_up_bkg' in spec:
+                us = _pad_bin_vec(spec.get('delta_log_up_sig', np.zeros(n_bins)))
+                ds = _pad_bin_vec(spec.get('delta_log_down_sig', -us))
+                ub = _pad_bin_vec(spec.get('delta_log_up_bkg', np.zeros(n_bins)))
+                db = _pad_bin_vec(spec.get('delta_log_down_bkg', -ub))
+            else:
+                u = _pad_bin_vec(spec['delta_log_up'])
+                d = _pad_bin_vec(spec['delta_log_down'])
+                us = u if applies in ('both', 'signal') else np.zeros(n_bins, dtype=np.float64)
+                ds = d if applies in ('both', 'signal') else np.zeros(n_bins, dtype=np.float64)
+                ub = u if applies in ('both', 'background') else np.zeros(n_bins, dtype=np.float64)
+                db = d if applies in ('both', 'background') else np.zeros(n_bins, dtype=np.float64)
             sys_names.append(k)
-            up_list.append(u[:n_bins])
-            dn_list.append(d[:n_bins])
-    m_sys = len(sys_names)
-    up_mat = np.stack(up_list, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
-    dn_mat = np.stack(dn_list, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
+            up_sig_l.append(us)
+            dn_sig_l.append(ds)
+            up_bkg_l.append(ub)
+            dn_bkg_l.append(db)
 
-    # Parameter vector theta layout (10 + m_sys):
+    m_sys = len(sys_names)
+    up_sig_mat = np.stack(up_sig_l, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
+    dn_sig_mat = np.stack(dn_sig_l, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
+    up_bkg_mat = np.stack(up_bkg_l, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
+    dn_bkg_mat = np.stack(dn_bkg_l, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
+
+    # Parameter vector theta layout:
     # 0: eta_lumi
     # 1..3: eta_dom[0..2]
     # 4..6: beta_dom_slope[0..2]
     # 7: eta_nue
     # 8: eta_nc
     # 9: theta_charm
-    # 10..10+m_sys-1: alpha_sys[0..m_sys-1]
-    n_nuis = 10 + m_sys
+    # (optional 10 if has_ext: theta_ext)
+    # sys_offset .. sys_offset + m_sys - 1: alpha_sys[0..m_sys-1]
+    sys_offset = 11 if has_ext else 10
+    n_nuis = sys_offset + m_sys
     theta_obs = (
         np.zeros(n_nuis, dtype=np.float64)
         if theta_obs_override is None
         else np.asarray(theta_obs_override, dtype=np.float64)
     )
+
+    def _eval_morph(alpha_s: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        if m_sys <= 0:
+            z = np.zeros(n_bins, dtype=np.float64)
+            dz = np.zeros((0, n_bins), dtype=np.float64)
+            return z, dz, z, dz
+        th4 = np.tanh(4.0 * alpha_s)
+        sech2 = 1.0 - th4 * th4
+        d_fac = th4[:, None] + 4.0 * alpha_s[:, None] * sech2[:, None]
+
+        diff_s = up_sig_mat - dn_sig_mat
+        sum_s = up_sig_mat + dn_sig_mat
+        morph_s = np.sum(0.5 * alpha_s[:, None] * (diff_s + th4[:, None] * sum_s), axis=0)
+        dmorph_s = 0.5 * (diff_s + d_fac * sum_s)
+
+        diff_b = up_bkg_mat - dn_bkg_mat
+        sum_b = up_bkg_mat + dn_bkg_mat
+        morph_b = np.sum(0.5 * alpha_s[:, None] * (diff_b + th4[:, None] * sum_b), axis=0)
+        dmorph_b = 0.5 * (diff_b + d_fac * sum_b)
+        return morph_s, dmorph_s, morph_b, dmorph_b
 
     def _eval_rates_and_jac(theta: np.ndarray, mu: float) -> tuple[np.ndarray, np.ndarray]:
         eta_lumi = float(theta[0])
@@ -468,55 +543,47 @@ def fit_realistic_profile_likelihood(
         eta_nue = float(theta[7])
         eta_nc = float(theta[8])
         th_ch = float(theta[9])
-        alpha_s = theta[10:]
+        th_ext = float(theta[10]) if has_ext else 0.0
+        alpha_s = theta[sys_offset:]
 
-        # Smooth HistFactory-like C^inf asymmetric morphing:
-        # shift_m(alpha) = 0.5 * alpha * ((u - d) + tanh(4 * alpha) * (u + d))
-        # At alpha = +1 -> ~ +u; at alpha = -1 -> ~ +d; at alpha = 0 -> 0 with slope 0.5*(u - d)
-        if m_sys > 0:
-            th4 = np.tanh(4.0 * alpha_s)  # (M,)
-            sech2 = 1.0 - th4 * th4
-            diff_ud = up_mat - dn_mat
-            sum_ud = up_mat + dn_mat
-            morph = np.sum(
-                0.5 * alpha_s[:, None] * (diff_ud + th4[:, None] * sum_ud),
-                axis=0,
-            )
-            dmorph_dalpha = 0.5 * (diff_ud + (th4[:, None] + 4.0 * alpha_s[:, None] * sech2[:, None]) * sum_ud)
-        else:
-            morph = 0.0
-            dmorph_dalpha = np.zeros((0, n_bins), dtype=np.float64)
+        morph_s, dmorph_s, morph_b, dmorph_b = _eval_morph(alpha_s)
 
-        common_log = (
+        common_bkg_log = (
             sigma_lumi * eta_lumi
             + sigma_dom * eta_dom[dom_of_bin]
             + sigma_dom_slope * np.tensordot(beta_sl, slope_basis, axes=(0, 0))
-            + morph
+            + morph_b
         )
-        common_log = np.clip(common_log, -3.5, 3.5)
+        common_bkg_log = np.clip(common_bkg_log, -3.5, 3.5)
 
-        r_nue = b_nue * np.exp(np.clip(common_log + sigma_nue_ratio * eta_nue, -4.0, 4.0))
-        r_numu_l = b_numu_l * np.exp(common_log)
-        r_numu_c = b_numu_c * np.exp(np.clip(common_log + sigma_charm * th_ch, -4.0, 4.0))
-        r_nc_l = b_nc_l * np.exp(np.clip(common_log + sigma_nc_ratio * eta_nc, -4.0, 4.0))
-        r_nc_c = b_nc_c * np.exp(np.clip(common_log + sigma_nc_ratio * eta_nc + sigma_charm * th_ch, -4.0, 4.0))
-        r_sig = mu * s_tau * np.exp(np.clip(sigma_lumi * eta_lumi + sigma_dom * eta_dom[dom_of_bin] + morph, -3.5, 3.5))
+        r_nue_l = b_nue_l * np.exp(np.clip(common_bkg_log + sigma_nue_ratio * eta_nue, -4.0, 4.0))
+        r_nue_c = b_nue_c * np.exp(np.clip(common_bkg_log + sigma_nue_ratio * eta_nue + sigma_charm * th_ch, -4.0, 4.0))
+        r_numu_l = b_numu_l * np.exp(common_bkg_log)
+        r_numu_c = b_numu_c * np.exp(np.clip(common_bkg_log + sigma_charm * th_ch, -4.0, 4.0))
+        r_nc_l = b_nc_l * np.exp(np.clip(common_bkg_log + sigma_nc_ratio * eta_nc, -4.0, 4.0))
+        r_nc_c = b_nc_c * np.exp(np.clip(common_bkg_log + sigma_nc_ratio * eta_nc + sigma_charm * th_ch, -4.0, 4.0))
+        r_ext = b_ext * np.exp(np.clip(sigma_ext * th_ext, -4.0, 4.0)) if has_ext else np.zeros(n_bins, dtype=np.float64)
 
-        b_pred = r_nue + r_numu_l + r_numu_c + r_nc_l + r_nc_c
-        nu_tot = b_pred + r_sig
+        sig_log = np.clip(sigma_lumi * eta_lumi + sigma_dom * eta_dom[dom_of_bin] + morph_s, -3.5, 3.5)
+        r_sig = mu * s_tau * np.exp(sig_log)
 
-        # Jacobian d(nu_tot)/d(theta) of shape (n_nuis, n_bins)
+        b_nu_pred = r_nue_l + r_nue_c + r_numu_l + r_numu_c + r_nc_l + r_nc_c
+        nu_tot = b_nu_pred + r_ext + r_sig
+
+        # Exact Jacobian d(nu_tot)/d(theta) of shape (n_nuis, n_bins)
         jac = np.zeros((n_nuis, n_bins), dtype=np.float64)
-        jac[0] = sigma_lumi * nu_tot
+        jac[0] = sigma_lumi * (b_nu_pred + r_sig)
         for di in range(3):
             dm = dom_of_bin == di
-            jac[1 + di, dm] = sigma_dom * nu_tot[dm]
-            jac[4 + di] = sigma_dom_slope * slope_basis[di] * b_pred
-        jac[7] = sigma_nue_ratio * r_nue
+            jac[1 + di, dm] = sigma_dom * (b_nu_pred[dm] + r_sig[dm])
+            jac[4 + di] = sigma_dom_slope * slope_basis[di] * b_nu_pred
+        jac[7] = sigma_nue_ratio * (r_nue_l + r_nue_c)
         jac[8] = sigma_nc_ratio * (r_nc_l + r_nc_c)
-        jac[9] = sigma_charm * (r_numu_c + r_nc_c)
+        jac[9] = sigma_charm * (r_nue_c + r_numu_c + r_nc_c)
+        if has_ext:
+            jac[10] = sigma_ext * r_ext
         if m_sys > 0:
-            jac[10:] = dmorph_dalpha * nu_tot[None, :]
+            jac[sys_offset:] = dmorph_b * b_nu_pred[None, :] + dmorph_s * r_sig[None, :]
         return nu_tot, jac
 
     def _obj_h0(theta: np.ndarray) -> tuple[float, np.ndarray]:
@@ -562,16 +629,11 @@ def fit_realistic_profile_likelihood(
             dev, grad_nu, _ = _barlow_beeston_inner_deviance(
                 n_obs, nu_tot, delta_sq, enable_barlow_beeston, beta_obs=beta_obs_override
             )
-            # d(nu_tot)/d(mu)
             eta_lumi = float(th[0])
             eta_dom = th[1:4]
-            alpha_s = th[10:]
-            if m_sys > 0:
-                th4 = np.tanh(4.0 * alpha_s)
-                morph = np.sum(0.5 * alpha_s[:, None] * ((up_mat - dn_mat) + th4[:, None] * (up_mat + dn_mat)), axis=0)
-            else:
-                morph = 0.0
-            ds_dmu = s_tau * np.exp(np.clip(sigma_lumi * eta_lumi + sigma_dom * eta_dom[dom_of_bin] + morph, -3.5, 3.5))
+            alpha_s = th[sys_offset:]
+            morph_s, _, _, _ = _eval_morph(alpha_s)
+            ds_dmu = s_tau * np.exp(np.clip(sigma_lumi * eta_lumi + sigma_dom * eta_dom[dom_of_bin] + morph_s, -3.5, 3.5))
             diff = th - theta_obs
             g_mu = float(np.dot(grad_nu, ds_dmu))
             g_th = jac_th @ grad_nu + 2.0 * diff
@@ -591,8 +653,6 @@ def fit_realistic_profile_likelihood(
             mu_hat = float(res_free.x[0])
             val_hat = float(res_free.fun)
         else:
-            # Exact KKT check at H0 optimum (mu=0, theta=res0.x):
-            # If dL/dmu(0, theta_hat_0) >= 0, mu_hat = 0 is the exact global constrained optimum!
             x_kkt = np.concatenate([[0.0], res0.x])
             _, grad_kkt = _obj_free(x_kkt)
             if float(grad_kkt[0]) >= -1e-7:
@@ -629,14 +689,17 @@ def fit_realistic_profile_likelihood(
         'eta_nc_flux': float(res0.x[8]),
         'theta_charm_rate': float(res0.x[9]),
     }
+    if has_ext:
+        nuis_dict['theta_ext_neutral_hadron'] = float(res0.x[10])
     for idx_s, sname in enumerate(sys_names):
-        nuis_dict[f'sys_{sname}'] = float(res0.x[10 + idx_s])
+        nuis_dict[f'sys_{sname}'] = float(res0.x[sys_offset + idx_s])
 
     return {
         'n_bins': int(n_bins),
         'expected_signal': float(s_tau.sum()),
         'expected_background': float(b_tot.sum()),
-        'expected_charm_background': float((b_numu_c + b_nc_c).sum()),
+        'expected_charm_background': float((b_nue_c + b_numu_c + b_nc_c).sum()),
+        'expected_external_background': float(b_ext.sum()),
         'z0_stat_only': z0_stat,
         'z0_profile_likelihood': z0_pl,
         'q0_profile_likelihood': q0,
@@ -652,63 +715,33 @@ def fit_realistic_profile_likelihood(
 def run_h0_toy_coverage_verification(
     templates: dict[str, np.ndarray],
     *,
-    signed_sys: dict[str, dict[str, list[float]]] | None = None,
+    signed_sys: dict[str, dict] | None = None,
     n_sr_bins: int = 18,
     n_toys: int = 2000,
     seed: int = 20261118,
     workers: int = 16,
     enable_barlow_beeston: bool = True,
 ) -> dict:
-    """Frequentist H0 toy Monte Carlo verification of q0 asymptotic chi^2_1/2 calibration.
-
-    Draws nuisance vectors theta_true ~ N(0, I), MC bin multipliers gamma_true ~ TruncNorm(1, delta_b),
-    and Poisson counts n_toy ~ Poisson(nu_H0(theta_true) * gamma_true), then computes full profiled
-    q0 = L_H0 - L_mu>=0 on every toy in parallel.
-    """
+    """Frequentist H0 toy Monte Carlo verification of q0 asymptotic chi^2_1/2 calibration."""
     b_nue = np.asarray(templates['b_nue'], dtype=np.float64)
     b_numu_l = np.asarray(templates['b_numu_light'], dtype=np.float64)
     b_numu_c = np.asarray(templates['b_numu_charm'], dtype=np.float64)
     b_nc_l = np.asarray(templates['b_nc_light'], dtype=np.float64)
     b_nc_c = np.asarray(templates['b_nc_charm'], dtype=np.float64)
-    b_tot = b_nue + b_numu_l + b_numu_c + b_nc_l + b_nc_c
+    b_ext = np.asarray(templates['b_ext'], dtype=np.float64) if 'b_ext' in templates else np.zeros_like(b_nue)
+    has_ext = bool(np.sum(b_ext) > 1e-12)
+    b_tot = b_nue + b_numu_l + b_numu_c + b_nc_l + b_nc_c + b_ext
     var_bkg = np.asarray(templates['var_mc_bkg'], dtype=np.float64)
     n_bins = len(b_tot)
-    delta = np.where(b_tot > 1e-9, np.sqrt(np.clip(var_bkg / np.maximum(b_tot ** 2, 1e-18), 0.0, 2.0)), 0.0)
-
-    bins_per_dom = n_sr_bins // 3
-    dom_of_bin = np.zeros(n_bins, dtype=np.int64)
-    slope_basis = np.zeros((3, n_bins), dtype=np.float64)
-    for d_idx in range(3):
-        sr_slice = slice(d_idx * bins_per_dom, (d_idx + 1) * bins_per_dom)
-        dom_of_bin[sr_slice] = d_idx
-        slope_basis[d_idx, sr_slice] = np.linspace(-1.0, 1.0, bins_per_dom)
-    if n_bins > n_sr_bins:
-        n_cr_per_dom = (n_bins - n_sr_bins) // 3
-        for d_idx in range(3):
-            cr_slice = slice(n_sr_bins + d_idx * n_cr_per_dom, n_sr_bins + (d_idx + 1) * n_cr_per_dom)
-            dom_of_bin[cr_slice] = d_idx
-            slope_basis[d_idx, cr_slice] = -0.8
-
-    up_list, dn_list = [], []
-    if signed_sys:
-        for spec in signed_sys.values():
-            u = np.asarray(spec['delta_log_up'], dtype=np.float64)
-            d = np.asarray(spec['delta_log_down'], dtype=np.float64)
-            if len(u) < n_bins:
-                u = np.pad(u, (0, n_bins - len(u)))
-                d = np.pad(d, (0, n_bins - len(d)))
-            up_list.append(u[:n_bins])
-            dn_list.append(d[:n_bins])
-    m_sys = len(up_list)
-    up_mat = np.stack(up_list, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
-    dn_mat = np.stack(dn_list, axis=0) if m_sys > 0 else np.zeros((0, n_bins), dtype=np.float64)
+    delta = np.where(b_tot > 1e-9, np.sqrt(np.clip(var_bkg / np.maximum(b_tot ** 2, 1e-18), 0.0, 2.5)), 0.0)
 
     rng = np.random.default_rng(seed)
     m_sys = len(signed_sys) if signed_sys else 0
-    theta_obs_all = rng.normal(0.0, 1.0, size=(n_toys, 10 + m_sys))
+    n_nuis = (11 if has_ext else 10) + m_sys
+    theta_obs_all = rng.normal(0.0, 1.0, size=(n_toys, n_nuis))
     toy_counts = rng.poisson(np.maximum(b_tot, 0.0)[None, :], size=(n_toys, n_bins)).astype(np.float64)
     if enable_barlow_beeston:
-        dsq = np.clip(delta * delta, 0.0, 2.0)
+        dsq = np.clip(delta * delta, 0.0, 2.5)
         beta_obs_all = np.ones((n_toys, n_bins), dtype=np.float64)
         for b_idx in range(n_bins):
             if dsq[b_idx] > 1e-8:

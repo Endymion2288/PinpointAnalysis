@@ -173,13 +173,16 @@ def main() -> None:
                 raise ValueError('Shared input caching requires drop_modality=None for all configs')
             shared_readout_keys = (
                 'quantize_xy_mm',
+                'quantize_target_only',
                 'pe_only',
                 'bar_threshold_pe',
                 'sipm_npix',
                 'apply_sipm_saturation',
+                'invert_sipm_saturation',
                 'active_pixel_planes',
                 'misalign_sigma_xy_mm',
                 'misalign_seed',
+                'shuffle_micro_vertex',
             )
             for rk in shared_readout_keys:
                 vals = {tuple(v) if isinstance(v, list) else v for v in (c.get(rk) for c in configs)}

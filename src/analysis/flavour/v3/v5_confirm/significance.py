@@ -715,17 +715,28 @@ def profile_likelihood_significance(
     }
 
 
-def _single_stream_asimov_z0(s_tau: np.ndarray, labels: np.ndarray, obs_dom: np.ndarray, tau_prior: float = 0.01, benchmark_total: float = 10000.0) -> float:
+def _single_stream_asimov_z0(
+    s_tau: np.ndarray,
+    labels: np.ndarray,
+    obs_dom: np.ndarray,
+    tau_prior: float = 0.01,
+    benchmark_total: float = 10000.0,
+    edges: np.ndarray | None = None,
+) -> float:
     active = obs_dom != 0
     is_tau = labels == 2
     s_scale = (benchmark_total * tau_prior) / max(1, int(is_tau.sum()))
     b_scale = (benchmark_total * (1.0 - tau_prior)) / max(1, int((~is_tau).sum()))
-    edges = np.quantile(s_tau[active], np.linspace(0.0, 1.0, 19))
-    edges[0], edges[-1] = -np.inf, np.inf
-    b_idx = np.clip(np.searchsorted(edges[1:-1], s_tau[active], side='right'), 0, 17)
+    if edges is None:
+        edges = np.quantile(s_tau[active], np.linspace(0.0, 1.0, 19))
+        edges[0], edges[-1] = -np.inf, np.inf
+    else:
+        edges = np.asarray(edges, dtype=np.float64)
+    n_bins = len(edges) - 1
+    b_idx = np.clip(np.searchsorted(edges[1:-1], s_tau[active], side='right'), 0, n_bins - 1)
     z0_sq = 0.0
     t_a = is_tau[active]
-    for b in range(18):
+    for b in range(n_bins):
         bm = b_idx == b
         s = float((bm & t_a).sum()) * s_scale
         bk = float((bm & (~t_a)).sum()) * b_scale
@@ -781,36 +792,50 @@ def evaluate_14_stress_conditions(
         'pass_np_1pct': _apply_np_mask(s_tau, obs_dom, np_cuts['1pct_fpr']['thresholds_by_domain']),
         'pass_np_0p1pct': _apply_np_mask(s_tau, obs_dom, np_cuts['0p1pct_fpr']['thresholds_by_domain']),
         'bin_ids_tail': _assign_18_bins(s_tau, obs_dom, cut_b_locks['template_edges_tail_resolved']['edges_by_domain']),
+        'bin_ids_unif': _assign_18_bins(s_tau, obs_dom, cut_b_locks['template_edges_uniform']['edges_by_domain']),
     }
 
     var_results = {}
     nom_bin_bkg = None
+    nom_bin_bkg_unif = None
     bkg_var_fracs = []
+    bkg_var_fracs_unif = []
     for vname in variants:
         vm = stress_meta['variant'].to_numpy() == vname
         rep = compute_locked_slice_report(labels, probs, s_tau, applied, vm)
         boot = vectorized_family_block_bootstrap(labels, probs, s_tau, applied, fam_codes, vm, n_boot=n_boot, seed=42)
         rep['bootstrap_ci95'] = boot
-        # Track 18-bin background template yield variation across the 14 stress conditions
+        # Track 18-bin background template yield variation across the 14 stress conditions (both tail and uniform binnings)
         bids_v = applied['bin_ids_tail'][vm]
+        bids_u = applied['bin_ids_unif'][vm]
         is_bkg_v = labels[vm] != 2
         counts = np.array([int(((bids_v == b) & is_bkg_v).sum()) for b in range(18)], dtype=np.float64)
         fracs = counts / max(float(counts.sum()), 1.0)
+        counts_u = np.array([int(((bids_u == b) & is_bkg_v).sum()) for b in range(18)], dtype=np.float64)
+        fracs_u = counts_u / max(float(counts_u.sum()), 1.0)
         if vname == 'nominal':
             nom_bin_bkg = np.maximum(fracs, 1e-6)
+            nom_bin_bkg_unif = np.maximum(fracs_u, 1e-6)
         var_results[vname] = rep
         bkg_var_fracs.append((vname, fracs))
+        bkg_var_fracs_unif.append((vname, fracs_u))
 
     if nom_bin_bkg is None:
         nom_bin_bkg = np.full(18, 1.0 / 18.0, dtype=np.float64)
+    if nom_bin_bkg_unif is None:
+        nom_bin_bkg_unif = np.full(18, 1.0 / 18.0, dtype=np.float64)
     rel_devs = np.stack([(fr - nom_bin_bkg) / nom_bin_bkg for vname, fr in bkg_var_fracs if vname != 'nominal'], axis=0)
+    rel_devs_u = np.stack([(fr - nom_bin_bkg_unif) / nom_bin_bkg_unif for vname, fr in bkg_var_fracs_unif if vname != 'nominal'], axis=0)
     # RMS relative bin yield perturbation across the 13 non-nominal detector readout stress conditions (capped safely at [0, 0.5])
     delta_bkg_sys = np.clip(np.sqrt(np.mean(rel_devs ** 2, axis=0)), 0.0, 0.50)
+    delta_bkg_sys_unif = np.clip(np.sqrt(np.mean(rel_devs_u ** 2, axis=0)), 0.0, 0.50)
 
     return {
         'variants': var_results,
         'delta_bkg_sys_18bin_rms': delta_bkg_sys.tolist(),
+        'delta_bkg_sys_18bin_unif_rms': delta_bkg_sys_unif.tolist(),
         'stress_bin_ids_tail': applied['bin_ids_tail'].tolist(),
+        'stress_bin_ids_unif': applied['bin_ids_unif'].tolist(),
     }
 
 
@@ -994,6 +1019,7 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
         stress_meta, stress_member_frames, cal_a_ens, cut_b_ens, n_boot=n_boot
     )
     delta_sys_18 = np.asarray(stress_eval['delta_bkg_sys_18bin_rms'], dtype=np.float64)
+    delta_sys_18_unif = np.asarray(stress_eval['delta_bkg_sys_18bin_unif_rms'], dtype=np.float64)
 
     # Heterogeneous-GPU ensemble nominal stress replay parity over all N=8,000 paired events
     nom_meta = stress_meta[stress_meta['variant'] == 'nominal'].sort_values(KEY).reset_index(drop=True)
@@ -1053,7 +1079,7 @@ def run_sequential_unsealing(v3_root: Path = DEFAULT_V3_ROOT, n_boot: int = 1000
                 applied_ens['bin_ids_tail'], labels, tau_prior=prior, benchmark_total=n_tot, delta_bkg_sys=delta_sys_18
             )
             pl_unif = profile_likelihood_significance(
-                applied_ens['bin_ids_unif'], labels, tau_prior=prior, benchmark_total=n_tot, delta_bkg_sys=delta_sys_18
+                applied_ens['bin_ids_unif'], labels, tau_prior=prior, benchmark_total=n_tot, delta_bkg_sys=delta_sys_18_unif
             )
             z_single = _single_stream_asimov_z0(applied_ens['s_tau'], labels, obs_dom, tau_prior=prior, benchmark_total=n_tot)
             sig_scan[key_n].append({

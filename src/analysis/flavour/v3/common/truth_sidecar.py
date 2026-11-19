@@ -222,7 +222,8 @@ def extract_shard_sidecar(
         root_path = input_root / str(int(run)) / f'{int(run)}_{int(chunk):03d}.root'
         with uproot.open(root_path, object_cache=None, array_cache=None) as root:
             prim_map = group_flat(root['primaries'], ['evtID', 'PDG', 'trackID', 'Px', 'Py', 'Pz'])
-            tau_map = group_flat(root['tau'], ['evtID', 'PID', 'TID', 'PDG', 'ParentPDG', 'ProdX', 'ProdY', 'ProdZ', 'Px', 'Py', 'Pz']) if int(run) == 10083 else {}
+            tau_map = group_flat(root['tau'], ['evtID', 'PID', 'TID', 'PDG', 'ParentPDG', 'ProdX', 'ProdY', 'ProdZ', 'Px', 'Py', 'Pz']) if 'tau' in root else {}
+            charm_map = group_flat(root['charm'], ['evtID', 'PID', 'TID', 'PDG', 'ParentPDG', 'ProdX', 'ProdY', 'ProdZ']) if 'charm' in root else {}
 
             row_arr = group['row'].to_numpy(dtype=np.int64)
             start = int(row_arr.min())
@@ -334,26 +335,84 @@ def extract_shard_sidecar(
                     best_sig = np.array([2, 3, 0, 1], dtype=np.int8)[sig_mat.argmax(axis=1)]
                     cl_orig[has_signal] = best_sig
 
-                    # Dominant trackID per cluster (grouped by cluster)
+                    # Dominant trackID and true decaying-parent vertex ID per cluster.
+                    # Resolves Stage 320 P1: distinct charmed hadrons in c-cbar events get distinct
+                    # vertex IDs (encoded as 10000 + parent_track_ID) instead of collapsing all charm into vg=2.
+                    cev = charm_map.get(evt_id)
+                    charm_parent_ids: set[int] = set()
+                    charm_tid_to_pid: dict[int, int] = {}
+                    if cev is not None and len(cev['PID']) > 0:
+                        for c_pid, c_tid in zip(cev['PID'], cev['TID']):
+                            cp, ct = int(c_pid), int(c_tid)
+                            charm_parent_ids.add(cp)
+                            charm_tid_to_pid[ct] = cp
+                    if pev is not None and len(pev['PDG']) > 0:
+                        for p_pdg, p_tid in zip(pev['PDG'], pev['trackID']):
+                            if charmed(int(p_pdg)):
+                                charm_parent_ids.add(int(p_tid))
+                    tau_parent_ids: set[int] = {int(t) for t in tau_ids.tolist()}
+                    tau_tid_to_pid: dict[int, int] = {}
+                    if tev is not None and len(tev['PID']) > 0:
+                        for t_pid, t_tid in zip(tev['PID'], tev['TID']):
+                            tp, tt = int(t_pid), int(t_tid)
+                            tau_parent_ids.add(tp)
+                            tau_tid_to_pid[tt] = tp
+
                     order_h = np.argsort(hit_cl, kind='mergesort')
                     hcl_s = hit_cl[order_h]
                     htid_s = raw_tid[order_h]
+                    hpid_s = raw_pid[order_h]
                     horig_s = hit_orig[order_h]
                     cl_b = np.r_[0, np.flatnonzero(np.diff(hcl_s)) + 1, len(hcl_s)]
                     dom_tids = np.zeros(n_cl, dtype=np.int32)
+                    vg = np.full(n_cl, -1, dtype=np.int32)
                     for a, b in zip(cl_b[:-1], cl_b[1:]):
                         cid_k = int(hcl_s[a])
                         tids_k = htid_s[a:b]
+                        pids_k = hpid_s[a:b]
                         orig_k = horig_s[a:b]
                         sig_k = orig_k != 4
                         pool_tids = tids_k[sig_k] if sig_k.any() else tids_k
                         uniq_t, cnt_t = np.unique(pool_tids, return_counts=True)
-                        dom_tids[cid_k] = int(uniq_t[np.argmax(cnt_t)])
-
-                    vg = np.full(n_cl, -1, dtype=np.int32)
-                    vg[(cl_orig == 0) | (cl_orig == 1)] = 0
-                    vg[cl_orig == 2] = 1
-                    vg[cl_orig == 3] = 2
+                        dom_t = int(uniq_t[np.argmax(cnt_t)])
+                        dom_tids[cid_k] = dom_t
+                        c_o = int(cl_orig[cid_k])
+                        if c_o in (0, 1):
+                            vg[cid_k] = 0
+                        elif c_o == 2:
+                            # Tau decay vertex ID: unique per parent tau trackID
+                            matched_p: list[int] = []
+                            for t_i, p_i in zip(tids_k, pids_k):
+                                ti, pi = int(t_i), int(p_i)
+                                if ti in tau_tid_to_pid:
+                                    matched_p.append(tau_tid_to_pid[ti])
+                                elif pi in tau_parent_ids:
+                                    matched_p.append(pi)
+                            if matched_p:
+                                up, cp = np.unique(matched_p, return_counts=True)
+                                vg[cid_k] = 10000 + int(up[np.argmax(cp)])
+                            elif len(tau_parent_ids) == 1:
+                                vg[cid_k] = 10000 + next(iter(tau_parent_ids))
+                            else:
+                                vg[cid_k] = -1
+                        elif c_o == 3:
+                            # Charm decay vertex ID: distinct per charmed hadron parent trackID!
+                            # If >=2 charmed hadrons exist and cluster is an unresolved deep-shower
+                            # descendant, mark vg = -1 so two distinct charm vertices are NEVER merged.
+                            matched_c: list[int] = []
+                            for t_i, p_i in zip(tids_k, pids_k):
+                                ti, pi = int(t_i), int(p_i)
+                                if ti in charm_tid_to_pid:
+                                    matched_c.append(charm_tid_to_pid[ti])
+                                elif pi in charm_parent_ids:
+                                    matched_c.append(pi)
+                            if matched_c:
+                                uc, cc = np.unique(matched_c, return_counts=True)
+                                vg[cid_k] = 20000 + int(uc[np.argmax(cc)])
+                            elif len(charm_parent_ids) == 1:
+                                vg[cid_k] = 20000 + next(iter(charm_parent_ids))
+                            else:
+                                vg[cid_k] = -1
 
                     pix_first_cids[li] = cinfo['cluster_first_channel_id']
                     pix_origins[li] = cl_orig

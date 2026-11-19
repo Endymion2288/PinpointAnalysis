@@ -45,11 +45,46 @@ def quantize_pixel_hits(
     pxyz: np.ndarray,
     bounds: dict,
     quantize_xy_mm: float,
+    *,
+    target_planes_only: bool = False,
+    n_target_planes: int = 12,
 ) -> tuple[np.ndarray, np.ndarray, int, int, float, float, np.ndarray]:
-    """Snap hits to a symmetric q-mm binary cell grid and deduplicate per-cell hits."""
+    """Snap hits to a symmetric q-mm binary cell grid and deduplicate per-cell hits.
+
+    When target_planes_only=True, only target silicon planes (< n_target_planes) are quantized
+    to pitch q while downstream IPT planes retain native pixel coordinates (resolving Stage 320
+    hardware-attribution concern).
+    """
     q = float(quantize_xy_mm)
     x_c = float(bounds['x_pix_center'])
     y_c = float(bounds['y_scint_center'])
+    nx_raw = int(bounds['nx'])
+    ny_raw = int(bounds['ny'])
+    planes = pcid // (nx_raw * ny_raw)
+
+    if target_planes_only:
+        is_tgt = planes < int(n_target_planes)
+        # Use native grid stride for IPT planes and coarse grid stride for target planes
+        # by keeping a shared unique channel_id namespace (native nx_raw*ny_raw stride).
+        xyz_out = pxyz.astype(np.float64, copy=True)
+        cid_out = pcid.astype(np.int64, copy=True)
+        if is_tgt.any():
+            half_x = max(abs(bounds['px_max'] - x_c), abs(x_c - bounds['px_min'])) + q
+            half_y = max(abs(bounds['py_max'] - y_c), abs(y_c - bounds['py_min'])) + q
+            nx_q = int(math.ceil(2.0 * half_x / q)) | 1
+            ny_q = int(math.ceil(2.0 * half_y / q)) | 1
+            hx = nx_q // 2
+            hy = ny_q // 2
+            col_q = np.clip(np.rint((pxyz[is_tgt, 0] - x_c) / q).astype(np.int64) + hx, 0, nx_q - 1)
+            row_q = np.clip(np.rint((pxyz[is_tgt, 1] - y_c) / q).astype(np.int64) + hy, 0, ny_q - 1)
+            xyz_out[is_tgt, 0] = x_c + (col_q - hx) * q
+            xyz_out[is_tgt, 1] = y_c + (row_q - hy) * q
+            # Map quantized cell uniquely into native (plane, row_raw, col_raw) slot for deduplication
+            cid_out[is_tgt] = (planes[is_tgt] * ny_raw + row_q) * nx_raw + col_q
+        _, uniq = np.unique(cid_out, return_index=True)
+        uniq = np.sort(uniq)
+        return cid_out[uniq], xyz_out[uniq], nx_raw, ny_raw, q, q, uniq
+
     half_x = max(abs(bounds['px_max'] - x_c), abs(x_c - bounds['px_min'])) + q
     half_y = max(abs(bounds['py_max'] - y_c), abs(y_c - bounds['py_min'])) + q
     nx_q = int(math.ceil(2.0 * half_x / q)) | 1
@@ -57,7 +92,6 @@ def quantize_pixel_hits(
     hx = nx_q // 2
     hy = ny_q // 2
 
-    planes = pcid // (int(bounds['nx']) * int(bounds['ny']))
     col_q = np.clip(np.rint((pxyz[:, 0] - x_c) / q).astype(np.int64) + hx, 0, nx_q - 1)
     row_q = np.clip(np.rint((pxyz[:, 1] - y_c) / q).astype(np.int64) + hy, 0, ny_q - 1)
     xyz_q = np.empty_like(pxyz, dtype=np.float64)
@@ -240,9 +274,16 @@ def extract_pf_item(
     )
 
     quant_mm = config.get('quantize_xy_mm')
+    quant_tgt_only = bool(config.get('quantize_target_only', False))
+    n_target_planes = int(geometry['nPinpointBlocks']) + max(0, int(geometry['nFortuneBlocks']) - 1)
     if quant_mm is not None and float(quant_mm) > 0.0 and raw_pixel_hits > 0:
         cid_cl, xyz_cl, nx_cl, ny_cl, pitch_x, pitch_y, uniq = quantize_pixel_hits(
-            pcid, pxyz, bounds, float(quant_mm)
+            pcid,
+            pxyz,
+            bounds,
+            float(quant_mm),
+            target_planes_only=quant_tgt_only,
+            n_target_planes=n_target_planes,
         )
         radius_mm = 1.45 * float(quant_mm)
         obs_q = dict(observation)
@@ -439,8 +480,28 @@ def extract_pf_item(
         pix_patches, patch_cl_idx = _rasterize_micro_patches(
             order, offsets, n_hits, xyz_cl, x_mean, y_mean, trig_loc, keep_idx, pitch_x, pitch_y
         )
+        mv_x = x_mean
+        mv_y = y_mean
+        if bool(config.get('shuffle_micro_vertex', False)) and len(cl_plane) >= 2:
+            # Stage 320 Exp-1 falsification control: destroy cross-plane micron tracklet/displacement
+            # associations by randomly rotating/shifting cluster (x, y) coordinates within each plane
+            # around the plane centroid (preserving per-plane multiplicity & radial spread, breaking
+            # cross-plane straight-line tracklet and secondary-vertex coherence).
+            sh_rng = np.random.default_rng(int(config.get('shuffle_seed', 2026321)) + int(index) * 104729)
+            mv_x = x_mean.copy()
+            mv_y = y_mean.copy()
+            for p_val in np.unique(cl_plane):
+                pm = np.flatnonzero(cl_plane == p_val)
+                if len(pm) >= 2:
+                    ang = float(sh_rng.uniform(0.5, 2.0 * math.pi - 0.5))
+                    ca, sa = math.cos(ang), math.sin(ang)
+                    cx_p, cy_p = float(plane_xc[int(p_val)]), float(plane_yc[int(p_val)])
+                    dx_p = mv_x[pm] - cx_p
+                    dy_p = mv_y[pm] - cy_p
+                    mv_x[pm] = cx_p + ca * dx_p - sa * dy_p
+                    mv_y[pm] = cy_p + sa * dx_p + ca * dy_p
         avr_xyz, avr_ok, micro_vtx_feat = reconstruct_micron_vertex(
-            cl_plane, x_mean, y_mean, z_cl, n_hits, lam2,
+            cl_plane, mv_x, mv_y, z_cl, n_hits, lam2,
             n_pix_planes, pitch_x, pitch_y, dom['cal_start'], (x_c, y_c, z_mid),
         )
     else:

@@ -85,7 +85,7 @@ class PerceiverCrossBlock(nn.Module):
                 (latents.shape[0], latents.shape[1]), dtype=torch.bool, device=latents.device
             )
         if return_entropy:
-            latents, ent = self.cross(latents, source, source_mask, return_entropy=True)
+            latents, ent = self.cross(latents, source, source_mask, return_entropy=True, query_mask=latent_mask)
             latents = self.self_attn(latents, latents, latent_mask)
             return latents, ent
         latents = self.cross(latents, source, source_mask)
@@ -131,7 +131,7 @@ class AttentionStack(nn.Module):
         ents: list[torch.Tensor] = []
         for layer in self.layers:
             if return_entropy:
-                x, ent = layer(x, x, mask, pair_bias=pair_bias, return_entropy=True)
+                x, ent = layer(x, x, mask, pair_bias=pair_bias, return_entropy=True, query_mask=mask)
                 ents.append(ent)
             else:
                 x = layer(x, x, mask, pair_bias=pair_bias)

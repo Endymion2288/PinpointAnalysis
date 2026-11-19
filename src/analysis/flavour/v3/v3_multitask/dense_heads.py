@@ -229,7 +229,16 @@ class DenseGN2Heads(nn.Module):
 
         sec_i = (pair_or == 2) | (pair_or == 3)
         sec_j = sec_i
-        vtx_cmp_valid = cross & (anc0[:, :, None] > 0) & (anc0[:, None, :] > 0) & (pair_or[:, :, None] >= 0) & (pair_or[:, None, :] >= 0)
+        # Require resolved vertex ID (anc1 >= 0) so unresolved multi-charm shower descendants are masked out
+        vtx_cmp_valid = (
+            cross
+            & (anc0[:, :, None] > 0)
+            & (anc0[:, None, :] > 0)
+            & (anc1[:, :, None] >= 0)
+            & (anc1[:, None, :] >= 0)
+            & (pair_or[:, :, None] >= 0)
+            & (pair_or[:, None, :] >= 0)
+        )
         same_sec = sec_i[:, :, None] & sec_j[:, None, :] & (pair_or[:, :, None] == pair_or[:, None, :]) & (anc1[:, :, None] == anc1[:, None, :])
         l_vtx_cmp = _balanced_pair_bce(dense_out['m_vtx'], same_sec, vtx_cmp_valid)
 
