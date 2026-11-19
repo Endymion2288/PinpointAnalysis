@@ -358,9 +358,21 @@ def build_stage321_configs(clean_root: Path) -> dict[str, dict]:
             base_train_mod,
         ),
         (
+            's321-pf-300um',
+            'v2_pf_pitch_300um_tgtonly',
+            {'quantize_xy_mm': 0.30, 'quantize_target_only': True, 'enable_micro_vertex': False},
+            base_train_mod,
+        ),
+        (
             's321-pf-1mm',
             'v2_pf_pitch_1mm_tgtonly',
             {'quantize_xy_mm': 1.00, 'quantize_target_only': True, 'enable_micro_vertex': False},
+            base_train_mod,
+        ),
+        (
+            's321-pf-layers-6t',
+            'v2_pf_6layer_20um',
+            {'quantize_xy_mm': None, 'active_pixel_planes': [0, 2, 4, 6, 8, 10, 12, 13, 14], 'enable_micro_vertex': False},
             base_train_mod,
         ),
     ]
@@ -459,8 +471,9 @@ def submit_stage321_group(
             deadline_seconds=14400,
         )
     if backend == 'condor':
-        # Request 4 CPUs / 20 GB RAM / >= 36 GB VRAM (SM >= 8.0) so CERN's GPU transform stays <= 6 CPUs
-        # and lands exclusively on full A100-40GB / H100-95GB / H200-143GB slots (3x ~8 GiB = ~24 GiB VRAM).
+        # Request 4 CPUs / 20 GB RAM / >= 20 GB VRAM (SM >= 8.0 or H100 MIG 2g.24gb):
+        # use --parallel 2 on 24 GB MIG (~15/23.8 GiB) or --parallel 3 on >=36 GB / B1++.
+        min_vram = 20000 if (parallel <= 2 or group_name == 's321-b1pp-clean') else 36000
         return submit_job(
             root=s321_root,
             name=group_name,
@@ -471,9 +484,10 @@ def submit_stage321_group(
             memory='20000MB',
             disk='16GB',
             gpu=True,
-            min_gpu_memory_mb=36000,
+            min_gpu_memory_mb=min_vram,
             min_capability=8.0,
-            job_flavour='workday',
+            job_flavour='longlunch',
+            allow_backfill=True,
         )
     raise ValueError(f'Unsupported submit backend: {backend}')
 
@@ -1131,9 +1145,9 @@ def unseal_and_evaluate_stage321(clean_root: Path, n_toys: int = 1000) -> dict:
                 },
             }
 
-            # OOD post-hoc target-only quantization comparison on 20 um model
+            # OOD post-hoc target-only quantization comparison on 20 um model (full 4-point curve matching Stage 319)
             ood_pitch_curve = {'0.020': unsealed_groups['s321-pf-20um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr']}
-            for q_mm, q_key in ((0.10, '0.100'), (1.00, '1.000')):
+            for q_mm, q_key in ((0.10, '0.100'), (0.30, '0.300'), (1.00, '1.000')):
                 f_ood, _ = _infer_pf_group_fp32(
                     staged_root, 'confirm', 'v2_pf_pitch_20um', s321_root, checkpoints, geometry, device,
                     cfg_override={'quantize_xy_mm': q_mm, 'quantize_target_only': True},
@@ -1186,6 +1200,13 @@ def unseal_and_evaluate_stage321(clean_root: Path, n_toys: int = 1000) -> dict:
             fits_by_group['s321-pf-100um']['probs_confirm'],
             y_con, fam_codes, pc_con, n_boot=1000,
         ),
+        'Exp2_20um_vs_300um_TargetOnly_PinpointAll': paired_family_bootstrap_delta(
+            fits_by_group['s321-pf-20um']['s_tau_confirm'],
+            fits_by_group['s321-pf-300um']['s_tau_confirm'],
+            fits_by_group['s321-pf-20um']['probs_confirm'],
+            fits_by_group['s321-pf-300um']['probs_confirm'],
+            y_con, fam_codes, pc_con, n_boot=1000,
+        ),
         'Exp2_20um_vs_1mm_TargetOnly_PinpointAll': paired_family_bootstrap_delta(
             fits_by_group['s321-pf-20um']['s_tau_confirm'],
             fits_by_group['s321-pf-1mm']['s_tau_confirm'],
@@ -1198,6 +1219,20 @@ def unseal_and_evaluate_stage321(clean_root: Path, n_toys: int = 1000) -> dict:
             fits_by_group['s321-pf-1mm']['s_tau_confirm'],
             fits_by_group['s321-pf-20um']['probs_confirm'],
             fits_by_group['s321-pf-1mm']['probs_confirm'],
+            y_con, fam_codes, front_pc_con, n_boot=1000,
+        ),
+        'Exp2_12Layer_vs_6Layer_Target_PinpointAll': paired_family_bootstrap_delta(
+            fits_by_group['s321-pf-20um']['s_tau_confirm'],
+            fits_by_group['s321-pf-layers-6t']['s_tau_confirm'],
+            fits_by_group['s321-pf-20um']['probs_confirm'],
+            fits_by_group['s321-pf-layers-6t']['probs_confirm'],
+            y_con, fam_codes, pc_con, n_boot=1000,
+        ),
+        'Exp2_12Layer_vs_6Layer_Target_FrontPinpoint': paired_family_bootstrap_delta(
+            fits_by_group['s321-pf-20um']['s_tau_confirm'],
+            fits_by_group['s321-pf-layers-6t']['s_tau_confirm'],
+            fits_by_group['s321-pf-20um']['probs_confirm'],
+            fits_by_group['s321-pf-layers-6t']['probs_confirm'],
             y_con, fam_codes, front_pc_con, n_boot=1000,
         ),
         'DualFamily_6m_vs_PrimaryPF_PinpointAll': paired_family_bootstrap_delta(
@@ -1427,26 +1462,27 @@ def unseal_and_evaluate_stage321(clean_root: Path, n_toys: int = 1000) -> dict:
     fig1, axes1 = plt.subplots(1, 3, figsize=(16.5, 5.0), dpi=300)
     a0, a1, a2 = axes1
 
-    pitches_um = [20.8, 100.0, 1000.0]
+    pitches_um = [20.8, 100.0, 300.0, 1000.0]
     fs_vals = [
         unsealed_groups['s321-pf-20um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'] * 100.0,
         unsealed_groups['s321-pf-100um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'] * 100.0,
+        unsealed_groups['s321-pf-300um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'] * 100.0,
         unsealed_groups['s321-pf-1mm']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'] * 100.0,
     ]
-    ood_vals = [ood_pitch_curve[k] * 100.0 for k in ('0.020', '0.100', '1.000')]
+    ood_vals = [ood_pitch_curve[k] * 100.0 for k in ('0.020', '0.100', '0.300', '1.000')]
     a0.plot(pitches_um, fs_vals, 'o-', lw=2.3, ms=7, color='#4C72B0', label='Retrained Target-Only (IPT Native)')
     a0.plot(pitches_um, ood_vals, 's--', lw=1.8, ms=6, color='#C44E52', label='Post-hoc OOD Quantized on 20.8 $\\mu$m')
     a0.set_xscale('log')
     a0.set_xticks(pitches_um)
-    a0.set_xticklabels(['20.8 $\\mu$m', '100 $\\mu$m', '1 mm'])
+    a0.set_xticklabels(['20.8 $\\mu$m', '100 $\\mu$m', '300 $\\mu$m', '1 mm'])
     a0.set_xlabel('Target Silicon Pixel Pitch $\\Delta_{xy}$ (IPT Unchanged)')
     a0.set_ylabel('PinpointBlock Pixel-XY $\\nu_\\tau$ Eff. @ 1% FPR [%]')
     a0.set_title('Exp-2 Fixed: Target-Only Pitch Curve (True Pinpoint Slabs)')
     a0.legend(loc='lower left', fontsize=8.0, frameon=True)
     a0.grid(True, which='both', alpha=0.25)
 
-    m_labels = ['PF 20.8 $\\mu$m\nBaseline', 'PF Hybrid\nMicro-Vtx', 'PF Hybrid\nShuffled (Ctrl)', 'PF Hybrid\n+M0-NOMAD', 'B1++\nClean', 'Dual-Family\n6-Model Ens']
-    m_keys = ['s321-pf-20um', 's321-pf-hybrid-uvtx', 's321-pf-hybrid-shuffled', 's321-pf-hybrid-nomad', 's321-b1pp-clean', 'primary_dual_family_6m']
+    m_labels = ['PF 20.8 $\\mu$m\n12T+3IPT', 'PF 20.8 $\\mu$m\n6T+3IPT', 'PF Hybrid\nMicro-Vtx', 'PF Hybrid\nShuffled', 'PF Hybrid\n+M0-NOMAD', 'B1++\nClean', 'Dual-Fam\n6-Model']
+    m_keys = ['s321-pf-20um', 's321-pf-layers-6t', 's321-pf-hybrid-uvtx', 's321-pf-hybrid-shuffled', 's321-pf-hybrid-nomad', 's321-b1pp-clean', 'primary_dual_family_6m']
     y_pin = [unsealed_groups[k]['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'] * 100.0 for k in m_keys]
     y_mw = [unsealed_groups[k]['Full_2t_Detector_MassWeighted']['within_slice_exact_1pct_fpr'] * 100.0 for k in m_keys]
     xm = np.arange(len(m_keys))
@@ -1558,6 +1594,7 @@ def unseal_and_evaluate_stage321(clean_root: Path, n_toys: int = 1000) -> dict:
             'from_scratch_exact_1pct_fpr': {
                 '0.020': unsealed_groups['s321-pf-20um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'],
                 '0.100': unsealed_groups['s321-pf-100um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'],
+                '0.300': unsealed_groups['s321-pf-300um']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'],
                 '1.000': unsealed_groups['s321-pf-1mm']['PinpointBlock_PixXY_All']['within_slice_exact_1pct_fpr'],
             },
             'post_hoc_ood_quantized_on_20um_model': ood_pitch_curve,
