@@ -400,6 +400,44 @@ class TestStage316AuditFixes(unittest.TestCase):
         self.assertIsNotNone(model.micro_vtx_gate.grad)
         self.assertTrue(torch.isfinite(model.micro_vtx_gate.grad).all())
 
+    def test_mapped_items_consistent_bar_keep_mask_under_pe_only(self) -> None:
+        """MappedItems must store consistent bar_keep_mask across mixed above/below-threshold events."""
+        import tempfile
+        from analysis.flavour.v2.r3.mapped_inputs import write_mapped_items
+
+        cfg = {'pe_only': True, 'bar_threshold_pe': 2.5}
+        obs_all_keep = self._base_obs()
+        obs_all_keep['bar']['pe_proxy'] = np.array([100, 200, 300, 400], dtype=np.int64)
+        obs_sub_keep = self._base_obs()
+        obs_sub_keep['bar']['pe_proxy'] = np.array([1, 200, 300, 400], dtype=np.int64)
+
+        items = [
+            extract_pf_item(
+                idx,
+                ob,
+                idx,
+                compute_observable_containment(ob, self.geometry, self.bounds, config=cfg),
+                self.geometry,
+                self.bounds,
+                cfg,
+            )
+            for idx, ob in enumerate([obs_all_keep, obs_sub_keep, obs_all_keep])
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            mi = write_mapped_items([items], Path(tmp) / 'ok')
+            self.assertEqual(len(mi), 3)
+            self.assertEqual(len(mi[0]['bar_keep_mask']), 4)
+            self.assertEqual(len(mi[1]['bar_keep_mask']), 4)
+            self.assertEqual(len(mi[2]['bar_keep_mask']), 4)
+
+        with tempfile.TemporaryDirectory() as tmp_bad:
+            bad_items = [
+                {'x': np.array([1.0], dtype=np.float32)},
+                {'x': np.array([2.0], dtype=np.float32), 'opt': np.array([1], dtype=np.int8)},
+            ]
+            with self.assertRaises(ValueError):
+                write_mapped_items([bad_items], Path(tmp_bad) / 'bad')
+
 
 if __name__ == '__main__':
     unittest.main()

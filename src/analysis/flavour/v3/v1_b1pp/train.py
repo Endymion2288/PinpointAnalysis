@@ -597,6 +597,23 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
     exp_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = exp_dir / 'manifest.json'
     resume_path = exp_dir / 'resume.pt'
+    if resume and manifest_path.exists():
+        try:
+            existing = json.loads(manifest_path.read_text())
+            if existing.get('status') == 'complete' and (exp_dir / 'predictions.parquet').exists():
+                print(json.dumps({'status': 'already_complete', 'name': name}))
+                return existing
+            cur_job = os.environ.get('PINPOINT_JOB_ID', 'interactive')
+            if (
+                existing.get('status') == 'running'
+                and existing.get('allocation_id') not in (None, cur_job)
+                and resume_path.exists()
+                and (time.time() - resume_path.stat().st_mtime) < 1200
+            ):
+                print(json.dumps({'status': 'active_elsewhere', 'name': name, 'owner': existing.get('allocation_id')}))
+                return existing
+        except Exception:
+            pass
 
     plan = json.loads((data_root / 'plan.json').read_text())
     geometry = json.loads(Path(plan['geometry']).read_text())
@@ -838,8 +855,14 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
                     if ema_ev['NLL'] < best_ema_nll:
                         best_ema_nll = float(ema_ev['NLL'])
                         best_pass = p_idx
-                        torch.save({'model': ema_model.state_dict(), 'config': config, 'pass': p_idx}, exp_dir / 'best.pt')
+                        _loc_b = scratch_dir / 'best.local.pt'
+                        _tmp_b = exp_dir / 'best.tmp.pt'
+                        torch.save({'model': ema_model.state_dict(), 'config': config, 'pass': p_idx}, _loc_b)
+                        shutil.copyfile(_loc_b, _tmp_b)
+                        os.replace(_tmp_b, exp_dir / 'best.pt')
+                        _loc_b.unlink(missing_ok=True)
 
+                    _loc_r = scratch_dir / 'resume.local.pt'
                     tmp_res = exp_dir / 'resume.tmp.pt'
                     torch.save({
                         'model': model.state_dict(),
@@ -851,8 +874,10 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
                         'best_pass': best_pass,
                         'screen_history': screen_history,
                         'step1_grads': step1_grads,
-                    }, tmp_res)
-                    tmp_res.replace(resume_path)
+                    }, _loc_r)
+                    shutil.copyfile(_loc_r, tmp_res)
+                    os.replace(tmp_res, resume_path)
+                    _loc_r.unlink(missing_ok=True)
                     manifest['screen_history'] = screen_history
                     manifest['last_pass'] = p_idx
                     manifest['best_ema_nll'] = best_ema_nll

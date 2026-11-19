@@ -43,8 +43,8 @@ from analysis.flavour.v3.v2_pinpointformer.evaluate import compute_slice_metrics
 from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import extract_pf_item
 from analysis.flavour.v3.v2_pinpointformer.train import (
     CachedPFDataset,
+    _ThreadedPFLoader,
     build_pf_mapped_split,
-    make_pf_loader,
     move_batch_to_device,
 )
 from analysis.flavour.v3.v3_multitask.models import PinpointFormerMultitask
@@ -530,8 +530,19 @@ def _infer_pf_group_on_split(
         with pkl_path.open('rb') as fp_p:
             pkg = pickle.load(fp_p)
         meta = pkg['metadata']
+        bounds = detector_bounds(geometry)
         ds = CachedPFDataset(items_dir, meta)
-        loader = make_pf_loader(ds, batch_size=128, shuffle=False, workers=0)
+        b_sampler = BatchSampler(SequentialSampler(ds), batch_size=128, drop_last=False)
+        loader = _ThreadedPFLoader(
+            ds,
+            b_sampler,
+            seed=42,
+            y_scint_center=bounds['y_scint_center'],
+            n_bars=bounds['n_bars'],
+            mirror=False,
+            pin_memory=True,
+            threads=4,
+        )
         models = {
             f'{prefix}_s{s}': _load_pf_model(
                 Path(checkpoints[f'{prefix}_s{s}']['path']),
@@ -775,112 +786,121 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
     conf_vtx_sidecar['vertex_z_mm'] = conf_meta['vertex_z_mm']
 
     with tempfile.TemporaryDirectory(prefix='s319-unseal-', dir=os.environ.get('PINPOINT_V3_SCRATCH', '/tmp')) as scratch:
-        staged_root, _ = stage_shards(clean_root / 'data', Path(scratch) / 'staged_clean', threads=6)
+        shard_paths = sorted(p for p in (clean_root / 'data/shards').iterdir() if (p / 'observations.parquet').exists())
+        st_rep = stage_shards(shard_paths, Path(scratch) / 'staged_clean', workers=6)
+        staged_root = clean_root / 'data'
+        old_stage_env = os.environ.get('PINPOINT_V3_SHARED_STAGE')
+        os.environ['PINPOINT_V3_SHARED_STAGE'] = st_rep['local_shard_root']
+        try:
+            unsealed_groups = {}
+            fits_by_group = {}
+            conf_frames_cache = {}
+            cal_frames_cache = {}
+            cut_frames_cache = {}
+            vtx_dz_confirm = {}
 
-        unsealed_groups = {}
-        fits_by_group = {}
-        conf_frames_cache = {}
-        cal_frames_cache = {}
-        cut_frames_cache = {}
-        vtx_dz_confirm = {}
+            for gname, spec in groups.items():
+                prefix = spec['prefix']
+                is_b1 = gname == 's319-b1pp-clean'
+                if is_b1:
+                    f_cal = _infer_b1pp_group_on_split(staged_root, 'cal_a', prefix, checkpoints, geometry, bounds, device)
+                    f_cut = _infer_b1pp_group_on_split(staged_root, 'cut_b', prefix, checkpoints, geometry, bounds, device)
+                    f_con = _infer_b1pp_group_on_split(staged_root, 'confirm', prefix, checkpoints, geometry, bounds, device)
+                else:
+                    f_cal = _infer_pf_group_on_split(staged_root, 'cal_a', prefix, s319_root, checkpoints, geometry, device)
+                    f_cut = _infer_pf_group_on_split(staged_root, 'cut_b', prefix, s319_root, checkpoints, geometry, device)
+                    f_con = _infer_pf_group_on_split(staged_root, 'confirm', prefix, s319_root, checkpoints, geometry, device)
 
-        for gname, spec in groups.items():
-            prefix = spec['prefix']
-            is_b1 = gname == 's319-b1pp-clean'
-            if is_b1:
-                f_cal = _infer_b1pp_group_on_split(staged_root, 'cal_a', prefix, checkpoints, geometry, bounds, device)
-                f_cut = _infer_b1pp_group_on_split(staged_root, 'cut_b', prefix, checkpoints, geometry, bounds, device)
-                f_con = _infer_b1pp_group_on_split(staged_root, 'confirm', prefix, checkpoints, geometry, bounds, device)
-            else:
-                f_cal = _infer_pf_group_on_split(staged_root, 'cal_a', prefix, s319_root, checkpoints, geometry, device)
-                f_cut = _infer_pf_group_on_split(staged_root, 'cut_b', prefix, s319_root, checkpoints, geometry, device)
-                f_con = _infer_pf_group_on_split(staged_root, 'confirm', prefix, s319_root, checkpoints, geometry, device)
+                cal_frames_cache[gname] = f_cal
+                cut_frames_cache[gname] = f_cut
+                conf_frames_cache[gname] = f_con
 
-            cal_frames_cache[gname] = f_cal
-            cut_frames_cache[gname] = f_cut
-            conf_frames_cache[gname] = f_con
+                fit = _fit_cala_cutb_and_score_confirm(f_cal, f_cut, f_con, cal_meta, cut_meta, conf_meta)
+                fits_by_group[gname] = fit
 
-            fit = _fit_cala_cutb_and_score_confirm(f_cal, f_cut, f_con, cal_meta, cut_meta, conf_meta)
-            fits_by_group[gname] = fit
+                vtx_a = None if is_b1 else _compute_vertex_audit(list(f_con.values()), conf_meta, conf_vtx_sidecar)
+                if vtx_a is not None:
+                    vtx_dz_confirm[gname] = vtx_a.pop('_dz_pix_centered')
 
-            vtx_a = None if is_b1 else _compute_vertex_audit(list(f_con.values()), conf_meta, conf_vtx_sidecar)
-            if vtx_a is not None:
-                vtx_dz_confirm[gname] = vtx_a.pop('_dz_pix_centered')
+                # Compute exact within-slice 1% & 0.1% FPR + Cut-B locked threshold realization + NC_charm / CC_charm leakage
+                s_c = fit['s_tau_confirm']
+                s_b = fit['s_tau_cut']
+                y_b = cut_meta['label'].to_numpy(dtype=np.int64)
+                pc_b = cut_meta['pixel_centered'].to_numpy(dtype=bool)
+                cutb_thr_1p_pc = float(np.quantile(s_b[pc_b & (y_b != 2)], 0.99))
+                cutb_thr_01p_pc = float(np.quantile(s_b[pc_b & (y_b != 2)], 0.999))
 
-            # Compute exact within-slice 1% & 0.1% FPR + Cut-B locked threshold realization + NC_charm / CC_charm leakage
-            s_c = fit['s_tau_confirm']
-            s_b = fit['s_tau_cut']
-            y_b = cut_meta['label'].to_numpy(dtype=np.int64)
-            pc_b = cut_meta['pixel_centered'].to_numpy(dtype=bool)
-            cutb_thr_1p_pc = float(np.quantile(s_b[pc_b & (y_b != 2)], 0.99))
-            cutb_thr_01p_pc = float(np.quantile(s_b[pc_b & (y_b != 2)], 0.999))
+                nc_charm_m = pc_con & (y_con == 3) & conf_meta['has_charm'].to_numpy(dtype=bool)
+                cc_charm_m = pc_con & (y_con != 2) & (y_con != 3) & conf_meta['has_charm'].to_numpy(dtype=bool)
+                light_bkg_m = pc_con & (y_con != 2) & (~conf_meta['has_charm'].to_numpy(dtype=bool))
 
-            nc_charm_m = pc_con & (y_con == 3) & conf_meta['has_charm'].to_numpy(dtype=bool)
-            cc_charm_m = pc_con & (y_con != 2) & (y_con != 3) & conf_meta['has_charm'].to_numpy(dtype=bool)
-            light_bkg_m = pc_con & (y_con != 2) & (~conf_meta['has_charm'].to_numpy(dtype=bool))
+                unsealed_groups[gname] = {
+                    'prefix': prefix,
+                    'All_CleanConfirm': {
+                        **compute_slice_metrics(y_con, fit['probs_confirm'], None),
+                        'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(s_c, y_con, 0.01)['tau_eff']),
+                        'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(s_c, y_con, 0.001)['tau_eff']),
+                    },
+                    'Truth_pixel_centered': {
+                        **compute_slice_metrics(y_con, fit['probs_confirm'], pc_con),
+                        'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(s_c[pc_con], y_con[pc_con], 0.01)['tau_eff']),
+                        'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(s_c[pc_con], y_con[pc_con], 0.001)['tau_eff']),
+                        'cutb_locked_1pct_tau_eff': float((s_c[pc_con & (y_con == 2)] >= cutb_thr_1p_pc).mean()),
+                        'cutb_locked_1pct_realized_fpr': float((s_c[pc_con & (y_con != 2)] >= cutb_thr_1p_pc).mean()),
+                        'cutb_locked_0p1pct_tau_eff': float((s_c[pc_con & (y_con == 2)] >= cutb_thr_01p_pc).mean()),
+                        'cutb_locked_0p1pct_realized_fpr': float((s_c[pc_con & (y_con != 2)] >= cutb_thr_01p_pc).mean()),
+                        'nc_charm_fpr_at_1pct_cut': float((s_c[nc_charm_m] >= cutb_thr_1p_pc).mean()) if nc_charm_m.any() else None,
+                        'cc_charm_fpr_at_1pct_cut': float((s_c[cc_charm_m] >= cutb_thr_1p_pc).mean()) if cc_charm_m.any() else None,
+                        'light_bkg_fpr_at_1pct_cut': float((s_c[light_bkg_m] >= cutb_thr_1p_pc).mean()) if light_bkg_m.any() else None,
+                    },
+                    'vertex_audit': vtx_a,
+                }
 
-            unsealed_groups[gname] = {
-                'prefix': prefix,
+            # Primary 6-model Dual-Family Clean Ensemble (primary_pf_group + clean_b1pp_pe_only)
+            prim_pf_g = freeze_doc['primary_pf_group']
+            prim_pf_prefix = freeze_doc['primary_pf_prefix']
+            ens6_cal = {**cal_frames_cache[prim_pf_g], **cal_frames_cache['s319-b1pp-clean']}
+            ens6_cut = {**cut_frames_cache[prim_pf_g], **cut_frames_cache['s319-b1pp-clean']}
+            ens6_con = {**conf_frames_cache[prim_pf_g], **conf_frames_cache['s319-b1pp-clean']}
+            ens6_fit = _fit_cala_cutb_and_score_confirm(ens6_cal, ens6_cut, ens6_con, cal_meta, cut_meta, conf_meta)
+            fits_by_group['primary_dual_family_6m'] = ens6_fit
+            unsealed_groups['primary_dual_family_6m'] = {
                 'All_CleanConfirm': {
-                    **compute_slice_metrics(y_con, fit['probs_confirm'], None),
-                    'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(s_c, y_con, 0.01)['tau_eff']),
-                    'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(s_c, y_con, 0.001)['tau_eff']),
+                    **compute_slice_metrics(y_con, ens6_fit['probs_confirm'], None),
+                    'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'], y_con, 0.01)['tau_eff']),
+                    'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'], y_con, 0.001)['tau_eff']),
                 },
                 'Truth_pixel_centered': {
-                    **compute_slice_metrics(y_con, fit['probs_confirm'], pc_con),
-                    'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(s_c[pc_con], y_con[pc_con], 0.01)['tau_eff']),
-                    'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(s_c[pc_con], y_con[pc_con], 0.001)['tau_eff']),
-                    'cutb_locked_1pct_tau_eff': float((s_c[pc_con & (y_con == 2)] >= cutb_thr_1p_pc).mean()),
-                    'cutb_locked_1pct_realized_fpr': float((s_c[pc_con & (y_con != 2)] >= cutb_thr_1p_pc).mean()),
-                    'cutb_locked_0p1pct_tau_eff': float((s_c[pc_con & (y_con == 2)] >= cutb_thr_01p_pc).mean()),
-                    'cutb_locked_0p1pct_realized_fpr': float((s_c[pc_con & (y_con != 2)] >= cutb_thr_01p_pc).mean()),
-                    'nc_charm_fpr_at_1pct_cut': float((s_c[nc_charm_m] >= cutb_thr_1p_pc).mean()) if nc_charm_m.any() else None,
-                    'cc_charm_fpr_at_1pct_cut': float((s_c[cc_charm_m] >= cutb_thr_1p_pc).mean()) if cc_charm_m.any() else None,
-                    'light_bkg_fpr_at_1pct_cut': float((s_c[light_bkg_m] >= cutb_thr_1p_pc).mean()) if light_bkg_m.any() else None,
+                    **compute_slice_metrics(y_con, ens6_fit['probs_confirm'], pc_con),
+                    'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'][pc_con], y_con[pc_con], 0.01)['tau_eff']),
+                    'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'][pc_con], y_con[pc_con], 0.001)['tau_eff']),
                 },
-                'vertex_audit': vtx_a,
             }
 
-        # Primary 6-model Dual-Family Clean Ensemble (primary_pf_group + clean_b1pp_pe_only)
-        prim_pf_g = freeze_doc['primary_pf_group']
-        prim_pf_prefix = freeze_doc['primary_pf_prefix']
-        ens6_cal = {**cal_frames_cache[prim_pf_g], **cal_frames_cache['s319-b1pp-clean']}
-        ens6_cut = {**cut_frames_cache[prim_pf_g], **cut_frames_cache['s319-b1pp-clean']}
-        ens6_con = {**conf_frames_cache[prim_pf_g], **conf_frames_cache['s319-b1pp-clean']}
-        ens6_fit = _fit_cala_cutb_and_score_confirm(ens6_cal, ens6_cut, ens6_con, cal_meta, cut_meta, conf_meta)
-        fits_by_group['primary_dual_family_6m'] = ens6_fit
-        unsealed_groups['primary_dual_family_6m'] = {
-            'All_CleanConfirm': {
-                **compute_slice_metrics(y_con, ens6_fit['probs_confirm'], None),
-                'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'], y_con, 0.01)['tau_eff']),
-                'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'], y_con, 0.001)['tau_eff']),
-            },
-            'Truth_pixel_centered': {
-                **compute_slice_metrics(y_con, ens6_fit['probs_confirm'], pc_con),
-                'within_slice_exact_1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'][pc_con], y_con[pc_con], 0.01)['tau_eff']),
-                'within_slice_exact_0p1pct_fpr': float(_tau_efficiency_at_fpr(ens6_fit['s_tau_confirm'][pc_con], y_con[pc_con], 0.001)['tau_eff']),
-            },
-        }
+            # OOD post-hoc quantization comparison on 20um model (proving why P1-5 from-scratch retraining mattered!)
+            ood_pitch_curve = {'0.020': unsealed_groups['s319-pitch-20um']['Truth_pixel_centered']['within_slice_exact_1pct_fpr']}
+            for q_mm, q_key in ((0.10, '0.100'), (0.30, '0.300'), (1.00, '1.000')):
+                f_ood = _infer_pf_group_on_split(
+                    staged_root, 'confirm', 'clean_pf_pitch_20um', s319_root, checkpoints, geometry, device,
+                    cfg_override={'quantize_xy_mm': q_mm},
+                )
+                _, s_ood, _ = _apply_frozen_ensemble_to_frames(f_ood, conf_meta, fits_by_group['s319-pitch-20um'])
+                ood_pitch_curve[q_key] = float(_tau_efficiency_at_fpr(s_ood[pc_con], y_con[pc_con], 0.01)['tau_eff'])
 
-        # OOD post-hoc quantization comparison on 20um model (proving why P1-5 from-scratch retraining mattered!)
-        ood_pitch_curve = {'0.020': unsealed_groups['s319-pitch-20um']['Truth_pixel_centered']['within_slice_exact_1pct_fpr']}
-        for q_mm, q_key in ((0.10, '0.100'), (0.30, '0.300'), (1.00, '1.000')):
-            f_ood = _infer_pf_group_on_split(
-                staged_root, 'confirm', 'clean_pf_pitch_20um', s319_root, checkpoints, geometry, device,
-                cfg_override={'quantize_xy_mm': q_mm},
-            )
-            _, s_ood, _ = _apply_frozen_ensemble_to_frames(f_ood, conf_meta, fits_by_group['s319-pitch-20um'])
-            ood_pitch_curve[q_key] = float(_tau_efficiency_at_fpr(s_ood[pc_con], y_con[pc_con], 0.01)['tau_eff'])
-
-        # Mechanical plane-wise sensor misalignment scan (0, 10, 25, 50 um) on primary PF model
-        misalign_scan = {'0_um': unsealed_groups[prim_pf_g]['Truth_pixel_centered']['within_slice_exact_1pct_fpr']}
-        for sig_mm, m_tag in ((0.010, '10_um'), (0.025, '25_um'), (0.050, '50_um')):
-            f_mis = _infer_pf_group_on_split(
-                staged_root, 'confirm', prim_pf_prefix, s319_root, checkpoints, geometry, device,
-                cfg_override={'misalign_sigma_xy_mm': sig_mm},
-            )
-            _, s_mis, _ = _apply_frozen_ensemble_to_frames(f_mis, conf_meta, fits_by_group[prim_pf_g])
-            misalign_scan[m_tag] = float(_tau_efficiency_at_fpr(s_mis[pc_con], y_con[pc_con], 0.01)['tau_eff'])
+            # Mechanical plane-wise sensor misalignment scan (0, 10, 25, 50 um) on primary PF model
+            misalign_scan = {'0_um': unsealed_groups[prim_pf_g]['Truth_pixel_centered']['within_slice_exact_1pct_fpr']}
+            for sig_mm, m_tag in ((0.010, '10_um'), (0.025, '25_um'), (0.050, '50_um')):
+                f_mis = _infer_pf_group_on_split(
+                    staged_root, 'confirm', prim_pf_prefix, s319_root, checkpoints, geometry, device,
+                    cfg_override={'misalign_sigma_xy_mm': sig_mm},
+                )
+                _, s_mis, _ = _apply_frozen_ensemble_to_frames(f_mis, conf_meta, fits_by_group[prim_pf_g])
+                misalign_scan[m_tag] = float(_tau_efficiency_at_fpr(s_mis[pc_con], y_con[pc_con], 0.01)['tau_eff'])
+        finally:
+            if old_stage_env is None:
+                os.environ.pop('PINPOINT_V3_SHARED_STAGE', None)
+            else:
+                os.environ['PINPOINT_V3_SHARED_STAGE'] = old_stage_env
 
     # Paired bootstrap comparisons on CleanConfirm (Truth_pixel_centered)
     paired_confirm_comparisons = {

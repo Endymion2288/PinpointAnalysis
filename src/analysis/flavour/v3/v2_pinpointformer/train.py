@@ -948,7 +948,19 @@ def run_pf_training(
                     if em_s['nll'] < best_nll:
                         best_nll = em_s['nll']
                         best_pass = p_idx
-                        torch.save({'model': ema_model.state_dict(), 'pass': p_idx, 'config': config}, best_pt)
+                        _loc_b = tmp_path / 'best.local.pt'
+                        _tmp_b = exp_dir / 'best.tmp.pt'
+                        torch.save({'model': ema_model.state_dict(), 'pass': p_idx, 'config': config}, _loc_b)
+                        for _att in range(3):
+                            try:
+                                shutil.copyfile(_loc_b, _tmp_b)
+                                os.replace(_tmp_b, best_pt)
+                                break
+                            except OSError:
+                                if _att == 2:
+                                    raise
+                                time.sleep(1.5)
+                        _loc_b.unlink(missing_ok=True)
                     print(
                         f"[{name}] pass={p_idx}/{passes} step={global_step} train_loss={train_loss:.4f} "
                         f"tr_nll={tr_s['nll']:.4f} ema_nll={em_s['nll']:.4f} "
@@ -956,6 +968,8 @@ def run_pf_training(
                         flush=True,
                     )
                 history.append(row_log)
+                _loc_r = tmp_path / 'resume.local.pt'
+                _tmp_r = exp_dir / 'resume.tmp.pt'
                 torch.save({
                     'pass': p_idx,
                     'global_step': global_step,
@@ -966,11 +980,36 @@ def run_pf_training(
                     'best_nll': best_nll,
                     'best_pass': best_pass,
                     'history': history,
-                }, resume_pt)
+                }, _loc_r)
+                for _att in range(3):
+                    try:
+                        shutil.copyfile(_loc_r, _tmp_r)
+                        os.replace(_tmp_r, resume_pt)
+                        break
+                    except OSError:
+                        if _att == 2:
+                            raise
+                        time.sleep(1.5)
+                _loc_r.unlink(missing_ok=True)
 
-            # Save final exposure and EMA checkpoints and run full Tune40k predictions
-            torch.save({'model': ema_model.state_dict(), 'pass': passes, 'config': config}, ema_pt)
-            torch.save({'model': model.state_dict(), 'pass': passes, 'config': config}, exp_pt)
+            # Save final exposure and EMA checkpoints atomically via local scratch
+            for _obj, _dst in (
+                ({'model': ema_model.state_dict(), 'pass': passes, 'config': config}, ema_pt),
+                ({'model': model.state_dict(), 'pass': passes, 'config': config}, exp_pt),
+            ):
+                _loc_f = tmp_path / f'{_dst.stem}.local.pt'
+                _tmp_f = _dst.with_suffix('.tmp.pt')
+                torch.save(_obj, _loc_f)
+                for _att in range(3):
+                    try:
+                        shutil.copyfile(_loc_f, _tmp_f)
+                        os.replace(_tmp_f, _dst)
+                        break
+                    except OSError:
+                        if _att == 2:
+                            raise
+                        time.sleep(1.5)
+                _loc_f.unlink(missing_ok=True)
 
             for ckpt_path, pred_name in (
                 (best_pt, 'best_predictions.parquet'),

@@ -32,8 +32,18 @@ from analysis.flavour.v3.v4_tau.ensemble import fit_oof_domain_ensemble
 
 SEEDS = (17, 42, 2026)
 DEFAULT_STAGE317_ROOT = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/stage317_ablations')
-W3_11_ROOT = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v3_2026-11-15/W3-11')
-EVENT_SIDECAR = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v3_2026-11-15/truth_sidecar/event_sidecar.parquet')
+W3_BASE = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v3_2026-11-15')
+W3_11_ROOT = W3_BASE / 'W3-11'
+EVENT_SIDECAR = W3_BASE / 'W3-08/tune40k_offline_audit/tune_event_audit.parquet'
+
+LEGACY_SEED_DIRS = {
+    ('w3_11_pf_v3_gn2_legacy', 17): W3_11_ROOT / 'experiments/pf_v3_300k_24p_gn2_s17',
+    ('w3_11_pf_v3_gn2_legacy', 42): W3_BASE / 'W3-09/experiments/pf_v3_300k_24p_gn2_flagship',
+    ('w3_11_pf_v3_gn2_legacy', 2026): W3_11_ROOT / 'experiments/pf_v3_300k_24p_gn2_s2026',
+    ('w3_11_b1pp_dual_legacy', 17): W3_11_ROOT / 'experiments/b1pp_300k_24p_t4_s17',
+    ('w3_11_b1pp_dual_legacy', 42): W3_BASE / 'W3-05/experiments/b1pp_300k_24p_t4',
+    ('w3_11_b1pp_dual_legacy', 2026): W3_11_ROOT / 'experiments/b1pp_300k_24p_t4_s2026',
+}
 
 GROUP_SPECS = {
     'w3_11_pf_v3_gn2_legacy': (W3_11_ROOT, 'pf_v3_300k_24p_gn2'),
@@ -120,6 +130,7 @@ def _compute_vertex_audit(dfs: list[pd.DataFrame], ref_df: pd.DataFrame, sidecar
     dz = vz_mean - vz_true
 
     def _stats(m: np.ndarray) -> dict:
+        r3 = np.sqrt(dx[m] ** 2 + dy[m] ** 2 + dz[m] ** 2)
         return {
             'count': int(m.sum()),
             'bias_x_mm': float(np.mean(dx[m])),
@@ -128,6 +139,7 @@ def _compute_vertex_audit(dfs: list[pd.DataFrame], ref_df: pd.DataFrame, sidecar
             'median_abs_dx_mm': float(np.median(np.abs(dx[m]))),
             'median_abs_dy_mm': float(np.median(np.abs(dy[m]))),
             'median_abs_dz_mm': float(np.median(np.abs(dz[m]))),
+            'median_3d_mm': float(np.median(r3)),
             'p68_abs_dz_mm': float(np.quantile(np.abs(dz[m]), 0.68)),
         }
 
@@ -194,6 +206,82 @@ def paired_family_bootstrap_delta(
     }
 
 
+def render_stage317_figure(group_results: dict, vtx_dz_curves: dict, fig_path: Path) -> None:
+    """Render 3-panel 300-DPI English publication figure for Stage 317."""
+    fig, axes = plt.subplots(1, 3, figsize=(16.4, 5.2), dpi=300)
+    ax0, ax1, ax2 = axes
+
+    # Panel A: Exp-1 Controlled 300k x 24p Ablations (Truth_pixel_centered within-slice exact 1% FPR)
+    p0_keys = [
+        ('W3-11 GN2\n(legacy loss)', 'w3_11_pf_v3_gn2_legacy', '#8C8C8C'),
+        ('PF V2\n(anchored)', 'exp1_pf_v2_anchored', '#4C72B0'),
+        ('PF V3\n(Event4Head)', 'exp1_pf_v3_event4head', '#55A868'),
+        ('PF V3\n(+GN2 dense)', 'exp1_pf_v3_gn2_fixed', '#DD8452'),
+    ]
+    y_pos = np.arange(len(p0_keys))
+    vals_0 = [group_results[k]['oof_3seed_ensemble']['Truth_pixel_centered']['within_slice_exact_1pct_fpr'] * 100.0 for _, k, _ in p0_keys]
+    stds_0 = [group_results[k]['seed_mean_std_Truth_pixel_centered']['tau_at_1pct_fpr']['std'] * 100.0 for _, k, _ in p0_keys]
+    bars0 = ax0.barh(y_pos, vals_0, xerr=stds_0, color=[c for _, _, c in p0_keys], height=0.56, capsize=4, alpha=0.9)
+    ax0.set_yticks(y_pos)
+    ax0.set_yticklabels([lbl for lbl, _, _ in p0_keys], fontsize=8.8)
+    ax0.set_xlabel('Pixel-Fiducial $\\nu_\\tau$ Efficiency @ Exact 1% FPR [%]')
+    ax0.set_title('Exp-1: Exposure-Matched 300k$\\times$24p Ablation')
+    max_right = max(v + s for v, s in zip(vals_0, stds_0))
+    ax0.set_xlim(max(0.0, min(v - s for v, s in zip(vals_0, stds_0)) - 5.0), min(100.0, max_right + 5.8))
+    for b_rect, v, s in zip(bars0, vals_0, stds_0):
+        ax0.text(v + s + 0.45, b_rect.get_y() + b_rect.get_height() / 2.0, f'{v:.2f}%', va='center', fontsize=8.2)
+    ax0.grid(True, axis='x', alpha=0.25)
+
+    # Panel B: Exp-3 & Exp-5 Physical PE-Only Readout vs Dual-Channel Leakage (All_Tune40k & Pixel-Fiducial)
+    p1_keys = [
+        ('PF V3\nDual-Ch (leak)', 'exp1_pf_v3_event4head', 'oof_3seed_ensemble', '#937860'),
+        ('PF V3\nPE-Only', 'exp3_pf_pe_only_ev4', 'oof_3seed_ensemble', '#4C72B0'),
+        ('PF V4 NOMAD\nPE-Only', 'exp5_pf_pe_only_nomad_phys', 'oof_3seed_ensemble', '#8172B2'),
+        ('B1++\nDual-Ch (leak)', 'w3_11_b1pp_dual_legacy', 'oof_3seed_ensemble', '#CCB974'),
+        ('B1++\nPE-Only', 'exp3_b1pp_pe_only', 'oof_3seed_ensemble', '#64B5CD'),
+        ('PF+B1++ (6m)\nPE-Only Ens', 'exp3_dual_family_pe_only_6m', 'oof_6model_ensemble', '#C44E52'),
+    ]
+    x_idx = np.arange(len(p1_keys))
+    w_bar = 0.36
+    v_pc = [group_results[k][ek]['Truth_pixel_centered']['within_slice_exact_1pct_fpr'] * 100.0 for _, k, ek, _ in p1_keys]
+    v_all = [group_results[k][ek]['All_Tune40k']['within_slice_exact_1pct_fpr'] * 100.0 for _, k, ek, _ in p1_keys]
+    ax1.bar(x_idx - w_bar / 2, v_pc, width=w_bar, color='#4C72B0', label='Pixel-Fiducial (exact 1% FPR)')
+    ax1.bar(x_idx + w_bar / 2, v_all, width=w_bar, color='#C44E52', label='All Tune40k (exact 1% FPR)')
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels([lbl for lbl, _, _, _ in p1_keys], fontsize=7.6)
+    ax1.set_ylabel('$\\nu_\\tau$ CC Efficiency @ Exact 1% Slice FPR [%]')
+    ax1.set_title('Exp-3 & Exp-5: Physical PE-Only vs Dual-Ch Readout')
+    ax1.set_ylim(0.0, min(100.0, max(v_pc) + 12.0))
+    ax1.legend(loc='upper right', fontsize=8.0, frameon=True)
+    ax1.grid(True, axis='y', alpha=0.25)
+
+    # Panel C: P2-2 Longitudinal Primary Vertex Residual Distribution (hat{z}_v - z_true)
+    bins_z = np.linspace(-60.0, 60.0, 121)
+    for label_v, gkey_v, col_v, ls_v in (
+        ('W3-11 Legacy (biased z-loss)', 'w3_11_pf_v3_gn2_legacy', '#8C8C8C', '--'),
+        ('Stage 317 PF V2 (unbiased)', 'exp1_pf_v2_anchored', '#4C72B0', '-'),
+        ('Stage 317 PF V3 PE-Only (fixed)', 'exp3_pf_pe_only_ev4', '#C44E52', '-'),
+    ):
+        if gkey_v in vtx_dz_curves:
+            dz_arr = np.clip(vtx_dz_curves[gkey_v], -59.5, 59.5)
+            va = group_results[gkey_v]['vertex_audit']['Truth_pixel_centered']
+            ax2.hist(
+                dz_arr, bins=bins_z, density=True, histtype='step', lw=1.9, color=col_v, ls=ls_v,
+                label=f"{label_v}\n($\\mu={va['bias_z_mm']:+.2f}$ mm, med $|\\Delta z|={va['median_abs_dz_mm']:.2f}$ mm)",
+            )
+    ax2.axvline(0.0, color='#222222', ls=':', lw=1.1)
+    ax2.set_ylim(0.0, ax2.get_ylim()[1] * 1.28)
+    ax2.set_xlabel('Primary Vertex Longitudinal Residual $\\hat{z}_v - z_{\\mathrm{true}}$ [mm]')
+    ax2.set_ylabel('Normalized Event Density [mm$^{-1}$]')
+    ax2.set_title('P2-2: Unbiased Vertex Regression Calibration')
+    ax2.legend(loc='upper left', fontsize=7.3, frameon=True)
+    ax2.grid(True, alpha=0.25)
+
+    fig.tight_layout()
+    fig.savefig(fig_path, dpi=300)
+    plt.close(fig)
+
+
 def evaluate_all_stage317(stage317_root: Path, n_boot: int = 1000) -> dict:
     t0 = time.perf_counter()
     ref_df = load_tune_reference_frame()
@@ -225,7 +313,9 @@ def evaluate_all_stage317(stage317_root: Path, n_boot: int = 1000) -> dict:
         seed_metrics_all = []
         for s in SEEDS:
             sname = f'{prefix}_s{s}'
-            df, info = _select_seed_prediction_df(groot / 'experiments' / sname)
+            groot_eff = stage317_root if groot == DEFAULT_STAGE317_ROOT else groot
+            exp_dir = LEGACY_SEED_DIRS.get((gkey, s), groot_eff / 'experiments' / sname)
+            df, info = _select_seed_prediction_df(exp_dir)
             m_frames[sname] = df
             seed_infos[sname] = info
             probs = _align_probs(df, ref_df)
@@ -250,7 +340,7 @@ def evaluate_all_stage317(stage317_root: Path, n_boot: int = 1000) -> dict:
             if (labels[sl_mask] == 2).any() and (labels[sl_mask] != 2).any():
                 sm['within_slice_exact_1pct_fpr'] = float(_tau_efficiency_at_fpr(ens['s_tau'][sl_mask], labels[sl_mask], 0.01)['tau_eff'])
                 sm['within_slice_exact_0p1pct_fpr'] = float(_tau_efficiency_at_fpr(ens['s_tau'][sl_mask], labels[sl_mask], 0.001)['tau_eff'])
-                sm['global_budget_np_1pct_fpr'] = ens['strategy_II_np_1pct'][sl_name]
+                sm['global_budget_np_1pct_fpr'] = ens['slices'][sl_name]['np_1pct']
             ens_slices[sl_name] = sm
 
         group_results[gkey] = {
@@ -262,7 +352,7 @@ def evaluate_all_stage317(stage317_root: Path, n_boot: int = 1000) -> dict:
                 k: _seed_summary(seed_metrics_all, k) for k in ('BA4', 'cond_BA3', 'nll', 'tau_at_1pct_fpr', 'tau_at_0p1pct_fpr')
             },
             'oof_3seed_ensemble': ens_slices,
-            'oof_asimov_z0_18bin': ens['oof_multidomain_asimov_z0'],
+            'oof_asimov_z0_18bin': ens['asimov_z0_oof_18bin_multidomain'],
             'vertex_audit': vtx_aud,
         }
 
@@ -276,11 +366,11 @@ def evaluate_all_stage317(stage317_root: Path, n_boot: int = 1000) -> dict:
         if (labels[sl_mask] == 2).any() and (labels[sl_mask] != 2).any():
             sm['within_slice_exact_1pct_fpr'] = float(_tau_efficiency_at_fpr(dual_pe_ens['s_tau'][sl_mask], labels[sl_mask], 0.01)['tau_eff'])
             sm['within_slice_exact_0p1pct_fpr'] = float(_tau_efficiency_at_fpr(dual_pe_ens['s_tau'][sl_mask], labels[sl_mask], 0.001)['tau_eff'])
-            sm['global_budget_np_1pct_fpr'] = dual_pe_ens['strategy_II_np_1pct'][sl_name]
+            sm['global_budget_np_1pct_fpr'] = dual_pe_ens['slices'][sl_name]['np_1pct']
         dual_pe_slices[sl_name] = sm
     group_results['exp3_dual_family_pe_only_6m'] = {
         'oof_6model_ensemble': dual_pe_slices,
-        'oof_asimov_z0_18bin': dual_pe_ens['oof_multidomain_asimov_z0'],
+        'oof_asimov_z0_18bin': dual_pe_ens['asimov_z0_oof_18bin_multidomain'],
     }
 
     def _pair_cmp(a_key: str, b_key: str) -> dict:
@@ -326,78 +416,8 @@ def evaluate_all_stage317(stage317_root: Path, n_boot: int = 1000) -> dict:
         },
     }
 
-    # Render 3-panel 300-DPI English publication figure
-    fig, axes = plt.subplots(1, 3, figsize=(16.2, 5.1), dpi=300)
-    ax0, ax1, ax2 = axes
-
-    # Panel A: Exp-1 & Exp-5 Controlled 300k x 24p Ablations (Truth_pixel_centered within-slice exact 1% FPR)
-    p0_keys = [
-        ('W3-11 GN2\n(legacy loss)', 'w3_11_pf_v3_gn2_legacy', '#8C8C8C'),
-        ('PF V2\n(anchored)', 'exp1_pf_v2_anchored', '#4C72B0'),
-        ('PF V3\n(Event4Head)', 'exp1_pf_v3_event4head', '#55A868'),
-        ('PF V3\n(+GN2 dense)', 'exp1_pf_v3_gn2_fixed', '#DD8452'),
-    ]
-    y_pos = np.arange(len(p0_keys))
-    vals_0 = [group_results[k]['oof_3seed_ensemble']['Truth_pixel_centered']['within_slice_exact_1pct_fpr'] * 100.0 for _, k, _ in p0_keys]
-    stds_0 = [group_results[k]['seed_mean_std_Truth_pixel_centered']['tau_at_1pct_fpr']['std'] * 100.0 for _, k, _ in p0_keys]
-    bars0 = ax0.barh(y_pos, vals_0, xerr=stds_0, color=[c for _, _, c in p0_keys], height=0.58, capsize=4, alpha=0.9)
-    ax0.set_yticks(y_pos)
-    ax0.set_yticklabels([lbl for lbl, _, _ in p0_keys], fontsize=8.8)
-    ax0.set_xlabel('Pixel-Fiducial $\\nu_\\tau$ Efficiency @ Exact 1% FPR [%]')
-    ax0.set_title('Exp-1: Exposure-Matched 300k$\\times$24p Ablation')
-    ax0.set_xlim(max(0.0, min(vals_0) - 8.0), min(100.0, max(vals_0) + 6.5))
-    for b_rect, v in zip(bars0, vals_0):
-        ax0.text(v + 0.5, b_rect.get_y() + b_rect.get_height() / 2.0, f'{v:.2f}%', va='center', fontsize=8.2)
-    ax0.grid(True, axis='x', alpha=0.25)
-
-    # Panel B: Exp-3 & Exp-5 Physical PE-Only Readout vs Dual-Channel Leakage (All_Tune40k & Pixel-Fiducial)
-    p1_keys = [
-        ('PF V3\nDual-Ch (leak)', 'exp1_pf_v3_event4head', 'oof_3seed_ensemble', '#937860'),
-        ('PF V3\nPE-Only', 'exp3_pf_pe_only_ev4', 'oof_3seed_ensemble', '#4C72B0'),
-        ('PF V4 NOMAD\nPE-Only', 'exp5_pf_pe_only_nomad_phys', 'oof_3seed_ensemble', '#8172B2'),
-        ('B1++\nDual-Ch (leak)', 'w3_11_b1pp_dual_legacy', 'oof_3seed_ensemble', '#CCB974'),
-        ('B1++\nPE-Only', 'exp3_b1pp_pe_only', 'oof_3seed_ensemble', '#64B5CD'),
-        ('PF+B1++ (6m)\nPE-Only Ens', 'exp3_dual_family_pe_only_6m', 'oof_6model_ensemble', '#C44E52'),
-    ]
-    x_idx = np.arange(len(p1_keys))
-    w_bar = 0.36
-    v_pc = [group_results[k][ek]['Truth_pixel_centered']['within_slice_exact_1pct_fpr'] * 100.0 for _, k, ek, _ in p1_keys]
-    v_all = [group_results[k][ek]['All_Tune40k']['within_slice_exact_1pct_fpr'] * 100.0 for _, k, ek, _ in p1_keys]
-    ax1.bar(x_idx - w_bar / 2, v_pc, width=w_bar, color='#4C72B0', label='Pixel-Fiducial (exact 1% FPR)')
-    ax1.bar(x_idx + w_bar / 2, v_all, width=w_bar, color='#C44E52', label='All Tune40k (exact 1% FPR)')
-    ax1.set_xticks(x_idx)
-    ax1.set_xticklabels([lbl for lbl, _, _, _ in p1_keys], fontsize=7.6)
-    ax1.set_ylabel('$\\nu_\\tau$ CC Efficiency @ Exact 1% Slice FPR [%]')
-    ax1.set_title('Exp-3 & Exp-5: Physical PE-Only vs Dual-Ch Readout')
-    ax1.set_ylim(0.0, min(100.0, max(v_pc) + 12.0))
-    ax1.legend(loc='upper right', fontsize=8.0, frameon=True)
-    ax1.grid(True, axis='y', alpha=0.25)
-
-    # Panel C: P2-2 Longitudinal Primary Vertex Residual Distribution (hat{z}_v - z_true)
-    bins_z = np.linspace(-60.0, 60.0, 121)
-    for label_v, gkey_v, col_v, ls_v in (
-        ('W3-11 Legacy (biased z-loss)', 'w3_11_pf_v3_gn2_legacy', '#8C8C8C', '--'),
-        ('Stage 317 PF V2 (unbiased)', 'exp1_pf_v2_anchored', '#4C72B0', '-'),
-        ('Stage 317 PF V3 PE-Only (fixed)', 'exp3_pf_pe_only_ev4', '#C44E52', '-'),
-    ):
-        if gkey_v in vtx_dz_curves:
-            dz_arr = np.clip(vtx_dz_curves[gkey_v], -59.5, 59.5)
-            va = group_results[gkey_v]['vertex_audit']['Truth_pixel_centered']
-            ax2.hist(
-                dz_arr, bins=bins_z, density=True, histtype='step', lw=1.9, color=col_v, ls=ls_v,
-                label=f"{label_v}\n($\\mu={va['bias_z_mm']:+.2f}$ mm, med $|\\Delta z|={va['median_abs_dz_mm']:.2f}$ mm)",
-            )
-    ax2.axvline(0.0, color='#222222', ls=':', lw=1.1)
-    ax2.set_xlabel('Primary Vertex Longitudinal Residual $\\hat{z}_v - z_{\\mathrm{true}}$ [mm]')
-    ax2.set_ylabel('Normalized Event Density [mm$^{-1}$]')
-    ax2.set_title('P2-2: Unbiased Vertex Regression Calibration')
-    ax2.legend(loc='upper left', fontsize=7.3, frameon=True)
-    ax2.grid(True, alpha=0.25)
-
-    fig.tight_layout()
     fig_path = stage317_root / 'stage317_controlled_ablations_and_vertex_calibration.png'
-    fig.savefig(fig_path, dpi=300)
-    plt.close(fig)
+    render_stage317_figure(group_results, vtx_dz_curves, fig_path)
 
     out_report = {
         'UTC': datetime.now(timezone.utc).isoformat(),

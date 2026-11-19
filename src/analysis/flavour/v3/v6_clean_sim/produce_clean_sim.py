@@ -658,7 +658,7 @@ def _convert_subchunks_to_shard(
                     'momentum_censored': -1,
                 }
                 observations.append(obs_dict)
-                targets.append({'label': lbl4})
+                targets.append({'label': lbl4, 'label_status': 'ok'})
 
                 vx = float(ev_arr['initX'][i])
                 vy = float(ev_arr['initY'][i])
@@ -931,7 +931,7 @@ def finalize_clean_sim(root: Path) -> dict:
     val_df = all_prov[all_prov['split'] == 'validation'].reset_index(drop=True)
     rng = np.random.default_rng(20261118)
     scr_idx = np.sort(rng.choice(len(val_df), size=min(2000, len(val_df)), replace=False))
-    val_df.iloc[scr_idx][KEY].to_parquet(root / 'data' / 'tune_screen.parquet', index=False, compression=COMPRESSION)
+    val_df.iloc[scr_idx][KEY + ['label']].to_parquet(root / 'data' / 'tune_screen.parquet', index=False, compression=COMPRESSION)
 
     # 2. Merge train/validation event_sidecar.parquet cleanly & remove parts
     sc_parts = sorted((root / 'truth_sidecar' / 'parts').glob('event_*.parquet'))

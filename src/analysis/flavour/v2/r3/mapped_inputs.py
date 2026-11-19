@@ -69,7 +69,11 @@ def write_mapped_items(groups,directory):
                 records.append(record)
     finally:
         for stream in streams.values():stream.close()
-    for spec in arrays.values():spec['offsets']=np.asarray(spec['offsets'],dtype='int64')
+    n_rec=len(records)
+    for name,spec in arrays.items():
+        if len(spec['offsets'])!=n_rec+1:
+            raise ValueError(f"mapped_inputs array {name!r} present in {len(spec['offsets'])-1}/{n_rec} records; all records must share identical ndarray keys")
+        spec['offsets']=np.asarray(spec['offsets'],dtype='int64')
     with (directory/'manifest.pkl').open('wb') as stream:
         pickle.dump({'records':records,'arrays':arrays},stream,protocol=5)
     return MappedItems(directory)

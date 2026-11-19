@@ -495,9 +495,8 @@ def extract_pf_item(
         'trk_cand': spec['cand'],
         'trk_cand_mask': spec['cand_mask'],
         'trk_hits': spec['hits'],
+        'bar_keep_mask': keep_bar,
     }
-    if not keep_bar.all():
-        out_item['bar_keep_mask'] = keep_bar
     return out_item
 
 
