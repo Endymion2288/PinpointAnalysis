@@ -34,7 +34,7 @@ from analysis.flavour.v2.profile import device_batch
 from analysis.flavour.v2.r2.readout import grouped_folds
 from analysis.flavour.v3.common.calibration import _tau_efficiency_at_fpr
 from analysis.flavour.v3.common.datasets import V3EvalDataset
-from analysis.flavour.v3.common.domains import detector_bounds
+from analysis.flavour.v3.common.domains import OBS_DOMAIN_NAMES, detector_bounds
 from analysis.flavour.v3.common.submit import submit_job
 from analysis.flavour.v3.v1_b1pp.models import ZAlignedStereoNet
 from analysis.flavour.v3.v1_b1pp.representation import collate_b1pp, extract_b1pp_item, static_plane_layout
@@ -516,17 +516,47 @@ def _infer_pf_group_on_split(
     geometry: dict,
     device: torch.device,
     cfg_override: dict | None = None,
+    shared_mapped_root: Path | None = None,
 ) -> dict[str, pd.DataFrame]:
+    cache_tag = hashlib.sha256(
+        json.dumps(
+            {
+                'root': str(staged_data_root),
+                'split': split,
+                'prefix': prefix,
+                'shas': [checkpoints[f'{prefix}_s{s}']['sha256'] for s in SEEDS],
+                'override': cfg_override or {},
+            },
+            sort_keys=True,
+        ).encode('utf-8')
+    ).hexdigest()[:16]
+    pred_cache_dir = s319_root / 'unsealed_preds' / f'{prefix}_{split}_{cache_tag}'
+    if all((pred_cache_dir / f'{prefix}_s{s}.parquet').exists() for s in SEEDS):
+        return {f'{prefix}_s{s}': pd.read_parquet(pred_cache_dir / f'{prefix}_s{s}.parquet') for s in SEEDS}
+
     amp_dtype = torch.bfloat16 if torch.cuda.get_device_capability(device)[0] >= 8 else torch.float16
     base_cfg = json.loads(Path(checkpoints[f'{prefix}_s17']['config_path']).read_text())
     eval_cfg = {**base_cfg, **(cfg_override or {})}
 
-    with tempfile.TemporaryDirectory(prefix=f's319-inf-{prefix}-{split}-', dir=os.environ.get('PINPOINT_V3_SCRATCH', '/tmp')) as tmp:
-        items_dir = Path(tmp) / 'items'
-        pkl_path = Path(tmp) / 'items.pkl'
-        build_pf_mapped_split(
-            staged_data_root, split, items_dir, pkl_path, Path(tmp) / 'ds_cache', workers=6, config=eval_cfg
-        )
+    tok_key = hashlib.sha256(
+        json.dumps(
+            {
+                'root': str(staged_data_root),
+                'split': split,
+                'q': eval_cfg.get('quantize_xy_mm'),
+                'planes': eval_cfg.get('active_pixel_planes'),
+                'mis': eval_cfg.get('misalign_sigma_xy_mm'),
+                'pe_only': eval_cfg.get('pe_only', True),
+            },
+            sort_keys=True,
+        ).encode('utf-8')
+    ).hexdigest()[:14]
+
+    def _run_with_items(items_dir: Path, pkl_path: Path, ds_cache: Path) -> dict[str, pd.DataFrame]:
+        if not pkl_path.exists():
+            build_pf_mapped_split(
+                staged_data_root, split, items_dir, pkl_path, ds_cache, workers=6, config=eval_cfg
+            )
         with pkl_path.open('rb') as fp_p:
             pkg = pickle.load(fp_p)
         meta = pkg['metadata']
@@ -579,17 +609,28 @@ def _infer_pf_group_on_split(
             if hasattr(ds, 'items'):
                 ds.items.close()
 
-    out_frames = {}
-    for mname in models:
-        df = meta[KEY + FAMILY + ['label']].copy().reset_index(drop=True)
-        for c in range(4):
-            df[f'p_{c}'] = probs[mname][:, c]
-        df['charm_prob'] = ch_p[mname]
-        df['v_hat_x_mm'] = vhat[mname][:, 0]
-        df['v_hat_y_mm'] = vhat[mname][:, 1]
-        df['v_hat_z_mm'] = vhat[mname][:, 2]
-        out_frames[mname] = df
-    return out_frames
+        out_f = {}
+        pred_cache_dir.mkdir(parents=True, exist_ok=True)
+        for mname in models:
+            df = meta[KEY + FAMILY + ['label']].copy().reset_index(drop=True)
+            for c in range(4):
+                df[f'p_{c}'] = probs[mname][:, c]
+            df['charm_prob'] = ch_p[mname]
+            df['v_hat_x_mm'] = vhat[mname][:, 0]
+            df['v_hat_y_mm'] = vhat[mname][:, 1]
+            df['v_hat_z_mm'] = vhat[mname][:, 2]
+            df.to_parquet(pred_cache_dir / f'{mname}.parquet', index=False)
+            out_f[mname] = df
+        return out_f
+
+    if shared_mapped_root is not None:
+        sub = shared_mapped_root / f'tok_{split}_{tok_key}'
+        sub.mkdir(parents=True, exist_ok=True)
+        return _run_with_items(sub / 'items', sub / 'items.pkl', sub / 'ds_cache')
+
+    with tempfile.TemporaryDirectory(prefix=f's319-inf-{prefix}-{split}-', dir=os.environ.get('PINPOINT_V3_SCRATCH', '/tmp')) as tmp:
+        tp = Path(tmp)
+        return _run_with_items(tp / 'items', tp / 'items.pkl', tp / 'ds_cache')
 
 
 def _infer_b1pp_group_on_split(
@@ -812,9 +853,10 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
                     f_cut = _infer_b1pp_group_on_split(staged_root, 'cut_b', prefix, checkpoints, geometry, bounds, device)
                     f_con = _infer_b1pp_group_on_split(staged_root, 'confirm', prefix, checkpoints, geometry, bounds, device)
                 else:
-                    f_cal = _infer_pf_group_on_split(staged_root, 'cal_a', prefix, s319_root, checkpoints, geometry, device)
-                    f_cut = _infer_pf_group_on_split(staged_root, 'cut_b', prefix, s319_root, checkpoints, geometry, device)
-                    f_con = _infer_pf_group_on_split(staged_root, 'confirm', prefix, s319_root, checkpoints, geometry, device)
+                    sm_root = Path(scratch) / 'shared_mapped'
+                    f_cal = _infer_pf_group_on_split(staged_root, 'cal_a', prefix, s319_root, checkpoints, geometry, device, shared_mapped_root=sm_root)
+                    f_cut = _infer_pf_group_on_split(staged_root, 'cut_b', prefix, s319_root, checkpoints, geometry, device, shared_mapped_root=sm_root)
+                    f_con = _infer_pf_group_on_split(staged_root, 'confirm', prefix, s319_root, checkpoints, geometry, device, shared_mapped_root=sm_root)
 
                 cal_frames_cache[gname] = f_cal
                 cut_frames_cache[gname] = f_cut
@@ -950,8 +992,24 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
     cut_dom = cut_meta['obs_domain_id'].to_numpy(dtype=np.int64)
     con_dom = conf_meta['obs_domain_id'].to_numpy(dtype=np.int64)
     ultra_edges = _fit_bin_edges(ens6_fit['s_tau_cut'], cut_dom, ULTRA_TAIL_QUANTILES)
+
+    # Lock Charm-CR quantile edges (85%, 96% of charm_prob in low-S_tau bulk) strictly on Cut-B
+    charm_cr_edges: dict[str, tuple[float, float]] = {}
+    for d_id in (1, 2, 3):
+        dn = OBS_DOMAIN_NAMES[d_id]
+        dm_cut = cut_dom == d_id
+        e_dom = np.asarray(ultra_edges[dn], dtype=np.float64)
+        loc_cut = np.clip(np.searchsorted(e_dom[1:-1], ens6_fit['s_tau_cut'][dm_cut], side='right'), 0, len(e_dom) - 2)
+        low_cut = loc_cut <= 1
+        if low_cut.any():
+            q85, q96 = np.quantile(ens6_fit['charm_cut'][dm_cut][low_cut], [0.85, 0.96])
+            charm_cr_edges[dn] = (float(q85), float(q96))
+        else:
+            charm_cr_edges[dn] = (0.42, 0.46)
+
     sr21_con, joint27_con = assign_signal_and_charm_cr_bins(
-        ens6_fit['s_tau_confirm'], ens6_fit['charm_confirm'], con_dom, ultra_edges
+        ens6_fit['s_tau_confirm'], ens6_fit['charm_confirm'], con_dom, ultra_edges,
+        charm_cr_edges_by_domain=charm_cr_edges,
     )
 
     sys_eval = {}
@@ -965,7 +1023,9 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         y_sv = sv_meta['label'].to_numpy(dtype=np.int64)
         pc_sv = sv_meta['pixel_centered'].to_numpy(dtype=bool)
         dom_sv = sv_meta['obs_domain_id'].to_numpy(dtype=np.int64)
-        sr21_sv, _ = assign_signal_and_charm_cr_bins(s_sv, c_sv, dom_sv, ultra_edges)
+        sr21_sv, _ = assign_signal_and_charm_cr_bins(
+            s_sv, c_sv, dom_sv, ultra_edges, charm_cr_edges_by_domain=charm_cr_edges
+        )
         sys_bin_by_var[sv] = sr21_sv
         sys_eval[sv] = {
             'events': int(len(sv_meta)),
@@ -974,21 +1034,25 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         }
 
     # Build signed per-bin physics systematic shifts from paired 600-event G4 shards
+    cls_to_share = {0: FIDUCIAL_2T_BKG_SHARES['nue_cc'], 1: FIDUCIAL_2T_BKG_SHARES['numu_cc'], 3: FIDUCIAL_2T_BKG_SHARES['nc']}
     ref_meta_sv = pd.read_parquet(clean_root / 'sys_shards/nominal_sys_ref/truth_meta.parquet')
     y_sv_ref = ref_meta_sv['label'].to_numpy(dtype=np.int64)
     w_sv = np.zeros(len(y_sv_ref), dtype=np.float64)
-    for c_k, sh_c in FIDUCIAL_2T_BKG_SHARES.items():
+    for c_k, sh_c in cls_to_share.items():
         mc_k = y_sv_ref == c_k
         if mc_k.any():
             w_sv[mc_k] = sh_c / float(mc_k.sum())
     nom_hist = np.bincount(np.clip(sys_bin_by_var['nominal_sys_ref'][sys_bin_by_var['nominal_sys_ref'] >= 0], 0, 20),
                            weights=w_sv[sys_bin_by_var['nominal_sys_ref'] >= 0], minlength=21)
-    signed_g4_sys = {}
+    signed_g4_sys: dict[str, dict[str, list[float]]] = {}
     for sv_k in ('tau_helicity_0', 'w_density_0p98', 'no_magnet_shells', 'field_0p97'):
         b_sv = sys_bin_by_var[sv_k]
         h_sv = np.bincount(np.clip(b_sv[b_sv >= 0], 0, 20), weights=w_sv[b_sv >= 0], minlength=21)
-        delta_rel = np.clip((h_sv - nom_hist) / np.maximum(nom_hist, 5e-4), -0.30, 0.30)
-        signed_g4_sys[f'g4_{sv_k}'] = (delta_rel, -0.5 * delta_rel)
+        delta_log = np.clip(np.log((h_sv + 5e-4) / (nom_hist + 5e-4)), -0.35, 0.35)
+        signed_g4_sys[f'g4_{sv_k}'] = {
+            'delta_log_up': delta_log.tolist(),
+            'delta_log_down': (-0.5 * delta_log).tolist(),
+        }
 
     # Evaluate cell-matched GENIE Pythia6_NUX vs Pythia6_Standard hadronization systematic if present
     gen_sys_eval = {}
@@ -1003,7 +1067,9 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
             y_gv = gv_meta['label'].to_numpy(dtype=np.int64)
             pc_gv = gv_meta['pixel_centered'].to_numpy(dtype=bool)
             dom_gv = gv_meta['obs_domain_id'].to_numpy(dtype=np.int64)
-            sr21_gv, _ = assign_signal_and_charm_cr_bins(s_gv, c_gv, dom_gv, ultra_edges)
+            sr21_gv, _ = assign_signal_and_charm_cr_bins(
+                s_gv, c_gv, dom_gv, ultra_edges, charm_cr_edges_by_domain=charm_cr_edges
+            )
             gen_bins[gv] = (sr21_gv, y_gv)
             gen_sys_eval[gv] = {
                 'events': int(len(gv_meta)),
@@ -1012,12 +1078,15 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
             }
         b_std, y_std_g = gen_bins['pythia6_std_ref']
         b_nux, y_nux_g = gen_bins['pythia6_nux']
-        w_std_g = np.array([FIDUCIAL_2T_BKG_SHARES.get(int(y), 0.0) / max(int((y_std_g == y).sum()), 1) for y in y_std_g], dtype=np.float64)
-        w_nux_g = np.array([FIDUCIAL_2T_BKG_SHARES.get(int(y), 0.0) / max(int((y_nux_g == y).sum()), 1) for y in y_nux_g], dtype=np.float64)
+        w_std_g = np.array([cls_to_share.get(int(y), 0.0) / max(int((y_std_g == y).sum()), 1) for y in y_std_g], dtype=np.float64)
+        w_nux_g = np.array([cls_to_share.get(int(y), 0.0) / max(int((y_nux_g == y).sum()), 1) for y in y_nux_g], dtype=np.float64)
         h_std_g = np.bincount(np.clip(b_std[b_std >= 0], 0, 20), weights=w_std_g[b_std >= 0], minlength=21)
         h_nux_g = np.bincount(np.clip(b_nux[b_nux >= 0], 0, 20), weights=w_nux_g[b_nux >= 0], minlength=21)
-        d_gen = np.clip((h_nux_g - h_std_g) / np.maximum(h_std_g, 5e-4), -0.30, 0.30)
-        signed_g4_sys['gen_pythia6_nux'] = (d_gen, -d_gen)
+        d_gen = np.clip(np.log((h_nux_g + 5e-4) / (h_std_g + 5e-4)), -0.35, 0.35)
+        signed_g4_sys['gen_pythia6_nux'] = {
+            'delta_log_up': d_gen.tolist(),
+            'delta_log_down': (-d_gen).tolist(),
+        }
 
     # Evaluate external rock-muon & neutral-hadron (n, K0L) punch-through sample if present
     ext_punch_eval = {}
@@ -1034,7 +1103,9 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         f_b1_ex = _infer_b1pp_group_on_split(ext_root, 'confirm', 'clean_b1pp_pe_only', checkpoints, geometry, bounds, device)
         _, s_ex, c_ex = _apply_frozen_ensemble_to_frames({**f_pf_ex, **f_b1_ex}, ext_meta, ens6_fit)
         dom_ex = ext_meta['obs_domain_id'].to_numpy(dtype=np.int64)
-        sr21_ex, _ = assign_signal_and_charm_cr_bins(s_ex, c_ex, dom_ex, ultra_edges)
+        sr21_ex, _ = assign_signal_and_charm_cr_bins(
+            s_ex, c_ex, dom_ex, ultra_edges, charm_cr_edges_by_domain=charm_cr_edges
+        )
         cutb_1pct_global = float(np.quantile(ens6_fit['s_tau_cut'][cut_meta['label'].to_numpy() != 2], 0.99))
         subtypes = ext_meta['ext_subtype'].to_numpy(dtype=str) if 'ext_subtype' in ext_meta.columns else np.full(len(ext_meta), 'unknown')
         mu_m = subtypes == 'rock_muon'
@@ -1049,16 +1120,19 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
             'neutral_hadron_unvetoed_tau_1pct_fpr': float(((~veto_fired) & nh_m & (s_ex >= cutb_1pct_global)).sum() / max(int(nh_m.sum()), 1)),
             'neutral_hadron_ultra_tail_top3bin_rate': float(((~veto_fired) & nh_m & np.isin(sr21_ex, [6, 13, 20])).sum() / max(int(nh_m.sum()), 1)),
         }
-        # Add 5% external neutral-hadron normalization uncertainty on unvetoed neutral-hadron SR shape
+        # Add external neutral-hadron normalization uncertainty on unvetoed neutral-hadron SR shape
         unv_nh = (~veto_fired) & nh_m & (sr21_ex >= 0)
         if unv_nh.any():
             h_nh = np.bincount(np.clip(sr21_ex[unv_nh], 0, 20), minlength=21).astype(np.float64)
             h_nh = 0.02 * (h_nh / max(h_nh.sum(), 1.0))  # 2% fiducial neutral-hadron punch-through rate x 50% norm unc
-            d_nh = np.clip(h_nh / np.maximum(nom_hist, 5e-4), 0.0, 0.25)
-            signed_g4_sys['ext_neutral_hadron_punch'] = (d_nh, -0.5 * d_nh)
+            d_nh = np.clip(np.log1p(h_nh / np.maximum(nom_hist, 5e-4)), 0.0, 0.25)
+            signed_g4_sys['ext_neutral_hadron_punch'] = {
+                'delta_log_up': d_nh.tolist(),
+                'delta_log_down': (-0.5 * d_nh).tolist(),
+            }
 
-    # Note: CleanConfirm has 16% NC_charm enrichment in class 3; physical NC_charm fraction in NC is ~4.5%
-    # Reweight NC_charm vs NC_light to exact physical forward-charm rate before building physical flux templates!
+    # Note: CleanConfirm has ~15.3% importance-sampled NC_charm enrichment in class 3;
+    # physical forward NC_charm fraction in NC is ~4.5%, weighted directly inside build_physical_templates.
     has_ch_con = conf_meta['has_charm'].to_numpy(dtype=bool)
     fid_m = conf_meta['large_scintillator'].to_numpy(dtype=bool)
 
@@ -1072,30 +1146,37 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         tpl27 = build_physical_templates(
             joint27_con[fid_m], y_con[fid_m], has_ch_con[fid_m],
             n_bins=27, total_events=n_fid, tau_fraction=0.003, bkg_shares=FIDUCIAL_2T_BKG_SHARES,
+            nc_charm_fraction_override=None, nc_charm_physical_fraction=0.045, zero_bkg_jeffreys_prior=True,
         )
-        # Scale NC_charm vs NC_light to physical 4.5% charm fraction of NC
-        nc_tot = tpl27['b_nc_light'].sum() + tpl27['b_nc_charm'].sum()
-        if nc_tot > 0 and tpl27['b_nc_charm'].sum() > 0 and tpl27['b_nc_light'].sum() > 0:
-            tpl27['b_nc_charm'] *= (0.045 * nc_tot) / tpl27['b_nc_charm'].sum()
-            tpl27['b_nc_light'] *= (0.955 * nc_tot) / tpl27['b_nc_light'].sum()
-            tpl27['b_charm'] = tpl27['b_cc_charm'] + tpl27['b_nc_charm']
-            tpl27['b_total'] = tpl27['b_nue'] + tpl27['b_numu_light'] + tpl27['b_nc_light'] + tpl27['b_charm']
-
-        pl_res = fit_realistic_profile_likelihood(tpl27, signed_sys=signed_g4_sys, n_sr_bins=21, enable_barlow_beeston=True)
+        pl_phys = fit_realistic_profile_likelihood(
+            tpl27, signed_sys=signed_g4_sys, n_sr_bins=21, enable_barlow_beeston=False
+        )
+        pl_bb = fit_realistic_profile_likelihood(
+            tpl27, signed_sys=signed_g4_sys, n_sr_bins=21, enable_barlow_beeston=True
+        )
         flux_projections[era] = {
             'luminosity_fb_inv': lum_fb,
             'fiducial_events': n_fid,
-            'expected_nutau_cc': float(tpl27['s'].sum()),
-            **pl_res,
+            'expected_nutau_cc': float(tpl27['s_tau'].sum()),
+            **pl_phys,
+            'z0_pl_with_10k_confirm_bb_mc_stat': pl_bb['z0_profile_likelihood'],
+            'q0_pl_with_10k_confirm_bb_mc_stat': pl_bb['q0_profile_likelihood'],
+            'bb_optimizer_converged': pl_bb['optimizer_converged'],
+            'min_gamma_mc_stat_at_H0': pl_bb['min_gamma_mc_stat_at_H0'],
+            'max_gamma_mc_stat_at_H0': pl_bb['max_gamma_mc_stat_at_H0'],
         }
 
-    # 1,000-toy H0 calibration check on CleanConfirm HL-LHC 27-bin template
+    # 1,000-toy H0 calibration check on CleanConfirm HL-LHC 27-bin template (both BB-lite and Physics-Sys)
     hl_tpl_clean = build_physical_templates(
         joint27_con[fid_m], y_con[fid_m], has_ch_con[fid_m],
         n_bins=27, total_events=180000.0, tau_fraction=0.003, bkg_shares=FIDUCIAL_2T_BKG_SHARES,
+        nc_charm_fraction_override=None, nc_charm_physical_fraction=0.045, zero_bkg_jeffreys_prior=True,
     )
     h0_clean = run_h0_toy_coverage_verification(
         hl_tpl_clean, signed_sys=signed_g4_sys, n_sr_bins=21, n_toys=n_toys, workers=16, enable_barlow_beeston=True
+    )
+    h0_clean_phys = run_h0_toy_coverage_verification(
+        hl_tpl_clean, signed_sys=signed_g4_sys, n_sr_bins=21, n_toys=n_toys, workers=16, enable_barlow_beeston=False
     )
 
     # Figure 1: Exp-2 From-Scratch Hardware Pitch, Layer Count, and Mechanical Misalignment
@@ -1118,6 +1199,7 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
     a0.set_xlabel('Target Silicon Pixel Pitch $\\Delta_{xy}$')
     a0.set_ylabel('Pixel-Fiducial $\\nu_\\tau$ Efficiency @ Exact 1% FPR [%]')
     a0.set_title('Exp-2 (P1-5 Fixed): True Pitch Resolution Curve')
+    a0.set_ylim(min(min(fs_vals), min(ood_vals)) - 0.55, max(max(fs_vals), max(ood_vals)) + 0.45)
     a0.legend(loc='lower left', fontsize=8.0, frameon=True)
     a0.grid(True, which='both', alpha=0.25)
 
@@ -1135,13 +1217,17 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         unsealed_groups['primary_dual_family_6m']['Truth_pixel_centered']['within_slice_exact_0p1pct_fpr'] * 100.0,
     ]
     xl = np.arange(len(lay_labels))
-    a1.bar(xl - 0.18, lay_e1, width=0.35, color='#4C72B0', label='Exact 1.0% Slice FPR')
-    a1.bar(xl + 0.18, lay_e01, width=0.35, color='#55A868', label='Exact 0.1% Slice FPR')
+    b_e1 = a1.bar(xl - 0.18, lay_e1, width=0.35, color='#4C72B0', label='Exact 1.0% Slice FPR')
+    b_e01 = a1.bar(xl + 0.18, lay_e01, width=0.35, color='#55A868', label='Exact 0.1% Slice FPR')
+    for rect, v in zip(b_e1, lay_e1):
+        a1.text(rect.get_x() + rect.get_width() / 2.0, v + 0.18, f'{v:.2f}%', ha='center', fontsize=7.5)
+    for rect, v in zip(b_e01, lay_e01):
+        a1.text(rect.get_x() + rect.get_width() / 2.0, v + 0.18, f'{v:.2f}%', ha='center', fontsize=7.5)
     a1.set_xticks(xl)
     a1.set_xticklabels(lay_labels, fontsize=7.6)
     a1.set_ylabel('Pixel-Fiducial $\\nu_\\tau$ CC Efficiency [%]')
     a1.set_title('Layer Cost Trade-Off & Hybrid Micro-Vertex')
-    a1.set_ylim(0.0, min(100.0, max(lay_e1) + 12.0))
+    a1.set_ylim(0.0, max(lay_e1) * 1.42)
     a1.legend(loc='upper left', fontsize=8.0, frameon=True)
     a1.grid(True, axis='y', alpha=0.25)
 
@@ -1153,7 +1239,7 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
     a2.set_xlabel('Plane-Wise Transverse Misalignment $\\sigma_{xy}$ [$\\mu$m]')
     a2.set_ylabel('Pixel-Fiducial $\\nu_\\tau$ Efficiency @ Exact 1% FPR [%]')
     a2.set_title('Mechanical Alignment Tolerance on CleanConfirm')
-    a2.set_ylim(max(0.0, min(mis_y) - 6.0), min(100.0, max(mis_y) + 6.0))
+    a2.set_ylim(max(0.0, min(mis_y) - 2.0), min(100.0, max(mis_y) + 2.0))
     a2.grid(True, alpha=0.25)
 
     fig1.tight_layout()
@@ -1165,7 +1251,7 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
     fig2, axes2 = plt.subplots(1, 3, figsize=(16.2, 5.0), dpi=300)
     b0, b1, b2 = axes2
 
-    bins_vz = np.linspace(-30.0, 30.0, 121)
+    bins_vz = np.linspace(-30.0, 30.0, 61)
     for lbl_v, gk_v, col_v in (
         ('Vanilla PF 20 $\\mu$m', 's319-pitch-20um', '#4C72B0'),
         ('Hybrid Micro-Vertex PF (Path C)', 's319-hybrid-uvtx', '#C44E52'),
@@ -1174,12 +1260,13 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         if gk_v in vtx_dz_confirm:
             va = unsealed_groups[gk_v]['vertex_audit']['Truth_pixel_centered']
             b0.hist(
-                np.clip(vtx_dz_confirm[gk_v], -29.8, 29.8), bins=bins_vz, density=True, histtype='step', lw=1.9, color=col_v,
+                vtx_dz_confirm[gk_v], bins=bins_vz, range=(-30.0, 30.0), density=True, histtype='step', lw=1.9, color=col_v,
                 label=f"{lbl_v}\n(med $|\\Delta z|={va['median_abs_dz_mm']:.2f}$ mm, $\\mu={va['bias_z_mm']:+.2f}$ mm)",
             )
     b0.axvline(0.0, color='#222222', ls=':', lw=1.1)
-    b0.set_xlabel('Primary Vertex Residual $\\hat{z}_v - z_{\\mathrm{true}}$ [mm]')
-    b0.set_ylabel('Normalized Event Density [mm$^{-1}$]')
+    b0.set_ylim(0.0, b0.get_ylim()[1] * 1.38)
+    b0.set_xlabel('Primary Vertex Residual $\\hat{z}_v - z_{\\mathrm{true}}$ [mm] ($|\\Delta z| \\leq 30$ mm)')
+    b0.set_ylabel('Normalized Core Density [mm$^{-1}$]')
     b0.set_title('Path C: Micron Multi-Tracklet Vertex Precision')
     b0.legend(loc='upper left', fontsize=7.5, frameon=True)
     b0.grid(True, alpha=0.25)
@@ -1193,25 +1280,29 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
     b1.set_xticklabels(sv_labels, fontsize=8.0)
     b1.set_ylabel('Paired 600-Event $\\nu_\\tau$ Efficiency @ 1% FPR [%]')
     b1.set_title('Paired Geant4 Transport Systematics Stability')
-    b1.set_ylim(max(0.0, min(sv_vals) - 8.0), min(100.0, max(sv_vals) + 6.0))
+    b1.set_ylim(0.0, max(sv_vals) * 1.38)
     for rect, v in zip(bars_sv, sv_vals):
-        b1.text(rect.get_x() + rect.get_width() / 2.0, v + 0.6, f'{v:.1f}%', ha='center', fontsize=8.0)
+        b1.text(rect.get_x() + rect.get_width() / 2.0, v + 0.12, f'{v:.1f}%', ha='center', fontsize=8.0)
     b1.grid(True, axis='y', alpha=0.25)
 
     eras_x = ['Run 3\n250 fb$^{-1}$', 'Run 4\n680 fb$^{-1}$', 'HL-LHC\n3 ab$^{-1}$', 'FPF\n10 ab$^{-1}$']
     eras_k = ['Run3_250fb', 'Run4_680fb', 'HLLHC_3000fb', 'FPF_10000fb']
     z_stat = [flux_projections[k]['z0_stat_only'] for k in eras_k]
     z_prof = [flux_projections[k]['z0_profile_likelihood'] for k in eras_k]
+    z_bb = [flux_projections[k]['z0_pl_with_10k_confirm_bb_mc_stat'] for k in eras_k]
     xe = np.arange(len(eras_k))
-    b2.bar(xe - 0.18, z_stat, width=0.35, color='#4C72B0', label='Stat-only (27-bin Ultra-Tail + CR)')
-    b2.bar(xe + 0.18, z_prof, width=0.35, color='#C44E52', label='Full PL (G4 Sys + Charm + BB-lite)')
-    b2.axhline(3.0, color='#555555', ls=':', lw=1.1, label='3$\\sigma$ / 5$\\sigma$ thresholds')
-    b2.axhline(5.0, color='#222222', ls='-.', lw=1.2)
+    b2.bar(xe - 0.25, z_stat, width=0.24, color='#4C72B0', label='Stat-only (27-bin Ultra-Tail + CR)')
+    bars_zp = b2.bar(xe, z_prof, width=0.24, color='#C44E52', label='Full Physics+G4/Gen/Charm PL')
+    b2.bar(xe + 0.25, z_bb, width=0.24, color='#DD8452', label='+ 10k-Confirm MC BB-lite Bound')
+    b2.axhline(3.0, color='#555555', ls=':', lw=1.1, label='3$\\sigma$ threshold')
+    b2.set_ylim(0.0, max(max(z_stat), 3.3) * 1.24)
+    for rect, zv in zip(bars_zp, z_prof):
+        b2.text(rect.get_x() + rect.get_width() / 2.0, zv + 0.08, f'{zv:.2f}$\\sigma$', ha='center', fontsize=7.3, color='#902020')
     b2.set_xticks(xe)
     b2.set_xticklabels(eras_x, fontsize=8.2)
     b2.set_ylabel('Expected $\\nu_\\tau$ Discovery Significance $Z_0$ [$\\sigma$]')
     b2.set_title('One-Shot CleanConfirm Realistic Sensitivity')
-    b2.legend(loc='upper left', fontsize=7.6, frameon=True)
+    b2.legend(loc='upper left', fontsize=7.2, frameon=True)
     b2.grid(True, axis='y', alpha=0.25)
 
     fig2.tight_layout()
@@ -1225,6 +1316,7 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         'freeze_manifest_verified': True,
         'pre_unsealing_git_commit': freeze_doc['pre_unsealing_git_commit'],
         'primary_pf_group': prim_pf_g,
+        'cutb_locked_charm_cr_edges': charm_cr_edges,
         'unsealed_clean_confirm_groups': unsealed_groups,
         'ood_vs_from_scratch_pitch_comparison_P1_5': {
             'from_scratch_exact_1pct_fpr': {
@@ -1242,6 +1334,7 @@ def unseal_and_evaluate_stage319(clean_root: Path, stage317_root: Path, n_toys: 
         'external_punchthrough_audit': ext_punch_eval,
         'realistic_forward_flux_projections_2t_fiducial': flux_projections,
         'h0_toy_coverage_verification': h0_clean,
+        'h0_toy_coverage_physics_sys': h0_clean_phys,
         'figures': [str(fig1_path), str(fig2_path)],
     }
     write_json(clean_root / 'stage319_clean_unsealing_report.json', final_report)

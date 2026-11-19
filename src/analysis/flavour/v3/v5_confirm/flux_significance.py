@@ -171,15 +171,15 @@ def assign_signal_and_charm_cr_bins(
     charm_prob: np.ndarray | None,
     obs_dom: np.ndarray,
     sr_edges_by_domain: dict[str, Sequence[float]],
+    charm_cr_edges_by_domain: dict[str, tuple[float, float]] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Partition events into 18 Signal-Region bins (top 4 quantiles per domain + 2 low bins)
-    or split the lowest-S_tau bulk (bins 0..1 of each domain, <= 80% quantile) into a
-    disjoint 6-bin Charm-Enriched Control Region (2 charm_prob bins x 3 domains) for Path D.
+    """Partition events into Signal-Region bins (e.g. 18 or 21 bins across 3 active domains)
+    or split the lowest-S_tau bulk (bins 0..1 of each domain) into a disjoint 6-bin
+    Charm-Enriched Control Region (2 charm_prob bins x 3 domains) for Path D.
 
     Returns:
-      sr_only_bins: (N,) in {0..17} (-1 for D_empty)
-      joint_24_bins: (N,) in {0..23} where 0..17 are SR (with low-S_tau Charm-tagged events
-                     routed to 18..23 CR_charm: 2 bins per domain [medium, high charm_prob]).
+      sr_only_bins: (N,) in {0..3*n_b-1} (-1 for D_empty)
+      joint_bins:   (N,) in {0..3*n_b+5} where 3*n_b..3*n_b+5 are CR_charm.
     """
     n = len(s_tau)
     sr_bins = np.full(n, -1, dtype=np.int64)
@@ -197,14 +197,11 @@ def assign_signal_and_charm_cr_bins(
         base_b = (d - 1) * n_b + local_idx
         sr_bins[dm] = base_b
 
-        # Route low-S_tau events (local_idx <= 1, i.e. below 80% S_tau quantile, far from signal tail)
-        # with elevated charm score into two disjoint Charm-CR bins per domain:
-        # CR bin 18 + 2*(d-1) + 0: 0.25 <= charm_prob < 0.55
-        # CR bin 18 + 2*(d-1) + 1: charm_prob >= 0.55
+        q_lo, q_hi = (0.25, 0.55) if charm_cr_edges_by_domain is None else charm_cr_edges_by_domain[dn]
         ch_d = ch[dm]
         in_low_stau = local_idx <= 1
-        cr_hi = in_low_stau & (ch_d >= 0.55)
-        cr_lo = in_low_stau & (ch_d >= 0.25) & (ch_d < 0.55)
+        cr_hi = in_low_stau & (ch_d >= q_hi)
+        cr_lo = in_low_stau & (ch_d >= q_lo) & (ch_d < q_hi)
         jb = base_b.copy()
         jb[cr_lo] = 3 * n_b + 2 * (d - 1) + 0
         jb[cr_hi] = 3 * n_b + 2 * (d - 1) + 1
@@ -223,6 +220,8 @@ def build_physical_templates(
     tau_fraction: float = PHYSICAL_TAU_FRACTION,
     bkg_shares: dict[str, float] | None = None,
     nc_charm_fraction_override: float | None = 0.035,
+    nc_charm_physical_fraction: float | None = None,
+    zero_bkg_jeffreys_prior: bool = True,
 ) -> dict[str, np.ndarray]:
     """Construct physical forward-flux templates & MC variance arrays across n_bins.
 
@@ -234,7 +233,8 @@ def build_physical_templates(
       b_nc_l:     NC without charm
       b_nc_c:     NC with c-cbar pair (if GENIE input has 0 NC_charm, optionally injects a
                   conservative charm-like tail proxy scaled to nc_charm_fraction_override=3.5%
-                  of NC until clean Pythia8 NC-charm simulation shards are loaded).
+                  of NC; if importance-sampled NC_charm is present and nc_charm_physical_fraction
+                  is given, weights NC_charm and NC_light directly to exact physical rates).
       var_mc_bkg: Sum of squared event weights per bin for exact Barlow-Beeston lite.
     """
     shares = PHYSICAL_BKG_SHARES if bkg_shares is None else bkg_shares
@@ -252,7 +252,13 @@ def build_physical_templates(
         w[m_tau] = n_sig_exp / float(m_tau.sum())
     for cls_id, key in ((0, 'nue_cc'), (1, 'numu_cc'), (3, 'nc')):
         mc = y == cls_id
-        if mc.any():
+        if cls_id == 3 and nc_charm_physical_fraction is not None and (mc & hc).any() and (mc & (~hc)).any():
+            f_c = float(nc_charm_physical_fraction)
+            mc_c = mc & hc
+            mc_l = mc & (~hc)
+            w[mc_c] = (n_bkg_exp * float(shares['nc']) * f_c) / float(mc_c.sum())
+            w[mc_l] = (n_bkg_exp * float(shares['nc']) * (1.0 - f_c)) / float(mc_l.sum())
+        elif mc.any():
             w[mc] = (n_bkg_exp * float(shares[key])) / float(mc.sum())
 
     def _hist_and_var(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -272,14 +278,10 @@ def build_physical_templates(
     b_nc_c, v_nc_c = _hist_and_var((y == 3) & hc)
 
     # Audit P2-1 / P0-1 safeguard: legacy GENIE 3.04 G18_02a has 0 NC_charm events!
-    # If NC_charm is absent in legacy sample and nc_charm_fraction_override is set, split
-    # nc_charm_fraction_override of total NC yield into a charm-shaped template modeled from
-    # observed CC charm shape in each domain (hadronic secondary vertex without primary lepton).
     if b_nc_c.sum() == 0.0 and nc_charm_fraction_override is not None and nc_charm_fraction_override > 0.0:
         f_ncc = float(nc_charm_fraction_override)
         tot_nc = float(b_nc_l.sum())
         if tot_nc > 0.0 and b_numu_c.sum() > 0.0:
-            # Blend 50% NC kinematics + 50% charm secondary-vertex tail shape normalized to f_ncc * tot_nc
             nc_shape = b_nc_l / max(tot_nc, 1e-12)
             ch_shape = b_numu_c / max(float(b_numu_c.sum()), 1e-12)
             proxy_shape = 0.5 * nc_shape + 0.5 * ch_shape
@@ -290,6 +292,20 @@ def build_physical_templates(
 
     var_bkg = v_nue + v_numu_l + v_numu_c + v_nc_l + v_nc_c
     b_tot = b_nue + b_numu_l + b_numu_c + b_nc_l + b_nc_c
+
+    # Jeffreys Gamma(1/2, 1) zero-MC-count conjugate prior for ultra-tail bins with 0 raw MC background events:
+    # Prevents both optimistic b=0 divergence and dropping signal-populated ultra-tail bins under H0/toys.
+    if zero_bkg_jeffreys_prior:
+        n_bkg_mc = int((valid & (y != 2)).sum())
+        if n_bkg_mc > 0:
+            w_bkg_mean = n_bkg_exp / float(n_bkg_mc)
+            empty_sig_bins = (b_tot <= 0.0) & (s_tau > 0.0)
+            if np.any(empty_sig_bins):
+                b_jeff = 0.5 * w_bkg_mean
+                b_numu_l[empty_sig_bins] = b_jeff
+                b_tot[empty_sig_bins] = b_jeff
+                var_bkg[empty_sig_bins] = b_jeff * b_jeff
+
     return {
         's_tau': s_tau,
         'b_nue': b_nue,
@@ -341,7 +357,12 @@ def _barlow_beeston_inner_deviance(
 
     eff_nu = g * nu
     with np.errstate(divide='ignore', invalid='ignore'):
-        pois = np.where(n > 0.0, 2.0 * (eff_nu - n + n * np.log(n / eff_nu)), 2.0 * eff_nu)
+        # Avoid float64 cancellation when eff_nu is very close to n > 0
+        d_rel = np.where(n > 0.0, (eff_nu - n) / np.maximum(n, 1e-30), 0.0)
+        near = (n > 0.0) & (np.abs(d_rel) < 1e-4)
+        pois_std = np.where(n > 0.0, 2.0 * (eff_nu - n - n * np.log1p(d_rel)), 2.0 * eff_nu)
+        pois_near = n * d_rel * d_rel * (1.0 - (2.0 / 3.0) * d_rel + 0.5 * d_rel * d_rel)
+        pois = np.where(near, pois_near, pois_std)
         pen = np.where(use_bb, ((g - b_obs) ** 2) / np.maximum(dsq, 1e-30), 0.0)
         d_dnu = np.where(n > 0.0, 2.0 * (g - n / nu), 2.0 * g)
 
@@ -515,7 +536,7 @@ def fit_realistic_profile_likelihood(
         jac=True,
         method='L-BFGS-B',
         bounds=bounds_h0,
-        options={'gtol': 1e-9, 'ftol': 1e-13, 'maxiter': 500},
+        options={'gtol': 1e-7, 'ftol': 1e-11, 'maxiter': 500},
     )
     if not res0.success:
         res0_alt = minimize(
@@ -524,9 +545,9 @@ def fit_realistic_profile_likelihood(
             jac=True,
             method='L-BFGS-B',
             bounds=bounds_h0,
-            options={'gtol': 1e-9, 'ftol': 1e-14, 'maxiter': 1000},
+            options={'gtol': 1e-7, 'ftol': 1e-11, 'maxiter': 1000},
         )
-        if res0_alt.fun < res0.fun:
+        if res0_alt.fun <= res0.fun + 1e-10:
             res0 = res0_alt
 
     val_h0 = float(res0.fun)
@@ -565,7 +586,7 @@ def fit_realistic_profile_likelihood(
                 jac=True,
                 method='L-BFGS-B',
                 bounds=[(0.0, 20.0)] + bounds_h0,
-                options={'gtol': 1e-9, 'ftol': 1e-13, 'maxiter': 500},
+                options={'gtol': 1e-7, 'ftol': 1e-11, 'maxiter': 500},
             )
             mu_hat = float(res_free.x[0])
             val_hat = float(res_free.fun)
@@ -585,7 +606,7 @@ def fit_realistic_profile_likelihood(
                     jac=True,
                     method='L-BFGS-B',
                     bounds=[(0.0, 20.0)] + bounds_h0,
-                    options={'gtol': 1e-9, 'ftol': 1e-13, 'maxiter': 500},
+                    options={'gtol': 1e-7, 'ftol': 1e-11, 'maxiter': 500},
                 )
                 mu_hat = float(res_free.x[0])
                 val_hat = float(res_free.fun)

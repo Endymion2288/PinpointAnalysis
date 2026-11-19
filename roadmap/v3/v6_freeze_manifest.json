@@ -1,0 +1,381 @@
+{
+  "protocol": "Stage 319 one-shot sealed calibration/cut/confirmation freeze (CleanCalA -> CleanCutB -> CleanConfirm)",
+  "UTC_frozen": "2026-11-19T02:55:48.699684+00:00",
+  "pre_unsealing_git_commit": "695db37a7a4a1ea765458cdc5aaf1fa787dc6287",
+  "Cal_A_Cut_B_Confirm_read_before_freeze": false,
+  "primary_pf_group": "s319-pitch-20um",
+  "primary_pf_prefix": "clean_pf_pitch_20um",
+  "primary_ensemble_members": [
+    "clean_pf_pitch_20um_s17",
+    "clean_pf_pitch_20um_s42",
+    "clean_pf_pitch_20um_s2026",
+    "clean_b1pp_pe_only_s17",
+    "clean_b1pp_pe_only_s42",
+    "clean_b1pp_pe_only_s2026"
+  ],
+  "tune8k_selection_summary": {
+    "s319-pitch-20um": {
+      "prefix": "clean_pf_pitch_20um",
+      "pix_centered_tau_eff_1pct_fpr": 0.053175775480059084,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.007385524372230428,
+      "all_tune8k_BA4": 0.5815,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.3495301221182259,
+          "bias_y_mm": 0.03337147967401925,
+          "bias_z_mm": -1.8191551208496106,
+          "median_abs_dx_mm": 1.263120651245119,
+          "median_abs_dy_mm": 1.2776443163553886,
+          "median_abs_dz_mm": 7.9055582682292425,
+          "median_3d_mm": 10.167099702894976,
+          "p68_abs_dz_mm": 13.210328776041774
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.6060064125159063,
+          "bias_y_mm": 0.12232115968301022,
+          "bias_z_mm": 0.3186747953453059,
+          "median_abs_dx_mm": 1.0174592336018868,
+          "median_abs_dy_mm": 0.9639368057250959,
+          "median_abs_dz_mm": 6.507080078125,
+          "median_3d_mm": 8.703672904292048,
+          "p68_abs_dz_mm": 10.744449869791788
+        }
+      }
+    },
+    "s319-pitch-100um": {
+      "prefix": "clean_pf_pitch_100um",
+      "pix_centered_tau_eff_1pct_fpr": 0.04579025110782865,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.011078286558345642,
+      "all_tune8k_BA4": 0.5785,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.4453346692655857,
+          "bias_y_mm": 0.2206267009715957,
+          "bias_z_mm": -1.9367665456136058,
+          "median_abs_dx_mm": 1.269033432006836,
+          "median_abs_dy_mm": 1.2633438110351527,
+          "median_abs_dz_mm": 7.402587890625,
+          "median_3d_mm": 9.52467536133276,
+          "p68_abs_dz_mm": 12.571559244791771
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.7137611648170811,
+          "bias_y_mm": 0.3450197810103646,
+          "bias_z_mm": -0.43376454834257333,
+          "median_abs_dx_mm": 1.0198605855305942,
+          "median_abs_dy_mm": 0.9540646870930978,
+          "median_abs_dz_mm": 6.102213541666515,
+          "median_3d_mm": 8.042828406961936,
+          "p68_abs_dz_mm": 10.207389322916697
+        }
+      }
+    },
+    "s319-pitch-300um": {
+      "prefix": "clean_pf_pitch_300um",
+      "pix_centered_tau_eff_1pct_fpr": 0.05465288035450517,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.005908419497784343,
+      "all_tune8k_BA4": 0.5842499999999999,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.1518193081990272,
+          "bias_y_mm": 0.14378926258589492,
+          "bias_z_mm": -1.0902493082682265,
+          "median_abs_dx_mm": 1.1242542266845668,
+          "median_abs_dy_mm": 1.1242421468098982,
+          "median_abs_dz_mm": 7.11962890625,
+          "median_3d_mm": 8.93947010714131,
+          "p68_abs_dz_mm": 12.040351562500005
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.3762370339308523,
+          "bias_y_mm": 0.22007436316521062,
+          "bias_z_mm": 0.8179966977167221,
+          "median_abs_dx_mm": 0.8867975870768277,
+          "median_abs_dy_mm": 0.8343086242675763,
+          "median_abs_dz_mm": 5.911702473958485,
+          "median_3d_mm": 7.588006060065698,
+          "p68_abs_dz_mm": 9.758561197916519
+        }
+      }
+    },
+    "s319-pitch-1mm": {
+      "prefix": "clean_pf_pitch_1mm",
+      "pix_centered_tau_eff_1pct_fpr": 0.03471196454948301,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.004431314623338257,
+      "all_tune8k_BA4": 0.57375,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.2465561906541698,
+          "bias_y_mm": 0.23281941245163518,
+          "bias_z_mm": 0.001599507649739195,
+          "median_abs_dx_mm": 1.266533533732101,
+          "median_abs_dy_mm": 1.293489456176759,
+          "median_abs_dz_mm": 7.833170572916515,
+          "median_3d_mm": 9.82353481243312,
+          "p68_abs_dz_mm": 12.984409179687601
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.41993150570411236,
+          "bias_y_mm": 0.282226674400464,
+          "bias_z_mm": 1.2116066194170079,
+          "median_abs_dx_mm": 1.0647602081298828,
+          "median_abs_dy_mm": 1.013197898864746,
+          "median_abs_dz_mm": 6.4296875,
+          "median_3d_mm": 8.213778787423813,
+          "p68_abs_dz_mm": 10.577311197916698
+        }
+      }
+    },
+    "s319-layers-6t": {
+      "prefix": "clean_pf_6layer_20um",
+      "pix_centered_tau_eff_1pct_fpr": 0.045051698670605614,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.0155096011816839,
+      "all_tune8k_BA4": 0.583125,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.09267070114659146,
+          "bias_y_mm": -0.12542023613916056,
+          "bias_z_mm": -0.20061301676432033,
+          "median_abs_dx_mm": 1.2250169118245466,
+          "median_abs_dy_mm": 1.2243779500325522,
+          "median_abs_dz_mm": 7.6431884765625,
+          "median_3d_mm": 9.33783766221535,
+          "p68_abs_dz_mm": 12.589873046875002
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.2783657687396025,
+          "bias_y_mm": -0.11214886756885709,
+          "bias_z_mm": 0.9849833193321795,
+          "median_abs_dx_mm": 0.9470024108886719,
+          "median_abs_dy_mm": 0.8796346982320138,
+          "median_abs_dz_mm": 6.6012369791667425,
+          "median_3d_mm": 8.142668021502153,
+          "p68_abs_dz_mm": 10.688557942708304
+        }
+      }
+    },
+    "s319-hybrid-uvtx": {
+      "prefix": "clean_pf_hybrid_uvtx_20um",
+      "pix_centered_tau_eff_1pct_fpr": 0.047267355982274745,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.012555391432791729,
+      "all_tune8k_BA4": 0.58475,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.47246888361452155,
+          "bias_y_mm": 0.1977759904927516,
+          "bias_z_mm": -1.545690165201822,
+          "median_abs_dx_mm": 1.13255182902018,
+          "median_abs_dy_mm": 1.1415325800577794,
+          "median_abs_dz_mm": 7.49853515625,
+          "median_3d_mm": 9.359417025788048,
+          "p68_abs_dz_mm": 12.632203776041615
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.7561511166427545,
+          "bias_y_mm": 0.26548824554299355,
+          "bias_z_mm": 0.07151650547137305,
+          "median_abs_dx_mm": 0.8437005678812675,
+          "median_abs_dy_mm": 0.8116436799367279,
+          "median_abs_dz_mm": 6.0801595052082575,
+          "median_3d_mm": 7.622906380797325,
+          "p68_abs_dz_mm": 10.090429687499913
+        }
+      }
+    },
+    "s319-hybrid-uvtx-nomad": {
+      "prefix": "clean_pf_hybrid_uvtx_nomad_20um",
+      "pix_centered_tau_eff_1pct_fpr": 0.055391432791728215,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.013293943870014771,
+      "all_tune8k_BA4": 0.576375,
+      "vertex_audit": {
+        "All_active": {
+          "count": 8000,
+          "bias_x_mm": 0.5174751759455539,
+          "bias_y_mm": 0.19987580458145632,
+          "bias_z_mm": -2.480828984578452,
+          "median_abs_dx_mm": 1.1597593625386606,
+          "median_abs_dy_mm": 1.1992718378702794,
+          "median_abs_dz_mm": 8.198384602864621,
+          "median_3d_mm": 10.270279278070717,
+          "p68_abs_dz_mm": 13.9398372395835
+        },
+        "Truth_pixel_centered": {
+          "count": 5366,
+          "bias_x_mm": 0.8197964564706783,
+          "bias_y_mm": 0.26684553418004486,
+          "bias_z_mm": -0.7071896578039614,
+          "median_abs_dx_mm": 0.8636878331502249,
+          "median_abs_dy_mm": 0.8334183692932107,
+          "median_abs_dz_mm": 6.5960693359375,
+          "median_3d_mm": 8.19718710436903,
+          "p68_abs_dz_mm": 11.1046875
+        }
+      }
+    },
+    "s319-b1pp-clean": {
+      "prefix": "clean_b1pp_pe_only",
+      "pix_centered_tau_eff_1pct_fpr": 0.04579025110782865,
+      "pix_centered_tau_eff_0p1pct_fpr": 0.008862629246676515,
+      "all_tune8k_BA4": 0.5730000000000001,
+      "vertex_audit": null
+    }
+  },
+  "checkpoints": {
+    "clean_pf_pitch_20um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_20um_s17/best.pt",
+      "sha256": "10cf97eeccd20539029c48030199c28b200c2f186fcaf50e80bcb0d3a7cd91f9",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_20um_s17.json"
+    },
+    "clean_pf_pitch_20um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_20um_s42/best.pt",
+      "sha256": "20753d6d8501722ef6697aaf3208e146277a8e4542fb6f27ed215b842b2da15c",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_20um_s42.json"
+    },
+    "clean_pf_pitch_20um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_20um_s2026/best.pt",
+      "sha256": "10c296186802e798f8642b4538ee46a46335cbc118afe5c209f8e42caf6d7b1c",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_20um_s2026.json"
+    },
+    "clean_pf_pitch_100um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_100um_s17/best.pt",
+      "sha256": "c20a1fc26fc5525138056ffe38f9932c46bac6d150554d9ced80941e94fa801f",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_100um_s17.json"
+    },
+    "clean_pf_pitch_100um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_100um_s42/best.pt",
+      "sha256": "843697a3222e03de92dcd0ae76b466cc37ad34ee7d249ab829e624c2d29a6f2b",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_100um_s42.json"
+    },
+    "clean_pf_pitch_100um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_100um_s2026/best.pt",
+      "sha256": "044e217da7f7c6245dc5788537ed1537a050ca72c043567e3d6ec6de1a298731",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_100um_s2026.json"
+    },
+    "clean_pf_pitch_300um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_300um_s17/best.pt",
+      "sha256": "35f806edf48955d07fa3a39bb0e587fd53fa2fe23a5388f846b396edffcdff4f",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_300um_s17.json"
+    },
+    "clean_pf_pitch_300um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_300um_s42/best.pt",
+      "sha256": "21334bdd131e115976c7706ea49dfec2cd140374878d1e0e8e876beed7f31c4f",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_300um_s42.json"
+    },
+    "clean_pf_pitch_300um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_300um_s2026/best.pt",
+      "sha256": "05cf6c09db93e5214b65817be5ab010d733cb001c1c7935b8b00f614f6786275",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_300um_s2026.json"
+    },
+    "clean_pf_pitch_1mm_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_1mm_s17/best.pt",
+      "sha256": "575fc760c4aeef9927b16b7f44d242a247041a926f236f70383e7468ab3258df",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_1mm_s17.json"
+    },
+    "clean_pf_pitch_1mm_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_1mm_s42/best.pt",
+      "sha256": "086e63b7a776f08aa40eaf975593534da7bf2990d246202be4aa30b4ee5c27ea",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_1mm_s42.json"
+    },
+    "clean_pf_pitch_1mm_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_pitch_1mm_s2026/best.pt",
+      "sha256": "9f7f69b0191fab0542d06c7a405345cdf2367803ba3ac97eca5e60ebf4050751",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_pitch_1mm_s2026.json"
+    },
+    "clean_pf_6layer_20um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_6layer_20um_s17/best.pt",
+      "sha256": "d77ee8081fed2b5e61bab3b4b38b478e23a7c3450f0baebbfe6c72c3ecafbdd7",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_6layer_20um_s17.json"
+    },
+    "clean_pf_6layer_20um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_6layer_20um_s42/best.pt",
+      "sha256": "f2559527235a84fbc95fa47d747571f6fd06083c8556c75ff4a7c82ded8087f9",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_6layer_20um_s42.json"
+    },
+    "clean_pf_6layer_20um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_6layer_20um_s2026/best.pt",
+      "sha256": "2afa5de8af28e24a444ebd6b043acfe316d93a84a527ec426f19104b76ed7006",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_6layer_20um_s2026.json"
+    },
+    "clean_pf_hybrid_uvtx_20um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_hybrid_uvtx_20um_s17/best.pt",
+      "sha256": "571408377bb99be9e4f797042c8ce03e42caa794ba5ec4950da8e8482bd18ca6",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_hybrid_uvtx_20um_s17.json"
+    },
+    "clean_pf_hybrid_uvtx_20um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_hybrid_uvtx_20um_s42/best.pt",
+      "sha256": "92462c07345c298d90a4745bccbfe530faad23288f7902141d34021a994e4e88",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_hybrid_uvtx_20um_s42.json"
+    },
+    "clean_pf_hybrid_uvtx_20um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_hybrid_uvtx_20um_s2026/best.pt",
+      "sha256": "a4254e37d71e1b79b2fbdc02fb9338a48a2721c07b0ec5762a613ce3fb352d1c",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_hybrid_uvtx_20um_s2026.json"
+    },
+    "clean_pf_hybrid_uvtx_nomad_20um_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_hybrid_uvtx_nomad_20um_s17/best.pt",
+      "sha256": "eed10ee92cdad975c7d26dc8dc9577bb1b82172f27c949b5da0de734d5e26208",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_hybrid_uvtx_nomad_20um_s17.json"
+    },
+    "clean_pf_hybrid_uvtx_nomad_20um_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_hybrid_uvtx_nomad_20um_s42/best.pt",
+      "sha256": "1f523fc2e95ba5836b8bb6df39fd1cefeb3a613cbd5b99256fcd681c778b4fbe",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_hybrid_uvtx_nomad_20um_s42.json"
+    },
+    "clean_pf_hybrid_uvtx_nomad_20um_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_pf_hybrid_uvtx_nomad_20um_s2026/best.pt",
+      "sha256": "c10e7c07c8656c2448b2a47fd332e9d3729addb5a14bd05f48f1fcb74d586fd5",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_pf_hybrid_uvtx_nomad_20um_s2026.json"
+    },
+    "clean_b1pp_pe_only_s17": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_b1pp_pe_only_s17/best.pt",
+      "sha256": "fe481952a87ce3016ed6f841035bcbedbe1f1e9eb4beb936c10ad1bae9abbcd8",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_b1pp_pe_only_s17.json"
+    },
+    "clean_b1pp_pe_only_s42": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_b1pp_pe_only_s42/best.pt",
+      "sha256": "619f9f3d4872bf0834eb70a46abd39ee95495b1b7083e14ac30c4b2d2f9389f0",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_b1pp_pe_only_s42.json"
+    },
+    "clean_b1pp_pe_only_s2026": {
+      "path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/experiments/clean_b1pp_pe_only_s2026/best.pt",
+      "sha256": "2d66f64d149ccc91194d70bc9b76b0ad52c1d5f8d22ad448d259912f3b498c00",
+      "chosen_prediction": "best_predictions.parquet",
+      "config_path": "/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v4_audit_2026-11-18/clean_sim/stage319/configs/clean_b1pp_pe_only_s2026.json"
+    }
+  }
+}

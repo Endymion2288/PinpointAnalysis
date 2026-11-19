@@ -342,6 +342,21 @@ class TestStage316AuditFixes(unittest.TestCase):
         self.assertGreater(cov['zero_fraction'], 0.30)
         self.assertLess(cov['zero_fraction'], 0.70)
 
+        # Verify zero-MC-background ultra-tail bin (Jeffreys Gamma(1/2,1) conjugate prior) preserves Wilks H0 calibration
+        bin_zero = bin_ids.copy()
+        bin_zero[(labels != 2) & (bin_zero == 5)] = 4
+        tpl_z = build_physical_templates(
+            bin_zero, labels, has_charm, n_bins=18,
+            total_events=scen['expected_total_events'], tau_fraction=scen['tau_fraction'], bkg_shares=scen['bkg_shares'],
+            zero_bkg_jeffreys_prior=True,
+        )
+        self.assertGreater(float(tpl_z['b_total'][5]), 0.0)
+        pl_z = fit_realistic_profile_likelihood(tpl_z, n_sr_bins=18, enable_barlow_beeston=True)
+        self.assertTrue(pl_z['optimizer_converged'])
+        cov_z = run_h0_toy_coverage_verification(tpl_z, n_sr_bins=18, n_toys=120, workers=8)
+        self.assertGreater(cov_z['zero_fraction'], 0.30)
+        self.assertLess(cov_z['zero_fraction'], 0.70)
+
     def test_path_c_micron_multi_track_vertex_and_hybrid_pinpointformer(self) -> None:
         """Path C: C++17 AVR primary vertex + displaced d0/sigma + kink features + hybrid model grad."""
         pz = np.asarray(self.bounds['pixel_Zpos'][:4], dtype=np.float64)
