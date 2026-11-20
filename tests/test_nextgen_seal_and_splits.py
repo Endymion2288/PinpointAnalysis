@@ -528,9 +528,19 @@ class TestNextgenSealAndSplits(unittest.TestCase):
 
         # Optional check on forensics internal_split_spec.json if generated on disk
         if INTERNAL_SPLIT_SPEC_PATH.is_file():
-            spec_text = INTERNAL_SPLIT_SPEC_PATH.read_text()
-            for tok in SEALED_SPLIT_NAMES:
-                self.assertNotIn(tok.lower(), spec_text.lower())
+            spec = json.loads(INTERNAL_SPLIT_SPEC_PATH.read_text())
+            auth_shards = spec.get('source_dataset', {}).get('authorized_train_shards', [])
+            self.assertTrue(all(int(s) < 80 for s in auth_shards), f'Unauthorized shard in internal_split_spec: {auth_shards}')
+            anti = spec.get('anti_leakage_verification', {})
+            if 'sealed_shards_touched' in anti:
+                self.assertFalse(anti['sealed_shards_touched'])
+            for k, v in anti.items():
+                if k.startswith('family_overlap_'):
+                    self.assertEqual(v, 0, f'Non-zero family overlap in {k}: {v}')
+            for split_name, split_meta in spec.get('splits', {}).items():
+                assert_unsealed_split_or_path(split_name, context='internal_split_spec')
+                if isinstance(split_meta, dict) and 'path' in split_meta:
+                    assert_unsealed_split_or_path(split_meta['path'], context='internal_split_spec')
 
     def test_inference_zero_truth_leakage(self) -> None:
         """Mutating trackID, truth vertex, or truth kinematics leaves logits identical within 1e-7."""
