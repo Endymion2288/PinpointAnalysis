@@ -37,6 +37,16 @@ def highland_scattering_rad(delta_x0: torch.Tensor | np.ndarray | float, p_ref_m
     return base * np.sqrt(x0_np) * (1.0 + 0.038 * np.log(np.maximum(x0_np, 1.0)))
 
 
+def _safe_hypot(a: torch.Tensor, b: torch.Tensor, eps: float = 1.0e-12) -> torch.Tensor:
+    """Smooth, exact-zero-at-origin 2D Euclidean norm with finite backward gradients at (0, 0)."""
+    orig_dtype = a.dtype
+    if orig_dtype in (torch.float16, torch.bfloat16):
+        a = a.float()
+        b = b.float()
+    out = torch.sqrt(a.square() + b.square() + eps) - math.sqrt(eps)
+    return out.to(orig_dtype)
+
+
 def _solve_sym_3x3(mat: torch.Tensor, rhs: torch.Tensor, eps: float = 1e-6) -> tuple[torch.Tensor, torch.Tensor]:
     """Exact, fast, batch-vectorized FP32 analytical 3x3 SPD linear solver & inverse diagonal.
 
@@ -401,7 +411,7 @@ def pairwise_skew_dca_features(
         half_dz0 = 0.5 * dr[..., 2]  # z0_a - z_mid0 = +0.5*(z0_a - z0_b)
         dx_mid = dr[..., 0] - tx[:, :, None] * half_dz0 - tx[:, None, :] * half_dz0
         dy_mid = dr[..., 1] - ty[:, :, None] * half_dz0 - ty[:, None, :] * half_dz0
-        dca_par = torch.hypot(dx_mid, dy_mid)
+        dca_par = _safe_hypot(dx_mid, dy_mid, eps=1.0e-14)
 
         w_skew = cross_sq / (cross_sq + 1e-5)
         d_dca = w_skew * dca_skew + (1.0 - w_skew) * dca_par
@@ -442,10 +452,10 @@ def pairwise_skew_dca_features(
         dz_kink_b = -0.5 * gap_z_ba
         dx_kink = dr[..., 0] + tx[:, :, None] * dz_kink_a - tx[:, None, :] * dz_kink_b
         dy_kink = dr[..., 1] + ty[:, :, None] * dz_kink_a - ty[:, None, :] * dz_kink_b
-        kink_miss = torch.hypot(dx_kink, dy_kink)
+        kink_miss = _safe_hypot(dx_kink, dy_kink, eps=1.0e-14)
 
         same_start_z = (torch.abs(dr[..., 2]) < 1.0)
-        shared_root = same_start_z & (torch.hypot(dr[..., 0], dr[..., 1]) < 0.08)
+        shared_root = same_start_z & (_safe_hypot(dr[..., 0], dr[..., 1], eps=1.0e-14) < 0.08)
 
         pair_valid = trk_mask[:, :, None] & trk_mask[:, None, :]
         eye = torch.eye(trk_kin.shape[1], dtype=torch.bool, device=trk_kin.device)[None, :, :]
@@ -586,15 +596,15 @@ class DifferentiableStudentTVertexLayer(nn.Module):
             var_yf = syy + dz_f.square() * sty + inv_diag[:, None, 1]
             dx_pv = (x0 + tx * dz_f) - v_pv[:, None, 0]
             dy_pv = (y0 + ty * dz_f) - v_pv[:, None, 1]
-            d0 = torch.hypot(dx_pv, dy_pv) * trk_mask.float()
+            d0 = _safe_hypot(dx_pv, dy_pv, eps=1.0e-12) * trk_mask.float()
             chi2_pv = (dx_pv.square() / var_xf + dy_pv.square() / var_yf) * trk_mask.float()
-            s_d0 = torch.sqrt(chi2_pv.clamp_min(1e-10)) * trk_mask.float()
+            s_d0 = torch.sqrt(chi2_pv + 1.0e-10) * trk_mask.float()
 
             # Thrust-axis signed impact parameter (mirror-invariant!)
             w_thr = trk_mask.float()
             ux = (tx * w_thr).sum(dim=1, keepdim=True)
             uy = (ty * w_thr).sum(dim=1, keepdim=True)
-            u_n = torch.hypot(ux, uy).clamp_min(1e-5)
+            u_n = torch.sqrt(ux.square() + uy.square() + 1.0e-10).clamp_min(1e-5)
             signed_d0 = (-(dx_pv * (ux / u_n) + dy_pv * (uy / u_n))) * trk_mask.float()
 
             ip_feat = torch.stack([
@@ -662,29 +672,75 @@ def compute_scint_tof_residual_ns(
     hit_time_ns: np.ndarray | torch.Tensor,
     bar_z_mm: np.ndarray | torch.Tensor,
     wls_dist_mm: np.ndarray | torch.Tensor | None = None,
+    *,
+    valid_mask: torch.Tensor | np.ndarray | None = None,
+    event_idx: torch.Tensor | np.ndarray | None = None,
 ) -> np.ndarray | torch.Tensor:
-    """Compute relativistic shower-front time-of-flight residual Delta_t_ToF (ns) for active bars."""
+    """Compute strictly per-event relativistic shower-front ToF residual Delta_t_ToF (ns).
+
+    Supports:
+      - 1D single-event `(N_bar,)`,
+      - 2D/ND padded batch `(B, ..., N_bar)` reducing along `dim=-1` per event (zero cross-event leakage!),
+        supporting both `-1` sentinel padding and explicit `valid_mask` for zero-padded batches,
+      - 1D ragged concatenated batch `(N_bars_tot,)` when `event_idx` (`bar_ev`) is provided.
+    """
     if isinstance(hit_time_ns, torch.Tensor):
+        if hit_time_ns.numel() == 0:
+            return torch.zeros_like(hit_time_ns, dtype=torch.float32)
         valid = hit_time_ns >= 0.0
+        if valid_mask is not None:
+            valid = valid & torch.as_tensor(valid_mask, dtype=torch.bool, device=hit_time_ns.device)
         if not valid.any():
             return torch.zeros_like(hit_time_ns, dtype=torch.float32)
         t = hit_time_ns.float()
         z = bar_z_mm.float()
         d_wls = wls_dist_mm.float() if wls_dist_mm is not None else torch.full_like(t, 210.0)
         t_corr = t - (z / SPEED_OF_LIGHT_MM_PER_NS) - (d_wls / WLS_EFFECTIVE_SPEED_MM_PER_NS)
-        t_ref = torch.where(valid, t_corr, torch.full_like(t_corr, 1e9)).min()
-        res = torch.where(valid, (t_corr - t_ref).clamp(-5.0, 50.0), torch.zeros_like(t_corr))
+        masked_tc = torch.where(valid, t_corr, torch.full_like(t_corr, 1e9))
+
+        if event_idx is not None:
+            ev = torch.as_tensor(event_idx, dtype=torch.long, device=t.device)
+            n_ev = int(ev.max().item()) + 1 if ev.numel() > 0 else 1
+            ev_min = torch.full((n_ev,), 1e9, dtype=torch.float32, device=t.device)
+            ev_min.scatter_reduce_(0, ev, masked_tc, reduce='amin', include_self=True)
+            t_ref = ev_min[ev]
+            row_ok = valid & (t_ref < 5e8)
+        else:
+            any_valid = valid.any(dim=-1, keepdim=True)
+            t_ref = masked_tc.amin(dim=-1, keepdim=True)
+            row_ok = valid & any_valid
+
+        res = torch.where(row_ok, (t_corr - t_ref).clamp(-5.0, 50.0), torch.zeros_like(t_corr))
         return torch.asinh(res / 0.35) / 3.0
 
     t_np = np.asarray(hit_time_ns, dtype=np.float64)
+    if t_np.size == 0:
+        return np.zeros_like(t_np, dtype=np.float32)
     valid_np = t_np >= 0.0
+    if valid_mask is not None:
+        valid_np = valid_np & np.asarray(valid_mask, dtype=bool)
     if not valid_np.any():
         return np.zeros_like(t_np, dtype=np.float32)
     z_np = np.asarray(bar_z_mm, dtype=np.float64)
     dw_np = np.asarray(wls_dist_mm, dtype=np.float64) if wls_dist_mm is not None else np.full_like(t_np, 210.0)
     tc = t_np - (z_np / SPEED_OF_LIGHT_MM_PER_NS) - (dw_np / WLS_EFFECTIVE_SPEED_MM_PER_NS)
-    t_ref = float(np.min(tc[valid_np]))
-    res_np = np.where(valid_np, np.clip(tc - t_ref, -5.0, 50.0), 0.0)
+
+    if event_idx is not None:
+        ev_np = np.asarray(event_idx, dtype=np.int64)
+        n_ev = int(ev_np.max()) + 1 if ev_np.size > 0 else 1
+        ev_min_np = np.full(n_ev, np.inf, dtype=np.float64)
+        np.minimum.at(ev_min_np, ev_np, np.where(valid_np, tc, np.inf))
+        t_ref_np = ev_min_np[ev_np]
+        ok_np = valid_np & np.isfinite(t_ref_np)
+        t_ref_safe = np.where(np.isfinite(t_ref_np), t_ref_np, 0.0)
+    else:
+        any_valid_np = np.any(valid_np, axis=-1, keepdims=True)
+        tc_masked = np.where(valid_np, tc, np.inf)
+        t_ref_np = np.min(tc_masked, axis=-1, keepdims=True)
+        t_ref_safe = np.where(np.isfinite(t_ref_np), t_ref_np, 0.0)
+        ok_np = valid_np & any_valid_np
+
+    res_np = np.where(ok_np, np.clip(tc - t_ref_safe, -5.0, 50.0), 0.0)
     return (np.arcsinh(res_np / 0.35) / 3.0).astype(np.float32)
 
 
@@ -694,7 +750,7 @@ def compute_ipt_spectrometer_interlock(
     trk_cand: torch.Tensor,
     trk_cand_mask: torch.Tensor,
     *,
-    x_pix_center: float = 0.0,
+    x_pix_center: float = -0.0048,
     y_scint_center: float = -12.0,
     ipt_bounds_xy: tuple[float, float, float, float] = (-133.0, 133.0, -110.0, 86.0),
 ) -> torch.Tensor:
@@ -711,7 +767,8 @@ def compute_ipt_spectrometer_interlock(
         cand = trk_cand.float()
         ik = ipt_kin.float()
         b, kc, _ = cand.shape
-        device = cand.device
+        if kc == 0:
+            return cand.new_zeros((b, 0, 4))
 
         x_trk0 = float(x_pix_center) + 150.0 * cand[..., 2]
         y_trk0 = float(y_scint_center) + 150.0 * cand[..., 3]
@@ -730,6 +787,17 @@ def compute_ipt_spectrometer_interlock(
 
         xmin, xmax, ymin, ymax = ipt_bounds_xy
         in_ipt_ap = (x_ext >= xmin + 5.0) & (x_ext <= xmax - 5.0) & (y_ext >= ymin + 5.0) & (y_ext <= ymax - 5.0)
+        cm = trk_cand_mask.float()
+
+        if ik.shape[1] == 0:
+            min_chi2 = torch.full_like(cm, 400.0)
+            zeros = torch.zeros_like(cm)
+            return torch.stack([
+                zeros,
+                torch.log1p(min_chi2) / 5.0 * cm,
+                in_ipt_ap.float() * cm,
+                zeros,
+            ], dim=-1)
 
         # Propagate IPT stubs (B, M, 12) to z_ref
         dz_i = z_ref - ik[..., 2]
@@ -750,7 +818,6 @@ def compute_ipt_spectrometer_interlock(
         min_chi2 = chi2_masked.min(dim=-1).values  # (B, K_cand)
 
         any_ipt = ipt_mask.any(dim=-1, keepdim=True).expand(b, kc).float()
-        cm = trk_cand_mask.float()
         return torch.stack([
             torch.exp(-0.5 * min_chi2 / 9.0) * any_ipt * cm,
             torch.log1p(min_chi2) / 5.0 * cm,

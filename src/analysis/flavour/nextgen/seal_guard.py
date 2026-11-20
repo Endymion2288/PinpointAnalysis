@@ -63,15 +63,29 @@ ALLOWED_NEXTGEN_SPLITS: frozenset[str] = frozenset({
 
 TRUTH_BATCH_KEYS: tuple[str, ...] = (
     'label',
+    'label_4',
     'label_7',
+    'tau_branch',
     'tau_branch_valid',
     'charm_flag',
+    'has_charm',
     'charm_valid',
     'vertex_xyz_mm',
+    'vertex_x_mm',
+    'vertex_y_mm',
+    'vertex_z_mm',
     'vertex_valid',
     'vis_kinematics',
+    'vis_pz_log1p',
+    'vis_pt_log1p',
+    'vis_cos_dphi',
+    'vis_sin_dphi',
     'kin_valid',
+    'tau_decay_L3d_mm',
+    'tau_decay_dz_mm',
+    'charm_decay_L3d_mm',
     'sample_weight',
+    'geom_weight',
     'pix_origin_target',
     'pix_ancestry_target',
     'pix_rel_target',
@@ -79,6 +93,11 @@ TRUTH_BATCH_KEYS: tuple[str, ...] = (
     'bar_rel_target',
     'trackID',
     'Ev_GeV',
+    'energy_nu_GeV',
+    'initX',
+    'initY',
+    'initZ',
+    'initE',
     'family_hi',
     'family_lo',
 )
@@ -223,10 +242,30 @@ def verify_inference_truth_invariance(
         bsz = int(ref_f.shape[0])
         device = ref_f.device
         mutated['label'] = torch.full((bsz,), 3, dtype=torch.long, device=device)
+        mutated['label_4'] = torch.full((bsz,), 3, dtype=torch.long, device=device)
         mutated['label_7'] = torch.full((bsz,), 6, dtype=torch.long, device=device)
+        mutated['tau_branch'] = ['unknown'] * bsz
+        mutated['tau_branch_valid'] = torch.zeros((bsz,), dtype=torch.long, device=device)
         mutated['charm_flag'] = torch.ones((bsz,), dtype=torch.long, device=device)
+        mutated['has_charm'] = torch.ones((bsz,), dtype=torch.bool, device=device)
+        mutated['charm_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
         mutated['vertex_xyz_mm'] = torch.full((bsz, 3), 999.0, dtype=torch.float32, device=device)
+        mutated['vertex_x_mm'] = torch.full((bsz,), 999.0, dtype=torch.float32, device=device)
+        mutated['vertex_y_mm'] = torch.full((bsz,), -999.0, dtype=torch.float32, device=device)
+        mutated['vertex_z_mm'] = torch.full((bsz,), -1234.0, dtype=torch.float32, device=device)
+        mutated['vertex_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
         mutated['vis_kinematics'] = torch.full((bsz, 4), -7.5, dtype=torch.float32, device=device)
+        mutated['vis_pz_log1p'] = torch.full((bsz,), 9.9, dtype=torch.float32, device=device)
+        mutated['vis_pt_log1p'] = torch.full((bsz,), 4.2, dtype=torch.float32, device=device)
+        mutated['vis_cos_dphi'] = torch.full((bsz,), -1.0, dtype=torch.float32, device=device)
+        mutated['vis_sin_dphi'] = torch.zeros((bsz,), dtype=torch.float32, device=device)
+        mutated['kin_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
+        mutated['tau_decay_L3d_mm'] = torch.full((bsz,), 55.5, dtype=torch.float32, device=device)
+        mutated['tau_decay_dz_mm'] = torch.full((bsz,), 44.4, dtype=torch.float32, device=device)
+        mutated['charm_decay_L3d_mm'] = torch.full((bsz,), 33.3, dtype=torch.float32, device=device)
+        mutated['energy_nu_GeV'] = torch.full((bsz,), 4321.0, dtype=torch.float32, device=device)
+        mutated['Ev_GeV'] = torch.full((bsz,), 4321.0, dtype=torch.float32, device=device)
+        mutated['geom_weight'] = torch.full((bsz,), 7.7, dtype=torch.float32, device=device)
         mutated['trackID'] = torch.arange(bsz, dtype=torch.long, device=device) + 12345
 
         mut_out = run_fwd(model, mutated)
