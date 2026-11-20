@@ -131,6 +131,14 @@ def main() -> None:
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA device not available inside allocation')
     cap = torch.cuda.get_device_capability(0)
+    vram_mib = float(torch.cuda.get_device_properties(0).total_memory) / (1024.0 ** 2)
+    if args.share_b1pp_inputs:
+        per_proc_mib = 4500.0
+    elif vram_mib < 28000.0:
+        per_proc_mib = 6400.0
+    else:
+        per_proc_mib = 10500.0
+    eff_parallel = max(1, min(int(args.parallel), int(vram_mib // per_proc_mib)))
     if any(c.get('strict_bf16', False) for c in configs) and cap[0] < 8:
         raise RuntimeError(f'Strict BF16 configs require SM80+, found SM{cap[0]}{cap[1]}')
     if args.stage_cluster_sidecar is not None and not (args.stage_cluster_sidecar / 'pix_offsets.bin').is_file():
@@ -144,9 +152,11 @@ def main() -> None:
         'status': 'running',
         'UTC_started': datetime.now(timezone.utc).isoformat(),
         'GPU': torch.cuda.get_device_name(0),
+        'GPU_VRAM_MiB': round(vram_mib, 1),
         'capability': f'SM{cap[0]}{cap[1]}',
         'allocation_id': os.environ.get('PINPOINT_JOB_ID', 'interactive'),
-        'concurrent_jobs': int(args.parallel),
+        'requested_parallel': int(args.parallel),
+        'concurrent_jobs': int(eff_parallel),
         'configs': [str(p) for p in args.configs],
         'completed': [],
         'failed': [],
@@ -159,8 +169,19 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix=f'v3-grp-{args.name}-', dir=parent) as scratch:
         scratch_dir = Path(scratch)
         data_root = Path(configs[0]['data_root'])
-        shard_paths = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
-        stage = stage_shards(shard_paths, scratch_dir / 'native', workers=min(4, max(1, args.cache_workers)))
+        import pandas as _pd
+        all_shard_paths = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
+        shard_paths = []
+        for sp in all_shard_paths:
+            prov_p = sp / 'provenance.parquet'
+            if prov_p.exists():
+                sp_vals = set(_pd.read_parquet(prov_p, columns=['split'])['split'].unique().tolist())
+                if not (sp_vals & {'train', 'validation'}):
+                    continue
+            shard_paths.append(sp)
+        if not shard_paths:
+            shard_paths = all_shard_paths
+        stage = stage_shards(shard_paths, scratch_dir / 'native', workers=min(6, max(1, args.cache_workers)))
         record['shared_staging'] = stage
         write_json(record_path, record)
 
@@ -237,7 +258,7 @@ def main() -> None:
         live: list[tuple[subprocess.Popen, dict, object, Path]] = []
         while pending or live:
             failed_names = {entry['name'] for entry in record['failed']}
-            while pending and len(live) < args.parallel:
+            while pending and len(live) < eff_parallel:
                 picked = None
                 for idx, (cand_path, cand_cfg) in enumerate(pending):
                     ic_raw = cand_cfg.get('init_checkpoint')

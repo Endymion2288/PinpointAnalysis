@@ -60,6 +60,7 @@ from analysis.flavour.v3.common.calibration import _tau_efficiency_at_fpr
 from analysis.flavour.v3.common.datasets import V3EvalDataset, V3TrainDataset
 from analysis.flavour.v3.common.domains import (
     OBS_DOMAIN_NAMES,
+    compute_observable_containment,
     detector_bounds,
     pinpoint_slab_catalog,
 )
@@ -82,7 +83,7 @@ from analysis.flavour.v3.v2_pinpointformer.train import (
 from analysis.flavour.v3.v3_multitask.models import PinpointFormerMultitask, v3_branch_groups
 from analysis.flavour.v3.v3_multitask.train import _pf_v3_loss, _pf_v3_predict
 from analysis.flavour.v3.v4_tau.ensemble import fit_oof_domain_ensemble
-from analysis.flavour.v3.v4_tau.models import PinpointFormerV4, v4_pf_branch_groups
+from analysis.flavour.v3.v4_tau.models import PinpointFormerV4, pf_v4_branch_groups
 from analysis.flavour.v3.v4_tau.nomad_kinematics import NomadTransverseExtractor
 from analysis.flavour.v3.v6_clean_sim.evaluate_stage317 import (
     SEEDS,
@@ -403,10 +404,11 @@ def run_smoke32_health_gate_v3(clean_root: Path) -> dict:
             groups = b1pp_branch_groups(model)
             batch_cpu = collate_b1pp(b1_items_32, mirror_rng=None)
             batch = device_batch(batch_cpu, device)
-            opt = torch.optim.AdamW(model.build_param_groups(2.0e-3, 1e-4))
+            from analysis.flavour.v3.common.layers import split_adamw_param_groups
+            opt = torch.optim.AdamW(split_adamw_param_groups(model, 2.0e-3, 1e-4))
         elif fam == 'pf_v4':
             model = PinpointFormerV4(geom, cfg).to(device)
-            groups = v4_pf_branch_groups(model)
+            groups = pf_v4_branch_groups(model)
             batch_cpu = collate_pf(pf_items_32, mirror_rng=None)
             batch = move_batch_to_device(batch_cpu, device)
             opt = torch.optim.AdamW(model.build_param_groups(1.5e-3, 1e-4))
@@ -805,8 +807,8 @@ def build_stage323_configs(clean_root: Path) -> dict[str, dict]:
             'ema_decay': 0.999,
             'bf16': True,
             'screen_every_passes': 4,
-            'cache_workers': 6,
-            'loader_workers': 4,
+            'cache_workers': 4,
+            'loader_workers': 2,
             'pe_only': True,
             'bar_threshold_pe': 2.5,
             'sipm_npix': 14400.0,
@@ -843,7 +845,7 @@ def submit_stage323_group(
         '--name', group_name,
         '--parallel', str(parallel),
         spec['share'],
-        '--cache-workers', '6',
+        '--cache-workers', '4',
         '--train-module', spec['train_module'],
         '--configs', *[str(p) for p in spec['configs']],
     ]
@@ -859,7 +861,6 @@ def submit_stage323_group(
             deadline_seconds=14400,
         )
     if backend == 'condor':
-        min_vram = 20000 if (parallel <= 2 or group_name == 's323-b1pp-clean') else 36000
         return submit_job(
             root=s323_root,
             name=group_name,
@@ -867,12 +868,12 @@ def submit_stage323_group(
             command=cmd,
             backend='condor',
             cpus=4,
-            memory='20000MB',
+            memory='15000MB',
             disk='16GB',
             gpu=True,
-            min_gpu_memory_mb=min_vram,
+            min_gpu_memory_mb=10000,
             min_capability=8.0,
-            job_flavour='longlunch',
+            job_flavour='workday',
             allow_backfill=True,
         )
     raise ValueError(f'Unsupported backend: {backend}')

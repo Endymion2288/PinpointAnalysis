@@ -113,10 +113,23 @@ class V3EvalDataset(Dataset):
         self.geometry = json.loads(Path(plan['geometry']).read_text())
         self.bounds = detector_bounds(self.geometry)
 
-        self.paths = sorted(
+        all_paths = sorted(
             p for p in (self.root / 'shards').iterdir()
             if (p / 'observations.parquet').exists()
         )
+        active_paths: list[Path] = []
+        active_idx_lists: list[np.ndarray] = []
+        meta_frames: list[pd.DataFrame] = []
+        for path in all_paths:
+            frame = pd.read_parquet(path / 'provenance.parquet', columns=list(EVAL_PROVENANCE_COLUMNS))
+            keep = frame['split'].eq(split)
+            idx = np.flatnonzero(keep.to_numpy())
+            if len(idx):
+                active_paths.append(path)
+                active_idx_lists.append(idx)
+                meta_frames.append(frame.iloc[idx])
+
+        self.paths = active_paths if active_paths else all_paths[:1]
         staged = os.environ.get('PINPOINT_V3_SHARED_STAGE') or os.environ.get('PINPOINT_NATIVE_SHARD_ROOT')
         native_paths = [Path(staged) / p.name for p in self.paths] if staged else self.paths
         self.native = CachedNativeDataset(
@@ -126,14 +139,8 @@ class V3EvalDataset(Dataset):
         )
 
         indexes: list[int] = []
-        meta_frames: list[pd.DataFrame] = []
-        for i, path in enumerate(self.paths):
-            frame = pd.read_parquet(path / 'provenance.parquet', columns=list(EVAL_PROVENANCE_COLUMNS))
-            keep = frame['split'].eq(split)
-            idx = np.flatnonzero(keep.to_numpy())
-            if len(idx):
-                indexes.extend((self.native.boundaries[i] + idx).tolist())
-                meta_frames.append(frame.iloc[idx])
+        for i, idx in enumerate(active_idx_lists):
+            indexes.extend((self.native.boundaries[i] + idx).tolist())
 
         self.indexes = np.asarray(indexes, dtype=np.int64)
         self.metadata = pd.concat(meta_frames, ignore_index=True) if meta_frames else pd.DataFrame(columns=list(EVAL_PROVENANCE_COLUMNS))

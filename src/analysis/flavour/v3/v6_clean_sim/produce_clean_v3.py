@@ -1371,14 +1371,15 @@ def submit_workers_v3(root: Path, shards_per_job: int = 2, cpus: int = 8) -> dic
     return rec
 
 
-def finalize_clean_v3(root: Path) -> dict:
+def finalize_clean_v3(root: Path, allow_pending_ood: bool = False) -> dict:
     prep = json.loads((root / 'prepare_summary.json').read_text())
     n_shards = int(prep['n_shards'])
     missing = [sid for sid in range(n_shards) if not (root / 'data' / 'shards' / f'{sid:03d}' / 'observations.parquet').exists()]
     if missing:
         raise RuntimeError(f'Cannot finalize clean_v3; {len(missing)} nominal shards incomplete: {missing[:10]}')
-    missing_ood = [v for v in OOD_VARIANTS if not (root / 'ood_shards' / v / 'shards/000/observations.parquet').exists()]
-    if missing_ood:
+    ready_ood = [v for v in OOD_VARIANTS if (root / 'ood_shards' / v / 'shards/000/observations.parquet').exists()]
+    missing_ood = [v for v in OOD_VARIANTS if v not in ready_ood]
+    if missing_ood and not allow_pending_ood:
         raise RuntimeError(f'Cannot finalize clean_v3; OOD shards incomplete: {missing_ood}')
 
     write_json(root / 'data' / 'plan.json', {
@@ -1413,9 +1414,13 @@ def finalize_clean_v3(root: Path) -> dict:
     val_df.iloc[scr_idx][KEY + ['label']].to_parquet(root / 'data' / 'tune_screen.parquet', index=False, compression=COMPRESSION)
 
     sc_parts = sorted((root / 'truth_sidecar' / 'parts').glob('event_*.parquet'))
-    sc_df = pd.concat([pd.read_parquet(p) for p in sc_parts], ignore_index=True)
-    sc_df.to_parquet(root / 'truth_sidecar' / 'event_sidecar.parquet', index=False, compression=COMPRESSION)
-    shutil.rmtree(root / 'truth_sidecar' / 'parts', ignore_errors=True)
+    if sc_parts:
+        sc_df = pd.concat([pd.read_parquet(p) for p in sc_parts], ignore_index=True)
+        sc_df.to_parquet(root / 'truth_sidecar' / 'event_sidecar.parquet', index=False, compression=COMPRESSION)
+        shutil.rmtree(root / 'truth_sidecar' / 'parts', ignore_errors=True)
+        n_sidecar_rows = int(len(sc_df))
+    else:
+        n_sidecar_rows = int(pq.ParquetFile(root / 'truth_sidecar' / 'event_sidecar.parquet').metadata.num_rows)
 
     vm_parts = sorted((root / 'validation_meta' / 'parts').glob('meta_*.parquet'))
     if vm_parts:
@@ -1434,15 +1439,15 @@ def finalize_clean_v3(root: Path) -> dict:
     shutil.rmtree(root / 'input_shards', ignore_errors=True)
 
     summary = {
-        'status': 'complete',
+        'status': 'complete' if not missing_ood else 'nominal_complete_ood_pending',
         'stage': 'Stage323_CleanV3_PureW',
         'UTC': datetime.now(timezone.utc).isoformat(),
         'total_events': int(len(all_prov)),
         'g4_navigator_W_verified': int(total_nav_w),
         'zero_pe_time_violations': int(total_zpe_viol),
         'split_counts': all_prov.groupby('split').size().to_dict(),
-        'train_tune_sidecar_rows': int(len(sc_df)),
-        'ood_variants_ready': list(OOD_VARIANTS),
+        'train_tune_sidecar_rows': n_sidecar_rows,
+        'ood_variants_ready': ready_ood,
     }
     write_json(root / 'finalize_summary.json', summary)
     return summary
@@ -1458,6 +1463,7 @@ def main() -> None:
     parser.add_argument('--shards-per-job', type=int, default=2)
     parser.add_argument('--cpus', type=int, default=8)
     parser.add_argument('--ood-variant', type=str, default=None)
+    parser.add_argument('--allow-pending-ood', action='store_true')
     args = parser.parse_args()
 
     if args.command == 'prepare':
@@ -1479,7 +1485,7 @@ def main() -> None:
     elif args.command == 'submit-workers':
         out = submit_workers_v3(args.root, shards_per_job=args.shards_per_job, cpus=args.cpus)
     else:
-        out = finalize_clean_v3(args.root)
+        out = finalize_clean_v3(args.root, allow_pending_ood=args.allow_pending_ood)
     print(json.dumps(out, indent=2))
 
 

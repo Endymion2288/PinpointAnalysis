@@ -803,7 +803,12 @@ def run_pf_training(
             scr_pos = np.arange(min(4000, len(tu_meta)), dtype=np.int64)
         screen_ds = CachedPFDataset(tu_blob['items_dir'], tu_meta, indices=scr_pos)
 
-        eval_bs = max(64, batch_size)
+        vram_mib = float(torch.cuda.get_device_properties(device).total_memory) / (1024.0 ** 2)
+        grad_accum = int(config.get('grad_accum', 0))
+        if grad_accum <= 0:
+            grad_accum = 2 if (vram_mib < 28000.0 and batch_size >= 128 and (batch_size % 2 == 0)) else 1
+        micro_bs = batch_size // grad_accum
+        eval_bs = max(64, micro_bs)
         screen_loader = make_pf_loader(
             screen_ds, batch_size=eval_bs, shuffle=False, workers=min(2, loader_workers),
             y_scint_center=bounds['y_scint_center'], n_bars=bounds['n_bars'], mirror=False,
@@ -906,7 +911,7 @@ def run_pf_training(
                 tp0 = time.perf_counter()
                 tr_loader = make_pf_loader(
                     train_ds,
-                    batch_size=batch_size,
+                    batch_size=micro_bs,
                     shuffle=True,
                     workers=loader_workers,
                     seed=seed + p_idx * 101,
@@ -918,28 +923,92 @@ def run_pf_training(
                 loss_sum = 0.0
                 n_seen = 0
                 try:
-                    for batch in tr_loader:
-                        global_step += 1
-                        grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
-                        db = move_batch_to_device(batch, device)
-                        opt.zero_grad(set_to_none=True)
-                        with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
-                            loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
-                        if use_fp16_scaler:
-                            scaler.scale(loss).backward()
-                            scaler.unscale_(opt)
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                            scaler.step(opt)
-                            scaler.update()
-                        else:
-                            loss.backward()
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                            opt.step()
-                        scheduler.step()
-                        _update_ema(ema_model, model, ema_decay)
-                        bs_n = len(db['label'])
-                        loss_sum += float(loss.detach()) * bs_n
-                        n_seen += bs_n
+                    if grad_accum == 1:
+                        for batch in tr_loader:
+                            global_step += 1
+                            grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
+                            db = move_batch_to_device(batch, device)
+                            opt.zero_grad(set_to_none=True)
+                            with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                                loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
+                            if use_fp16_scaler:
+                                scaler.scale(loss).backward()
+                                scaler.unscale_(opt)
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                scaler.step(opt)
+                                scaler.update()
+                            else:
+                                loss.backward()
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                opt.step()
+                            scheduler.step()
+                            _update_ema(ema_model, model, ema_decay)
+                            bs_n = len(db['label'])
+                            loss_sum += float(loss.detach()) * bs_n
+                            n_seen += bs_n
+                    else:
+                        micro_buf: list[dict] = []
+                        for batch in tr_loader:
+                            micro_buf.append(batch)
+                            if len(micro_buf) < grad_accum:
+                                continue
+                            global_step += 1
+                            grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
+                            opt.zero_grad(set_to_none=True)
+                            tot_b = sum(len(mb['label']) for mb in micro_buf)
+                            for mb in micro_buf:
+                                db = move_batch_to_device(mb, device)
+                                bs_n = len(db['label'])
+                                w_mb = float(bs_n) / float(max(tot_b, 1))
+                                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                                    loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
+                                    scaled_l = loss * w_mb
+                                if use_fp16_scaler:
+                                    scaler.scale(scaled_l).backward()
+                                else:
+                                    scaled_l.backward()
+                                loss_sum += float(loss.detach()) * bs_n
+                                n_seen += bs_n
+                            if use_fp16_scaler:
+                                scaler.unscale_(opt)
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                scaler.step(opt)
+                                scaler.update()
+                            else:
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                opt.step()
+                            scheduler.step()
+                            _update_ema(ema_model, model, ema_decay)
+                            micro_buf.clear()
+                        if micro_buf:
+                            global_step += 1
+                            grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
+                            opt.zero_grad(set_to_none=True)
+                            tot_b = sum(len(mb['label']) for mb in micro_buf)
+                            for mb in micro_buf:
+                                db = move_batch_to_device(mb, device)
+                                bs_n = len(db['label'])
+                                w_mb = float(bs_n) / float(max(tot_b, 1))
+                                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                                    loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
+                                    scaled_l = loss * w_mb
+                                if use_fp16_scaler:
+                                    scaler.scale(scaled_l).backward()
+                                else:
+                                    scaled_l.backward()
+                                loss_sum += float(loss.detach()) * bs_n
+                                n_seen += bs_n
+                            if use_fp16_scaler:
+                                scaler.unscale_(opt)
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                scaler.step(opt)
+                                scaler.update()
+                            else:
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                opt.step()
+                            scheduler.step()
+                            _update_ema(ema_model, model, ema_decay)
+                            micro_buf.clear()
                 finally:
                     shutdown_loader(tr_loader)
 
