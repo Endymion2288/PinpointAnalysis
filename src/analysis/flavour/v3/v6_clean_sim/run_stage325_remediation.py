@@ -311,7 +311,7 @@ def run_live_g4_v3_1_probes(clean_root: Path) -> dict:
 
     with tempfile.TemporaryDirectory(prefix='s325-g4-probes-') as td:
         tmp = Path(td)
-        # 1. Stage 324-15: 7-case strict W target & material guard matrix
+        # 1. Stage 324-15: 7-case strict W target & material guard matrix (parallel across 7 threads!)
         guard_cases = [
             ('W184_in_W', 1000741840, 74, 184, 0.0, 0.0, -2.98449, True),
             ('W186_in_W', 1000741860, 74, 186, 0.0, 0.0, -2.98449, True),
@@ -321,7 +321,7 @@ def run_live_g4_v3_1_probes(clean_root: Path) -> dict:
             ('unknown_pdg0_fakeZ74', 0, 74, 184, 0.0, 0.0, -2.98449, False),
             ('W184_in_Air', 1000741840, 74, 184, 0.0, 0.0, -2.99600, False),
         ]
-        guard_out = {}
+        guard_jobs = []
         for cname, tpdg, tz, ta, vx, vy, vz, exp_pass in guard_cases:
             cdir = tmp / f'guard_{cname}'
             cdir.mkdir()
@@ -350,11 +350,20 @@ def run_live_g4_v3_1_probes(clean_root: Path) -> dict:
                 '/Pinpoint/field/value 0.57 tesla\n'
                 '/run/beamOn 1\n'
             )
+            guard_jobs.append((cname, exp_pass, mac, cdir))
+
+        def _run_guard(item):
+            cname, exp_pass, mac, cdir = item
             cp = _run_g4_single(mac, cdir, {'PINPOINT_REQUIRE_W_MATERIAL': '1', 'PINPOINT_REQUIRE_W_TARGET': '1'})
-            passed = (cp.returncode == 0)
-            guard_out[cname] = {'expected_pass': exp_pass, 'actual_pass': passed, 'returncode': int(cp.returncode), 'ok': bool(passed == exp_pass)}
-            if passed != exp_pass:
-                raise AssertionError(f'Stage 324-15 guard test failed for {cname}: expected={exp_pass}, rc={cp.returncode}\n{cp.stderr[-400:]}\n{cp.stdout[-400:]}')
+            return cname, exp_pass, cp
+
+        guard_out = {}
+        with ThreadPoolExecutor(max_workers=7) as tpool:
+            for cname, exp_pass, cp in tpool.map(_run_guard, guard_jobs):
+                passed = (cp.returncode == 0)
+                guard_out[cname] = {'expected_pass': exp_pass, 'actual_pass': passed, 'returncode': int(cp.returncode), 'ok': bool(passed == exp_pass)}
+                if passed != exp_pass:
+                    raise AssertionError(f'Stage 324-15 guard test failed for {cname}: expected={exp_pass}, rc={cp.returncode}\n{cp.stderr[-400:]}\n{cp.stdout[-400:]}')
         res['guard_matrix_324_15'] = guard_out
 
         # 2. Stage 324-10: Pixel dark noise injection verification
@@ -465,21 +474,26 @@ def run_live_g4_v3_1_probes(clean_root: Path) -> dict:
             }
         res['spectrometer_bore_closure_324_06'] = spec_out
 
-        # 4. Stage 324-13: Tau V-A helicity polarization closure via Py8Decayer (tau tree daughters!)
-        # For tau- -> pi- nu_tau: analytical V-A gives <z_pi> = 1/3 (h=-1), 1/2 (h=0), 2/3 (h=+1).
-        tau_hel = {}
+        # 4. Stage 324-13: Tau V-A helicity polarization closure via Py8Decayer (in-air downstream decay -> fast & exact!)
+        # Shoot 50 GeV tau- at vz = +4.5 m (G4_AIR, gamma*ctau = 2.45 mm) so Py8Decayer decays tau- in flight
+        # without tungsten shower overhead; run all 3 helicity settings (-1, 0, +1) concurrently.
+        # Analytical V-A for tau- -> pi- nu_tau: <z_pi> = 1/3 (h=-1), 1/2 (h=0), 2/3 (h=+1).
+        e_tau_probe = 50.0
+        n_tau_probe = 600
+        tau_jobs = []
         for h_label, hel_env in (('VA_left_h_minus1', '-1.0'), ('unpolarized_h_0', '0.0'), ('right_h_plus1', '1.0')):
             tdir = tmp / f'tau_{h_label}'
             tdir.mkdir()
             in_r = tdir / 'in.root'
             recs = [{
                 'n': 3, 'pdgc': [16, 1000741840, 15], 'status': [0, 0, 1], 'name': ['', '', 'tau-'],
-                'px': [0.0, 0.0, 0.0], 'py': [0.0, 0.0, 0.0], 'pz': [500.0, 0.0, 500.0],
-                'E': [500.0, 171.3, math.hypot(500.0, 1.77686)], 'pxv': 0.0, 'pyv': 0.0, 'pzv': 500.0, 'Ev': 500.0,
+                'px': [0.0, 0.0, 0.0], 'py': [0.0, 0.0, 0.0], 'pz': [e_tau_probe, 0.0, e_tau_probe],
+                'E': [e_tau_probe, 171.3, math.hypot(e_tau_probe, 1.77686)],
+                'pxv': 0.0, 'pyv': 0.0, 'pzv': e_tau_probe, 'Ev': e_tau_probe,
                 'Q2': 20.0, 'W': 10.0, 'x': 0.2, 'y': 0.1, 'XSec': 1.0, 'intType': 2, 'scatteringType': 1,
                 'Z': 74, 'A': 184, 'tgt': 1000741840, 'neu': 16, 'fspl': 15, 'hitnuc': 2112,
-                'cc': True, 'nc': False, 'vx': 0.0, 'vy': 0.0, 'vz': -2.996,
-            } for _ in range(400)]
+                'cc': True, 'nc': False, 'vx': 0.0, 'vy': 0.0, 'vz': 4.5,
+            } for _ in range(n_tau_probe)]
             write_gfaser(recs, in_r)
             mac = (
                 '/control/verbose 0\n'
@@ -495,40 +509,48 @@ def run_live_g4_v3_1_probes(clean_root: Path) -> dict:
                 '/random/setSeeds 32513 32519\n'
                 '/run/initialize\n'
                 '/Pinpoint/field/value 0.57 tesla\n'
-                '/run/beamOn 400\n'
+                f'/run/beamOn {n_tau_probe}\n'
             )
-            cp = _run_g4_single(mac, tdir, {'PINPOINT_TAU_HELICITY': hel_env})
-            if cp.returncode != 0:
-                raise RuntimeError(f'Tau helicity probe failed for {h_label}: {cp.stderr[-400:]}\n{cp.stdout[-400:]}')
-            with uproot.open(tdir / 'out.root') as rf:
-                tt = rf['tau'].arrays(['evtID', 'PDG', 'Px', 'Py', 'Pz'], library='np')
-            by_evt: dict[int, list[tuple[int, float]]] = {}
-            for eid, pdg, px, py_p, pz in zip(tt['evtID'], tt['PDG'], tt['Px'], tt['Py'], tt['Pz']):
-                # Geant4 internal momentum unit is MeV/c; 500 GeV = 500,000 MeV/c
-                pmag_gev = math.sqrt(float(px) ** 2 + float(py_p) ** 2 + float(pz) ** 2) / 1000.0
-                by_evt.setdefault(int(eid), []).append((int(pdg), pmag_gev))
-            z_vis_all = []
-            z_pi_1p = []
-            z_lep_all = []
-            for eid, plist in by_evt.items():
-                vis = [(p, e) for p, e in plist if abs(p) not in (12, 14, 16)]
-                if not vis:
-                    continue
-                z_v = sum(e for _, e in vis) / 500.0
-                if 0.005 < z_v <= 1.05:
-                    z_vis_all.append(z_v)
-                if len(vis) == 1 and abs(vis[0][0]) == 211:
-                    z_pi_1p.append(vis[0][1] / 500.0)
-                if len(vis) == 1 and abs(vis[0][0]) in (11, 13):
-                    z_lep_all.append(vis[0][1] / 500.0)
-            tau_hel[h_label] = {
-                'n_events_decayed': len(z_vis_all),
-                'mean_all_vis_p_frac': float(np.mean(z_vis_all)) if z_vis_all else 0.0,
-                'n_pi_1prong': len(z_pi_1p),
-                'mean_z_pi_1prong': float(np.mean(z_pi_1p)) if z_pi_1p else None,
-                'n_leptonic_1prong': len(z_lep_all),
-                'mean_z_lepton': float(np.mean(z_lep_all)) if z_lep_all else None,
-            }
+            tau_jobs.append((h_label, hel_env, mac, tdir))
+
+        def _run_tau_hel(item):
+            h_label, hel_env, mac, tdir = item
+            cp = _run_g4_single(mac, tdir, {'PINPOINT_TAU_HELICITY': hel_env}, timeout_s=180)
+            return h_label, tdir, cp
+
+        tau_hel = {}
+        with ThreadPoolExecutor(max_workers=3) as tpool:
+            for h_label, tdir, cp in tpool.map(_run_tau_hel, tau_jobs):
+                if cp.returncode != 0:
+                    raise RuntimeError(f'Tau helicity probe failed for {h_label}: {cp.stderr[-400:]}\n{cp.stdout[-400:]}')
+                with uproot.open(tdir / 'out.root') as rf:
+                    tt = rf['tau'].arrays(['evtID', 'PDG', 'Px', 'Py', 'Pz'], library='np')
+                by_evt: dict[int, list[tuple[int, float]]] = {}
+                for eid, pdg, px, py_p, pz in zip(tt['evtID'], tt['PDG'], tt['Px'], tt['Py'], tt['Pz']):
+                    pmag_gev = math.sqrt(float(px) ** 2 + float(py_p) ** 2 + float(pz) ** 2) / 1000.0
+                    by_evt.setdefault(int(eid), []).append((int(pdg), pmag_gev))
+                z_vis_all = []
+                z_pi_1p = []
+                z_lep_all = []
+                for eid, plist in by_evt.items():
+                    vis = [(p, e) for p, e in plist if abs(p) not in (12, 14, 16)]
+                    if not vis:
+                        continue
+                    z_v = sum(e for _, e in vis) / e_tau_probe
+                    if 0.005 < z_v <= 1.05:
+                        z_vis_all.append(z_v)
+                    if len(vis) == 1 and abs(vis[0][0]) == 211:
+                        z_pi_1p.append(vis[0][1] / e_tau_probe)
+                    if len(vis) == 1 and abs(vis[0][0]) in (11, 13):
+                        z_lep_all.append(vis[0][1] / e_tau_probe)
+                tau_hel[h_label] = {
+                    'n_events_decayed': len(z_vis_all),
+                    'mean_all_vis_p_frac': float(np.mean(z_vis_all)) if z_vis_all else 0.0,
+                    'n_pi_1prong': len(z_pi_1p),
+                    'mean_z_pi_1prong': float(np.mean(z_pi_1p)) if z_pi_1p else None,
+                    'n_leptonic_1prong': len(z_lep_all),
+                    'mean_z_lepton': float(np.mean(z_lep_all)) if z_lep_all else None,
+                }
         res['tau_helicity_closure_324_13'] = tau_hel
 
     res['wall_seconds'] = float(time.perf_counter() - t0)
