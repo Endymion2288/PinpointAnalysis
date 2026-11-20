@@ -44,12 +44,33 @@ SEALED_SPLIT_NAMES = (
     'confirm200k',
     'cal_a',
     'cut_b',
+    'sealed',
+    'test',
+    'calibration',
 )
 
+_EXACT_SEALED_SPLITS = {
+    'cal_a',
+    'cal_a40k',
+    'cut_b',
+    'cut_b160k',
+    'confirm',
+    'confirm200k',
+    'sealed',
+    'test',
+    'calibration',
+    'sealed_truth_meta',
+}
+
 _SEALED_PATTERN = re.compile(
-    r'(?:^|[/\\_\-\s])(cal[-_]?a(?:40k)?|cut[-_]?b(?:160k)?|confirm(?:200k)?|sealed_truth_meta)(?:$|[/\\_\-\s\.])',
+    r'(?:^|[/\\_\-\s])(cal[-_]?a(?:40k)?|cut[-_]?b(?:160k)?|confirm(?:\d+k?)?|sealed_truth_meta)(?:$|[/\\_\-\s\.])'
+    r'|(?:^|[/\\])sealed(?:[/\\]|$)'
+    r'|(?:^|[/\\_\-])(?:input_sys_confirm|(?:calibration|test)_catalog)',
     re.IGNORECASE,
 )
+
+_SEALED_SHARD_RE = re.compile(r'(?:^|[/\\])shards[/\\](\d+)(?:[/\\]|$)', re.IGNORECASE)
+_SEALED_GENIE_CHUNK_RE = re.compile(r'(?:^|[^0-9])1008[1-4][_/\\-]+0*(1[6-9]|2[0-8])(?:$|[^0-9])')
 
 INTERNAL_SPLIT_SPEC_PATH = Path(
     '/eos/home-x/xcheng/FASER/Pinpoint/results/nextgen_research/forensics/internal_split_spec.json'
@@ -58,15 +79,20 @@ INTERNAL_SPLIT_SPEC_PATH = Path(
 
 def is_sealed_split_or_path(value: str | Path) -> bool:
     """Return True if a split name or filesystem path references any sealed partition."""
-    text = os.fspath(value)
+    text = os.fspath(value).strip()
+    low = text.lower().replace('-', '_')
+    if low in _EXACT_SEALED_SPLITS:
+        return True
     if _SEALED_PATTERN.search(text):
         return True
-    low = text.lower().replace('-', '_')
-    return any(tok in low for tok in ('cal_a', 'cut_b', 'confirm200k', 'sealed_truth_meta')) or low in {
-        'confirm',
-        'cal_a40k',
-        'cut_b160k',
-    }
+    if any(tok in low for tok in ('cal_a', 'cut_b', 'confirm200k', 'sealed_truth_meta', 'input_sys_confirm')):
+        return True
+    for m in _SEALED_SHARD_RE.finditer(text):
+        if int(m.group(1)) >= 100:
+            return True
+    if _SEALED_GENIE_CHUNK_RE.search(text):
+        return True
+    return False
 
 
 def assert_unsealed_split_or_path(value: str | Path, *, context: str = 'nextgen') -> None:
@@ -235,7 +261,7 @@ def build_minimal_geometry() -> dict:
             w_z.extend([z + 15.51, z + 25.51])
             sc_z.append(z + 20.51)
             z += 30.01
-    p_z.extend([z + 58.005, z + 88.015, z + 118.025])
+    p_z.extend([z + 65.005, z + 95.015, z + 125.025])
     return {
         'detector_width': 266.0,
         'detector_height': 196.0,
@@ -326,19 +352,55 @@ class TestNextgenSealAndSplits(unittest.TestCase):
 
     def test_sealed_split_names_and_paths_rejected(self) -> None:
         """Sealed split names/paths must raise immediate errors in guard and training helpers."""
+        # Verify IPT z-positions match Pinpoint_G4 / clean_sim/geometry.json to < 1e-9 mm
+        np.testing.assert_allclose(
+            self.geometry['pixel_Zpos'][-3:],
+            [-1734.875, -1704.865, -1674.855],
+            atol=1e-9,
+        )
+
         for tok in SEALED_SPLIT_NAMES:
             with self.assertRaises(ValueError, msg=f'Guard failed to reject {tok!r}'):
                 assert_unsealed_split_or_path(tok)
-            with self.assertRaises(ValueError, msg=f'Guard failed to reject path containing {tok!r}'):
-                assert_unsealed_split_or_path(f'/eos/some/dir/{tok}/observations.parquet')
+
+        sealed_paths = (
+            '/eos/some/dir/Cal-A/observations.parquet',
+            '/eos/some/dir/Cut-B/observations.parquet',
+            '/eos/some/dir/Confirm/observations.parquet',
+            '/eos/some/dir/confirm200k/observations.parquet',
+            '/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v6_clean_v3_2026-11-19/clean_sim/data/shards/100/observations.parquet',
+            '/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v6_clean_v3_2026-11-19/clean_sim/data/shards/149/observations.parquet',
+            '/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v2_2026-11-14/sealed/rows.parquet',
+            'calibration_catalog.parquet',
+            'test_catalog.parquet',
+            'input_sys_confirm1200.parquet',
+            '/eos/project-f/fasersim-bonn/public/pinpoint/data/FaserMC-MC24_Genie_all_10081_00016.root',
+            '/eos/project-f/fasersim-bonn/public/pinpoint/data/FaserMC-MC24_Genie_all_10084_00028.root',
+        )
+        for sp in sealed_paths:
+            with self.assertRaises(ValueError, msg=f'Guard failed to reject sealed path {sp!r}'):
+                assert_unsealed_split_or_path(sp)
 
         # V3TrainDataset strictly rejects every sealed split name before touching disk.
         for tok in SEALED_SPLIT_NAMES:
             with self.assertRaises(ValueError):
                 V3TrainDataset(obs_root='/nonexistent/obs', sidecar_root=None, split=tok)
 
-        # Positive controls for permitted internal/development splits
-        for allowed in ('train', 'validation', 'internal_train', 'internal_val', '/tmp/dev_split'):
+        # Positive controls: allowed internal/dev splits, /tests/ paths, shards 000..099, and chunks 000..015
+        allowed_inputs = (
+            'train',
+            'validation',
+            'internal_train',
+            'internal_val',
+            '/tmp/dev_split',
+            '/tmp/test_nextgen_scratch/observations.parquet',
+            '/repo/tests/test_nextgen_seal_and_splits.py',
+            '/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v6_clean_v3_2026-11-19/clean_sim/data/shards/000/observations.parquet',
+            '/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v6_clean_v3_2026-11-19/clean_sim/data/shards/099/observations.parquet',
+            '/eos/project-f/fasersim-bonn/public/pinpoint/data/FaserMC-MC24_Genie_all_10081_00000.root',
+            '/eos/project-f/fasersim-bonn/public/pinpoint/data/FaserMC-MC24_Genie_all_10084_00015.root',
+        )
+        for allowed in allowed_inputs:
             assert_unsealed_split_or_path(allowed)
 
         # If analysis.flavour.nextgen exists, probe any exported split/guard/loader helpers
@@ -400,8 +462,11 @@ class TestNextgenSealAndSplits(unittest.TestCase):
 
             sealed_dirs = [str(root / 'shards' / s) for s in ('100', '101', '102')]
             sealed_hits: list[tuple[str, str]] = []
+            active = [True]
 
             def _audit(event: str, args: tuple) -> None:
+                if not active[0]:
+                    return
                 if event in ('open', 'os.scandir', 'os.listdir', 'os.stat'):
                     for arg in args:
                         if isinstance(arg, (str, bytes, os.PathLike)):
@@ -422,6 +487,7 @@ class TestNextgenSealAndSplits(unittest.TestCase):
                 ds_tr.native.close()
                 ds_va.native.close()
             finally:
+                active[0] = False
                 for sd in sealed_dirs:
                     os.chmod(sd, 0o755)
 

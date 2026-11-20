@@ -216,16 +216,16 @@ class SyntheticPinpointPhysicsGenerator:
                 )
             true_d0 = 0.0
         else:
-            dz_sv = float(dz_sv_mm if dz_sv_mm is not None else self.rng.uniform(0.8, 5.0))
-            d0_val = float(d0_target_mm if d0_target_mm is not None else self.rng.uniform(0.05, 0.30))
+            dz_sv = float(dz_sv_mm if dz_sv_mm is not None else self.rng.uniform(0.5, 5.0))
+            d0_val = float(d0_target_mm if d0_target_mm is not None else self.rng.uniform(0.02, 0.30))
             parent_sl = (float(self.rng.uniform(-0.012, 0.012)), float(self.rng.uniform(-0.012, 0.012)))
             sv = np.array([
                 pv_x + parent_sl[0] * dz_sv,
                 pv_y + parent_sl[1] * dz_sv,
                 pv_z + dz_sv,
             ], dtype=np.float64)
-            # Choose opening slope change so extrapolated tracklet passes PV at exact d0_val
-            dtheta_req = max(0.030, min(0.16, d0_val / max(dz_sv, 0.5)))
+            # Exact unclamped d0 = dz_sv * dtheta_req across full [0.02, 0.30] mm x [0.5, 5.0] mm domain
+            dtheta_req = min(0.60, d0_val / max(dz_sv, 0.2))
             base_phi = float(self.rng.uniform(0.0, 2.0 * math.pi))
             for k in range(n_prongs):
                 phi = base_phi + (2.0 * math.pi * k) / max(1, n_prongs)
@@ -318,6 +318,92 @@ def _fit_line_residuals_mm(xyz: np.ndarray) -> float:
     return float(np.sqrt(np.mean(rx * rx + ry * ry)))
 
 
+def _reconstruct_3plane_tracklets(
+    pix_xyz_mm: np.ndarray,
+    pix_plane: np.ndarray,
+    planes: tuple[int, int, int] = (1, 2, 3),
+    max_slope: float = 0.65,
+    max_mid_res_mm: float = 0.08,
+) -> np.ndarray:
+    """Reconstruct greedy 3-plane tracklets returning (N_trk, 5): [x_at_0, y_at_0, tx, ty, chi2]."""
+    p0, p1, p2 = planes
+    i0 = np.flatnonzero(pix_plane == p0)
+    i1 = np.flatnonzero(pix_plane == p1)
+    i2 = np.flatnonzero(pix_plane == p2)
+    if len(i0) == 0 or len(i1) == 0 or len(i2) == 0:
+        return np.empty((0, 5), dtype=np.float64)
+
+    xyz = pix_xyz_mm.astype(np.float64)
+    cands: list[tuple[float, int, int, int, float, float, float, float]] = []
+    for a in i0:
+        xa, ya, za = xyz[a]
+        for c in i2:
+            xc, yc, zc = xyz[c]
+            dz_ac = zc - za
+            tx = (xc - xa) / dz_ac
+            ty = (yc - ya) / dz_ac
+            if math.hypot(tx, ty) > max_slope:
+                continue
+            for b in i1:
+                xb, yb, zb = xyz[b]
+                dz_ab = zb - za
+                rx = xb - (xa + tx * dz_ab)
+                ry = yb - (ya + ty * dz_ab)
+                res = math.hypot(rx, ry)
+                if res <= max_mid_res_mm:
+                    zm = (za + zb + zc) / 3.0
+                    xm = (xa + xb + xc) / 3.0
+                    ym = (ya + yb + yc) / 3.0
+                    szz = (za - zm) ** 2 + (zb - zm) ** 2 + (zc - zm) ** 2
+                    tx_f = ((za - zm) * (xa - xm) + (zb - zm) * (xb - xm) + (zc - zm) * (xc - xm)) / szz
+                    ty_f = ((za - zm) * (ya - ym) + (zb - zm) * (yb - ym) + (zc - zm) * (yc - ym)) / szz
+                    ax = xm - tx_f * zm
+                    ay = ym - ty_f * zm
+                    cands.append((res * res, int(a), int(b), int(c), ax, ay, tx_f, ty_f))
+
+    cands.sort(key=lambda t: t[0])
+    used: set[int] = set()
+    trks: list[list[float]] = []
+    for r2, a, b, c, ax, ay, tx_f, ty_f in cands:
+        if a in used or b in used or c in used:
+            continue
+        used.update((a, b, c))
+        trks.append([ax, ay, tx_f, ty_f, r2])
+    return np.asarray(trks, dtype=np.float64) if trks else np.empty((0, 5), dtype=np.float64)
+
+
+def _fit_pv_and_tracklet_d0(trks: np.ndarray, z_prior: float) -> tuple[np.ndarray, np.ndarray]:
+    """IRLS 3D vertex fit from tracklets [ax, ay, tx, ty, r2] -> (pv_xyz, per_tracklet_d0_mm)."""
+    if len(trks) < 2:
+        return np.array([0.0, -12.0, z_prior], dtype=np.float64), np.zeros(len(trks), dtype=np.float64)
+    w = np.ones(len(trks), dtype=np.float64)
+    pv = np.array([0.0, -12.0, z_prior], dtype=np.float64)
+    for temp in (0.15, 0.04, 0.015):
+        a_mat = np.diag([1e-4, 1e-4, 1.0 / (15.0 ** 2)])
+        rhs = np.array([0.0, -12.0 * 1e-4, z_prior / (15.0 ** 2)], dtype=np.float64)
+        for i in range(len(trks)):
+            wi = w[i]
+            ax, ay, tx, ty, _ = trks[i]
+            a_mat[0, 0] += wi
+            a_mat[0, 2] -= wi * tx
+            a_mat[2, 0] -= wi * tx
+            a_mat[1, 1] += wi
+            a_mat[1, 2] -= wi * ty
+            a_mat[2, 1] -= wi * ty
+            a_mat[2, 2] += wi * (tx * tx + ty * ty)
+            rhs[0] += wi * ax
+            rhs[1] += wi * ay
+            rhs[2] -= wi * (tx * ax + ty * ay)
+        pv = np.linalg.solve(a_mat, rhs)
+        dx = (trks[:, 0] + trks[:, 2] * pv[2]) - pv[0]
+        dy = (trks[:, 1] + trks[:, 3] * pv[2]) - pv[1]
+        d2 = dx * dx + dy * dy
+        w = 1.0 / (1.0 + np.exp(np.clip((d2 - temp * temp) / (0.5 * temp * temp), -20.0, 20.0)))
+    dx = (trks[:, 0] + trks[:, 2] * pv[2]) - pv[0]
+    dy = (trks[:, 1] + trks[:, 3] * pv[2]) - pv[1]
+    return pv, np.hypot(dx, dy)
+
+
 class TestNextgenRepresentationProbes(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -369,31 +455,46 @@ class TestNextgenRepresentationProbes(unittest.TestCase):
             self.assertGreater(float(item['micro_vtx_feat'][0]), 0.3, msg=f'No tracklets built for planes={planes}')
 
     def test_probe_b_displaced_sv_20um_vs_1mm_and_mean_pooling(self) -> None:
-        """20 um + tracklet IP preserves displaced SV separation that 1 mm or scalar mean-pooling destroys."""
-        n_per_class = 40
+        """20 um + tracklet IP & relational SV preserve displaced separation that 1 mm or scalar pooling destroys."""
+        # 1. Full unclamped brief #4 domain: dz_sv in [0.5, 5.0] mm, d0 in [0.02, 0.30] mm
+        n_per_class = 45
         y_true = np.array([0] * n_per_class + [1] * n_per_class, dtype=np.int64)
         score_20um = []
         score_1mm = []
         pooled_16d_feats = []
+        sampled_d0s = []
+        z_pv_prior = float(self.gen.pz[0] + 10.5)
 
         for label in y_true:
-            obs, _ = self.gen.generate_prompt_vs_displaced_event(
+            obs, true_d0 = self.gen.generate_prompt_vs_displaced_event(
                 displaced=bool(label == 1),
                 n_prongs=1,
-                dz_sv_mm=None if label == 1 else 0.0,
-                d0_target_mm=float(self.gen.rng.uniform(0.05, 0.25)) if label == 1 else 0.0,
+                dz_sv_mm=float(self.gen.rng.uniform(0.5, 5.0)) if label == 1 else 0.0,
+                d0_target_mm=float(self.gen.rng.uniform(0.02, 0.30)) if label == 1 else 0.0,
+                momentum_gev=150.0,
             )
+            if label == 1:
+                sampled_d0s.append(true_d0)
             dom = compute_observable_containment(obs, self.geometry, self.bounds, {'pe_only': True})
             it_20 = extract_pf_item(0, obs, int(label), dom, self.geometry, self.bounds, {'pe_only': True})
             it_1m = extract_pf_item(
                 0, obs, int(label), dom, self.geometry, self.bounds,
                 {'pe_only': True, 'quantize_cluster_coords_only_mm': 1.0},
             )
-            # Tracklet IP representation: max IP significance + max IP d0 from 20 um vs 1 mm
-            score_20um.append(float(it_20['micro_vtx_feat'][4] + it_20['micro_vtx_feat'][6]))
-            score_1mm.append(float(it_1m['micro_vtx_feat'][4] + it_1m['micro_vtx_feat'][6]))
+            trks_20 = _reconstruct_3plane_tracklets(it_20['pix_xyz_mm'], it_20['pix_plane'], max_mid_res_mm=0.08)
+            _, d0s_20 = _fit_pv_and_tracklet_d0(trks_20, z_pv_prior)
+            score_20um.append(float(d0s_20.max()) if len(d0s_20) else 0.0)
+
+            trks_1m = _reconstruct_3plane_tracklets(it_1m['pix_xyz_mm'], it_1m['pix_plane'], max_mid_res_mm=1.20)
+            _, d0s_1m = _fit_pv_and_tracklet_d0(trks_1m, z_pv_prior)
+            score_1mm.append(float(d0s_1m.max()) if len(d0s_1m) else 0.0)
+
             # 16-d scalar mean-pooling over unordered cluster features (destroys tracklet alignment)
             pooled_16d_feats.append(it_20['pix_feat'][:, :16].mean(axis=0))
+
+        # Verify full [0.02, 0.30] mm domain was genuinely sampled without clamping distortion
+        self.assertLess(min(sampled_d0s), 0.045)
+        self.assertGreater(max(sampled_d0s), 0.22)
 
         auc_20um = float(roc_auc_score(y_true, score_20um))
         auc_1mm = float(roc_auc_score(y_true, score_1mm))
@@ -409,6 +510,101 @@ class TestNextgenRepresentationProbes(unittest.TestCase):
         self.assertGreater(auc_20um, 0.85, f'Expected strong 20 um IP separation, got AUC={auc_20um:.3f}')
         self.assertGreater(auc_20um - auc_1mm, 0.15, f'1 mm should degrade separation: 20um={auc_20um:.3f}, 1mm={auc_1mm:.3f}')
         self.assertGreater(auc_20um - auc_pool, 0.15, f'16-d scalar mean-pool should degrade separation: 20um={auc_20um:.3f}, pool={auc_pool:.3f}')
+
+        # 2. Multi-tracklet relational intersection vs global tracklet scalar summary under off-vertex distractors:
+        # lbl=0 has 3 prompt tracks + 3 independent off-vertex conversion/crossing distractor tracks (d0 in [0.04, 0.28] mm);
+        # lbl=1 has 3 prompt tracks + 3 displaced prongs from ONE shared secondary vertex (dz in [0.8, 5.0] mm, d0 in [0.04, 0.28] mm).
+        y_rel = np.array([0] * 40 + [1] * 40, dtype=np.int64)
+        rel_pair_scores = []
+        global_trk_scalar_feats = []
+
+        for lbl in y_rel:
+            pv_x = float(self.gen.rng.uniform(-8.0, 8.0))
+            pv_y = float(self.bounds['y_scint_center'] + self.gen.rng.uniform(-8.0, 8.0))
+            pv = np.array([pv_x, pv_y, z_pv_prior], dtype=np.float64)
+            hits = []
+            for ang_b in (0.0, 2.1, 4.2):
+                ang = ang_b + float(self.gen.rng.uniform(-0.15, 0.15))
+                r_sl = float(self.gen.rng.uniform(0.045, 0.065))
+                hits.extend(self.gen.propagate_track(pv, (r_sl * math.cos(ang), r_sl * math.sin(ang)), planes=(1, 2, 3), momentum_gev=150.0, cluster_2px_prob=0.1))
+
+            dz_draw = float(self.gen.rng.uniform(0.5, 5.0))
+            d0_draw = float(self.gen.rng.uniform(0.04, 0.28))
+            dth = min(0.50, d0_draw / max(dz_draw, 0.2))
+            base_phi = float(self.gen.rng.uniform(0.0, 2.0 * math.pi))
+
+            # Shared off-vertex gamma->ee conversion / crossing distractor tracklet on BOTH classes (lbl=0 & lbl=1)
+            d0_conv = float(self.gen.rng.uniform(0.35, 1.00))
+            ang_conv = float(self.gen.rng.uniform(0.0, 2.0 * math.pi))
+            orig_conv = pv + np.array([d0_conv * math.cos(ang_conv), d0_conv * math.sin(ang_conv), 0.0])
+            hits.extend(self.gen.propagate_track(orig_conv, (-0.04 * math.sin(ang_conv), 0.04 * math.cos(ang_conv)), planes=(1, 2, 3), momentum_gev=150.0, cluster_2px_prob=0.1))
+
+            if lbl == 1:
+                # Coherent 3-prong secondary vertex at pv + [0, 0, dz_draw]
+                sv = pv + np.array([0.0, 0.0, dz_draw])
+                for k in range(3):
+                    phi = base_phi + (2.0 * math.pi * k) / 3.0
+                    hits.extend(self.gen.propagate_track(sv, (dth * math.cos(phi), dth * math.sin(phi)), planes=(1, 2, 3), momentum_gev=150.0, cluster_2px_prob=0.1))
+            else:
+                # 3 incoherent off-vertex conversion/crossing distractor tracks with matched marginal d0 & slope!
+                for k in range(3):
+                    phi = base_phi + (2.0 * math.pi * k) / 3.0
+                    psi = phi + 0.5 * math.pi  # orthogonal transverse shift -> skew lines in 3D with identical d0_draw!
+                    orig_k = pv + np.array([d0_draw * math.cos(psi), d0_draw * math.sin(psi), 0.0])
+                    hits.extend(self.gen.propagate_track(orig_k, (dth * math.cos(phi), dth * math.sin(phi)), planes=(1, 2, 3), momentum_gev=150.0, cluster_2px_prob=0.1))
+
+            obs_r = self.gen.hits_to_observation(hits)
+            dom_r = compute_observable_containment(obs_r, self.geometry, self.bounds, {'pe_only': True})
+            it_r = extract_pf_item(0, obs_r, int(lbl), dom_r, self.geometry, self.bounds, {'pe_only': True})
+            trks = _reconstruct_3plane_tracklets(it_r['pix_xyz_mm'], it_r['pix_plane'], max_mid_res_mm=0.08)
+            pv_fit, d0s = _fit_pv_and_tracklet_d0(trks, z_pv_prior)
+
+            # Global tracklet scalar summary (mean/max of d0, |slope|, residual)
+            if len(trks):
+                sl_mag = np.hypot(trks[:, 2], trks[:, 3])
+                d0_s = np.sort(d0s)[::-1]
+                sec_d0 = float(d0_s[1]) if len(d0_s) >= 2 else 0.0
+                global_trk_scalar_feats.append([
+                    float(len(trks)), float(d0s.mean()), float(d0s.max()), sec_d0,
+                    float((d0s > 0.025).sum()), float(sl_mag.mean()), float(sl_mag.max()), float(trks[:, 4].mean()),
+                ])
+            else:
+                global_trk_scalar_feats.append([0.0] * 8)
+
+            # Per-tracklet relational pairwise 3D closest-approach compatibility among displaced candidates
+            disp_idx = np.flatnonzero(d0s > 0.020)
+            pair_compat = 0.0
+            for ii in range(len(disp_idx)):
+                for jj in range(ii + 1, len(disp_idx)):
+                    ti = trks[disp_idx[ii]]
+                    tj = trks[disp_idx[jj]]
+                    dax = ti[0] - tj[0]
+                    day = ti[1] - tj[1]
+                    dtx = ti[2] - tj[2]
+                    dty = ti[3] - tj[3]
+                    denom = dtx * dtx + dty * dty
+                    if denom < 1e-6:
+                        continue
+                    z_star = -(dax * dtx + day * dty) / denom
+                    if (pv_fit[2] + 0.3) <= z_star <= (pv_fit[2] + 8.0):
+                        dca_xy = math.hypot(dax + dtx * z_star, day + dty * z_star)
+                        pair_compat += math.exp(-dca_xy / 0.020)
+            rel_pair_scores.append(pair_compat)
+
+        auc_rel = float(roc_auc_score(y_rel, rel_pair_scores))
+        X_g = np.asarray(global_trk_scalar_feats, dtype=np.float64)
+        oof_g = np.zeros(len(y_rel), dtype=np.float64)
+        for tr, va in cv.split(X_g, y_rel):
+            clf_g = LogisticRegression(C=1.0, max_iter=500).fit(X_g[tr], y_rel[tr])
+            oof_g[va] = clf_g.predict_proba(X_g[va])[:, 1]
+        auc_global_scalars = float(roc_auc_score(y_rel, oof_g))
+
+        self.assertGreater(auc_rel, 0.85, f'Relational multi-tracklet SV compatibility AUC too low: {auc_rel:.3f}')
+        self.assertGreater(
+            auc_rel - auc_global_scalars,
+            0.15,
+            f'Global tracklet scalar collapse failed to show bottleneck: rel={auc_rel:.3f}, global={auc_global_scalars:.3f}',
+        )
 
     def test_probe_c_tau_1prong_kink_and_3prong_with_dropout(self) -> None:
         """1-prong kink and 3-prong displaced decay topologies separate from crossing primary tracks & survive dropout."""

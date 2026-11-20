@@ -171,8 +171,9 @@ def run_gate_b_overfit_32_check(
     steps: int = 75,
     lr: float = 3e-3,
     weight_decay: float = 0.0,
-    min_acc: float = 0.90,
+    min_acc: float = 31.0 / 32.0,
     min_loss_drop: float = 0.40,
+    max_final_loss: float | None = None,
     upstream_param_prefixes: tuple[str, ...] | None = None,
 ) -> dict:
     """Gate B: verify 32-event overfitting convergence, non-constant predictions, and encoder weight movement."""
@@ -224,6 +225,10 @@ def run_gate_b_overfit_32_check(
     if final_loss >= initial_loss - min_loss_drop:
         raise AssertionError(
             f'Gate B loss did not converge: initial={initial_loss:.4f}, final={final_loss:.4f}'
+        )
+    if max_final_loss is not None and final_loss >= max_final_loss:
+        raise AssertionError(
+            f'Gate B final_loss {final_loss:.4f} >= max_final_loss {max_final_loss:.4f}'
         )
     if final_acc < min_acc:
         raise AssertionError(f'Gate B 32-event accuracy {final_acc:.3f} < {min_acc:.3f}')
@@ -424,6 +429,54 @@ class TestNextgenModelHealth(unittest.TestCase):
         )
         self.assertTrue(res_b1['passed'])
 
+        # 2-event empty-modality check (event 0: empty pixel; event 1: empty bar & tracker) -> finite logits, 0 NaN
+        obs_no_pix = dict(self.obs32[0])
+        obs_no_pix['pixel'] = {
+            'channel_id': np.empty(0, dtype=np.int64),
+            'xyz_mm': np.empty((0, 3), dtype=np.float32),
+        }
+        obs_no_bar = dict(self.obs32[1])
+        obs_no_bar['bar'] = {
+            'channel_id': np.empty(0, dtype=np.int64),
+            'layer': np.empty(0, dtype=np.int16),
+            'panel': np.empty(0, dtype=np.int16),
+            'horizontal': np.empty(0, dtype=np.int8),
+            'bar': np.empty(0, dtype=np.int16),
+            'bounds_mm': np.empty((0, 5), dtype=np.float32),
+            'pe_proxy': np.empty(0, dtype=np.int64),
+            'hit_time_ns': np.empty(0, dtype=np.float32),
+        }
+        obs_no_bar['tracker_hypothesis'] = {
+            'station': np.empty(0, dtype=np.int8),
+            'xy_mm': np.empty((0, 2), dtype=np.float32),
+            'sigma_xy_mm': np.empty((0, 2), dtype=np.float32),
+        }
+        empty_cfg = {'pe_only': True}
+        pf_empty_items = [
+            extract_pf_item(i, ob, i, compute_observable_containment(ob, self.geometry, self.bounds, empty_cfg), self.geometry, self.bounds, empty_cfg)
+            for i, ob in enumerate((obs_no_pix, obs_no_bar))
+        ]
+        pf_empty_batch = move_batch_to_device(
+            collate_pf(pf_empty_items, y_scint_center=self.bounds['y_scint_center'], n_bars=self.bounds['n_bars']),
+            self.device,
+        )
+        b1_empty_items = [
+            extract_b1pp_item(i, ob, i, compute_observable_containment(ob, self.geometry, self.bounds, empty_cfg), self.geometry, self.bounds, empty_cfg)
+            for i, ob in enumerate((obs_no_pix, obs_no_bar))
+        ]
+        b1_empty_batch = {
+            k: (v.to(self.device) if torch.is_tensor(v) else v)
+            for k, v in collate_b1pp(b1_empty_items).items()
+        }
+        pf_model.eval()
+        b1_model.eval()
+        with torch.inference_mode():
+            out_pf_emp = pf_model(pf_empty_batch)
+            out_b1_emp = b1_model(b1_empty_batch)
+        self.assertTrue(torch.isfinite(out_pf_emp['logits']).all())
+        self.assertTrue(torch.isfinite(out_pf_emp['probs4']).all())
+        self.assertTrue(torch.isfinite(out_b1_emp).all())
+
         # Negative control 1: dead upstream encoder
         class _DeadEncoderModel(nn.Module):
             def __init__(self) -> None:
@@ -483,20 +536,22 @@ class TestNextgenModelHealth(unittest.TestCase):
             probs4 = out['probs4'].clamp(min=1e-6)
             return F.nll_loss(torch.log(probs4), b['label'])
 
-        n_steps = 40 if self.device.type == 'cuda' else 18
-        lr_val = 6e-3 if self.device.type == 'cuda' else 1e-2
+        n_steps = 70 if self.device.type == 'cuda' else 45
+        lr_val = 6e-3 if self.device.type == 'cuda' else 8e-3
         res = run_gate_b_overfit_32_check(
             pf_model,
             pf_batch,
             _loss_fn,
             steps=n_steps,
             lr=lr_val,
-            min_acc=0.90,
+            min_acc=31.0 / 32.0,
             min_loss_drop=0.45,
+            max_final_loss=0.05,
             upstream_param_prefixes=('backbone.pix_in.', 'backbone.stereo_bars.'),
         )
         self.assertTrue(res['passed'])
-        self.assertGreaterEqual(res['final_acc'], 0.90)
+        self.assertGreaterEqual(res['final_acc'], 31.0 / 32.0)
+        self.assertLess(res['final_loss'], 0.05)
         self.assertEqual(res['unique_pred_classes'], 4)
 
 
