@@ -927,10 +927,19 @@ def run_verify_gpu_gates(clean_root: Path) -> dict:
         m_acc = cls_m(geom, mc).to(device)
         m_full.train()
         m_acc.train()
+        # Disable stochastic Dropout & DropPath masks ONLY during the deterministic bs=128 vs 64x2 equivalence gate
+        # (keeping .train() active so any hidden BatchNorm/batch-stat bug would still fail immediately!)
+        for _mdl in (m_full, m_acc):
+            for _mod in _mdl.modules():
+                if isinstance(_mod, torch.nn.Dropout):
+                    _mod.p = 0.0
+                if hasattr(_mod, 'drop_prob'):
+                    _mod.drop_prob = 0.0
         o_full = torch.optim.AdamW(m_full.build_param_groups(8e-4, 0.03))
         o_acc = torch.optim.AdamW(m_acc.build_param_groups(8e-4, 0.03))
 
-        # Full batch 128 on CPU/GPU in FP32
+        p_init = [p.detach().float().cpu().clone() for p in m_full.parameters()]
+        # Full batch 128 on GPU in FP32
         o_full.zero_grad(set_to_none=True)
         df_dev = move_batch_to_device(b_full, device)
         lf, _ = _pf_v3_loss(m_full, df_dev, {'grad_blend': 1.0})
@@ -958,17 +967,25 @@ def run_verify_gpu_gates(clean_root: Path) -> dict:
             d = float((g_full[k] - g_acc[k]).abs().max().item())
             max_abs_g = max(max_abs_g, d)
             max_rel_g = max(max_rel_g, d / max(float(g_full[k].abs().max().item()), 1e-4))
-        max_p_diff = max(
-            float((p1.detach().float().cpu() - p2.detach().float().cpu()).abs().max().item())
-            for p1, p2 in zip(m_full.parameters(), m_acc.parameters())
+        p_full_cpu = [p.detach().float().cpu() for p in m_full.parameters()]
+        p_acc_cpu = [p.detach().float().cpu() for p in m_acc.parameters()]
+        max_p_diff = max(float((p1 - p2).abs().max().item()) for p1, p2 in zip(p_full_cpu, p_acc_cpu))
+        step_l2 = math.sqrt(sum(float((p1 - p0).square().sum().item()) for p1, p0 in zip(p_full_cpu, p_init)))
+        diff_l2 = math.sqrt(sum(float((p1 - p2).square().sum().item()) for p1, p2 in zip(p_full_cpu, p_acc_cpu)))
+        adamw_step_rel_l2 = float(diff_l2 / max(step_l2, 1e-12))
+        passed = bool(
+            abs(float(lf.item()) - l_acc_sum) < 1e-4
+            and (g_norm_diff / max(g_norm_full, 1e-8)) < 1e-4
+            and max_abs_g < 1e-4
+            and adamw_step_rel_l2 < 1e-3
         )
-        passed = bool(abs(float(lf.item()) - l_acc_sum) < 1e-4 and (g_norm_diff / max(g_norm_full, 1e-8)) < 1e-4 and max_p_diff < 1e-5)
         equiv_res[mname] = {
             'loss_full_128': float(lf.item()),
             'loss_accum_64x2': float(l_acc_sum),
             'loss_abs_diff': abs(float(lf.item()) - l_acc_sum),
             'global_grad_l2_rel_diff': float(g_norm_diff / max(g_norm_full, 1e-8)),
             'max_param_abs_grad_diff': max_abs_g,
+            'adamw_1step_l2_rel_diff': adamw_step_rel_l2,
             'max_1step_adamw_param_diff': max_p_diff,
             'passed': passed,
         }
