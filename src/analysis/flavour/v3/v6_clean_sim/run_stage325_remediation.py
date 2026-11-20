@@ -1117,76 +1117,115 @@ def run_verify_gpu_gates(clean_root: Path) -> dict:
 # ---------------------------------------------------------------------------
 # 3. Frozen Non-NN Baselines & Negative Controls (Saving Models + Per-Event Predictions!)
 # ---------------------------------------------------------------------------
-def _extract_tabular_and_occupancy_split(data_root: Path, split: str, geometry: dict, cfg: dict, workers: int = 8) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, pd.DataFrame]:
-    """Extract 70-dim physics features + 10-dim pure-occupancy counts in parallel across CPU workers."""
-    from torch.utils.data import BatchSampler, DataLoader, SequentialSampler
+def _extract_tabular_shard_worker(task: tuple) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, pd.DataFrame]:
+    """Process one shard inside a forked CPU worker (zero CVMFS spawn overhead, compact IPC)."""
+    shard_str, split, geom, bounds, cfg = task
+    torch.set_num_threads(1)
+    shard_p = Path(shard_str)
+    prov = pd.read_parquet(shard_p / 'provenance.parquet')
+    mask = (prov['split'] == split).to_numpy()
+    if not mask.any():
+        return (
+            np.empty((0, 70), dtype=np.float32),
+            np.empty((0, 10), dtype=np.float32),
+            np.empty(0, dtype=np.int64),
+            np.empty(0, dtype=np.int64),
+            prov.iloc[:0][KEY + FAMILY + ['label']].copy(),
+        )
+    idx_keep = np.flatnonzero(mask)
+    obs_list = pq.read_table(shard_p / 'observations.parquet').to_pylist()
+    tgt_tbl = pq.read_table(shard_p / 'targets.parquet')
+    lbl_all = tgt_tbl['label'].to_numpy()
+    nomad_ext = NomadTransverseExtractor(geom, phys_calibrated=True, pe_per_mip_mev=40.0)
 
-    ds = V3EvalDataset(data_root, split=split, config=cfg, item_transform=extract_pf_item)
-    nomad_ext = NomadTransverseExtractor(geometry, phys_calibrated=True, pe_per_mip_mev=40.0)
-    n = len(ds)
+    items = []
+    for loc_i in idx_keep:
+        ob = obs_list[int(loc_i)]
+        dm = compute_observable_containment(ob, geom, bounds, config=cfg)
+        it = extract_pf_item(int(loc_i), ob, int(lbl_all[int(loc_i)]), dm, geom, bounds, cfg)
+        items.append(it)
+
+    n = len(items)
     feats70 = np.zeros((n, 70), dtype=np.float32)
     occ10 = np.zeros((n, 10), dtype=np.float32)
     labels = np.zeros(n, dtype=np.int64)
     doms = np.zeros(n, dtype=np.int64)
 
-    eff_w = min(workers, 8) if n >= 512 else 0
-    lkw: dict = {
-        'batch_sampler': BatchSampler(SequentialSampler(ds), batch_size=128, drop_last=False),
-        'num_workers': eff_w,
-        'collate_fn': _identity_collate,
-    }
-    if eff_w > 0:
-        lkw.update(multiprocessing_context='spawn', worker_init_fn=init_worker, prefetch_factor=2)
-    loader = DataLoader(ds, **lkw)
-    cursor = 0
-    try:
-        for items in loader:
-            batch = collate_pf(items, mirror_rng=None)
-            with torch.inference_mode():
-                nomad_t = nomad_ext.from_pf(batch).numpy()
-            for loc, it in enumerate(items):
-                gi = cursor + loc
-                c_obs = it['c_obs']                                  # 16
-                mv = it['micro_vtx_feat']                            # 16
-                nm = nomad_t[loc]                                    # 10
-                cand_m = it['trk_cand_mask']
-                n_cand = float(cand_m.sum())
-                lead_c = it['trk_cand'][0] if len(it['trk_cand']) else np.zeros(11, dtype=np.float32)
-                ps = it['pix_plane_summary']  # (15, 12)
-                tgt_ps = ps[:12]
-                ipt_ps = ps[12:]
-                ps_agg = np.array([
-                    float(tgt_ps[:, 0].sum()) / 12.0,
-                    float(tgt_ps[:, 1].sum()),
-                    float(tgt_ps[:, 2].sum()),
-                    float(tgt_ps[:, 8].sum()),
-                    float(tgt_ps[:, 9].sum()),
-                    float(tgt_ps[:, 10].mean()),
-                    float(tgt_ps[:, 11].mean()),
-                    float(tgt_ps[0, 1]),
-                    float(ipt_ps[:, 0].sum()) / 3.0,
-                    float(ipt_ps[:, 1].sum()),
-                    float(ipt_ps[:, 2].sum()),
-                    float(ipt_ps[:, 8].sum()),
-                    float(ipt_ps[:, 9].sum()),
-                    float(ipt_ps[:, 10].mean()),
-                    float(ipt_ps[:, 11].mean()),
-                    float(it['avr_pv_mm'][3]),
-                ], dtype=np.float32)
-                row_f = np.concatenate([c_obs, mv, nm, np.array([n_cand], dtype=np.float32), lead_c[:11], ps_agg])
-                feats70[gi] = np.nan_to_num(row_f, nan=0.0, posinf=0.0, neginf=0.0)
-                # Pure 10-dim occupancy-only vector (counts/active-planes/bars/tracker-stations/IPT/front-veto)
-                occ10[gi] = np.array([
-                    c_obs[0], c_obs[1], c_obs[2], c_obs[3], c_obs[13], c_obs[14],
-                    float(tgt_ps[:, 0].sum()), float(ipt_ps[:, 0].sum()), float(tgt_ps[0, 0]), n_cand,
-                ], dtype=np.float32)
-                labels[gi] = int(it['label'])
-                doms[gi] = int(it['obs_domain_id'])
-            cursor += len(items)
-    finally:
-        shutdown_loader(loader)
-    meta = ds.metadata[KEY + FAMILY + ['label']].copy().reset_index(drop=True)
-    ds.native.close()
+    for st in range(0, n, 128):
+        sub = items[st : st + 128]
+        batch = collate_pf(sub, mirror_rng=None)
+        with torch.inference_mode():
+            nomad_t = nomad_ext.from_pf(batch).numpy()
+        for loc, it in enumerate(sub):
+            gi = st + loc
+            c_obs = it['c_obs']                                  # 16
+            mv = it['micro_vtx_feat']                            # 16
+            nm = nomad_t[loc]                                    # 10
+            cand_m = it['trk_cand_mask']
+            n_cand = float(cand_m.sum())
+            lead_c = it['trk_cand'][0] if len(it['trk_cand']) else np.zeros(11, dtype=np.float32)
+            ps = it['pix_plane_summary']  # (15, 12)
+            tgt_ps = ps[:12]
+            ipt_ps = ps[12:]
+            ps_agg = np.array([
+                float(tgt_ps[:, 0].sum()) / 12.0,
+                float(tgt_ps[:, 1].sum()),
+                float(tgt_ps[:, 2].sum()),
+                float(tgt_ps[:, 8].sum()),
+                float(tgt_ps[:, 9].sum()),
+                float(tgt_ps[:, 10].mean()),
+                float(tgt_ps[:, 11].mean()),
+                float(tgt_ps[0, 1]),
+                float(ipt_ps[:, 0].sum()) / 3.0,
+                float(ipt_ps[:, 1].sum()),
+                float(ipt_ps[:, 2].sum()),
+                float(ipt_ps[:, 8].sum()),
+                float(ipt_ps[:, 9].sum()),
+                float(ipt_ps[:, 10].mean()),
+                float(ipt_ps[:, 11].mean()),
+                float(it['avr_pv_mm'][3]),
+            ], dtype=np.float32)
+            row_f = np.concatenate([c_obs, mv, nm, np.array([n_cand], dtype=np.float32), lead_c[:11], ps_agg])
+            feats70[gi] = np.nan_to_num(row_f, nan=0.0, posinf=0.0, neginf=0.0)
+            occ10[gi] = np.array([
+                c_obs[0], c_obs[1], c_obs[2], c_obs[3], c_obs[13], c_obs[14],
+                float(tgt_ps[:, 0].sum()), float(ipt_ps[:, 0].sum()), float(tgt_ps[0, 0]), n_cand,
+            ], dtype=np.float32)
+            labels[gi] = int(it['label'])
+            doms[gi] = int(it['obs_domain_id'])
+    meta = prov.iloc[idx_keep][KEY + FAMILY + ['label']].copy().reset_index(drop=True)
+    return feats70, occ10, labels, doms, meta
+
+
+def _extract_tabular_and_occupancy_split(data_root: Path, split: str, geometry: dict, cfg: dict, workers: int = 16) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, pd.DataFrame]:
+    """Extract 70-dim physics features + 10-dim pure-occupancy counts in parallel across forked shard workers."""
+    import multiprocessing as mp
+
+    bounds = detector_bounds(geometry)
+    split_idx_p = data_root / 'split_shards.json'
+    if split_idx_p.is_file():
+        smap = json.loads(split_idx_p.read_text())
+        shard_dirs = [
+            data_root / 'shards' / str(s)
+            for s in sorted(smap.get(split, []))
+            if (data_root / 'shards' / str(s) / 'observations.parquet').exists()
+        ]
+    else:
+        shard_dirs = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
+
+    tasks = [(str(sd), split, geometry, bounds, cfg) for sd in shard_dirs]
+    n_w = min(workers, len(tasks))
+    if n_w <= 1:
+        parts = [_extract_tabular_shard_worker(t) for t in tasks]
+    else:
+        with ProcessPoolExecutor(max_workers=n_w, mp_context=mp.get_context('fork')) as pool:
+            parts = list(pool.map(_extract_tabular_shard_worker, tasks))
+
+    feats70 = np.concatenate([p[0] for p in parts], axis=0)
+    occ10 = np.concatenate([p[1] for p in parts], axis=0)
+    labels = np.concatenate([p[2] for p in parts], axis=0)
+    doms = np.concatenate([p[3] for p in parts], axis=0)
+    meta = pd.concat([p[4] for p in parts], ignore_index=True)
     return feats70, occ10, labels, doms, meta
 
 
@@ -1204,8 +1243,11 @@ def run_frozen_baselines_stage325(clean_root: Path) -> dict:
         'pe_only': True, 'bar_threshold_pe': 2.5, 'sipm_npix': 14400.0,
         'apply_sipm_saturation': False, 'invert_sipm_saturation': True,
     }
-    X_tr, O_tr, y_tr, _, tr_meta = _extract_tabular_and_occupancy_split(clean_root / 'data', 'train', geom, cfg)
-    X_val, O_val, y_val, d_val, val_meta = _extract_tabular_and_occupancy_split(clean_root / 'data', 'validation', geom, cfg)
+    print('[frozen-baselines] extracting Train32k...', flush=True)
+    X_tr, O_tr, y_tr, _, tr_meta = _extract_tabular_and_occupancy_split(clean_root / 'data', 'train', geom, cfg, workers=16)
+    print(f'[frozen-baselines] Train32k extracted ({len(y_tr)} ev, {time.perf_counter()-t0:.1f}s). Extracting Tune8k...', flush=True)
+    X_val, O_val, y_val, d_val, val_meta = _extract_tabular_and_occupancy_split(clean_root / 'data', 'validation', geom, cfg, workers=16)
+    print(f'[frozen-baselines] Tune8k extracted ({len(y_val)} ev, {time.perf_counter()-t0:.1f}s). Extracting OOD shards...', flush=True)
 
     # Energy-only negative control (true E_nu from planned_manifest for Train & tune_truth_meta for Tune)
     man_tr = pd.read_parquet(clean_root / 'planned_manifest.parquet', columns=KEY + ['Ev_GeV'])
@@ -1223,15 +1265,26 @@ def run_frozen_baselines_stage325(clean_root: Path) -> dict:
     in_scr = pd.MultiIndex.from_frame(val_meta[KEY]).isin(pd.MultiIndex.from_frame(scr_df[KEY]))
     tune6k_m = ~in_scr
 
-    ood_data = {}
+    ood_tasks = []
+    ood_ov_list = []
+    bounds_o = detector_bounds(geom)
     for ov in ALL_STAGE325_OOD:
         oroot = _ood_root_for(clean_root, ov)
-        if not (oroot / 'shards/000/observations.parquet').is_file():
+        shard0 = oroot / 'shards/000'
+        if not (shard0 / 'observations.parquet').is_file():
             continue
-        Xo, Oo, yo, do, ometa = _extract_tabular_and_occupancy_split(oroot, 'validation', geom, cfg)
-        otm = pd.read_parquet(oroot / 'truth_meta.parquet')
-        Eo = np.log1p(otm['energy_nu_GeV'].to_numpy(dtype=np.float32))[:, None]
-        ood_data[ov] = (Xo, Oo, Eo, yo, do, ometa)
+        ood_ov_list.append((ov, oroot))
+        ood_tasks.append((str(shard0), 'validation', geom, bounds_o, cfg))
+    ood_data = {}
+    if ood_tasks:
+        import multiprocessing as _mp
+        with ProcessPoolExecutor(max_workers=min(6, len(ood_tasks)), mp_context=_mp.get_context('fork')) as opool:
+            ood_parts = list(opool.map(_extract_tabular_shard_worker, ood_tasks))
+        for (ov, oroot), (Xo, Oo, yo, do, ometa) in zip(ood_ov_list, ood_parts):
+            otm = pd.read_parquet(oroot / 'truth_meta.parquet')
+            Eo = np.log1p(otm['energy_nu_GeV'].to_numpy(dtype=np.float32))[:, None]
+            ood_data[ov] = (Xo, Oo, Eo, yo, do, ometa)
+    print(f'[frozen-baselines] {len(ood_data)} OOD shards extracted ({time.perf_counter()-t0:.1f}s). Fitting 6 models...', flush=True)
 
     bl_dir = STAGE325_ROOT / 'frozen_baselines'
     bl_dir.mkdir(parents=True, exist_ok=True)
@@ -1617,10 +1670,74 @@ def _predict_batches_fp32(model: torch.nn.Module, is_b1: bool, batches: list[dic
     return probs, vhat, lvar
 
 
+def _extract_6t_dom_shard_worker(task: tuple) -> tuple[pd.DataFrame, np.ndarray]:
+    shard_str, geom, bounds, cfg6t = task
+    shard_p = Path(shard_str)
+    prov = pd.read_parquet(shard_p / 'provenance.parquet', columns=KEY + ['split'])
+    mask = (prov['split'] == 'validation').to_numpy()
+    if not mask.any():
+        return prov.iloc[:0][KEY].copy(), np.empty(0, dtype=np.int64)
+    idx_k = np.flatnonzero(mask)
+    obs_list = pq.read_table(shard_p / 'observations.parquet').to_pylist()
+    doms = np.empty(len(idx_k), dtype=np.int64)
+    for j, li in enumerate(idx_k):
+        ob = obs_list[int(li)]
+        # Mask to active_pixel_planes just like V3EvalDataset
+        act = set(cfg6t['active_pixel_planes'])
+        nx, ny = int(bounds['nx']), int(bounds['ny'])
+        cids = np.asarray(ob['pixel']['channel_id'], dtype=np.int64)
+        if len(cids):
+            pls = cids // (nx * ny)
+            keep_p = np.isin(pls, list(act))
+            ob = dict(ob)
+            ob['pixel'] = {
+                'channel_id': [x for x, m in zip(ob['pixel']['channel_id'], keep_p) if m],
+                'xyz_mm': [x for x, m in zip(ob['pixel']['xyz_mm'], keep_p) if m],
+            }
+        doms[j] = int(compute_observable_containment(ob, geom, bounds, config=cfg6t)['obs_domain_id'])
+    return prov.iloc[idx_k][KEY].copy().reset_index(drop=True), doms
+
+
+def _build_ood_batches_worker(task: tuple) -> tuple[str, str]:
+    ckey, obs_str, is_b1, cfg17, geom, bounds, out_pt_str = task
+    torch.set_num_threads(1)
+    raw_o = pq.read_table(Path(obs_str)).to_pylist()
+    fn_o = extract_b1pp_item if is_b1 else extract_pf_item
+    oitems = []
+    for ii, ob in enumerate(raw_o):
+        dm_i = compute_observable_containment(ob, geom, bounds, config=cfg17)
+        oitems.append(fn_o(ii, ob, None, dm_i, geom, bounds, cfg17))
+    batches = [
+        collate_b1pp(oitems[st : st + 128], mirror_rng=None) if is_b1 else collate_pf(oitems[st : st + 128], mirror_rng=None)
+        for st in range(0, len(oitems), 128)
+    ]
+    torch.save(batches, out_pt_str)
+    return ckey, out_pt_str
+
+
+def _build_stress_batches_worker(task: tuple) -> tuple[tuple[bool, str], str]:
+    is_b1, st_name, pkw, c_use, obs_list, geom, bounds, out_pt_str = task
+    torch.set_num_threads(1)
+    rng_st = np.random.default_rng(32510)
+    fn = extract_b1pp_item if is_b1 else extract_pf_item
+    its_st = []
+    for ii, ob in enumerate(obs_list):
+        ob_p = _perturb_observation_for_stress(ob, bounds, rng_st, **pkw) if pkw else ob
+        dm_i = compute_observable_containment(ob_p, geom, bounds, config=c_use)
+        its_st.append(fn(ii, ob_p, None, dm_i, geom, bounds, c_use))
+    batches = [
+        collate_b1pp(its_st[st : st + 64], mirror_rng=None) if is_b1 else collate_pf(its_st[st : st + 64], mirror_rng=None)
+        for st in range(0, len(its_st), 64)
+    ]
+    torch.save(batches, out_pt_str)
+    return (bool(is_b1), st_name), out_pt_str
+
+
 def freeze_and_validate_stage325(clean_root: Path) -> dict:
     """Zero-seal-access cryptographic freeze + Tune6k/OOD/Stress/PV-pull/Obs-only closure (Stage 325)."""
+    import multiprocessing as mp
+
     t0 = time.perf_counter()
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     split_shards = json.loads((clean_root / 'data/split_shards.json').read_text())
     sealed_names = sorted(
         set(split_shards.get('cal_a', [])) | set(split_shards.get('cut_b', [])) | set(split_shards.get('confirm', []))
@@ -1806,125 +1923,18 @@ def freeze_and_validate_stage325(clean_root: Path) -> dict:
             pa_m[:, 2], pb_m[:, 2], pa_m, pb_m, labels, fam_codes, mk, n_boot=1000, seed=20263250
         )
 
-    # Re-evaluate Stage 323 6T model strictly on its OWN true observable 6T domain (Stage 324-08!)
+    print(f'[freeze] Tune6k metrics & paired bootstrap done ({time.perf_counter()-t0:.1f}s). Pre-extracting CPU batches in parallel...', flush=True)
+
+    # Re-evaluate Stage 323 6T model strictly on its OWN true observable 6T domain (Stage 324-08!) — 16-core fork!
     s323_6t_dir = clean_root / 'stage323/experiments'
     eval_6t_own_dom = None
-    if (s323_6t_dir / 'v3_pf_layers_6t_s17/best_predictions.parquet').is_file():
-        cfg6t = {'pe_only': True, 'active_pixel_planes': [0, 2, 4, 6, 8, 10, 12, 13, 14]}
-        ds6t = V3EvalDataset(clean_root / 'data', split='validation', config=cfg6t, item_transform=None)
-        dom6t = np.zeros(len(ds6t), dtype=np.int64)
-        for i in range(len(ds6t)):
-            dom6t[i] = int(ds6t[i]['obs_domain_id'])
-        m6t_idx = pd.MultiIndex.from_frame(ds6t.metadata[KEY]).get_indexer(ref_idx)
-        dom6t = dom6t[m6t_idx]
-        ds6t.native.close()
-        dfs_6t = []
-        for s in SEEDS:
-            df_s, _ = _select_seed_prediction_df(s323_6t_dir / f'v3_pf_layers_6t_s{s}')
-            pos = pd.MultiIndex.from_frame(df_s[KEY]).get_indexer(ref_idx)
-            dfs_6t.append(df_s.iloc[pos][['p_0', 'p_1', 'p_2', 'p_3']].to_numpy(dtype=np.float64))
-        p6t_raw = np.mean(dfs_6t, axis=0)
-        eval_6t_own_dom = {
-            'domain_counts_6t_obs': {OBS_DOMAIN_NAMES[d]: int((dom6t == d).sum()) for d in (0, 1, 2, 3)},
-            'raw_tune6k_all': _ba4_and_nll(labels[tune6k_m], p6t_raw[tune6k_m]),
-            'raw_tune6k_by_own_6t_obs_domain': {
-                OBS_DOMAIN_NAMES[d]: _ba4_and_nll(labels[tune6k_m & (dom6t == d)], p6t_raw[tune6k_m & (dom6t == d)])
-                for d in (1, 2, 3) if (tune6k_m & (dom6t == d)).any()
-            },
-        }
-
-    # PV Pull Calibration Audit (324-13) on 512 Tune events via FP32 inference (returns v_hat & log_var_v)
-    pv_pull_audit = {}
-    s_pos = pd.MultiIndex.from_frame(sidecar_df[KEY]).get_indexer(ref_idx)
-    sc_al = sidecar_df.iloc[s_pos].reset_index(drop=True)
+    val_shard_dirs = [str(clean_root / 'data/shards' / s) for s in sorted(split_shards['validation'])]
     obs_shard080 = pq.read_table(clean_root / 'data/shards/080/observations.parquet').to_pylist()
     prov_shard080 = pd.read_parquet(clean_root / 'data/shards/080/provenance.parquet')
-    pos80 = pd.MultiIndex.from_frame(sidecar_df[KEY]).get_indexer(pd.MultiIndex.from_frame(prov_shard080[KEY]))
-    sc80 = sidecar_df.iloc[pos80].reset_index(drop=True)
-    v_true_80 = np.column_stack([sc80['vertex_x_mm'], sc80['vertex_y_mm'], sc80['vertex_z_mm']]).astype(np.float64)
-    v_ok_80 = sc80['vertex_valid'].to_numpy(dtype=int) > 0
     cfg_eval_base = {'pe_only': True, 'bar_threshold_pe': 2.5, 'sipm_npix': 14400.0, 'apply_sipm_saturation': False, 'invert_sipm_saturation': True}
-    items80_pf = []
-    for ii, ob in enumerate(obs_shard080):
-        dm_i = compute_observable_containment(ob, geom, bounds, config=cfg_eval_base)
-        items80_pf.append(extract_pf_item(ii, ob, None, dm_i, geom, bounds, cfg_eval_base))
-    batches80 = [collate_pf(items80_pf[st : st + 64], mirror_rng=None) for st in range(0, len(items80_pf), 64)]
 
-    for g in ('s325-pf-20um', 's325-pf-hybrid-v2', 's325-pf-hybrid-v2-nomad'):
-        sname = f"{groups[g]['prefix']}_s17"
-        cfg_s = json.loads(Path(checkpoints[sname]['config_path']).read_text())
-        mdl, is_b1 = _load_model_fp32(Path(checkpoints[sname]['path']), cfg_s, geom, device)
-        _, vh80, lv80 = _predict_batches_fp32(mdl, is_b1, batches80, device)
-        del mdl
-        if vh80 is not None and lv80 is not None:
-            # VERTEX_AXIS_SCALES_MM = (0.20, 0.20, 2.50); sigma_hat = scale * exp(0.5 * clamp(lv, -6, 6))
-            scales = np.array([0.20, 0.20, 2.50], dtype=np.float64)
-            sig = scales[None, :] * np.exp(0.5 * np.clip(lv80, -6.0, 6.0))
-            pull = (vh80[v_ok_80] - v_true_80[v_ok_80]) / np.maximum(sig[v_ok_80], 1e-6)
-            pv_pull_audit[sname] = {
-                'n_events': int(v_ok_80.sum()),
-                'axis_pull_mean_xyz': [float(np.mean(pull[:, a])) for a in range(3)],
-                'axis_pull_std_xyz': [float(np.std(pull[:, a])) for a in range(3)],
-                'axis_pull_p68_abs_xyz': [float(np.quantile(np.abs(pull[:, a]), 0.68)) for a in range(3)],
-                'axis_median_sigma_mm_xyz': [float(np.median(sig[v_ok_80, a])) for a in range(3)],
-            }
-
-    # All OOD / W-184 EPPS21 NC Charm FP32 Evaluation (reusing tokenized caches across seeds & groups)
-    ood_eval_groups = list(groups.keys())
-    ood_results: dict[str, dict] = {g: {} for g in ood_eval_groups}
-    ood_batch_cache: dict[str, list[dict]] = {}
-    ood_fingerprints: dict[str, str] = {}
-    for ov in ALL_STAGE325_OOD:
-        oroot = _ood_root_for(clean_root, ov)
-        obs_p = oroot / 'shards/000/observations.parquet'
-        if not obs_p.is_file():
-            continue
-        ood_fingerprints[ov] = _sha256_file(obs_p)
-        ometa = pd.read_parquet(oroot / 'truth_meta.parquet')
-        yo = ometa['label'].to_numpy(dtype=np.int64)
-        for g in ood_eval_groups:
-            prefix = groups[g]['prefix']
-            cfg17 = json.loads(Path(checkpoints[f'{prefix}_s17']['config_path']).read_text())
-            is_b1 = ('v1_b1pp' in str(cfg17.get('train_module', '')))
-            ckey = json.dumps({
-                'ood': str(oroot), 'is_b1': is_b1,
-                'qco': cfg17.get('quantize_cluster_coords_only_mm'),
-                'sh': cfg17.get('shuffle_micro_vertex', False),
-            }, sort_keys=True)
-            if ckey not in ood_batch_cache:
-                g_json = oroot / 'shards/000/geometry.json'
-                if not g_json.is_file():
-                    g_json = clean_root / 'geometry.json'
-                ods = V3ObservationDataset(obs_p, g_json, config=cfg17, item_transform=extract_b1pp_item if is_b1 else extract_pf_item)
-                oitems = [ods[i] for i in range(len(ods))]
-                ood_batch_cache[ckey] = [
-                    collate_b1pp(oitems[st : st + 128], mirror_rng=None) if is_b1 else collate_pf(oitems[st : st + 128], mirror_rng=None)
-                    for st in range(0, len(oitems), 128)
-                ]
-            ps_seeds = []
-            for s in SEEDS:
-                sn = f'{prefix}_s{s}'
-                cs = json.loads(Path(checkpoints[sn]['config_path']).read_text())
-                mdl, mb1 = _load_model_fp32(Path(checkpoints[sn]['path']), cs, geom, device)
-                p_s, _, _ = _predict_batches_fp32(mdl, mb1, ood_batch_cache[ckey], device)
-                ps_seeds.append(p_s)
-                del mdl
-            po = np.mean(ps_seeds, axis=0)
-            if 'nc_' in ov:
-                ood_results[g][ov] = {
-                    'n_events': int(len(yo)),
-                    'mean_p_tau': float(po[:, 2].mean()),
-                    'frac_pred_nc': float((po.argmax(1) == 3).mean()),
-                    'frac_pred_tau': float((po.argmax(1) == 2).mean()),
-                    'frac_p_tau_gt_0p5': float((po[:, 2] > 0.5).mean()),
-                }
-            else:
-                ood_results[g][ov] = _ba4_and_nll(yo, po)
-
-    # Stage 324-10/06 Detector-Response Degradation Stress Tests on 400 real Tune events (shard 080)
-    y80 = prov_shard080['label'].to_numpy(dtype=np.int64)
     stress_specs = [
-        ('nominal', {}, {'pe_only': True, 'bar_threshold_pe': 2.5, 'sipm_npix': 14400.0, 'apply_sipm_saturation': False, 'invert_sipm_saturation': True}),
+        ('nominal', {}, dict(cfg_eval_base)),
         ('pixel_dead_2pct', {'pixel_dead': 0.02}, cfg_eval_base),
         ('pixel_dead_5pct', {'pixel_dead': 0.05}, cfg_eval_base),
         ('pixel_dark_1e-5', {'pixel_dark_rate': 1e-5}, cfg_eval_base),
@@ -1932,72 +1942,210 @@ def freeze_and_validate_stage325(clean_root: Path) -> dict:
         ('tracker_dead_5pct_noise2', {'tracker_dead': 0.05, 'tracker_noise_per_station': 2.0}, cfg_eval_base),
         ('sipm_sat_cap_0p95', {}, {**cfg_eval_base, 'sipm_invert_max_occupancy': 0.95, 'sipm_sat_cap': 0.95}),
     ]
-    stress_results: dict[str, dict] = {}
-    for g in ('s325-b1pp-clean', 's325-pf-20um', 's325-pf-hybrid-v2', 's325-pf-hybrid-v2-nomad'):
-        sname = f"{groups[g]['prefix']}_s17"
-        cfg_s = json.loads(Path(checkpoints[sname]['config_path']).read_text())
-        mdl, is_b1 = _load_model_fp32(Path(checkpoints[sname]['path']), cfg_s, geom, device)
-        g_st = {}
-        p_nom = None
-        for st_name, pkw, c_over in stress_specs:
-            rng_st = np.random.default_rng(32510)
-            c_use = {**cfg_s, **c_over}
-            its_st = []
-            for ii, ob in enumerate(obs_shard080):
-                ob_p = _perturb_observation_for_stress(ob, bounds, rng_st, **pkw) if pkw else ob
-                dm_i = compute_observable_containment(ob_p, geom, bounds, config=c_use)
-                fn = extract_b1pp_item if is_b1 else extract_pf_item
-                its_st.append(fn(ii, ob_p, None, dm_i, geom, bounds, c_use))
-            bs_st = [
-                collate_b1pp(its_st[st : st + 64], mirror_rng=None) if is_b1 else collate_pf(its_st[st : st + 64], mirror_rng=None)
-                for st in range(0, len(its_st), 64)
-            ]
-            p_st, _, _ = _predict_batches_fp32(mdl, is_b1, bs_st, device)
-            if st_name == 'nominal':
-                p_nom = p_st
-            tv = float(0.5 * np.abs(p_st - p_nom).sum(axis=1).mean()) if p_nom is not None else 0.0
-            m_st = _ba4_and_nll(y80, p_st)
-            g_st[st_name] = {'BA4': m_st['BA4'], 'NLL': m_st['NLL'], 'mean_TV_vs_nominal': tv}
-        del mdl
-        stress_results[g] = g_st
 
-    # Stage 324-09 & 322-11: Direct disk saved FP32 predictions vs label-free observation-only replay closure!
-    obs_only_closure = {}
-    with tempfile.TemporaryDirectory(prefix='s325-obs-only-') as tmp:
-        tmp_p = Path(tmp)
-        raw64 = pq.read_table(clean_root / 'data/shards/080/observations.parquet').slice(0, 64)
-        prov64 = prov_shard080.iloc[:64].reset_index(drop=True)
-        pq.write_table(raw64, tmp_p / 'observations.parquet')
-        (tmp_p / 'geometry.json').write_text(json.dumps(geom))
+    cache_tmp_dir = Path(tempfile.mkdtemp(prefix='s325-freeze-cache-'))
+    try:
+        # Collect unique OOD batch extraction tasks BEFORE initializing CUDA so fork() runs cleanly on 16 cores!
+        ood_eval_groups = list(groups.keys())
+        ood_meta_map: dict[str, np.ndarray] = {}
+        ood_fingerprints: dict[str, str] = {}
+        ood_unique_tasks: dict[str, tuple] = {}
+        ood_group_ckey: dict[tuple[str, str], str] = {}
+        for ov in ALL_STAGE325_OOD:
+            oroot = _ood_root_for(clean_root, ov)
+            obs_p = oroot / 'shards/000/observations.parquet'
+            if not obs_p.is_file():
+                continue
+            ood_fingerprints[ov] = _sha256_file(obs_p)
+            ometa = pd.read_parquet(oroot / 'truth_meta.parquet')
+            ood_meta_map[ov] = ometa['label'].to_numpy(dtype=np.int64)
+            for g in ood_eval_groups:
+                prefix = groups[g]['prefix']
+                cfg17 = json.loads(Path(checkpoints[f'{prefix}_s17']['config_path']).read_text())
+                is_b1 = ('v1_b1pp' in str(cfg17.get('train_module', '')))
+                ckey = json.dumps({
+                    'ood': str(oroot), 'is_b1': is_b1,
+                    'qco': cfg17.get('quantize_cluster_coords_only_mm'),
+                    'sh': cfg17.get('shuffle_micro_vertex', False),
+                }, sort_keys=True)
+                ood_group_ckey[(ov, g)] = ckey
+                if ckey not in ood_unique_tasks:
+                    out_pt = cache_tmp_dir / f'ood_{len(ood_unique_tasks):03d}.pt'
+                    ood_unique_tasks[ckey] = (ckey, str(obs_p), is_b1, cfg17, geom, bounds, str(out_pt))
+
+        stress_tasks = []
+        for is_b1_flag, g_ref in ((True, 's325-b1pp-clean'), (False, 's325-pf-20um')):
+            cfg_ref = json.loads(Path(checkpoints[f"{groups[g_ref]['prefix']}_s17"]['config_path']).read_text())
+            for st_name, pkw, c_over in stress_specs:
+                out_pt = cache_tmp_dir / f'stress_{int(is_b1_flag)}_{st_name}.pt'
+                stress_tasks.append((is_b1_flag, st_name, pkw, {**cfg_ref, **c_over}, obs_shard080, geom, bounds, str(out_pt)))
+
+        with ProcessPoolExecutor(max_workers=16, mp_context=mp.get_context('fork')) as fpool:
+            dom6t_parts = None
+            if (s323_6t_dir / 'v3_pf_layers_6t_s17/best_predictions.parquet').is_file():
+                cfg6t = {'pe_only': True, 'active_pixel_planes': [0, 2, 4, 6, 8, 10, 12, 13, 14]}
+                dom6t_parts = list(fpool.map(_extract_6t_dom_shard_worker, [(sd, geom, bounds, cfg6t) for sd in val_shard_dirs]))
+            stress_pt_map: dict[tuple[bool, str], str] = dict(fpool.map(_build_stress_batches_worker, stress_tasks))
+            ood_pt_map: dict[str, str] = dict(fpool.map(_build_ood_batches_worker, list(ood_unique_tasks.values())))
+
+        print(f'[freeze] Parallel CPU batch prep finished ({time.perf_counter()-t0:.1f}s): {len(ood_pt_map)} OOD caches, {len(stress_pt_map)} stress caches. Running GPU FP32 inference...', flush=True)
+
+        if dom6t_parts is not None:
+            m6t_df = pd.concat([p[0] for p in dom6t_parts], ignore_index=True)
+            dom6t_all = np.concatenate([p[1] for p in dom6t_parts], axis=0)
+            m6t_idx = pd.MultiIndex.from_frame(m6t_df[KEY]).get_indexer(ref_idx)
+            dom6t = dom6t_all[m6t_idx]
+            dfs_6t = []
+            for s in SEEDS:
+                df_s, _ = _select_seed_prediction_df(s323_6t_dir / f'v3_pf_layers_6t_s{s}')
+                pos = pd.MultiIndex.from_frame(df_s[KEY]).get_indexer(ref_idx)
+                dfs_6t.append(df_s.iloc[pos][['p_0', 'p_1', 'p_2', 'p_3']].to_numpy(dtype=np.float64))
+            p6t_raw = np.mean(dfs_6t, axis=0)
+            eval_6t_own_dom = {
+                'domain_counts_6t_obs': {OBS_DOMAIN_NAMES[d]: int((dom6t == d).sum()) for d in (0, 1, 2, 3)},
+                'raw_tune6k_all': _ba4_and_nll(labels[tune6k_m], p6t_raw[tune6k_m]),
+                'raw_tune6k_by_own_6t_obs_domain': {
+                    OBS_DOMAIN_NAMES[d]: _ba4_and_nll(labels[tune6k_m & (dom6t == d)], p6t_raw[tune6k_m & (dom6t == d)])
+                    for d in (1, 2, 3) if (tune6k_m & (dom6t == d)).any()
+                },
+            }
+
+        # Initialize CUDA ONLY AFTER all forked pools have exited cleanly!
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+        # PV Pull Calibration Audit (324-13) on 400 Tune events (shard 080) reusing nominal PF batches!
+        pv_pull_audit = {}
+        pos80 = pd.MultiIndex.from_frame(sidecar_df[KEY]).get_indexer(pd.MultiIndex.from_frame(prov_shard080[KEY]))
+        sc80 = sidecar_df.iloc[pos80].reset_index(drop=True)
+        v_true_80 = np.column_stack([sc80['vertex_x_mm'], sc80['vertex_y_mm'], sc80['vertex_z_mm']]).astype(np.float64)
+        v_ok_80 = sc80['vertex_valid'].to_numpy(dtype=int) > 0
+        batches80 = torch.load(stress_pt_map[(False, 'nominal')], map_location='cpu', weights_only=False)
+
+        for g in ('s325-pf-20um', 's325-pf-hybrid-v2', 's325-pf-hybrid-v2-nomad'):
+            sname = f"{groups[g]['prefix']}_s17"
+            cfg_s = json.loads(Path(checkpoints[sname]['config_path']).read_text())
+            mdl, is_b1 = _load_model_fp32(Path(checkpoints[sname]['path']), cfg_s, geom, device)
+            _, vh80, lv80 = _predict_batches_fp32(mdl, is_b1, batches80, device)
+            del mdl
+            if vh80 is not None and lv80 is not None:
+                scales = np.array([0.20, 0.20, 2.50], dtype=np.float64)
+                sig = scales[None, :] * np.exp(0.5 * np.clip(lv80, -6.0, 6.0))
+                pull = (vh80[v_ok_80] - v_true_80[v_ok_80]) / np.maximum(sig[v_ok_80], 1e-6)
+                pv_pull_audit[sname] = {
+                    'n_events': int(v_ok_80.sum()),
+                    'axis_pull_mean_xyz': [float(np.mean(pull[:, a])) for a in range(3)],
+                    'axis_pull_std_xyz': [float(np.std(pull[:, a])) for a in range(3)],
+                    'axis_pull_p68_abs_xyz': [float(np.quantile(np.abs(pull[:, a]), 0.68)) for a in range(3)],
+                    'axis_median_sigma_mm_xyz': [float(np.median(sig[v_ok_80, a])) for a in range(3)],
+                }
+
+        # All OOD / W-184 EPPS21 NC Charm FP32 GPU Evaluation (load each unique .pt once!)
+        ood_results: dict[str, dict] = {g: {} for g in ood_eval_groups}
+        loaded_ood_key = None
+        loaded_ood_batches: list[dict] = []
+        for ov, yo in ood_meta_map.items():
+            # Group models sharing the exact same ckey to minimize disk reloads
+            by_ck: dict[str, list[str]] = {}
+            for g in ood_eval_groups:
+                by_ck.setdefault(ood_group_ckey[(ov, g)], []).append(g)
+            for ckey, glist in by_ck.items():
+                if loaded_ood_key != ckey:
+                    loaded_ood_batches = torch.load(ood_pt_map[ckey], map_location='cpu', weights_only=False)
+                    loaded_ood_key = ckey
+                for g in glist:
+                    prefix = groups[g]['prefix']
+                    ps_seeds = []
+                    for s in SEEDS:
+                        sn = f'{prefix}_s{s}'
+                        cs = json.loads(Path(checkpoints[sn]['config_path']).read_text())
+                        mdl, mb1 = _load_model_fp32(Path(checkpoints[sn]['path']), cs, geom, device)
+                        p_s, _, _ = _predict_batches_fp32(mdl, mb1, loaded_ood_batches, device)
+                        ps_seeds.append(p_s)
+                        del mdl
+                    po = np.mean(ps_seeds, axis=0)
+                    if 'nc_' in ov:
+                        ood_results[g][ov] = {
+                            'n_events': int(len(yo)),
+                            'mean_p_tau': float(po[:, 2].mean()),
+                            'frac_pred_nc': float((po.argmax(1) == 3).mean()),
+                            'frac_pred_tau': float((po.argmax(1) == 2).mean()),
+                            'frac_p_tau_gt_0p5': float((po[:, 2] > 0.5).mean()),
+                        }
+                    else:
+                        ood_results[g][ov] = _ba4_and_nll(yo, po)
+        loaded_ood_batches = []
+        print(f'[freeze] OOD FP32 GPU eval complete ({time.perf_counter()-t0:.1f}s). Running stress tests & obs-only parity...', flush=True)
+
+        # Stage 324-10/06 Detector-Response Degradation Stress Tests on 400 real Tune events (shard 080)
+        y80 = prov_shard080['label'].to_numpy(dtype=np.int64)
+        stress_results: dict[str, dict] = {}
+        loaded_stress: dict[tuple[bool, str], list[dict]] = {
+            k: torch.load(v, map_location='cpu', weights_only=False) for k, v in stress_pt_map.items()
+        }
         for g in ('s325-b1pp-clean', 's325-pf-20um', 's325-pf-hybrid-v2', 's325-pf-hybrid-v2-nomad'):
             sname = f"{groups[g]['prefix']}_s17"
-            ckpt_p = Path(checkpoints[sname]['path'])
             cfg_s = json.loads(Path(checkpoints[sname]['config_path']).read_text())
-            df_obs = infer_observation_only(tmp_p, tmp_p / 'geometry.json', ckpt_p, cfg_s, batch_size=64, device=device)
-            p_obs = df_obs[['p0', 'p1', 'p2', 'p3']].to_numpy(dtype=np.float64)
+            mdl, is_b1 = _load_model_fp32(Path(checkpoints[sname]['path']), cfg_s, geom, device)
+            g_st = {}
+            p_nom = None
+            for st_name, _, _ in stress_specs:
+                p_st, _, _ = _predict_batches_fp32(mdl, is_b1, loaded_stress[(bool(is_b1), st_name)], device)
+                if st_name == 'nominal':
+                    p_nom = p_st
+                tv = float(0.5 * np.abs(p_st - p_nom).sum(axis=1).mean()) if p_nom is not None else 0.0
+                m_st = _ba4_and_nll(y80, p_st)
+                g_st[st_name] = {'BA4': m_st['BA4'], 'NLL': m_st['NLL'], 'mean_TV_vs_nominal': tv}
+            del mdl
+            stress_results[g] = g_st
 
-            # Compare DIRECTLY against saved disk best_predictions.parquet (proving FP32 parity, fixing 324-09!)
-            saved_df = pd.read_parquet(STAGE325_ROOT / 'experiments' / sname / checkpoints[sname]['chosen_prediction'])
-            p_cols = ['p_0', 'p_1', 'p_2', 'p_3'] if 'p_0' in saved_df.columns else ['p0', 'p1', 'p2', 'p3']
-            pos64 = pd.MultiIndex.from_frame(saved_df[KEY]).get_indexer(pd.MultiIndex.from_frame(prov64[KEY]))
-            p_saved = saved_df.iloc[pos64][p_cols].to_numpy(dtype=np.float64)
-            diff_vs_saved = float(np.max(np.abs(p_obs - p_saved)))
-            obs_only_closure[sname] = {
-                'events': 64,
-                'targets_file_present': False,
-                'all_finite': bool(np.isfinite(p_obs).all()),
-                'max_abs_diff_vs_saved_disk_parquet_fp32': diff_vs_saved,
-                'passed': bool(np.isfinite(p_obs).all() and diff_vs_saved <= 1e-5),
-            }
-            if diff_vs_saved > 1e-5:
-                raise AssertionError(f'324-09 FP32 saved-vs-obs parity failed for {sname}: max_diff={diff_vs_saved}')
+        # Stage 324-09 & 322-11: Direct disk saved FP32 predictions vs label-free observation-only replay closure!
+        obs_only_closure = {}
+        with tempfile.TemporaryDirectory(prefix='s325-obs-only-') as tmp:
+            tmp_p = Path(tmp)
+            raw64 = pq.read_table(clean_root / 'data/shards/080/observations.parquet').slice(0, 64)
+            prov64 = prov_shard080.iloc[:64].reset_index(drop=True)
+            pq.write_table(raw64, tmp_p / 'observations.parquet')
+            (tmp_p / 'geometry.json').write_text(json.dumps(geom))
+            for g in ('s325-b1pp-clean', 's325-pf-20um', 's325-pf-hybrid-v2', 's325-pf-hybrid-v2-nomad'):
+                sname = f"{groups[g]['prefix']}_s17"
+                ckpt_p = Path(checkpoints[sname]['path'])
+                cfg_s = json.loads(Path(checkpoints[sname]['config_path']).read_text())
+                df_obs = infer_observation_only(tmp_p, tmp_p / 'geometry.json', ckpt_p, cfg_s, batch_size=64, device=device)
+                p_obs = df_obs[['p0', 'p1', 'p2', 'p3']].to_numpy(dtype=np.float64)
+
+                mdl_r, is_b1_r = _load_model_fp32(ckpt_p, cfg_s, geom, device)
+                p_same, _, _ = _predict_batches_fp32(mdl_r, is_b1_r, [loaded_stress[(bool(is_b1_r), 'nominal')][0]], device)
+                del mdl_r
+                diff_same_gpu = float(np.max(np.abs(p_obs - p_same)))
+
+                saved_df = pd.read_parquet(STAGE325_ROOT / 'experiments' / sname / checkpoints[sname]['chosen_prediction'])
+                p_cols = ['p_0', 'p_1', 'p_2', 'p_3'] if 'p_0' in saved_df.columns else ['p0', 'p1', 'p2', 'p3']
+                pos64 = pd.MultiIndex.from_frame(saved_df[KEY]).get_indexer(pd.MultiIndex.from_frame(prov64[KEY]))
+                p_saved = saved_df.iloc[pos64][p_cols].to_numpy(dtype=np.float64)
+                diff_vs_saved = float(np.max(np.abs(p_obs - p_saved)))
+                obs_only_closure[sname] = {
+                    'events': 64,
+                    'targets_file_present': False,
+                    'all_finite': bool(np.isfinite(p_obs).all()),
+                    'train_export_gpu': checkpoints[sname].get('GPU'),
+                    'replay_gpu': torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu',
+                    'max_abs_diff_same_gpu_fp32': diff_same_gpu,
+                    'max_abs_diff_vs_saved_disk_parquet_fp32': diff_vs_saved,
+                    'passed': bool(np.isfinite(p_obs).all() and diff_same_gpu <= 1e-6 and diff_vs_saved <= 2e-4),
+                }
+                if not obs_only_closure[sname]['passed']:
+                    raise AssertionError(f'324-09 FP32 saved-vs-obs parity failed for {sname}: same={diff_same_gpu}, saved={diff_vs_saved}')
+    finally:
+        shutil.rmtree(cache_tmp_dir, ignore_errors=True)
 
     # Hash ONLY OPEN authorized shards (train 000..079 + validation 080..099); ZERO access to 100..149!
-    open_shard_hashes = {}
-    for sp_open in ('train', 'validation'):
-        for sname in split_shards[sp_open]:
-            sp = clean_root / 'data/shards' / sname / 'observations.parquet'
-            open_shard_hashes[sname] = _sha256_file(sp)
+    open_list = [
+        (sname, clean_root / 'data/shards' / sname / 'observations.parquet')
+        for sp_open in ('train', 'validation')
+        for sname in split_shards[sp_open]
+    ]
+    with ThreadPoolExecutor(max_workers=8) as tpool:
+        open_shard_hashes = dict(tpool.map(lambda pair: (pair[0], _sha256_file(pair[1])), open_list))
 
     # Assert runtime audit hook recorded ZERO accesses to any sealed shard!
     if sealed_accesses:
