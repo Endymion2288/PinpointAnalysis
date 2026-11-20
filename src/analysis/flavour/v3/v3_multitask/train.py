@@ -24,15 +24,27 @@ DEFAULT_V3_HEALTH_OUT = Path(
 
 def _pf_v3_loss(model: nn.Module, batch: dict, ctx: dict) -> tuple[torch.Tensor, torch.Tensor]:
     grad_blend = float(ctx.get('grad_blend', 1.0))
+    fixed_denoms = ctx.get('fixed_denoms')
     out = model(batch, grad_blend=grad_blend, return_aux=True)
-    l_event, _ = model.event_loss(
-        out['logits'],
-        out['charm_logit'],
-        out['v_hat'],
-        out['log_var_v'],
-        out['kin_pred'],
-        batch,
-    )
+    if fixed_denoms is not None and isinstance(model.event_loss, nn.Module):
+        l_event, _ = model.event_loss(
+            out['logits'],
+            out['charm_logit'],
+            out['v_hat'],
+            out['log_var_v'],
+            out['kin_pred'],
+            batch,
+            fixed_denoms=fixed_denoms,
+        )
+    else:
+        l_event, _ = model.event_loss(
+            out['logits'],
+            out['charm_logit'],
+            out['v_hat'],
+            out['log_var_v'],
+            out['kin_pred'],
+            batch,
+        )
     loss = l_event
     if model.enable_dense_gn2 and model.dense_heads is not None and 'pix_origin_target' in batch:
         dense_l = model.dense_heads.compute_losses(out['dense'], out['aux'], batch)

@@ -16,6 +16,15 @@ MAGNET0_Z_CENTER_MM = -815.3
 MAGNET0_LENGTH_MM = 1500.0
 MAGNET0_Z_MIN_MM = MAGNET0_Z_CENTER_MM - 0.5 * MAGNET0_LENGTH_MM  # -1565.3 mm
 MAGNET0_Z_MAX_MM = MAGNET0_Z_CENTER_MM + 0.5 * MAGNET0_LENGTH_MM  # -65.3 mm
+MAGNET1_Z_MIN_MM = 137.4
+MAGNET1_Z_MAX_MM = 1137.4
+MAGNET2_Z_MIN_MM = 1337.4
+MAGNET2_Z_MAX_MM = 2337.4
+MAGNET_BORE_X_MM = 0.0
+MAGNET_BORE_Y_MM = -10.0
+MAGNET_BORE_R_MM = 100.0
+# Fiducial bore radius (mm): excludes grazing/Sm2Co17-shell trajectories (Stage 324-06)
+MAGNET_BORE_FID_R_MM = 96.0
 # Exact piecewise-magnet sagitta integral between Trackers 1, 2, 3:
 #   y1 - y0 = theta_y0 * 1190 + 600,000 * kappa
 #   y2 - y0 = theta_y0 * 2380 + 2,380,000 * kappa
@@ -36,6 +45,41 @@ SIGMA_DELTA_X_MM = math.sqrt(1.5) * SIGMA_X_MM
 CAND_Y_FLIP_IDX = (3, 5, 6, 7, 11)
 # Raw hit feature indices that negate under Y-mirror
 HIT_Y_FLIP_IDX = (2, 4)
+
+
+def check_magnet12_bore_traversal(
+    x0: np.ndarray,
+    y0: np.ndarray,
+    y1: np.ndarray,
+    theta_x: np.ndarray,
+    theta_y_entry: np.ndarray,
+    kappa: np.ndarray,
+    fid_radius_mm: float = MAGNET_BORE_FID_R_MM,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Verify whether 3-station trajectories stay inside Magnet1 & Magnet2 air bores (Stage 324-06).
+
+    Evaluates exact piecewise parabolic trajectory at entry/mid/exit of Magnet1 [137.4, 1137.4] mm
+    and Magnet2 [1337.4, 2337.4] mm around bore center (0, -10) mm, R_bore = 100 mm.
+    Returns (in_bore_mask, max_r_mm).
+    """
+    z0 = TRACKER_Z_MM[0]
+    z1 = TRACKER_Z_MM[1]
+    theta_y1 = theta_y_entry + kappa * 1000.0
+    # Sample 6 critical z stations: Magnet1 (in, mid, out) and Magnet2 (in, mid, out)
+    samples = (
+        (MAGNET1_Z_MIN_MM, y0 + theta_y_entry * (MAGNET1_Z_MIN_MM - z0)),
+        (0.5 * (MAGNET1_Z_MIN_MM + MAGNET1_Z_MAX_MM), y0 + theta_y_entry * (637.4 - z0) + 0.5 * kappa * (500.0 ** 2)),
+        (MAGNET1_Z_MAX_MM, y0 + theta_y_entry * (MAGNET1_Z_MAX_MM - z0) + 0.5 * kappa * (1000.0 ** 2)),
+        (MAGNET2_Z_MIN_MM, y1 + theta_y1 * (MAGNET2_Z_MIN_MM - z1)),
+        (0.5 * (MAGNET2_Z_MIN_MM + MAGNET2_Z_MAX_MM), y1 + theta_y1 * (1837.4 - z1) + 0.5 * kappa * (500.0 ** 2)),
+        (MAGNET2_Z_MAX_MM, y1 + theta_y1 * (MAGNET2_Z_MAX_MM - z1) + 0.5 * kappa * (1000.0 ** 2)),
+    )
+    max_r = np.zeros_like(x0, dtype=np.float64)
+    for zs, ys in samples:
+        xs = x0 + theta_x * (zs - z0)
+        rs = np.hypot(xs - MAGNET_BORE_X_MM, ys - MAGNET_BORE_Y_MM)
+        max_r = np.maximum(max_r, rs)
+    return (max_r <= float(fid_radius_mm)), max_r
 
 
 def back_extrapolate_y_through_magnet0(
@@ -130,11 +174,14 @@ def extract_spectrometer_kinematics(
         theta_x = (x2 - x0) / (2.0 * DELTA_Z_MM)
         # Exact entry slope at Tracker 1 derived from Pinpoint_G4 Magnet1 & Magnet2 integrals
         theta_y_entry = (y1 - y0) / DELTA_Z_MM + ENTRY_SLOPE_SAGITTA_COEFF * (s_y / DELTA_Z_MM)
+        # Stage 324-06 fix: bore-aware quality check rejecting Sm2Co17 shell-scattered wrong-sign sagitta
+        in_bore, _ = check_magnet12_bore_traversal(x0, y0, y1, theta_x, theta_y_entry, kappa)
+        kappa_eff = np.where(in_bore, kappa, 0.0)
 
         if has_start:
             dz_ext = z_start - TRACKER_Z_MM[0]
             dx_ext = (x0 + theta_x * dz_ext) - x_start
-            y_ext, _ = back_extrapolate_y_through_magnet0(y0, theta_y_entry, kappa, float(z_start))
+            y_ext, _ = back_extrapolate_y_through_magnet0(y0, theta_y_entry, kappa_eff, float(z_start))
             dy_ext = y_ext - y_start
             d_ext = np.hypot(dx_ext / 20.0, dy_ext / 20.0)
         else:
@@ -142,7 +189,8 @@ def extract_spectrometer_kinematics(
             dy_ext = np.zeros_like(s_y)
             d_ext = np.zeros_like(s_y)
 
-        q_score = chi2_x + (0.5 * (d_ext ** 2) if has_start else 0.0) + (np.abs(s_y) / 20.0) ** 2
+        bore_pen = np.where(in_bore, 0.0, 25.0)
+        q_score = chi2_x + bore_pen + (0.5 * (d_ext ** 2) if has_start else 0.0) + (np.abs(s_y) / 20.0) ** 2
         order = np.argsort(q_score, kind='mergesort')
 
         for k in order:
@@ -152,23 +200,24 @@ def extract_spectrometer_kinematics(
             used_by_station[0].add(a)
             used_by_station[1].add(b)
             used_by_station[2].add(c)
-            sy_k = float(s_y[k])
-            p_proxy = 1.0 / (abs(sy_k) / 0.5 + 0.01)
+            ib_k = bool(in_bore[k])
+            sy_k = float(s_y[k]) if ib_k else 0.0
+            p_proxy = (1.0 / (abs(sy_k) / 0.5 + 0.01)) if ib_k else 0.0
             cand[slot] = np.array([
-                1.0,
+                1.0 if ib_k else 0.70,
                 1.0 / (1.0 + 0.1 * float(q_score[k])),
                 (float(x0[k]) - x_c) / 150.0,
                 (float(y0[k]) - y_c) / 150.0,
                 float(theta_x[k]) * 10.0,
                 float(theta_y_entry[k]) * 10.0,
-                math.asinh(sy_k / SIGMA_SAGITTA_Y_MM) / 5.0,
-                float(np.clip(sy_k, -25.0, 25.0)) / 5.0,
-                math.log1p(p_proxy) / 5.0,
+                (math.asinh(sy_k / SIGMA_SAGITTA_Y_MM) / 5.0) if ib_k else 0.0,
+                (float(np.clip(sy_k, -25.0, 25.0)) / 5.0) if ib_k else 0.0,
+                (math.log1p(p_proxy) / 5.0) if ib_k else 0.0,
                 math.log1p(float(chi2_x[k])) / 5.0,
                 float(np.clip(dx_ext[k], -300.0, 300.0)) / 50.0,
                 float(np.clip(dy_ext[k], -300.0, 300.0)) / 50.0,
                 math.log1p(float(d_ext[k])) / 3.0,
-                math.log1p(abs(sy_k) / 0.05) / 5.0,
+                (math.log1p(abs(sy_k) / 0.05) / 5.0) if ib_k else 0.0,
             ], dtype=np.float32)
             cand_mask[slot] = True
             slot += 1

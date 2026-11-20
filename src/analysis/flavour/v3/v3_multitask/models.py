@@ -36,11 +36,12 @@ class PinpointFormerMultitask(nn.Module):
 
         # Auxiliary event-level Charm & cylindrical visible kinematics heads
         in_global = 3 * dim
+        head_drop = float(config.get('head_dropout', 0.15))
         self.charm_head = nn.Sequential(
             nn.LayerNorm(in_global),
             nn.Linear(in_global, 192),
             nn.SiLU(),
-            nn.Dropout(0.15),
+            nn.Dropout(head_drop),
             nn.Linear(192, 1),
         )
         self.kin_head = nn.Sequential(
@@ -66,7 +67,7 @@ class PinpointFormerMultitask(nn.Module):
             nn.LayerNorm(head_in_dim),
             nn.Linear(head_in_dim, 256),
             nn.SiLU(),
-            nn.Dropout(0.15),
+            nn.Dropout(head_drop),
             nn.Linear(256, 7),
         )
         if bool(config.get('use_fixed_event_loss', False)):
@@ -75,6 +76,7 @@ class PinpointFormerMultitask(nn.Module):
                 w_charm=float(config.get('w_charm', 0.25)),
                 w_vtx=float(config.get('w_vtx', 0.20)),
                 w_kin=float(config.get('w_kin', 0.15)),
+                weight_all_tasks=bool(config.get('weight_all_tasks', False)),
             )
         else:
             self.event_loss = HomoscedasticEventLoss()

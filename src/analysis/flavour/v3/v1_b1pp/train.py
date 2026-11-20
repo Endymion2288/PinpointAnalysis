@@ -896,16 +896,17 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
         torch.save({'model': ema_model.state_dict(), 'config': config, 'pass': passes}, exp_dir / 'ema.pt')
 
         tune_all_ds = IndexedMappedSubset(tune_items, np.arange(len(tune_meta)))
-        pred_ema = _predict_dataset(ema_model, tune_all_ds, task, use_bf16, 128, min(2, loader_workers))
+        eval_bf16 = use_bf16 and (not bool(config.get('eval_fp32', True)))
+        pred_ema = _predict_dataset(ema_model, tune_all_ds, task, eval_bf16, 128, min(2, loader_workers))
         _save_predictions(exp_dir / 'predictions.parquet', tune_meta, pred_ema)
 
-        pred_exp = _predict_dataset(model, tune_all_ds, task, use_bf16, 128, min(2, loader_workers))
+        pred_exp = _predict_dataset(model, tune_all_ds, task, eval_bf16, 128, min(2, loader_workers))
         _save_predictions(exp_dir / 'exposure_predictions.parquet', tune_meta, pred_exp)
 
         best_model = ZAlignedStereoNet(layout, config).cuda()
         best_ckpt = torch.load(exp_dir / 'best.pt', map_location='cuda:0', weights_only=False)
         best_model.load_state_dict(best_ckpt['model'])
-        pred_best = _predict_dataset(best_model, tune_all_ds, task, use_bf16, 128, min(2, loader_workers))
+        pred_best = _predict_dataset(best_model, tune_all_ds, task, eval_bf16, 128, min(2, loader_workers))
         _save_predictions(exp_dir / 'best_predictions.parquet', tune_meta, pred_best)
 
         def _strip(d: dict) -> dict:
@@ -915,6 +916,10 @@ def train_one(root: Path, config_path: Path, resume: bool = False) -> dict:
             'status': 'complete',
             'UTC_finished': datetime.now(timezone.utc).isoformat(),
             'wall_seconds': float(time.perf_counter() - started_wall),
+            'eval_precision': 'bf16' if eval_bf16 else 'fp32',
+            'torch_version': torch.__version__,
+            'cuda_version': str(torch.version.cuda),
+            'code_archive_sha256': os.environ.get('PINPOINT_CODE_ARCHIVE_SHA256', ''),
             'parameters': int(n_params),
             'train_rows': int(len(train_ds)),
             'total_steps': int(global_step),

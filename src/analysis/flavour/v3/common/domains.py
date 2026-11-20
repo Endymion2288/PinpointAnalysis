@@ -128,7 +128,7 @@ def calibrated_bar_channels(
     # Default False: Pinpoint_G4 ScintSD already saturates bar PE once at N_pix=14,400!
     apply_sat = bool(cfg.get('apply_sipm_saturation', False))
     invert_sat = bool(cfg.get('invert_sipm_saturation', True))
-    max_occ = float(cfg.get('sipm_invert_max_occupancy', 0.98))
+    max_occ = float(cfg.get('sipm_invert_max_occupancy', cfg.get('sipm_sat_cap', 0.98)))
     if apply_sat and sipm_npix > 0.0:
         bpe = sipm_npix * (1.0 - np.exp(-bpe / sipm_npix))
 

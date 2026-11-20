@@ -155,6 +155,9 @@ def main() -> None:
         'GPU_VRAM_MiB': round(vram_mib, 1),
         'capability': f'SM{cap[0]}{cap[1]}',
         'allocation_id': os.environ.get('PINPOINT_JOB_ID', 'interactive'),
+        'code_archive_sha256': os.environ.get('PINPOINT_CODE_ARCHIVE_SHA256', ''),
+        'torch_version': torch.__version__,
+        'cuda_version': str(torch.version.cuda),
         'requested_parallel': int(args.parallel),
         'concurrent_jobs': int(eff_parallel),
         'configs': [str(p) for p in args.configs],
@@ -169,18 +172,30 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix=f'v3-grp-{args.name}-', dir=parent) as scratch:
         scratch_dir = Path(scratch)
         data_root = Path(configs[0]['data_root'])
-        import pandas as _pd
-        all_shard_paths = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
-        shard_paths = []
-        for sp in all_shard_paths:
-            prov_p = sp / 'provenance.parquet'
-            if prov_p.exists():
-                sp_vals = set(_pd.read_parquet(prov_p, columns=['split'])['split'].unique().tolist())
-                if not (sp_vals & {'train', 'validation'}):
-                    continue
-            shard_paths.append(sp)
-        if not shard_paths:
-            shard_paths = all_shard_paths
+        # Stage 324-01 fix: honor split_shards.json allowlist with ZERO directory listing or
+        # provenance reads on sealed shards (cal_a/cut_b/confirm).
+        split_idx_p = data_root / 'split_shards.json'
+        if split_idx_p.is_file():
+            smap = json.loads(split_idx_p.read_text())
+            allowed_names = sorted(set(str(x) for x in smap.get('train', [])) | set(str(x) for x in smap.get('validation', [])))
+            shard_paths = [
+                data_root / 'shards' / name
+                for name in allowed_names
+                if (data_root / 'shards' / name / 'observations.parquet').exists()
+            ]
+        else:
+            import pandas as _pd
+            all_shard_paths = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
+            shard_paths = []
+            for sp in all_shard_paths:
+                prov_p = sp / 'provenance.parquet'
+                if prov_p.exists():
+                    sp_vals = set(_pd.read_parquet(prov_p, columns=['split'])['split'].unique().tolist())
+                    if not (sp_vals & {'train', 'validation'}):
+                        continue
+                shard_paths.append(sp)
+            if not shard_paths:
+                shard_paths = all_shard_paths
         stage = stage_shards(shard_paths, scratch_dir / 'native', workers=min(6, max(1, args.cache_workers)))
         record['shared_staging'] = stage
         write_json(record_path, record)
@@ -197,6 +212,7 @@ def main() -> None:
                 'quantize_target_only',
                 'quantize_target_xy_mm',
                 'quantize_ipt_xy_mm',
+                'quantize_cluster_coords_only_mm',
                 'pe_only',
                 'bar_threshold_pe',
                 'sipm_npix',

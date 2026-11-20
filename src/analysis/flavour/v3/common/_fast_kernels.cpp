@@ -568,13 +568,16 @@ void fast_reconstruct_micron_vertex(
         }
     }
 
-    // Compute robust core center across adjacent 30mm-spaced planes starting at p0
+    // Compute robust core center across up to 4 consecutive planes starting at p0.
+    // Stage 324-07 fix: support BOTH 30.01 mm front Pinpoint blocks AND 150.01 mm intermediate
+    // Pinpoint blocks (stopping only at the >195 mm gap into downstream IPT when starting in Target).
     int32_t p_end = p0;
     while (p_end + 1 < n_pix_planes && p_end < p0 + 4) {
-        // Do not bridge across 150 mm (20 X0) FortuneBlock tungsten stacks for micron vertexing
-        if (!plane_cls[p_end + 1].empty() && !plane_cls[p_end].empty() &&
-            (plane_z[p_end + 1] - plane_z[p0]) > 105.0) {
-            break;
+        if (!plane_cls[p_end + 1].empty() && !plane_cls[p_end].empty()) {
+            const double step_dz = plane_z[p_end + 1] - plane_z[p_end];
+            if (step_dz > 185.0) {
+                break;
+            }
         }
         ++p_end;
     }
@@ -618,13 +621,17 @@ void fast_reconstruct_micron_vertex(
         : 0.0f;
 
     constexpr std::size_t MAX_CL_PER_PLANE = 40;
+    const double z_p0_ref = z_cl[plane_cls[p0][0]];
     for (int32_t p = p0; p <= p_end; ++p) {
         auto& vec = plane_cls[p];
-        // Filter to 12 mm core radius around vertex axis and MIP-like clusters (n_hits <= 16)
+        if (vec.empty()) continue;
+        // Scale radial core acceptance with longitudinal lever arm (12 mm for 30 mm front spacing, up to 36 mm for 150 mm intermediate spacing)
+        const double dz_from_p0 = std::max(0.0, plane_z[p] - z_p0_ref);
+        const double core_rad = std::min(40.0, std::max(12.0, 12.0 + 0.16 * dz_from_p0));
         std::vector<int32_t> core_vec;
         core_vec.reserve(vec.size());
         for (int32_t idx : vec) {
-            if (std::hypot(x_mean[idx] - xc_win, y_mean[idx] - yc_win) <= 12.0 && n_hits[idx] <= 16.0) {
+            if (std::hypot(x_mean[idx] - xc_win, y_mean[idx] - yc_win) <= core_rad && n_hits[idx] <= 16.0) {
                 core_vec.push_back(idx);
             }
         }
@@ -643,10 +650,10 @@ void fast_reconstruct_micron_vertex(
         }
     }
 
-    // 2. Seeded 3-plane triplets and 2-plane doublets across adjacent 30mm Pinpoint planes
+    // 2. Module-aware 3-plane triplets and 2-plane doublets across BOTH 30mm front & 150mm intermediate Pinpoint planes (Stage 324-07)
     const double sig_hit_base2 = 0.5 * ((pitch_x * pitch_x + pitch_y * pitch_y) / 12.0) + 1e-5; // ~3.8e-5 mm^2 (~6.2 um)^2
     constexpr double kMaxSlope = 0.22;         // 220 mrad forward cone
-    constexpr double kThetaMS = 1.4e-3;        // ~1.4 mrad typical stiff prong MS per block
+    constexpr double kThetaMS = 1.4e-3;        // ~1.4 mrad typical stiff prong MS per 30mm Pinpoint block
 
     struct CandTrk {
         Tracklet3D trk;
@@ -664,17 +671,24 @@ void fast_reconstruct_micron_vertex(
                 const double sa2 = sig_hit_base2 + 0.15 * lam2[ia];
                 for (int32_t ib : plane_cls[pb]) {
                     const double dz_ab = z_cl[ib] - za;
-                    if (dz_ab < 5.0 || dz_ab > 65.0) continue;
+                    // Adjacent front (30 mm), 1-skip front (60 mm), or adjacent intermediate (150.01 mm)
+                    if (dz_ab < 5.0 || dz_ab > 185.0) continue;
+                    if (pb > pa + 1 && dz_ab > 70.0) continue;
                     const double tx_ab = (x_mean[ib] - xa) / dz_ab;
                     const double ty_ab = (y_mean[ib] - ya) / dz_ab;
                     if (std::hypot(tx_ab, ty_ab) > kMaxSlope) continue;
+                    // Highland scaling of multiple Coulomb scattering across 30 mm (2.86 X0) vs 150 mm (17.1 X0)
+                    const double ms_theta_ab = kThetaMS * std::sqrt(std::max(1.0, dz_ab / 30.0));
 
                     bool found_triplet = false;
                     for (int32_t pc = pb + 1; pc <= std::min(p_end, pb + 2); ++pc) {
                         if (plane_cls[pc].empty()) continue;
                         for (int32_t ic : plane_cls[pc]) {
+                            const double dz_bc = z_cl[ic] - z_cl[ib];
+                            if (dz_bc < 5.0 || dz_bc > 185.0) continue;
+                            if (pc > pb + 1 && dz_bc > 70.0) continue;
                             const double dz_ac = z_cl[ic] - za;
-                            if (dz_ac < 15.0 || dz_ac > 95.0) continue;
+                            if (dz_ac < 15.0 || dz_ac > 340.0) continue;
                             const double tx = (x_mean[ic] - xa) / dz_ac;
                             const double ty = (y_mean[ic] - ya) / dz_ac;
                             if (std::hypot(tx, ty) > kMaxSlope) continue;
@@ -683,8 +697,10 @@ void fast_reconstruct_micron_vertex(
                             const double yb_pred = ya + ty * dz_ab;
                             const double rx = x_mean[ib] - xb_pred;
                             const double ry = y_mean[ib] - yb_pred;
+                            const double lever = (dz_ab * dz_bc) / dz_ac;
+                            const double ms_theta_mid = kThetaMS * std::sqrt(std::max(1.0, std::min(dz_ab, dz_bc) / 30.0));
                             const double sig_mid2 = 1.5 * sig_hit_base2 + 0.15 * lam2[ib] +
-                                                    (kThetaMS * dz_ab) * (kThetaMS * dz_ab);
+                                                    (ms_theta_mid * (2.0 * lever)) * (ms_theta_mid * (2.0 * lever));
                             const double chi2 = (rx * rx + ry * ry) / sig_mid2;
                             if (chi2 <= 16.0) {
                                 const double zm = (za + z_cl[ib] + z_cl[ic]) / 3.0;
@@ -701,7 +717,8 @@ void fast_reconstruct_micron_vertex(
                                                        (z_cl[ic] - zm) * (y_mean[ic] - ym)) / szz;
                                 const double x0_fit = xm + tx_fit * (za - zm);
                                 const double y0_fit = ym + ty_fit * (za - zm);
-                                const double eff_sig2 = sa2 + (0.8 * kThetaMS * 15.0) * (0.8 * kThetaMS * 15.0);
+                                const double half_gap = std::min(40.0, 0.5 * dz_ab);
+                                const double eff_sig2 = sa2 + (0.8 * ms_theta_ab * half_gap) * (0.8 * ms_theta_ab * half_gap);
                                 cands.push_back({
                                     {x0_fit, y0_fit, za, tx_fit, ty_fit, eff_sig2, chi2, 3, pa, ia, pc, ic},
                                     ia, ib, ic
@@ -711,8 +728,9 @@ void fast_reconstruct_micron_vertex(
                         }
                     }
 
-                    if (!found_triplet && dz_ab <= 36.0 && std::hypot(tx_ab, ty_ab) <= 0.15) {
-                        const double eff_sig2 = 2.0 * sa2 + (1.6 * kThetaMS * 18.0) * (1.6 * kThetaMS * 18.0);
+                    if (!found_triplet && (pb == pa + 1) && dz_ab <= 165.0 && std::hypot(tx_ab, ty_ab) <= 0.15) {
+                        const double half_gap = std::min(45.0, 0.5 * dz_ab);
+                        const double eff_sig2 = 2.0 * sa2 + (1.6 * ms_theta_ab * half_gap) * (1.6 * ms_theta_ab * half_gap);
                         const double pseudo_chi2 = 4.0 + 200.0 * (tx_ab * tx_ab + ty_ab * ty_ab);
                         cands.push_back({
                             {xa, ya, za, tx_ab, ty_ab, eff_sig2, pseudo_chi2, 2, pa, ia, pb, ib},
@@ -790,10 +808,18 @@ void fast_reconstruct_micron_vertex(
         }
         std::vector<double> cur_w = base_w;
 
-        // Weak physical slab prior (sigma_z = 18 mm) regularizes collinear bundles without pulling exact 3D stereo intersections
+        // Weak physical slab prior (sigma_z = 18 mm front, 45 mm intermediate) regularizes collinear bundles without pulling 3D intersections
+        bool is_wide_gap = (p0 >= 6);
+        for (int32_t pi = p0; pi < p_end; ++pi) {
+            if (!plane_cls[pi].empty() && !plane_cls[pi + 1].empty() && (plane_z[pi + 1] - plane_z[pi]) > 70.0) {
+                is_wide_gap = true;
+                break;
+            }
+        }
         const double prior_xy_prec = 1.0 / (35.0 * 35.0);
-        const double prior_z_prec = 1.0 / (18.0 * 18.0);
-        const double z_clamp_lo = (p0 == 0) ? (z_first_plane - 10.0) : ((p0 >= 6) ? (z_first_plane - 135.0) : (z_first_plane - 30.0));
+        const double prior_z_prec = is_wide_gap ? (1.0 / (45.0 * 45.0)) : (1.0 / (18.0 * 18.0));
+        const double z_clamp_lo = (p0 == 0) ? (is_wide_gap ? (z_first_plane - 40.0) : (z_first_plane - 10.0))
+                                            : ((p0 >= 6 || is_wide_gap) ? (z_first_plane - 135.0) : (z_first_plane - 30.0));
         const double z_clamp_hi = (p0 == 0) ? (z_first_plane + 22.0) : (z_first_plane + 18.0);
 
         bool ok = false;

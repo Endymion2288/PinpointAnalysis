@@ -16,21 +16,31 @@ from analysis.flavour.v2.submit import choose_schedd, gpu_requirement
 
 
 def _package_source(repo: Path, archive: Path) -> None:
+    import gzip
+
     archive.parent.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(archive, 'w:gz') as stream:
-        paths = [repo / 'src/analysis/__init__.py']
-        paths.extend(sorted((repo / 'src/analysis/utils').glob('*.py')))
-        paths.extend(sorted((repo / 'src/analysis/flavour').rglob('*.py')))
-        paths.extend(sorted((repo / 'src/analysis/flavour').rglob('*.cpp')))
-        s3_repair = repo / 'src/analysis/flavour/s3/runtime_repair.sh'
-        if s3_repair.exists():
-            paths.append(s3_repair)
-        seen = set()
-        for path in paths:
-            if path in seen or not path.is_file():
-                continue
-            seen.add(path)
-            stream.add(path, arcname=str(path.relative_to(repo)))
+    with archive.open('wb') as raw_fh, gzip.GzipFile(filename='', mode='wb', fileobj=raw_fh, mtime=0) as gz_fh:
+        with tarfile.open(fileobj=gz_fh, mode='w') as stream:
+            paths = [repo / 'src/analysis/__init__.py']
+            paths.extend(sorted((repo / 'src/analysis/utils').glob('*.py')))
+            paths.extend(sorted((repo / 'src/analysis/flavour').rglob('*.py')))
+            paths.extend(sorted((repo / 'src/analysis/flavour').rglob('*.cpp')))
+            s3_repair = repo / 'src/analysis/flavour/s3/runtime_repair.sh'
+            if s3_repair.exists():
+                paths.append(s3_repair)
+            seen = set()
+            for path in paths:
+                if path in seen or not path.is_file():
+                    continue
+                seen.add(path)
+                ti = stream.gettarinfo(str(path), arcname=str(path.relative_to(repo)))
+                ti.mtime = 0
+                ti.uid = 0
+                ti.gid = 0
+                ti.uname = ''
+                ti.gname = ''
+                with path.open('rb') as src_fh:
+                    stream.addfile(ti, src_fh)
 
 
 def _submit_kubeflow(args: argparse.Namespace, root: Path, script: list[str], archive: Path) -> dict:
@@ -147,6 +157,12 @@ def submit_job(
     repo = Path(__file__).resolve().parents[5]
     archive = root / 'code' / f'{name}.tar.gz'
     _package_source(repo, archive)
+    import hashlib as _hl
+    _h = _hl.sha256()
+    with archive.open('rb') as _af:
+        for _ch in iter(lambda: _af.read(1 << 20), b''):
+            _h.update(_ch)
+    archive_sha256 = _h.hexdigest()
 
     directory = Path.home() / 'condor/Pinpoint/flavour_v3' / stage / name
     directory.mkdir(parents=True, exist_ok=True)
@@ -164,6 +180,7 @@ def submit_job(
         'set -e',
         'ls /eos/home-x/xcheng/FASER/Pinpoint/results >/dev/null',
         'export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1',
+        f'export PINPOINT_CODE_ARCHIVE_SHA256={shlex.quote(archive_sha256)}',
         'export PINPOINT_V3_SCRATCH="${_CONDOR_SCRATCH_DIR:-/tmp}/pinpoint_v3_${PINPOINT_JOB_ID}"',
         'export PINPOINT_V2_SCRATCH="$PINPOINT_V3_SCRATCH"',
         'mkdir -p "$PINPOINT_V3_SCRATCH/code"',

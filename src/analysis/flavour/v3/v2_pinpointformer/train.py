@@ -724,6 +724,7 @@ def run_pf_training(
     batch_size = int(config['batch_size'])
 
     t_start = time.perf_counter()
+    utc_started = datetime.now(timezone.utc).isoformat()
     with tempfile.TemporaryDirectory(prefix=f'pf-{name}-', dir=parent_scratch) as tmp_dir:
         tmp_path = Path(tmp_dir)
         shared_tr_pkl = os.environ.get('PINPOINT_V3_SHARED_TRAIN_PF')
@@ -737,7 +738,13 @@ def run_pf_training(
             stage_root = os.environ.get('PINPOINT_V3_SHARED_STAGE')
             old_stage = os.environ.get('PINPOINT_V3_SHARED_STAGE')
             if not stage_root:
-                shard_paths = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
+                split_idx_p = data_root / 'split_shards.json'
+                if split_idx_p.is_file():
+                    smap = json.loads(split_idx_p.read_text())
+                    allowed_s = sorted(set(str(x) for x in smap.get('train', [])) | set(str(x) for x in smap.get('validation', [])))
+                    shard_paths = [data_root / 'shards' / s for s in allowed_s if (data_root / 'shards' / s / 'observations.parquet').exists()]
+                else:
+                    shard_paths = sorted(p for p in (data_root / 'shards').iterdir() if (p / 'observations.parquet').exists())
                 st_rep = stage_shards(shard_paths, tmp_path / 'native', workers=min(4, cache_workers))
                 os.environ['PINPOINT_V3_SHARED_STAGE'] = st_rep['local_shard_root']
             try:
@@ -783,6 +790,14 @@ def run_pf_training(
             if (w_pos < 0).any():
                 raise ValueError('Train rows missing from sample_weight_path')
             tr_weights = w_df['energy_match_weight'].to_numpy(dtype=np.float32)[w_pos]
+            if bool(config.get('filter_zero_weight_events', False)):
+                # Stage 324-03 fix: completely exclude zero-weight out-of-support events from ALL tasks
+                pos_w = tr_weights > 0.0
+                tr_indices = tr_indices[pos_w]
+                tr_sub_meta = tr_sub_meta.loc[pos_w].reset_index(drop=True)
+                tr_weights = tr_weights[pos_w]
+                if ev_sidecar is not None:
+                    ev_sidecar = ev_sidecar.loc[pos_w].reset_index(drop=True)
 
         train_ds = CachedPFDataset(
             tr_blob['items_dir'],
@@ -947,67 +962,58 @@ def run_pf_training(
                             loss_sum += float(loss.detach()) * bs_n
                             n_seen += bs_n
                     else:
+                        from analysis.flavour.v3.v3_multitask.losses import compute_window_task_denominators
+                        has_exact_denoms = hasattr(model, 'event_loss') and hasattr(model.event_loss, 'weight_all_tasks')
+                        w_all_tasks = bool(getattr(getattr(model, 'event_loss', None), 'weight_all_tasks', False))
+
+                        def _run_accum_window(win_buf: list[dict]) -> None:
+                            nonlocal global_step, loss_sum, n_seen
+                            global_step += 1
+                            grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
+                            opt.zero_grad(set_to_none=True)
+                            tot_b = sum(len(mb['label']) for mb in win_buf)
+                            fixed_denoms = (
+                                compute_window_task_denominators(win_buf, pos_weight=3.0, weight_all_tasks=w_all_tasks)
+                                if has_exact_denoms
+                                else None
+                            )
+                            win_loss_acc = 0.0
+                            for mb in win_buf:
+                                db = move_batch_to_device(mb, device)
+                                bs_n = len(db['label'])
+                                ctx_mb: dict = {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')}
+                                if fixed_denoms is not None:
+                                    ctx_mb['fixed_denoms'] = fixed_denoms
+                                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                                    loss, _ = loss_fn(model, db, ctx_mb)
+                                    scaled_l = loss if (fixed_denoms is not None) else (loss * (float(bs_n) / float(max(tot_b, 1))))
+                                if use_fp16_scaler:
+                                    scaler.scale(scaled_l).backward()
+                                else:
+                                    scaled_l.backward()
+                                win_loss_acc += float(scaled_l.detach())
+                            if use_fp16_scaler:
+                                scaler.unscale_(opt)
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                scaler.step(opt)
+                                scaler.update()
+                            else:
+                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                                opt.step()
+                            scheduler.step()
+                            _update_ema(ema_model, model, ema_decay)
+                            loss_sum += win_loss_acc * tot_b
+                            n_seen += tot_b
+
                         micro_buf: list[dict] = []
                         for batch in tr_loader:
                             micro_buf.append(batch)
                             if len(micro_buf) < grad_accum:
                                 continue
-                            global_step += 1
-                            grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
-                            opt.zero_grad(set_to_none=True)
-                            tot_b = sum(len(mb['label']) for mb in micro_buf)
-                            for mb in micro_buf:
-                                db = move_batch_to_device(mb, device)
-                                bs_n = len(db['label'])
-                                w_mb = float(bs_n) / float(max(tot_b, 1))
-                                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
-                                    loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
-                                    scaled_l = loss * w_mb
-                                if use_fp16_scaler:
-                                    scaler.scale(scaled_l).backward()
-                                else:
-                                    scaled_l.backward()
-                                loss_sum += float(loss.detach()) * bs_n
-                                n_seen += bs_n
-                            if use_fp16_scaler:
-                                scaler.unscale_(opt)
-                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                                scaler.step(opt)
-                                scaler.update()
-                            else:
-                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                                opt.step()
-                            scheduler.step()
-                            _update_ema(ema_model, model, ema_decay)
+                            _run_accum_window(micro_buf)
                             micro_buf.clear()
                         if micro_buf:
-                            global_step += 1
-                            grad_blend = min(1.0, 0.30 + 0.70 * global_step / float(blend_steps))
-                            opt.zero_grad(set_to_none=True)
-                            tot_b = sum(len(mb['label']) for mb in micro_buf)
-                            for mb in micro_buf:
-                                db = move_batch_to_device(mb, device)
-                                bs_n = len(db['label'])
-                                w_mb = float(bs_n) / float(max(tot_b, 1))
-                                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
-                                    loss, _ = loss_fn(model, db, {'grad_blend': grad_blend, 'step': global_step, 'task': config.get('task', 'T4')})
-                                    scaled_l = loss * w_mb
-                                if use_fp16_scaler:
-                                    scaler.scale(scaled_l).backward()
-                                else:
-                                    scaled_l.backward()
-                                loss_sum += float(loss.detach()) * bs_n
-                                n_seen += bs_n
-                            if use_fp16_scaler:
-                                scaler.unscale_(opt)
-                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                                scaler.step(opt)
-                                scaler.update()
-                            else:
-                                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
-                                opt.step()
-                            scheduler.step()
-                            _update_ema(ema_model, model, ema_decay)
+                            _run_accum_window(micro_buf)
                             micro_buf.clear()
                 finally:
                     shutdown_loader(tr_loader)
@@ -1098,6 +1104,7 @@ def run_pf_training(
                         time.sleep(1.5)
                 _loc_f.unlink(missing_ok=True)
 
+            eval_bf16 = use_bf16 and (not bool(config.get('eval_fp32', True)))
             for ckpt_path, pred_name in (
                 (best_pt, 'best_predictions.parquet'),
                 (ema_pt, 'predictions.parquet'),
@@ -1106,7 +1113,7 @@ def run_pf_training(
                 if ckpt_path.exists():
                     state = torch.load(ckpt_path, map_location=device, weights_only=False)
                     ema_model.load_state_dict(state['model'])
-                    pr = predict_pf_loader(ema_model, tune_loader, device, use_bf16, pred_fn)
+                    pr = predict_pf_loader(ema_model, tune_loader, device, eval_bf16, pred_fn)
                     _save_pred_parquet(exp_dir / pred_name, tu_meta, pr)
 
         finally:
@@ -1116,10 +1123,19 @@ def run_pf_training(
 
     manifest = {
         'status': 'complete',
-        'UTC_started': datetime.now(timezone.utc).isoformat(),
+        'UTC_started': utc_started,
         'UTC_finished': datetime.now(timezone.utc).isoformat(),
         'name': name,
         'config': config,
+        'GPU': torch.cuda.get_device_name(device),
+        'GPU_VRAM_MiB': round(vram_mib, 1),
+        'grad_accum': int(grad_accum),
+        'micro_batch_size': int(micro_bs),
+        'effective_batch_size': int(batch_size),
+        'eval_precision': 'bf16' if eval_bf16 else 'fp32',
+        'torch_version': torch.__version__,
+        'cuda_version': str(torch.version.cuda),
+        'code_archive_sha256': os.environ.get('PINPOINT_CODE_ARCHIVE_SHA256', ''),
         'train_events': len(train_ds),
         'tune_events': len(tune_ds),
         'parameters': int(sum(p.numel() for p in model.parameters())),

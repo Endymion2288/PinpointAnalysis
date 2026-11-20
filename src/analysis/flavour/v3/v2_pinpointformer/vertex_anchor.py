@@ -22,8 +22,10 @@ def heteroscedastic_vertex_loss(
     vertex_valid: torch.Tensor,
     *,
     legacy_biased: bool = False,
+    sample_weight: torch.Tensor | None = None,
+    denom_override: torch.Tensor | float | None = None,
 ) -> torch.Tensor:
-    """Unbiased heteroscedastic SmoothL1+NLL vertex loss in FP32 (resolving Audit P2-2).
+    """Unbiased heteroscedastic SmoothL1+NLL vertex loss in FP32 (resolving Audit P2-2 & 324-02/03).
 
     At the stationary point d/d(lv) [0.5 * (exp(-lv) * L + lv) + C] = 0, exp(lv) = L without
     any floor distortion. Placing a constant +4.0 OUTSIDE exp(-lv)*L keeps logged values > 0
@@ -44,8 +46,16 @@ def heteroscedastic_vertex_loss(
         lv = torch.clamp(log_var_v[valid].float(), min=-6.0, max=6.0)
         err = (v_hat[valid].float() - v_true[valid].float()) / scale
         l_axis = F.smooth_l1_loss(err, torch.zeros_like(err), beta=1.0, reduction='none') + 1e-4
-        nll = 0.5 * (torch.exp(-lv) * l_axis + lv) + 4.0
-        return nll.mean()
+        nll_ev = (0.5 * (torch.exp(-lv) * l_axis + lv) + 4.0).mean(dim=-1)
+        if sample_weight is not None:
+            w = sample_weight[valid].float().clamp_min(0.0)
+        else:
+            w = torch.ones_like(nll_ev)
+        if denom_override is not None:
+            denom = torch.as_tensor(denom_override, dtype=torch.float32, device=nll_ev.device).clamp_min(1e-8)
+        else:
+            denom = w.sum().clamp_min(1e-8)
+        return (nll_ev * w).sum() / denom
 
 
 def select_near_vertex_clusters(

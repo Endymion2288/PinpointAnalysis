@@ -36,6 +36,7 @@ def marginal_tau_branch_ce(
     label_7: torch.Tensor,
     label_4: torch.Tensor,
     sample_weight: torch.Tensor | None = None,
+    denom_override: torch.Tensor | float | None = None,
 ) -> torch.Tensor:
     """7-class cross-entropy with exact -log(p3+p4+p5) marginal loss for unknown tau decay rows."""
     with torch.autocast(device_type=logits7.device.type, enabled=False):
@@ -53,9 +54,14 @@ def marginal_tau_branch_ce(
         if not valid.any():
             return lg.sum() * 0.0
         if sample_weight is not None:
-            w = sample_weight.float() * valid.float()
-            return (per * w).sum() / w.sum().clamp_min(1e-8)
-        return per[valid].mean()
+            w = sample_weight.float().clamp_min(0.0) * valid.float()
+        else:
+            w = valid.float()
+        if denom_override is not None:
+            denom = torch.as_tensor(denom_override, dtype=torch.float32, device=lg.device).clamp_min(1e-8)
+        else:
+            denom = w.sum().clamp_min(1e-8)
+        return (per * w).sum() / denom
 
 
 def focal_charm_bce(
@@ -64,6 +70,8 @@ def focal_charm_bce(
     charm_valid: torch.Tensor,
     gamma: float = 1.5,
     pos_weight: float = 3.0,
+    sample_weight: torch.Tensor | None = None,
+    denom_override: torch.Tensor | float | None = None,
 ) -> torch.Tensor:
     """Imbalance-aware focal BCE loss for concurrent Charm production (approx 7.4% pos)."""
     valid = charm_valid > 0
@@ -77,7 +85,60 @@ def focal_charm_bce(
         bce = F.binary_cross_entropy_with_logits(lg, y, reduction='none')
         focal = ((1.0 - pt) ** gamma) * bce
         w = torch.where(y > 0.5, float(pos_weight), 1.0)
-        return (focal * w).sum() / w.sum().clamp_min(1e-8)
+        if sample_weight is not None:
+            w = w * sample_weight[valid].float().view(-1).clamp_min(0.0)
+        if denom_override is not None:
+            denom = torch.as_tensor(denom_override, dtype=torch.float32, device=lg.device).clamp_min(1e-8)
+        else:
+            denom = w.sum().clamp_min(1e-8)
+        return (focal * w).sum() / denom
+
+
+def compute_window_task_denominators(
+    micro_batches: list[dict],
+    *,
+    pos_weight: float = 3.0,
+    weight_all_tasks: bool = False,
+) -> dict[str, float]:
+    """Compute exact full-window per-task denominators across microbatches (Stage 324-02).
+
+    Guarantees sum_j (S_j / D_full) == (sum_j S_j) / D_full for masked & weighted losses.
+    """
+    d_proc = 0.0
+    d_charm = 0.0
+    d_vtx = 0.0
+    d_kin = 0.0
+    for mb in micro_batches:
+        sw = mb.get('sample_weight')
+        sw_f = sw.float().clamp_min(0.0) if sw is not None else None
+        sw_aux = sw_f if (weight_all_tasks and sw_f is not None) else None
+
+        valid_p = (mb['label_7'] >= 0) | ((mb['label_7'] < 0) & (mb['label'] == 2))
+        if valid_p.any():
+            d_proc += float((sw_f[valid_p].sum() if sw_f is not None else valid_p.float().sum()).item())
+
+        valid_c = mb['charm_valid'] > 0
+        if valid_c.any():
+            yc = mb['charm_flag'][valid_c].float().view(-1)
+            wc = torch.where(yc > 0.5, float(pos_weight), 1.0)
+            if sw_aux is not None:
+                wc = wc * sw_aux[valid_c].view(-1)
+            d_charm += float(wc.sum().item())
+
+        valid_v = mb['vertex_valid'] > 0
+        if valid_v.any():
+            d_vtx += float((sw_aux[valid_v].sum() if sw_aux is not None else valid_v.float().sum()).item())
+
+        valid_k = mb['kin_valid'] > 0
+        if valid_k.any():
+            d_kin += float((sw_aux[valid_k].sum() if sw_aux is not None else valid_k.float().sum()).item())
+
+    return {
+        'proc': max(d_proc, 1e-8),
+        'charm': max(d_charm, 1e-8),
+        'vtx': max(d_vtx, 1e-8),
+        'kin': max(d_kin, 1e-8),
+    }
 
 
 class HomoscedasticEventLoss(nn.Module):
@@ -148,7 +209,7 @@ class HomoscedasticEventLoss(nn.Module):
 
 
 class FixedWeightEventLoss(nn.Module):
-    """Unbiased fixed-weight 4-head event loss (resolving Audit P2-2 +0.5/+2.0 floor bias)."""
+    """Unbiased fixed-weight 4-head event loss with exact microbatch denominator support (324-02/03)."""
 
     def __init__(
         self,
@@ -156,12 +217,14 @@ class FixedWeightEventLoss(nn.Module):
         w_charm: float = 0.25,
         w_vtx: float = 0.20,
         w_kin: float = 0.15,
+        weight_all_tasks: bool = False,
     ) -> None:
         super().__init__()
         self.w_proc = float(w_proc)
         self.w_charm = float(w_charm)
         self.w_vtx = float(w_vtx)
         self.w_kin = float(w_kin)
+        self.weight_all_tasks = bool(weight_all_tasks)
 
     def forward(
         self,
@@ -171,30 +234,53 @@ class FixedWeightEventLoss(nn.Module):
         log_var_v: torch.Tensor,
         kin_pred: torch.Tensor,
         batch: dict,
+        fixed_denoms: dict[str, float] | None = None,
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        sw = batch.get('sample_weight')
+        sw_aux = sw if self.weight_all_tasks else None
+        fd = fixed_denoms or {}
+
         l_proc = marginal_tau_branch_ce(
             logits7,
             batch['label_7'],
             batch['label'],
-            sample_weight=batch.get('sample_weight'),
+            sample_weight=sw,
+            denom_override=fd.get('proc'),
         )
-        l_charm = focal_charm_bce(charm_logit, batch['charm_flag'], batch['charm_valid'])
+        l_charm = focal_charm_bce(
+            charm_logit,
+            batch['charm_flag'],
+            batch['charm_valid'],
+            sample_weight=sw_aux,
+            denom_override=fd.get('charm'),
+        )
         l_vtx = heteroscedastic_vertex_loss(
             v_hat,
             log_var_v,
             batch['vertex_xyz_mm'],
             batch['vertex_valid'],
             legacy_biased=False,
+            sample_weight=sw_aux,
+            denom_override=fd.get('vtx'),
         )
 
         kin_valid = batch['kin_valid'] > 0
         if kin_valid.any():
             with torch.autocast(device_type=kin_pred.device.type, enabled=False):
-                l_kin = F.smooth_l1_loss(
+                kin_ev = F.smooth_l1_loss(
                     kin_pred[kin_valid].float(),
                     batch['vis_kinematics'][kin_valid].float(),
-                    reduction='mean',
-                )
+                    reduction='none',
+                ).mean(dim=-1)
+                if sw_aux is not None:
+                    wk = sw_aux[kin_valid].float().clamp_min(0.0)
+                else:
+                    wk = torch.ones_like(kin_ev)
+                if 'kin' in fd:
+                    dk = torch.as_tensor(fd['kin'], dtype=torch.float32, device=kin_ev.device).clamp_min(1e-8)
+                else:
+                    dk = wk.sum().clamp_min(1e-8)
+                l_kin = (kin_ev * wk).sum() / dk
         else:
             l_kin = kin_pred.sum() * 0.0
 

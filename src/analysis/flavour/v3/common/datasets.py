@@ -113,10 +113,25 @@ class V3EvalDataset(Dataset):
         self.geometry = json.loads(Path(plan['geometry']).read_text())
         self.bounds = detector_bounds(self.geometry)
 
-        all_paths = sorted(
-            p for p in (self.root / 'shards').iterdir()
-            if (p / 'observations.parquet').exists()
-        )
+        # Stage 324-01 fix: honor explicit split_shards.json allowlist so training/validation
+        # NEVER lists, stats, or reads provenance.parquet of sealed splits (cal_a/cut_b/confirm).
+        split_index_path = self.root / 'split_shards.json'
+        allowed_names: list[str] | None = None
+        if split_index_path.is_file():
+            split_map = json.loads(split_index_path.read_text())
+            if split in split_map:
+                allowed_names = [str(s) for s in split_map[split]]
+        if allowed_names is not None:
+            all_paths = [
+                self.root / 'shards' / name
+                for name in allowed_names
+                if (self.root / 'shards' / name / 'observations.parquet').exists()
+            ]
+        else:
+            all_paths = sorted(
+                p for p in (self.root / 'shards').iterdir()
+                if (p / 'observations.parquet').exists()
+            )
         active_paths: list[Path] = []
         active_idx_lists: list[np.ndarray] = []
         meta_frames: list[pd.DataFrame] = []

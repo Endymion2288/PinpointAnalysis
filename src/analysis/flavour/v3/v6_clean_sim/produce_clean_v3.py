@@ -1403,6 +1403,12 @@ def finalize_clean_v3(root: Path, allow_pending_ood: bool = False) -> dict:
         val_provs.append(pd.read_parquet(sdir / 'provenance.parquet'))
 
     all_prov = pd.concat(val_provs, ignore_index=True)
+    # Stage 324-01 fix: persist explicit shard allowlist per split so downstream loaders
+    # NEVER list, stat, or open provenance.parquet of sealed splits (cal_a/cut_b/confirm).
+    split_shards: dict[str, list[str]] = {}
+    for sp_name, sub in all_prov.groupby('split'):
+        split_shards[str(sp_name)] = sorted(f'{int(c):03d}' for c in sub['chunk'].unique())
+    write_json(root / 'data' / 'split_shards.json', split_shards)
     if total_nav_w != len(all_prov):
         raise AssertionError(f'G4Navigator W verified {total_nav_w} != total events {len(all_prov)}')
     if total_zpe_viol != 0:

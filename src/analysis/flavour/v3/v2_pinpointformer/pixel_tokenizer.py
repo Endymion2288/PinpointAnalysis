@@ -562,19 +562,39 @@ def extract_pf_item(
         keep_ipt = _select_group_clusters(ipt_cl_all, cl_plane, n_hits, hits_r040, cnt_r5, N_MAX_IPT_CLUSTERS)
         keep_idx = np.concatenate([keep_tgt, keep_ipt])
 
+        # Stage 324-08 fixed-clustering coordinate-only quantization control:
+        # preserves exact 20 um cluster counts, token counts, c_obs, and IPT bit-for-bit,
+        # while rounding ONLY Target cluster (x, y) coordinates (and micro-vertex inputs) to q_coord mm.
+        q_coord_raw = cfg.get('quantize_cluster_coords_only_mm')
+        if q_coord_raw is not None and float(q_coord_raw) > 0.0:
+            qc = float(q_coord_raw)
+            x_out = x_mean.copy()
+            y_out = y_mean.copy()
+            tgt_m = cl_plane < n_target_planes
+            if tgt_m.any():
+                x_out[tgt_m] = x_c + np.round((x_mean[tgt_m] - x_c) / qc) * qc
+                y_out[tgt_m] = y_c + np.round((y_mean[tgt_m] - y_c) / qc) * qc
+            mv_px_tgt = qc
+            mv_py_tgt = qc
+        else:
+            x_out = x_mean
+            y_out = y_mean
+            mv_px_tgt = px_tgt
+            mv_py_tgt = py_tgt
+
         pix_xyz = np.column_stack([
-            x_mean[keep_idx],
-            y_mean[keep_idx],
+            x_out[keep_idx],
+            y_out[keep_idx],
             z_cl[keep_idx],
         ]).astype(np.float32)
 
-        dx_core = x_mean[keep_idx] - plane_xc[cl_plane[keep_idx]]
-        dy_core = y_mean[keep_idx] - plane_yc[cl_plane[keep_idx]]
+        dx_core = x_out[keep_idx] - plane_xc[cl_plane[keep_idx]]
+        dy_core = y_out[keep_idx] - plane_yc[cl_plane[keep_idx]]
         r_core = np.hypot(dx_core, dy_core)
 
         pix_feat = np.column_stack([
-            (x_mean[keep_idx] - x_c) / 135.0,
-            (y_mean[keep_idx] - y_c) / 100.0,
+            (x_out[keep_idx] - x_c) / 135.0,
+            (y_out[keep_idx] - y_c) / 100.0,
             (z_cl[keep_idx] - z_mid) / 1000.0,
             np.log1p(n_hits[keep_idx]) / 6.0,
             np.arcsinh(dx_box[keep_idx] / 0.1) / 3.0,
@@ -627,15 +647,15 @@ def extract_pf_item(
         else:
             pix_patches, patch_cl_idx = p_i, idx_i
 
-        mv_x = x_mean
-        mv_y = y_mean
+        mv_x = x_out
+        mv_y = y_out
         if bool(cfg.get('shuffle_micro_vertex', False)) and len(cl_plane) >= 2:
             # Stage 320/322 Exp-1 falsification control: content-derived seed ensures invariance to dataset row order
             base_seed = int(cfg.get('shuffle_seed', 2026321))
             content_sig = int(cl_fcid[0]) ^ (int(len(cl_plane)) * 2654435761)
             sh_rng = np.random.default_rng([base_seed & 0xFFFFFFFF, content_sig & 0xFFFFFFFF, (content_sig >> 32) & 0xFFFFFFFF])
-            mv_x = x_mean.copy()
-            mv_y = y_mean.copy()
+            mv_x = x_out.copy()
+            mv_y = y_out.copy()
             for p_val in np.unique(cl_plane):
                 pm = np.flatnonzero(cl_plane == p_val)
                 if len(pm) >= 2:
@@ -647,8 +667,8 @@ def extract_pf_item(
                     mv_x[pm] = cx_p + ca * dx_p - sa * dy_p
                     mv_y[pm] = cy_p + sa * dx_p + ca * dy_p
         has_tgt_cl = len(tgt_cl_all) > 0
-        mv_px = px_tgt if has_tgt_cl else px_ipt
-        mv_py = py_tgt if has_tgt_cl else py_ipt
+        mv_px = mv_px_tgt if has_tgt_cl else px_ipt
+        mv_py = mv_py_tgt if has_tgt_cl else py_ipt
         avr_xyz, avr_ok, micro_vtx_feat = reconstruct_micron_vertex(
             cl_plane, mv_x, mv_y, z_cl, n_hits, lam2,
             n_pix_planes, mv_px, mv_py, dom['cal_start'], (x_c, y_c, z_mid),
