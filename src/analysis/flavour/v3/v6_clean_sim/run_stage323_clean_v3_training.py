@@ -1008,7 +1008,13 @@ def freeze_and_validate_stage323(clean_root: Path) -> dict:
             }
         # Evaluate both direct equal-weight 3-seed average (pure p_tau, cross-domain comparable)
         # AND 5-fold OOF domain-calibrated ensemble on Tune8k
-        p_raw_avg = np.mean([df[['p0', 'p1', 'p2', 'p3']].to_numpy(dtype=np.float64) for df in m_frames.values()], axis=0)
+        raw_probs_list = []
+        ref_idx = pd.MultiIndex.from_frame(tune_meta[KEY])
+        for df in m_frames.values():
+            p_cols = ['p_0', 'p_1', 'p_2', 'p_3'] if 'p_0' in df.columns else ['p0', 'p1', 'p2', 'p3']
+            pos = pd.MultiIndex.from_frame(df[KEY]).get_indexer(ref_idx)
+            raw_probs_list.append(df.iloc[pos][p_cols].to_numpy(dtype=np.float64))
+        p_raw_avg = np.mean(raw_probs_list, axis=0)
         ens = fit_oof_domain_ensemble(m_frames, tune_meta, slices, n_folds=5, folds=folds)
         p_oof = ens['oof_probs']
         tune_group_probs[gname] = p_oof
@@ -1047,8 +1053,7 @@ def freeze_and_validate_stage323(clean_root: Path) -> dict:
 
     # Paired family bootstrap CIs on CleanTune8k (1,000 resamples) for key ablations
     pc_m = slices['PinpointBlock_PixXY']
-    fam_pin = tune_meta.loc[pc_m, FAMILY].reset_index(drop=True)
-    y_pin = labels[pc_m]
+    fam_codes = pd.MultiIndex.from_frame(tune_meta[FAMILY]).factorize()[0]
     pairs_to_test = [
         ('2x2_target_effect_at_ipt20um: (20um,20um) - (1mm,20um)', 's323-pf-20um', 's323-pf-tgt1mm-ipt20um'),
         ('2x2_ipt_effect_at_tgt20um: (20um,20um) - (20um,1mm)', 's323-pf-20um', 's323-pf-tgt20um-ipt1mm'),
@@ -1063,10 +1068,10 @@ def freeze_and_validate_stage323(clean_root: Path) -> dict:
     ]
     paired_boot = {}
     for label_p, ga, gb in pairs_to_test:
-        pa_m = tune_group_probs[ga][pc_m]
-        pb_m = tune_group_probs[gb][pc_m]
+        pa_m = tune_group_probs[ga]
+        pb_m = tune_group_probs[gb]
         paired_boot[label_p] = paired_family_bootstrap_delta(
-            pa_m[:, 2], pb_m[:, 2], pa_m, pb_m, y_pin, fam_pin, n_boot=1000, seed=20263230
+            pa_m[:, 2], pb_m[:, 2], pa_m, pb_m, labels, fam_codes, pc_m, n_boot=1000, seed=20263230
         )
 
     # Pure-W Generator-OOD & Leave-One-Source-Out FP32 validation (strictly zero Confirm!)
@@ -1209,7 +1214,7 @@ def freeze_and_validate_stage323(clean_root: Path) -> dict:
     ]
     x2 = np.arange(len(f22))
     ba2 = [100.0 * tune_summary[g]['pinpoint_pix_xy']['BA4'] for _, g in f22]
-    pvz2 = [float(tune_summary[g]['vertex_audit']['pinpoint_pix_centered']['median_abs_dz_mm']) if tune_summary[g]['vertex_audit'] else 0.0 for _, g in f22]
+    pvz2 = [float(tune_summary[g]['vertex_audit']['Truth_pixel_centered']['median_abs_dz_mm']) if tune_summary[g]['vertex_audit'] else 0.0 for _, g in f22]
     ax1.bar(x2 - 0.18, ba2, width=0.35, color='#55A868', label='Pinpoint BA4 [%]')
     ax1_r = ax1.twinx()
     ax1_r.plot(x2 + 0.18, pvz2, 'o-', color='#C44E52', lw=2.0, ms=6, label='PV median $|\\Delta z|$ [mm]')
