@@ -419,7 +419,7 @@ def compute_dual_window_denominators(micro_batches: list[dict], pos_weight: floa
         if valid_v.any():
             vz = mb['vertex_xyz_mm'][:, 2]
             d_vtx_front += float((valid_v & (vz < -2750.0)).float().sum().item())
-            d_vtx_mid += float((valid_v & (vz >= -2750.0) & (vz <= -1800.0)).float().sum().item())
+            d_vtx_mid += float((valid_v & (vz >= -2750.0)).float().sum().item())
         d_kin += float((mb['kin_valid'] > 0).float().sum().item())
     return {
         'proc': max(d_proc, 1e-8),
@@ -436,7 +436,7 @@ def compute_dual_regime_loss(
     batch: dict[str, torch.Tensor],
     fixed_denoms: dict[str, float] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Multitask Stage-1 loss: 7-class marginal CE + focal Charm + Student-t PV + smooth-L1 kinematics."""
+    """Multitask Stage-1 loss: 7-class marginal CE + focal Charm + Student-t PV + spec_rel BCE + kinematics."""
     fd = fixed_denoms or {}
     out = model.forward_NextGen(batch)
 
@@ -453,29 +453,45 @@ def compute_dual_regime_loss(
         df=3.0, denom_override=fd.get('vtx'),
     )
 
-    # Regime-specific auxiliary PV supervision (Front vs Mid) when non-homogeneous
+    # Regime-specific auxiliary PV supervision (Front vs Mid/Downstream) when non-homogeneous
     l_vtx_reg = l_proc.new_zeros(())
     if not model.homogeneous_regime and 'v_front_mm' in out.aux and 'v_mid_mm' in out.aux:
         vv = batch['vertex_valid'] > 0
         vz = batch['vertex_xyz_mm'][:, 2]
         m_front = vv & (vz < -2750.0)
-        m_mid = vv & (vz >= -2750.0) & (vz <= -1800.0)
+        m_mid = vv & (vz >= -2750.0)
         if m_front.any():
             vf = out.aux['v_front_mm']
-            pf = out.aux['P_front'].clamp_min(1e-4)
-            sf = torch.rsqrt(pf).clamp(0.02, 150.0)
-            l_vtx_reg = l_vtx_reg + 0.05 * student_t_vertex_loss(
+            sf = out.aux.get('scale_front_mm', torch.rsqrt(out.aux['P_front'].clamp_min(1e-4)).clamp(0.03, 200.0))
+            l_vtx_reg = l_vtx_reg + 0.12 * student_t_vertex_loss(
                 vf, sf, batch['vertex_xyz_mm'], m_front.long(),
                 df=3.0, denom_override=fd.get('vtx_front'),
             )
         if m_mid.any():
             vm = out.aux['v_mid_mm']
-            pm = out.aux['P_mid'].clamp_min(1e-4)
-            sm = torch.rsqrt(pm).clamp(0.02, 150.0)
-            l_vtx_reg = l_vtx_reg + 0.05 * student_t_vertex_loss(
+            sm = out.aux.get('scale_mid_mm', torch.rsqrt(out.aux['P_mid'].clamp_min(1e-4)).clamp(0.05, 220.0))
+            l_vtx_reg = l_vtx_reg + 0.12 * student_t_vertex_loss(
                 vm, sm, batch['vertex_xyz_mm'], m_mid.long(),
                 df=3.0, denom_override=fd.get('vtx_mid'),
             )
+
+    # Auxiliary candidate reliability BCE supervising `spec_rel_head` against combinatorial noise
+    l_spec_rel = l_proc.new_zeros(())
+    if model.use_ipt_spec_interlock and 'spec_rel_logit' in out.aux:
+        with torch.amp.autocast(device_type=out.logits7.device.type, enabled=False):
+            s_logit = out.aux['spec_rel_logit'].float()
+            pos_m = out.aux['cand_clean_pos'].bool()
+            neg_inj = out.aux['cand_injected_noise'].bool()
+            neg_chi2 = (~neg_inj) & (~pos_m) & batch['trk_cand_mask'].bool() & (batch['trk_cand'][..., 9].float() > 0.85)
+            neg_m = neg_inj | neg_chi2
+            sup_m = pos_m | neg_m
+            if sup_m.any():
+                tgt_rel = pos_m.float()
+                bce_all = F.binary_cross_entropy_with_logits(s_logit, tgt_rel, reduction='none') * sup_m.float()
+                ev_sup_cnt = sup_m.float().sum(dim=1)
+                ev_bce = torch.where(ev_sup_cnt > 0, bce_all.sum(dim=1) / ev_sup_cnt.clamp_min(1.0), torch.zeros_like(ev_sup_cnt))
+                dp = torch.as_tensor(fd.get('proc', float(len(batch['label']))), dtype=torch.float32, device=s_logit.device).clamp_min(1e-8)
+                l_spec_rel = ev_bce.sum() / dp
 
     kin_valid = batch['kin_valid'] > 0
     if kin_valid.any() and out.kin_pred is not None:
@@ -490,7 +506,14 @@ def compute_dual_regime_loss(
     else:
         l_kin = l_proc.new_zeros(())
 
-    total = l_proc.float() + 0.25 * l_charm.float() + 0.20 * l_vtx.float() + l_vtx_reg.float() + 0.15 * l_kin.float()
+    total = (
+        l_proc.float()
+        + 0.25 * l_charm.float()
+        + 0.30 * l_vtx.float()
+        + l_vtx_reg.float()
+        + 0.05 * l_spec_rel.float()
+        + 0.15 * l_kin.float()
+    )
     return total, out.probs4
 
 
@@ -825,6 +848,127 @@ def _update_ema(ema: nn.Module, model: nn.Module, decay: float) -> None:
             be.copy_(bm)
 
 
+STAGE1_CACHE_DIR = EXP_ROOT / '_stage1_item_cache'
+
+
+def run_preextract(part: int = -1) -> dict[str, Any]:
+    """Sharded parallel Stage-1 item extraction to temporary cache (`part=0..7` shards, `part=8` OOD+stress)."""
+    assert_unsealed_split('internal_train', stage=1)
+    assert_unsealed_split('internal_screen', stage=1)
+    assert_unsealed_split('internal_val', stage=1)
+
+    t0 = time.perf_counter()
+    geom = json.loads(assert_unsealed_path(CLEAN_ROOT / 'geometry.json').read_text())
+    bounds = detector_bounds(geom)
+    bounds['_plane_x0'] = np.array([cumulative_radiation_length(float(z), geom) for z in bounds['pixel_Zpos']], dtype=np.float32)
+
+    STAGE1_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    n_workers = min(8, max(1, os.cpu_count() or 1))
+
+    if 0 <= part <= 7:
+        all_auth = load_authorized_split_shards(CLEAN_ROOT / 'data', 'train', stage=1)
+        sub_shards = all_auth[part * 10 : (part + 1) * 10]
+        scratch_base = os.environ.get('PINPOINT_V3_SCRATCH', '/tmp')
+        Path(scratch_base).mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=f'dr-pre-{part}-', dir=scratch_base) as tmp_dir:
+            tmp_s = Path(tmp_dir) / 'shards'
+            tmp_s.mkdir(parents=True, exist_ok=True)
+            local_dirs = []
+            for sp in sub_shards:
+                assert_unsealed_path(sp)
+                dst_sp = tmp_s / sp.name
+                shutil.copytree(sp, dst_sp)
+                local_dirs.append(dst_sp)
+            tasks = [(str(sd), geom, bounds, BASE_OBS_CFG, None) for sd in local_dirs]
+            with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
+                parts = list(pool.map(_extract_shard_worker, tasks))
+            part_items = [it for p in parts for it in p]
+        out_f = STAGE1_CACHE_DIR / f'train_part_{part}.pkl'
+        tmp_f = STAGE1_CACHE_DIR / f'train_part_{part}.pkl.tmp'
+        with tmp_f.open('wb') as fh:
+            pickle.dump(part_items, fh, protocol=5)
+        tmp_f.replace(out_f)
+        sec = float(time.perf_counter() - t0)
+        print(f'[preextract part={part}] Wrote {len(part_items)} items to {out_f} in {sec:.1f}s', flush=True)
+        return {'part': part, 'n_items': len(part_items), 'seconds': sec}
+
+    if part == 8:
+        val_keys = pd.read_parquet(assert_unsealed_path(SPLITS_DIR / 'internal_val_eval_keys.parquet'))
+        val_400 = val_keys.iloc[:400].reset_index(drop=True)
+        with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
+            ood_pre = {
+                ov: _build_ood_items(ov, geom, bounds, pool=pool)
+                for ov in ('gen_ood_w184_epps21_nc_charm', 'gen_ood_run10085_10088')
+            }
+            stress_items, y_400 = _build_stress_items_from_internal_val(val_400, geom, bounds, pool=pool)
+        out_f = STAGE1_CACHE_DIR / 'ood_stress_pack.pkl'
+        tmp_f = STAGE1_CACHE_DIR / 'ood_stress_pack.pkl.tmp'
+        with tmp_f.open('wb') as fh:
+            pickle.dump({'ood_pre': ood_pre, 'stress_items': stress_items, 'y_400': y_400}, fh, protocol=5)
+        tmp_f.replace(out_f)
+        sec = float(time.perf_counter() - t0)
+        print(f'[preextract part=8] Wrote OOD + stress pack to {out_f} in {sec:.1f}s', flush=True)
+        return {'part': 8, 'seconds': sec}
+
+    raise ValueError(f'Expected --part in 0..8, got {part}')
+
+
+@torch.no_grad()
+def _calibrate_pv_regime_scales_on_train(
+    ema_model: DualRegimeModalNet,
+    tr_items: list[dict],
+    tr_sidecar: pd.DataFrame,
+    bounds: dict,
+    device: torch.device,
+    max_events: int = 4096,
+) -> np.ndarray:
+    """Fit per-regime 3-axis Student-t(nu=3) p68(|pull|)=1.0 scale multipliers strictly on `internal_train`."""
+    _set_ieee_fp32(True)
+    ema_model.eval()
+    ema_model.pv_regime_scale_corr.fill_(1.0)
+
+    n_sub = min(max_events, len(tr_items))
+    sub_items = tr_items[:n_sub]
+    sub_sc = tr_sidecar.iloc[:n_sub]
+    v_true = np.column_stack([
+        sub_sc['vertex_x_mm'].to_numpy(np.float64),
+        sub_sc['vertex_y_mm'].to_numpy(np.float64),
+        sub_sc['vertex_z_mm'].to_numpy(np.float64),
+    ])
+    v_valid = sub_sc['vertex_valid'].to_numpy(dtype=np.int64) > 0
+
+    yc, nb = float(bounds['y_scint_center']), int(bounds['n_bars'])
+    vh_l, sh_l, fg_l, hm_l = [], [], [], []
+    for st in range(0, n_sub, 16):
+        chunk = sub_items[st : st + 16]
+        batch = move_batch_to_device(collate_dual_regime(chunk, mirror_rng=None, y_scint_center=yc, n_bars=nb), device)
+        out = ema_model.forward_NextGen(batch)
+        vh_l.append(out.v_pv_mm.float().cpu().numpy())
+        sh_l.append(out.scale_pv_mm.float().cpu().numpy())
+        fg_l.append(out.aux['front_gate'].float().cpu().numpy())
+        hm_l.append(out.aux['has_mid_si'].bool().cpu().numpy())
+
+    vh = np.concatenate(vh_l, axis=0).astype(np.float64)
+    sh = np.concatenate(sh_l, axis=0).astype(np.float64)
+    fg = np.concatenate(fg_l, axis=0).astype(np.float64)
+    hm = np.concatenate(hm_l, axis=0)
+
+    norm_pull = np.abs(vh - v_true) / (np.maximum(sh, 1e-4) * 1.1969)
+    corr_np = np.ones((3, 3), dtype=np.float32)
+    masks = (
+        v_valid & (fg > 0.5),
+        v_valid & (fg <= 0.5) & hm,
+        v_valid & (fg <= 0.5) & (~hm),
+    )
+    for r_idx, mk in enumerate(masks):
+        if int(mk.sum()) >= 30:
+            # Square-root Bayes shrinkage toward analytical MLE 1.0 prevents cross-subregion over-scaling
+            q68 = np.sqrt(np.quantile(norm_pull[mk], 0.6827, axis=0))
+            corr_np[r_idx] = np.clip(q68, 0.50, 2.0).astype(np.float32)
+    ema_model.pv_regime_scale_corr.copy_(torch.from_numpy(corr_np).to(device))
+    return corr_np
+
+
 def run_train_neural(variant: str) -> dict[str, Any]:
     if variant not in VARIANT_CONFIGS:
         raise ValueError(f'Unknown variant {variant!r}; expected one of {sorted(VARIANT_CONFIGS)}')
@@ -865,27 +1009,46 @@ def run_train_neural(variant: str) -> dict[str, Any]:
     Path(scratch_base).mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f'dr-{variant}-', dir=scratch_base) as tmp_dir:
         tmp_p = Path(tmp_dir)
-        staged_data = stage_authorized_train_shards(CLEAN_ROOT / 'data', tmp_p / 'native')
-        shard_dirs = load_authorized_split_shards(staged_data, 'train', stage=1)
+        part_files = [STAGE1_CACHE_DIR / f'train_part_{p}.pkl' for p in range(8)]
+        os_file = STAGE1_CACHE_DIR / 'ood_stress_pack.pkl'
+        if all(pf.is_file() for pf in part_files) and os_file.is_file():
+            all_items = []
+            for pf in part_files:
+                with pf.open('rb') as fh:
+                    all_items.extend(pickle.load(fh))
+            with os_file.open('rb') as fh:
+                os_pack = pickle.load(fh)
+            ood_pre = os_pack['ood_pre']
+            stress_items = os_pack['stress_items']
+            y_400 = os_pack['y_400']
+            del os_pack
+            tr_items = _align_items_to_keys(all_items, tr_keys)
+            dev_items = _align_items_to_keys(all_items, dev_keys)
+            val_items = _align_items_to_keys(all_items, val_keys)
+            del all_items
+            print(f'[{variant}] Loaded pre-extracted sharded Stage-1 cache in {time.perf_counter()-t0:.1f}s', flush=True)
+        else:
+            staged_data = stage_authorized_train_shards(CLEAN_ROOT / 'data', tmp_p / 'native')
+            shard_dirs = load_authorized_split_shards(staged_data, 'train', stage=1)
 
-        tasks = [(str(sd), geom, bounds, BASE_OBS_CFG, None) for sd in shard_dirs]
-        n_workers = min(4, max(1, os.cpu_count() or 1))
-        val_400 = val_keys.iloc[:400].reset_index(drop=True)
-        with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
-            parts = list(pool.map(_extract_shard_worker, tasks))
-            ood_pre = {
-                ov: _build_ood_items(ov, geom, bounds, pool=pool)
-                for ov in ('gen_ood_w184_epps21_nc_charm', 'gen_ood_run10085_10088')
-            }
-            stress_items, y_400 = _build_stress_items_from_internal_val(val_400, geom, bounds, pool=pool)
-        all_items = [it for part in parts for it in part]
-        shutil.rmtree(tmp_p / 'native', ignore_errors=True)
-        print(f'[{variant}] Extracted {len(all_items)} train-pool + OOD + stress items in {time.perf_counter()-t0:.1f}s', flush=True)
+            tasks = [(str(sd), geom, bounds, BASE_OBS_CFG, None) for sd in shard_dirs]
+            n_workers = min(4, max(1, os.cpu_count() or 1))
+            val_400 = val_keys.iloc[:400].reset_index(drop=True)
+            with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
+                parts = list(pool.map(_extract_shard_worker, tasks))
+                ood_pre = {
+                    ov: _build_ood_items(ov, geom, bounds, pool=pool)
+                    for ov in ('gen_ood_w184_epps21_nc_charm', 'gen_ood_run10085_10088')
+                }
+                stress_items, y_400 = _build_stress_items_from_internal_val(val_400, geom, bounds, pool=pool)
+            all_items = [it for part in parts for it in part]
+            shutil.rmtree(tmp_p / 'native', ignore_errors=True)
+            print(f'[{variant}] Extracted {len(all_items)} train-pool + OOD + stress items in {time.perf_counter()-t0:.1f}s', flush=True)
 
-        tr_items = _align_items_to_keys(all_items, tr_keys)
-        dev_items = _align_items_to_keys(all_items, dev_keys)
-        val_items = _align_items_to_keys(all_items, val_keys)
-        del all_items
+            tr_items = _align_items_to_keys(all_items, tr_keys)
+            dev_items = _align_items_to_keys(all_items, dev_keys)
+            val_items = _align_items_to_keys(all_items, val_keys)
+            del all_items
 
         train_ds = InMemoryDualDataset(tr_items, event_sidecar=tr_sidecar)
         cap = torch.cuda.get_device_capability(0)
@@ -941,10 +1104,11 @@ def run_train_neural(variant: str) -> dict[str, Any]:
             tp0 = time.perf_counter()
             gen = torch.Generator()
             gen.manual_seed(seed + p_idx * 101)
+            mirror_rng = np.random.default_rng(seed + p_idx * 997)
             sampler = BatchSampler(RandomSampler(train_ds, generator=gen), batch_size=micro_bs, drop_last=False)
             loader = DataLoader(
                 train_ds, batch_sampler=sampler, num_workers=0,
-                collate_fn=lambda xs: collate_dual_regime(xs, mirror_rng=None, y_scint_center=yc, n_bars=nb),
+                collate_fn=lambda xs, mr=mirror_rng: collate_dual_regime(xs, mirror_rng=mr, y_scint_center=yc, n_bars=nb),
             )
             model.train()
             _set_ieee_fp32(False)
@@ -1028,11 +1192,14 @@ def run_train_neural(variant: str) -> dict[str, Any]:
 
         peak_vram_mib = float(torch.cuda.max_memory_allocated(device) / (1024 ** 2))
 
-        # Load best EMA and evaluate strictly in deterministic IEEE-FP32
+        # Load best EMA, calibrate per-regime Student-t PV scale strictly on internal_train, and evaluate in IEEE-FP32
         _set_ieee_fp32(True)
         ckpt = torch.load(best_ema_path, map_location=device, weights_only=False)
         ema_model.load_state_dict(ckpt['model'])
         ema_model.eval()
+        pv_corr = _calibrate_pv_regime_scales_on_train(ema_model, tr_items, tr_sidecar, bounds, device)
+        torch.save({'model': ema_model.state_dict(), 'config': model_cfg, 'pass': best_pass, 'pv_regime_scale_corr': pv_corr.tolist()}, best_ema_path)
+        print(f'[{variant}] Calibrated pv_regime_scale_corr on internal_train: {pv_corr.tolist()}', flush=True)
 
         dev_pred = predict_dual_items_fp32(ema_model, dev_items, bounds, device, batch_size=64)
         val_pred = predict_dual_items_fp32(ema_model, val_items, bounds, device, batch_size=64)
@@ -1724,15 +1891,52 @@ def run_section13_controls() -> dict[str, Any]:
 # Mode 4: Aggregate All Stage-1 Results + Paired Family Bootstrap
 # ===========================================================================
 def run_aggregate() -> dict[str, Any]:
+    assert_unsealed_split('internal_train', stage=1)
     assert_unsealed_split('internal_val', stage=1)
     val_keys = pd.read_parquet(assert_unsealed_path(SPLITS_DIR / 'internal_val_eval_keys.parquet'))
+    sc_df = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet'))
+
+    # Uniformly apply internal_train-only PV regime scale calibration across all 5 neural checkpoints if cache exists
+    part_files = [STAGE1_CACHE_DIR / f'train_part_{p}.pkl' for p in range(8)]
+    if torch.cuda.is_available() and all(pf.is_file() for pf in part_files):
+        geom = json.loads(assert_unsealed_path(CLEAN_ROOT / 'geometry.json').read_text())
+        bounds = detector_bounds(geom)
+        tr_keys = pd.read_parquet(assert_unsealed_path(SPLITS_DIR / 'internal_train_keys.parquet'))
+        tr_sc = sc_df.iloc[
+            pd.MultiIndex.from_frame(sc_df[KEY]).get_indexer(pd.MultiIndex.from_frame(tr_keys[KEY]))
+        ].reset_index(drop=True)
+        all_it = []
+        for pf in part_files:
+            with pf.open('rb') as fh:
+                all_it.extend(pickle.load(fh))
+        tr_items = _align_items_to_keys(all_it, tr_keys)
+        val_items = _align_items_to_keys(all_it, val_keys)
+        del all_it
+        dev = torch.device('cuda:0')
+        for vname in VARIANT_CONFIGS:
+            ckpt_p = EXP_ROOT / vname / 'best_ema.pt'
+            if not ckpt_p.is_file():
+                continue
+            ckpt = torch.load(ckpt_p, map_location='cpu', weights_only=False)
+            m = DualRegimeModalNet(geom, ckpt['config'])
+            m.load_state_dict(ckpt['model'])
+            m = m.to(dev)
+            corr = _calibrate_pv_regime_scales_on_train(m, tr_items, tr_sc, bounds, dev)
+            pred = predict_dual_items_fp32(m, val_items, bounds, dev, batch_size=16)
+            np.save(EXP_ROOT / vname / 'v_pv_internal_val_eval.npy', pred['v_pv_mm'])
+            np.save(EXP_ROOT / vname / 'scale_pv_internal_val_eval.npy', pred['scale_pv_mm'])
+            m_cpu = {k: v.detach().cpu() for k, v in m.state_dict().items()}
+            torch.save({**ckpt, 'model': m_cpu, 'pv_regime_scale_corr': corr.tolist()}, ckpt_p)
+            print(f'[aggregate] Recalibrated {vname} PV scales on internal_train: {corr.tolist()}', flush=True)
+            del m, ckpt, pred, m_cpu
+            torch.cuda.empty_cache()
+
     y_val = val_keys['label'].to_numpy(dtype=np.int64)
     dom_val = val_keys['obs_domain_id'].to_numpy(dtype=np.int64)
     reg_val = val_keys['region_id'].to_numpy(dtype=np.int64)
     fam_codes = pd.MultiIndex.from_frame(val_keys[FAMILY]).factorize()[0]
 
     # Join event_sidecar strictly for offline PV accuracy & pull evaluation on internal_val_eval
-    sc_df = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet'))
     pos_sc = pd.MultiIndex.from_frame(sc_df[KEY]).get_indexer(pd.MultiIndex.from_frame(val_keys[KEY]))
     sc_val = sc_df.iloc[pos_sc].reset_index(drop=True)
     v_true = np.column_stack([
@@ -1873,19 +2077,25 @@ def run_aggregate() -> dict[str, Any]:
         'paired_family_bootstrap_1000_seed20263250': paired_boot,
     }
     write_json(EXP_ROOT / 'stage1_dual_regime_results.json', final_doc)
+    if STAGE1_CACHE_DIR.exists():
+        shutil.rmtree(STAGE1_CACHE_DIR, ignore_errors=True)
+        print(f'[aggregate] Removed temporary cache {STAGE1_CACHE_DIR}', flush=True)
     print(f'[aggregate] Wrote {EXP_ROOT / "stage1_dual_regime_results.json"}', flush=True)
     return final_doc
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', required=True, choices=('gate-ab', 'train-neural', 'train-sec13', 'aggregate'))
+    parser.add_argument('--mode', required=True, choices=('gate-ab', 'preextract', 'train-neural', 'train-sec13', 'aggregate'))
     parser.add_argument('--variant', default='s1_dual_regime_modalnet')
+    parser.add_argument('--part', type=int, default=-1)
     args = parser.parse_args()
 
     with SealAuditGuard() as guard:
         if args.mode == 'gate-ab':
             run_gate_ab()
+        elif args.mode == 'preextract':
+            run_preextract(args.part)
         elif args.mode == 'train-neural':
             run_train_neural(args.variant)
         elif args.mode == 'train-sec13':

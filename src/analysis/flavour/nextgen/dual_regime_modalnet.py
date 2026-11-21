@@ -41,6 +41,13 @@ from analysis.flavour.v3.v1_b1pp.spectrometer import (
     MAGNET0_Z_CENTER_MM,
     MAGNET0_Z_MAX_MM,
     MAGNET0_Z_MIN_MM,
+    MAGNET1_Z_MAX_MM,
+    MAGNET1_Z_MIN_MM,
+    MAGNET2_Z_MAX_MM,
+    MAGNET2_Z_MIN_MM,
+    MAGNET_BORE_FID_R_MM,
+    MAGNET_BORE_X_MM,
+    MAGNET_BORE_Y_MM,
     SAGITTA_CONST_MEV_MM,
     SAGITTA_INTEGRAL_MM2,
     SIGMA_DELTA_X_MM,
@@ -61,6 +68,7 @@ from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import (
     extract_pf_item,
 )
 from analysis.flavour.v3.v2_pinpointformer.stereo_bars import static_scint_stations
+from analysis.flavour.v3.v2_pinpointformer.vertex_anchor import select_near_vertex_clusters
 
 
 N_SPEC_CAND_MAX = 8
@@ -411,6 +419,145 @@ def _solve_weighted_pv_with_prior(
     return v_sol, p_diag
 
 
+class _SymmetricTwoStageVertexRefiner(nn.Module):
+    """Two-stage (69-layer longitudinal coarse + near-vertex silicon fine) primary vertex refiner.
+
+    Preserves exact detector Y-reflection equivariance (`v_y(mirror) = 2*y_c - v_y` and
+    `scale_mm(mirror) = scale_mm`) while removing any longitudinal clamping bottleneck.
+    """
+
+    def __init__(
+        self,
+        tok_dim: int,
+        vtx_dim: int = 80,
+        heads: int = 4,
+        coarse_xz_mm: tuple[float, float] = (120.0, 220.0),
+        fine_xz_mm: tuple[float, float] = (25.0, 55.0),
+    ) -> None:
+        super().__init__()
+        self.coarse_xz_mm = coarse_xz_mm
+        self.fine_xz_mm = fine_xz_mm
+
+        self.prof_proj = nn.Linear(tok_dim, vtx_dim)
+        self.coarse_q = nn.Parameter(torch.randn(1, 4, vtx_dim) * 0.02)
+        self.coarse_cross = ScaledQKNormAttention(dim=vtx_dim, heads=heads, init_scale=8.0, drop_path=0.05)
+        self.coarse_head = nn.Sequential(
+            nn.LayerNorm(vtx_dim + 6),
+            nn.Linear(vtx_dim + 6, vtx_dim),
+            nn.SiLU(),
+        )
+        self.delta_coarse_xz = nn.Linear(vtx_dim, 2)
+
+        self.pix_proj = nn.Linear(tok_dim, vtx_dim)
+        self.fine_rel_proj = nn.Sequential(
+            nn.Linear(6, vtx_dim),
+            nn.LayerNorm(vtx_dim),
+            nn.SiLU(),
+        )
+        self.fine_q = nn.Parameter(torch.randn(1, 4, vtx_dim) * 0.02)
+        self.fine_cross = ScaledQKNormAttention(dim=vtx_dim, heads=heads, init_scale=10.0, drop_path=0.05)
+        self.y_cluster_gate = nn.Linear(vtx_dim, 1)
+
+        self.fine_head = nn.Sequential(
+            nn.LayerNorm(2 * vtx_dim),
+            nn.Linear(2 * vtx_dim, vtx_dim),
+            nn.SiLU(),
+        )
+        self.delta_fine_xz = nn.Linear(vtx_dim, 2)
+        self.y_blend_gate = nn.Linear(vtx_dim, 1)
+        self.log_scale_xyz = nn.Linear(vtx_dim, 3)
+
+        nn.init.normal_(self.delta_coarse_xz.weight, std=1e-3)
+        nn.init.zeros_(self.delta_coarse_xz.bias)
+        nn.init.normal_(self.delta_fine_xz.weight, std=1e-3)
+        nn.init.zeros_(self.delta_fine_xz.bias)
+        nn.init.constant_(self.y_blend_gate.bias, -1.5)
+
+    def forward(
+        self,
+        profile_tokens: torch.Tensor,
+        profile_mask: torch.Tensor,
+        anchor_meta_feat: torch.Tensor,
+        v_prior_mm: torch.Tensor,
+        pix_tokens: torch.Tensor | None = None,
+        pix_xyz_mm: torch.Tensor | None = None,
+        pix_mask: torch.Tensor | None = None,
+        pix_plane: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        b = len(profile_tokens)
+        p_in = self.prof_proj(profile_tokens) * profile_mask.unsqueeze(-1).to(profile_tokens.dtype)
+        any_p = profile_mask.any(dim=1, keepdim=True)
+        h_c_attn = self.coarse_cross(self.coarse_q.expand(b, -1, -1), p_in, profile_mask).mean(dim=1)
+        h_c_attn = h_c_attn * any_p.to(h_c_attn.dtype)
+        h_c = self.coarse_head(torch.cat([h_c_attn, anchor_meta_feat.to(h_c_attn.dtype)], dim=-1))
+
+        with torch.amp.autocast(device_type=h_c.device.type, enabled=False):
+            prior = v_prior_mm.float()
+            c_sc = prior.new_tensor(self.coarse_xz_mm)
+            d_xz_c = torch.tanh(self.delta_coarse_xz(h_c.float())) * c_sc
+            v_coarse = torch.stack([
+                prior[:, 0] + d_xz_c[:, 0],
+                prior[:, 1],
+                prior[:, 2] + d_xz_c[:, 1],
+            ], dim=-1)
+
+        if pix_tokens is not None and pix_xyz_mm is not None and pix_mask is not None and pix_xyz_mm.shape[1] > 0:
+            k_sel = min(64, pix_xyz_mm.shape[1])
+            c_idx, c_mask = select_near_vertex_clusters(
+                pix_xyz_mm, pix_mask, v_coarse.detach(), k_vtx=k_sel, pix_plane=pix_plane
+            )
+            c_tok = self.pix_proj(
+                torch.gather(pix_tokens, 1, c_idx.unsqueeze(-1).expand(-1, -1, pix_tokens.shape[-1]))
+            )
+            c_xyz = torch.gather(pix_xyz_mm.float(), 1, c_idx.unsqueeze(-1).expand(-1, -1, 3))
+            rel = c_xyz - v_coarse[:, None, :]
+            dx = rel[..., 0]
+            dy = rel[..., 1]
+            dz = rel[..., 2]
+            abs_dy = dy.abs()
+            rel_inv = torch.stack([
+                dx / 15.0,
+                abs_dy / 15.0,
+                dz / 35.0,
+                torch.asinh(dx / 2.0) / 3.0,
+                torch.asinh(abs_dy / 2.0) / 3.0,
+                torch.asinh(dz / 8.0) / 3.0,
+            ], dim=-1)
+            c_in = (c_tok + self.fine_rel_proj(rel_inv.to(c_tok.dtype))) * c_mask.unsqueeze(-1).to(c_tok.dtype)
+            any_c = c_mask.any(dim=1, keepdim=True)
+            h_f_attn = self.fine_cross(self.fine_q.expand(b, -1, -1), c_in, c_mask).mean(dim=1)
+            h_f_safe = torch.where(any_c, h_f_attn, h_c_attn)
+
+            safe_cm = c_mask.clone()
+            if (~any_c.squeeze(-1)).any():
+                safe_cm[~any_c.squeeze(-1), 0] = True
+            w_y = torch.softmax(
+                self.y_cluster_gate(c_in).squeeze(-1).float().masked_fill(~safe_cm, float('-inf')),
+                dim=1,
+            ) * c_mask.float()
+            dy_cent = (w_y * dy.clamp(-30.0, 30.0)).sum(dim=1)
+            has_fine_y = any_c.squeeze(-1).float()
+        else:
+            h_f_safe = h_c_attn
+            dy_cent = v_coarse.new_zeros((b,))
+            has_fine_y = v_coarse.new_zeros((b,))
+
+        h_comb = self.fine_head(torch.cat([h_c, h_f_safe], dim=-1))
+        with torch.amp.autocast(device_type=h_comb.device.type, enabled=False):
+            hcf = h_comb.float()
+            f_sc = v_coarse.new_tensor(self.fine_xz_mm)
+            d_xz_f = torch.tanh(self.delta_fine_xz(hcf)) * f_sc
+            dy_f = torch.sigmoid(self.y_blend_gate(hcf).squeeze(-1)) * dy_cent * has_fine_y
+            v_hat = torch.stack([
+                v_coarse[:, 0] + d_xz_f[:, 0],
+                v_coarse[:, 1] + dy_f,
+                v_coarse[:, 2] + d_xz_f[:, 1],
+            ], dim=-1)
+            base_sc = v_coarse.new_tensor([1.0, 1.0, 8.0])
+            scale_mm = (torch.exp(self.log_scale_xyz(hcf).clamp(-4.5, 4.0)) * base_sc).clamp(0.03, 180.0)
+        return v_hat, scale_mm
+
+
 class DualRegimeModalNet(NextGenFlavourModel):
     """Proposal D: DualRegimeModalNet (~6.20M params).
 
@@ -542,10 +689,8 @@ class DualRegimeModalNet(NextGenFlavourModel):
             dim=dim, heads=heads, init_scale=10.0, drop_path=drop_path
         )
         self.front_vtx_layer = DifferentiableStudentTVertexLayer(hidden_dim=dim, df=3.0, n_iters=4)
-        self.front_vtx_refine = nn.Sequential(
-            nn.Linear(dim, 96),
-            nn.SiLU(),
-            nn.Linear(96, 6),  # [dx, dy, dz, log_px, log_py, log_pz]
+        self.front_vtx_refine = _SymmetricTwoStageVertexRefiner(
+            tok_dim=dim, vtx_dim=80, heads=4, coarse_xz_mm=(80.0, 140.0), fine_xz_mm=(20.0, 35.0)
         )
 
         # ------------------------------------------------------------------
@@ -584,14 +729,10 @@ class DualRegimeModalNet(NextGenFlavourModel):
         )
         self.mid_pool_gate = nn.Linear(dim, 1)
         self.mid_vtx_layer = DifferentiableStudentTVertexLayer(hidden_dim=dim, df=3.0, n_iters=4)
-        self.mid_vtx_head = nn.Sequential(
-            nn.LayerNorm(2 * dim + 4),
-            nn.Linear(2 * dim + 4, 128),
-            nn.SiLU(),
-            nn.Linear(128, 6),  # [v_mid_offset_xyz, log_prec_mid_xyz]
+        self.mid_vtx_head = _SymmetricTwoStageVertexRefiner(
+            tok_dim=dim, vtx_dim=80, heads=4, coarse_xz_mm=(150.0, 320.0), fine_xz_mm=(25.0, 65.0)
         )
-        self.pv_prior_log_prec = nn.Parameter(torch.tensor([-5.0, -5.0, -5.8], dtype=torch.float32))
-        self.pv_scale_cal = nn.Parameter(torch.zeros(3, dtype=torch.float32))
+        self.register_buffer('pv_regime_scale_corr', torch.ones((3, 3), dtype=torch.float32))
 
         # ------------------------------------------------------------------
         # Regime 3 & 4: IPT (Planes 12..14) <-> Spectrometer Cross-Magnet-0 Interlock
@@ -680,8 +821,8 @@ class DualRegimeModalNet(NextGenFlavourModel):
         self.pool_gate = nn.Linear(dim, 1)
 
         self.global_fusion = nn.Sequential(
-            nn.LayerNorm(6 * dim),
-            nn.Linear(6 * dim, 3 * dim),
+            nn.LayerNorm(8 * dim),
+            nn.Linear(8 * dim, 3 * dim),
             nn.SiLU(),
         )
 
@@ -743,13 +884,18 @@ class DualRegimeModalNet(NextGenFlavourModel):
         trk_hits: torch.Tensor,
         trk_hit_mask: torch.Tensor,
         station_counts: torch.Tensor,
+        cal_start: torch.Tensor,
     ) -> tuple[torch.Tensor, ...]:
         """Online stochastic PixDark + tracker noise/dropout curriculum (strictly training-only)."""
         b, n_cl, _ = pix_xyz.shape
         device = pix_xyz.device
+        cand_injected_noise = torch.zeros_like(trk_cand_mask, dtype=torch.bool)
         apply_ev = (torch.rand((b,), device=device) < self.aug_prob)
         if not apply_ev.any():
-            return apply_ev, pix_xyz, pix_feat, pix_plane, pix_mask, trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts
+            return (
+                apply_ev, pix_xyz, pix_feat, pix_plane, pix_mask,
+                trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts, cand_injected_noise,
+            )
 
         pix_xyz = pix_xyz.clone()
         pix_feat = pix_feat.clone()
@@ -761,16 +907,14 @@ class DualRegimeModalNet(NextGenFlavourModel):
         trk_hit_mask = trk_hit_mask.clone()
         station_counts = station_counts.clone()
 
-        # 1. Mild 2% pixel cluster dropout + 1..4 isolated PixDark clusters in padded slots
+        # 1. Mild 2.5% pixel cluster dropout + 2 isolated PixDark clusters in padded slots
         ev_mask_pix = apply_ev.unsqueeze(1) & pix_mask
         drop_pix = ev_mask_pix & (torch.rand((b, n_cl), device=device) < 0.025)
-        # Keep at least 1 pixel cluster if event originally had any
         orig_cnt = pix_mask.sum(dim=1, keepdim=True)
         would_empty = (pix_mask & (~drop_pix)).sum(dim=1, keepdim=True) == 0
         drop_pix = drop_pix & (~(would_empty & (orig_cnt > 0)))
         pix_mask = pix_mask & (~drop_pix)
 
-        # Inject 2 isolated PixDark single-pixel clusters into available padded slots
         for _ in range(2):
             has_free = apply_ev & (~pix_mask).any(dim=1)
             if not has_free.any():
@@ -795,48 +939,130 @@ class DualRegimeModalNet(NextGenFlavourModel):
             pix_feat[idx_b, pos_b] = dark_feat
             pix_mask[idx_b, pos_b] = True
 
-        # 2. Vectorized tracker noise hit + spurious combinatorial candidate injection (zero CPU sync!)
+        # 2. Mild 2.5% real tracker hit dropout + 1 random noise hit per station
+        orig_hm = trk_hit_mask.clone()
+        drop_h = apply_ev.unsqueeze(1) & trk_hit_mask & (torch.rand(trk_hit_mask.shape, device=device) < 0.025)
+        orig_hcnt = trk_hit_mask.sum(dim=1, keepdim=True)
+        empty_h = (trk_hit_mask & (~drop_h)).sum(dim=1, keepdim=True) == 0
+        trk_hit_mask = trk_hit_mask & (~(drop_h & (~(empty_h & (orig_hcnt > 0)))))
+
+        noise_xy = torch.zeros((b, 3, 2), device=device, dtype=torch.float32)
         for st in (0, 1, 2):
             station_counts[:, st] = station_counts[:, st] + apply_ev.float()
+            hx_all = torch.empty((b,), device=device).uniform_(-120.0, 120.0)
+            hy_all = torch.empty((b,), device=device).uniform_(-110.0, 140.0)
+            noise_xy[:, st, 0] = hx_all
+            noise_xy[:, st, 1] = hy_all
             has_h_free = apply_ev & (~trk_hit_mask).any(dim=1)
             if has_h_free.any():
                 h_pos = (~trk_hit_mask).long().argmax(dim=1)
                 idx_b = torch.nonzero(has_h_free, as_tuple=False).squeeze(-1)
                 pos_b = h_pos[idx_b]
-                hx = torch.empty((len(idx_b),), device=device).uniform_(-120.0, 120.0)
-                hy = torch.empty((len(idx_b),), device=device).uniform_(-110.0, 140.0)
                 noise_hit = torch.zeros((len(idx_b), 6), device=device, dtype=trk_hits.dtype)
                 noise_hit[:, 0] = float(st) / 2.0
-                noise_hit[:, 1] = (hx - self.x_pix_c) / 150.0
-                noise_hit[:, 2] = (hy - self.y_c) / 150.0
+                noise_hit[:, 1] = (hx_all[idx_b] - self.x_pix_c) / 150.0
+                noise_hit[:, 2] = (hy_all[idx_b] - self.y_c) / 150.0
                 trk_hits[idx_b, pos_b] = noise_hit
                 trk_hit_mask[idx_b, pos_b] = True
 
+        # 3. Realistic combinatorial fake 3-station triplet from real + injected noise station hits
         has_c_free = apply_ev & (~trk_cand_mask).any(dim=1)
         if has_c_free.any():
             c_pos = (~trk_cand_mask).long().argmax(dim=1)
             idx_b = torch.nonzero(has_c_free, as_tuple=False).squeeze(-1)
             pos_b = c_pos[idx_b]
             n_c = len(idx_b)
-            cand_noise = torch.zeros((n_c, 14), device=device, dtype=trk_cand.dtype)
-            cand_noise[:, 0] = 1.0
-            cand_noise[:, 1] = 0.15
-            cand_noise[:, 2] = torch.empty((n_c,), device=device).uniform_(-0.7, 0.7)
-            cand_noise[:, 3] = torch.empty((n_c,), device=device).uniform_(-0.7, 0.7)
-            cand_noise[:, 4] = torch.empty((n_c,), device=device).uniform_(-0.5, 0.5)
-            cand_noise[:, 5] = torch.empty((n_c,), device=device).uniform_(-0.5, 0.5)
-            cand_noise[:, 6] = 0.4
-            cand_noise[:, 7] = 0.2
-            cand_noise[:, 8] = 0.3
-            cand_noise[:, 9] = 1.2
-            cand_noise[:, 10] = 1.8
-            cand_noise[:, 11] = -1.5
-            cand_noise[:, 12] = 1.4
-            cand_noise[:, 13] = 0.4
+
+            st_orig = torch.round(trk_hits[idx_b, :, 0].float() * 2.0).long()
+            m_orig = orig_hm[idx_b]
+            trip_x = noise_xy[idx_b, :, 0].clone()
+            trip_y = noise_xy[idx_b, :, 1].clone()
+            forced_noise_st = torch.randint(0, 3, (n_c,), device=device)
+            for st in (0, 1, 2):
+                m_st = m_orig & (st_orig == st)
+                use_real = m_st.any(dim=1) & (forced_noise_st != st) & (torch.rand((n_c,), device=device) < 0.65)
+                if use_real.any():
+                    first_r = m_st.long().argmax(dim=1)
+                    rx = trk_hits[idx_b, first_r, 1].float() * 150.0 + self.x_pix_c
+                    ry = trk_hits[idx_b, first_r, 2].float() * 150.0 + self.y_c
+                    trip_x[:, st] = torch.where(use_real, rx, trip_x[:, st])
+                    trip_y[:, st] = torch.where(use_real, ry, trip_y[:, st])
+
+            x0, x1, x2 = trip_x[:, 0], trip_x[:, 1], trip_x[:, 2]
+            y0, y1, y2 = trip_y[:, 0], trip_y[:, 1], trip_y[:, 2]
+            s_y = y1 - 0.5 * (y0 + y2)
+            kappa = -s_y / float(SAGITTA_INTEGRAL_MM2)
+            delta_x = x1 - 0.5 * (x0 + x2)
+            chi2_x = (delta_x / float(SIGMA_DELTA_X_MM)).square()
+            theta_x = (x2 - x0) / (2.0 * float(DELTA_Z_MM))
+            theta_y_entry = (y1 - y0) / float(DELTA_Z_MM) + float(ENTRY_SLOPE_SAGITTA_COEFF) * (s_y / float(DELTA_Z_MM))
+
+            # Exact Magnet 1/2 bore check across 6 sample stations
+            z0_s, z1_s = float(TRACKER_Z_MM[0]), float(TRACKER_Z_MM[1])
+            theta_y1 = theta_y_entry + kappa * 1000.0
+            max_r = torch.zeros_like(x0)
+            for zs, ys in (
+                (float(MAGNET1_Z_MIN_MM), y0 + theta_y_entry * (float(MAGNET1_Z_MIN_MM) - z0_s)),
+                (637.4, y0 + theta_y_entry * (637.4 - z0_s) + 0.5 * kappa * (500.0 ** 2)),
+                (float(MAGNET1_Z_MAX_MM), y0 + theta_y_entry * (float(MAGNET1_Z_MAX_MM) - z0_s) + 0.5 * kappa * (1000.0 ** 2)),
+                (float(MAGNET2_Z_MIN_MM), y1 + theta_y1 * (float(MAGNET2_Z_MIN_MM) - z1_s)),
+                (1837.4, y1 + theta_y1 * (1837.4 - z1_s) + 0.5 * kappa * (500.0 ** 2)),
+                (float(MAGNET2_Z_MAX_MM), y1 + theta_y1 * (float(MAGNET2_Z_MAX_MM) - z1_s) + 0.5 * kappa * (1000.0 ** 2)),
+            ):
+                xs = x0 + theta_x * (zs - z0_s)
+                rs = torch.hypot(xs - float(MAGNET_BORE_X_MM), ys - float(MAGNET_BORE_Y_MM))
+                max_r = torch.maximum(max_r, rs)
+            in_bore = max_r <= float(MAGNET_BORE_FID_R_MM)
+            kappa_eff = torch.where(in_bore, kappa, torch.zeros_like(kappa))
+
+            cs_sub = cal_start[idx_b].float()
+            z_st = cs_sub[:, 0]
+            x_st = cs_sub[:, 1]
+            y_st = cs_sub[:, 2]
+            has_st = cs_sub[:, 3] > 0.5
+            dz_ext = z_st - z0_s
+            dx_ext = torch.where(has_st, (x0 + theta_x * dz_ext) - x_st, torch.zeros_like(x0))
+            y_lin = y0 + theta_y_entry * dz_ext
+            y_up = y_lin - kappa_eff * float(MAGNET0_LENGTH_MM) * (z_st - float(MAGNET0_Z_CENTER_MM))
+            u_m0 = (float(MAGNET0_Z_MAX_MM) - z_st).clamp_min(0.0)
+            y_mid = y_lin + 0.5 * kappa_eff * u_m0.square()
+            y_ext = torch.where(
+                z_st >= float(MAGNET0_Z_MAX_MM),
+                y_lin,
+                torch.where(z_st <= float(MAGNET0_Z_MIN_MM), y_up, y_mid),
+            )
+            dy_ext = torch.where(has_st, y_ext - y_st, torch.zeros_like(y0))
+            d_ext = torch.where(has_st, torch.hypot(dx_ext / 20.0, dy_ext / 20.0), torch.zeros_like(x0))
+
+            bore_pen = torch.where(in_bore, torch.zeros_like(x0), torch.full_like(x0, 25.0))
+            q_score = chi2_x + bore_pen + torch.where(has_st, 0.5 * d_ext.square(), torch.zeros_like(x0)) + (s_y.abs() / 20.0).square()
+            sy_ib = torch.where(in_bore, s_y, torch.zeros_like(s_y))
+            p_proxy = torch.where(in_bore, 1.0 / (sy_ib.abs() / 0.5 + 0.01), torch.zeros_like(s_y))
+
+            cand_noise = torch.stack([
+                torch.where(in_bore, torch.ones_like(x0), torch.full_like(x0, 0.70)),
+                1.0 / (1.0 + 0.1 * q_score),
+                (x0 - self.x_pix_c) / 150.0,
+                (y0 - self.y_c) / 150.0,
+                theta_x * 10.0,
+                theta_y_entry * 10.0,
+                torch.where(in_bore, torch.asinh(sy_ib / float(SIGMA_SAGITTA_Y_MM)) / 5.0, torch.zeros_like(x0)),
+                torch.where(in_bore, sy_ib.clamp(-25.0, 25.0) / 5.0, torch.zeros_like(x0)),
+                torch.where(in_bore, torch.log1p(p_proxy) / 5.0, torch.zeros_like(x0)),
+                torch.log1p(chi2_x) / 5.0,
+                dx_ext.clamp(-300.0, 300.0) / 50.0,
+                dy_ext.clamp(-300.0, 300.0) / 50.0,
+                torch.log1p(d_ext) / 3.0,
+                torch.where(in_bore, torch.log1p(sy_ib.abs() / 0.05) / 5.0, torch.zeros_like(x0)),
+            ], dim=-1).to(trk_cand.dtype)
             trk_cand[idx_b, pos_b] = cand_noise
             trk_cand_mask[idx_b, pos_b] = True
+            cand_injected_noise[idx_b, pos_b] = True
 
-        return apply_ev, pix_xyz, pix_feat, pix_plane, pix_mask, trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts
+        return (
+            apply_ev, pix_xyz, pix_feat, pix_plane, pix_mask,
+            trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts, cand_injected_noise,
+        )
 
     def _compute_front_persistence_gate(
         self,
@@ -1152,15 +1378,18 @@ class DualRegimeModalNet(NextGenFlavourModel):
                 ((st_ids == s) & trk_hit_mask).sum(dim=1).float() for s in (0, 1, 2)
             ], dim=-1)
 
+        cal_start = batch['cal_start'].float()
+
         # Training-only stochastic PixDark & tracker noise/dropout curriculum
         aug_ev = torch.zeros((b,), dtype=torch.bool, device=device)
+        cand_injected_noise = torch.zeros_like(trk_cand_mask, dtype=torch.bool)
         if self.training and self.enable_pixdark_noise_aug and self.aug_prob > 0.0:
             (
                 aug_ev, pix_xyz, pix_feat, pix_plane, pix_mask,
-                trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts,
+                trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts, cand_injected_noise,
             ) = self._apply_training_degradation_aug(
                 pix_xyz, pix_feat, pix_plane, pix_mask,
-                trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts,
+                trk_cand, trk_cand_mask, trk_hits, trk_hit_mask, station_counts, cal_start,
             )
 
         # Shared micro-cluster + micro-patch embeddings
@@ -1192,18 +1421,17 @@ class DualRegimeModalNet(NextGenFlavourModel):
             trk_morph = trk_dict['trk_morph']
             trk_mask = trk_dict['trk_mask']
 
-        # Calibrated calorimeter anchor prior
-        cal_start = batch['cal_start'].float()
+        # Calibrated calorimeter & AVR priors
         cal_valid = (cal_start[:, 3] > 0.5)
         cal_xyz_prior = torch.stack([cal_start[:, 1], cal_start[:, 2], cal_start[:, 0]], dim=-1)
         default_c = self.default_center_mm[None, :].expand(b, -1)
         v_cal_prior = torch.where(cal_valid[:, None], cal_xyz_prior, default_c)
-        # Center z around v_cal_prior[:, 2] before FP32 3x3 Student-t normal-equation solve
-        # to eliminate 3000 mm catastrophic cancellation in `x0 - tx * z0`!
-        z_ref_pv = v_cal_prior[:, 2:3]
-        trk_kin_c = trk_kin.clone()
-        trk_kin_c[..., 2] = trk_kin_c[..., 2] - z_ref_pv
-        v_cal_prior_c = torch.cat([v_cal_prior[:, :2], torch.zeros_like(z_ref_pv)], dim=-1)
+        avr_pv = (
+            batch['avr_pv_mm'].float()
+            if 'avr_pv_mm' in batch
+            else torch.zeros((b, 4), device=device, dtype=torch.float32)
+        )
+        avr_has = avr_pv[:, 3] > 0.5
 
         # Normalize tracklet kinematics for neural encoding
         trk_kin_norm = torch.stack([
@@ -1223,16 +1451,28 @@ class DualRegimeModalNet(NextGenFlavourModel):
         trk_emb_all = self.trk_in(torch.cat([trk_kin_norm, trk_morph], dim=-1)) * trk_mask.unsqueeze(-1).float()
 
         # ==================================================================
-        # Regime 2: Mid Tomographic Sinkhorn + ToF Calorimeter
+        # Regime 2 (Calorimeter): Mid Tomographic Sinkhorn + ToF + 69-Plane Z-Profile
         # ==================================================================
         cal_out = self._encode_mid_sinkhorn_tomography(batch, pix_xyz, pix_plane, pix_mask)
         cal_tok = cal_out['cal_tokens']
         cal_mask = cal_out['cal_mask']
 
+        z_in = torch.cat([pix_plane_tok, cal_out['st_tok']], dim=1)[:, self.z_order_idx]
+        z_act = torch.cat([pix_plane_act, cal_out['st_mask']], dim=1)[:, self.z_order_idx]
+        z_in = (z_in + self.z_pos_proj(self.z_plane_geom).unsqueeze(0).to(z_in.dtype)) * z_act.unsqueeze(-1).to(z_in.dtype)
+        z_seq = self.z_profile_encoder(z_in, z_act)
+        with torch.amp.autocast(device_type=device.type, enabled=False):
+            z_safe = z_act.clone()
+            no_z = ~z_safe.any(dim=1)
+            if no_z.any():
+                z_safe[no_z, 0] = True
+            z_logits = self.z_pool_gate(z_seq.float()).squeeze(-1).masked_fill(~z_safe, float('-inf'))
+            z_w = torch.softmax(z_logits, dim=1) * z_act.float()
+            z_prof_glob = (z_w.unsqueeze(-1) * z_seq.float()).sum(dim=1)
+
         # ==================================================================
         # Regime 1 & Regime 2 (Target Silicon: Front 0..5 vs Mid 6..11)
         # ==================================================================
-        # Symmetric token ranking score for bounded selection
         tok_rank = (
             pix_feat[..., 3]
             + 0.25 * pix_feat[..., 13]
@@ -1283,28 +1523,63 @@ class DualRegimeModalNet(NextGenFlavourModel):
 
             # 2 Boundary Bridge tokens (Front <-> Mid)
             bridge_q = self.front_bridge_queries.expand(b, -1, -1)
-            z_bridge = self.front_bridge_attn(bridge_q, z_front, f_mask, query_mask=torch.ones((b, 2), dtype=torch.bool, device=device))
+            z_bridge = self.front_bridge_attn(
+                bridge_q, z_front, f_mask, query_mask=torch.ones((b, 2), dtype=torch.bool, device=device)
+            )
             bridge_mask = has_front.unsqueeze(1).expand(b, 2)
 
-            # Front Student-t PV & precision (solved in z-centered frame, then shifted back)
+            # Causal Front30 Silicon/AVR Anchor + Student-t Tracklets + Two-Stage Refinement
+            with torch.amp.autocast(device_type=device.type, enabled=False):
+                p_min_f = f_pl.masked_fill(~f_mask, 99).min(dim=1).values
+                p_min_fc = p_min_f.clamp(0, 14)
+                z_first_f = self.pix_plane_z[p_min_fc].float()
+                z_w_f = torch.where(p_min_fc == 0, z_first_f + 7.5, z_first_f - 14.0)
+                first_f_m = f_mask & (f_pl == p_min_f[:, None])
+                ff_safe = first_f_m.clone()
+                if (~has_front).any():
+                    ff_safe[~has_front, 0] = True
+                w_ff = torch.softmax(f_feat[..., 3].float().masked_fill(~ff_safe, float('-inf')), dim=1) * first_f_m.float()
+                xy_ff = (w_ff.unsqueeze(-1) * f_xyz[..., :2].float()).sum(dim=1)
+                v_si_front = torch.stack([xy_ff[:, 0], xy_ff[:, 1], z_w_f], dim=-1)
+                avr_ok_f = has_front & avr_has & ((avr_pv[:, 2] - z_w_f).abs() < 45.0)
+                v_init_f = torch.where(
+                    avr_ok_f[:, None], avr_pv[:, :3], torch.where(has_front[:, None], v_si_front, v_cal_prior)
+                )
+
             is_front_trk = trk_mask & (trk_morph[..., 1] < 0.5) & (trk_kin[..., 2] < -2750.0)
             tf_emb = self.trk_front_cross(trk_emb_all, z_front, f_mask, query_mask=is_front_trk)
-            fv_out = self.front_vtx_layer(trk_kin_c, tf_emb, is_front_trk, v_cal_prior_c, cal_valid=cal_valid)
-            ref_f = self.front_vtx_refine(front_glob)
-            v_front_base = torch.cat([fv_out['v_pv_mm'][:, :2], fv_out['v_pv_mm'][:, 2:3] + z_ref_pv], dim=-1)
-            v_front = v_front_base + 5.0 * torch.tanh(ref_f[:, :3]) * has_front[:, None].float()
-            has_front_trk = is_front_trk.any(dim=1, keepdim=True).float()
-            # Explicit zero precision when no front hits exist (per Section 6.3.3)
-            p_front_base = torch.where(
-                has_front_trk > 0.5,
-                1.0 / fv_out['scale_pv_mm'].square().clamp_min(2.5e-3),
-                torch.exp(ref_f[:, 3:6].clamp(-6.0, 1.0)) * has_front[:, None].float(),
+            z_ref_f = v_init_f[:, 2:3]
+            trk_kin_cf = trk_kin.clone()
+            trk_kin_cf[..., 2] = trk_kin_cf[..., 2] - z_ref_f
+            v_init_f_c = torch.cat([v_init_f[:, :2], torch.zeros_like(z_ref_f)], dim=-1)
+            fv_out = self.front_vtx_layer(trk_kin_cf, tf_emb, is_front_trk, v_init_f_c, cal_valid=has_front)
+            n_f_trk = is_front_trk.sum(dim=1, keepdim=True).float()
+            w_trk_f = (n_f_trk >= 2.0).float() * 0.65
+            v_front_prior = torch.cat([
+                w_trk_f * fv_out['v_pv_mm'][:, :2] + (1.0 - w_trk_f) * v_init_f[:, :2],
+                v_init_f[:, 2:3],
+            ], dim=-1)
+            front_meta_feat = torch.stack([
+                (v_front_prior[:, 2] - self.z_mid) / 1000.0,
+                ((z_first_f - v_front_prior[:, 2]) / 30.0).clamp(-4.0, 4.0) * has_front.float(),
+                ((v_cal_prior[:, 2] - v_front_prior[:, 2]) / 60.0).clamp(-5.0, 5.0),
+                ((avr_pv[:, 2] - v_front_prior[:, 2]) / 30.0).clamp(-4.0, 4.0) * avr_has.float(),
+                avr_ok_f.float(),
+                torch.log1p(f_mask.sum(dim=1).float()) / 5.0,
+            ], dim=-1)
+            f_prof_tok = torch.cat([z_seq, front_glob.to(z_seq.dtype).unsqueeze(1)], dim=1)
+            f_prof_m = torch.cat([z_act, has_front.unsqueeze(1)], dim=1)
+            v_front, scale_front_raw = self.front_vtx_refine(
+                f_prof_tok, f_prof_m, front_meta_feat, v_front_prior,
+                pix_tokens=z_front, pix_xyz_mm=f_xyz, pix_mask=f_mask, pix_plane=f_pl,
             )
-            p_front = p_front_base * has_front[:, None].float()
 
             # --- Regime 2 Mid Silicon Slices (Planes 6..11) ---
             mid_raw_m = pix_mask & (pix_plane >= 6) & (pix_plane <= 11)
             m_idx, m_mask = _select_masked_tokens(tok_rank, mid_raw_m, K_MID_MAX)
+            m_xyz = torch.gather(pix_xyz, 1, m_idx.unsqueeze(-1).expand(-1, -1, 3))
+            m_feat = torch.gather(pix_feat, 1, m_idx.unsqueeze(-1).expand(-1, -1, PIX_FEAT_DIM))
+            m_pl = torch.gather(pix_plane, 1, m_idx)
             z_mid = torch.gather(u_pix, 1, m_idx.unsqueeze(-1).expand(-1, -1, self.dim))
             z_mid = self.mid_pix_cross(z_mid, cal_tok, cal_mask, query_mask=m_mask)
             z_mid = self.mid_pix_self(z_mid, z_mid, m_mask) * m_mask.unsqueeze(-1).to(z_mid.dtype)
@@ -1317,30 +1592,77 @@ class DualRegimeModalNet(NextGenFlavourModel):
             mw = torch.softmax(mw_log, dim=-1) * m_mask.float()
             mid_si_glob = (mw.unsqueeze(-1) * z_mid.float()).sum(dim=1)
 
-            is_mid_trk = trk_mask & (trk_morph[..., 1] < 0.5) & (trk_kin[..., 2] >= -2750.0)
-            mv_trk_out = self.mid_vtx_layer(trk_kin_c, trk_emb_all, is_mid_trk, v_cal_prior_c, cal_valid=cal_valid)
-            v_mid_trk_abs = torch.cat([mv_trk_out['v_pv_mm'][:, :2], mv_trk_out['v_pv_mm'][:, 2:3] + z_ref_pv], dim=-1)
-            mid_head_in = torch.cat([mid_si_glob, cal_out['cal_global'].float(), cal_start], dim=-1)
-            mid_ref = self.mid_vtx_head(mid_head_in)
-            v_mid_tomo = v_cal_prior + 150.0 * torch.tanh(mid_ref[:, :3] / 2.0)
-            p_mid_tomo = torch.exp(mid_ref[:, 3:6].clamp(-7.0, 2.0))
-            p_mid_trk = torch.where(
-                is_mid_trk.any(dim=1, keepdim=True),
-                0.25 / mv_trk_out['scale_pv_mm'].square().clamp_min(1e-3),
-                torch.zeros_like(p_mid_tomo),
-            )
-            p_mid = p_mid_tomo + p_mid_trk
-            v_mid = (p_mid_tomo * v_mid_tomo + p_mid_trk * v_mid_trk_abs) / p_mid.clamp_min(1e-6)
+            with torch.amp.autocast(device_type=device.type, enabled=False):
+                p_min_m = m_pl.masked_fill(~m_mask, 99).min(dim=1).values
+                p_min_mc = p_min_m.clamp(0, 14)
+                z_first_m = self.pix_plane_z[p_min_mc].float()
+                first_m_m = m_mask & (m_pl == p_min_m[:, None])
+                fm_safe = first_m_m.clone()
+                if (~has_mid_si).any():
+                    fm_safe[~has_mid_si, 0] = True
+                w_fm = torch.softmax(m_feat[..., 3].float().masked_fill(~fm_safe, float('-inf')), dim=1) * first_m_m.float()
+                xy_fm = (w_fm.unsqueeze(-1) * m_xyz[..., :2].float()).sum(dim=1)
+                z_est_m = torch.where(
+                    has_mid_si & cal_valid,
+                    torch.minimum(v_cal_prior[:, 2], z_first_m - 12.5),
+                    torch.where(has_mid_si, z_first_m - 30.0, v_cal_prior[:, 2]),
+                )
+                xy_est_m = torch.where(has_mid_si[:, None], xy_fm, v_cal_prior[:, :2])
+                v_si_mid = torch.cat([xy_est_m, z_est_m[:, None]], dim=-1)
+                avr_ok_m = (~has_front) & avr_has & (avr_pv[:, 2] >= -2780.0) & ((avr_pv[:, 2] - z_est_m).abs() < 90.0)
+                v_init_m = torch.where(avr_ok_m[:, None], avr_pv[:, :3], v_si_mid)
 
-            # Inverse-covariance cross-regime PV fusion (Section 6.3.3)
-            p_0 = torch.where(
-                cal_valid[:, None],
-                torch.exp(self.pv_prior_log_prec.clamp(-9.0, 1.0))[None, :].expand(b, 3),
-                torch.full((b, 3), 1e-5, device=device),
+            is_mid_trk = trk_mask & (trk_morph[..., 1] < 0.5) & (trk_kin[..., 2] >= -2750.0)
+            z_ref_m = v_init_m[:, 2:3]
+            trk_kin_cm = trk_kin.clone()
+            trk_kin_cm[..., 2] = trk_kin_cm[..., 2] - z_ref_m
+            v_init_m_c = torch.cat([v_init_m[:, :2], torch.zeros_like(z_ref_m)], dim=-1)
+            mv_trk_out = self.mid_vtx_layer(trk_kin_cm, trk_emb_all, is_mid_trk, v_init_m_c, cal_valid=(cal_valid | has_mid_si))
+            n_m_trk = is_mid_trk.sum(dim=1, keepdim=True).float()
+            w_trk_m = (n_m_trk >= 2.0).float() * 0.50
+            v_mid_prior = torch.cat([
+                w_trk_m * mv_trk_out['v_pv_mm'][:, :2] + (1.0 - w_trk_m) * v_init_m[:, :2],
+                v_init_m[:, 2:3],
+            ], dim=-1)
+            mid_meta_feat = torch.stack([
+                (v_mid_prior[:, 2] - self.z_mid) / 1000.0,
+                ((z_first_m - v_mid_prior[:, 2]) / 60.0).clamp(-5.0, 5.0) * has_mid_si.float(),
+                ((v_cal_prior[:, 2] - v_mid_prior[:, 2]) / 60.0).clamp(-5.0, 5.0),
+                ((avr_pv[:, 2] - v_mid_prior[:, 2]) / 60.0).clamp(-5.0, 5.0) * avr_has.float(),
+                has_mid_si.float(),
+                cal_valid.float(),
+            ], dim=-1)
+            m_prof_tok = torch.cat([
+                z_seq, cal_tok.to(z_seq.dtype), mid_si_glob.to(z_seq.dtype).unsqueeze(1)
+            ], dim=1)
+            m_prof_m = torch.cat([z_act, cal_mask, has_mid_si.unsqueeze(1)], dim=1)
+            v_mid, scale_mid_raw = self.mid_vtx_head(
+                m_prof_tok, m_prof_m, mid_meta_feat, v_mid_prior,
+                pix_tokens=z_mid, pix_xyz_mm=m_xyz, pix_mask=m_mask, pix_plane=m_pl,
             )
-            p_tot = (p_front + p_mid + p_0).clamp_min(1e-6)
-            v_pv_mm = (p_front * v_front + p_mid * v_mid + p_0 * v_cal_prior) / p_tot
-            scale_pv_mm = (torch.rsqrt(p_tot) * torch.exp(self.pv_scale_cal.clamp(-2.0, 3.0))[None, :]).clamp(0.05, 150.0)
+
+            # Regime-gated inverse-variance PV fusion & per-regime calibrated scales (Section 6.3.3)
+            with torch.amp.autocast(device_type=device.type, enabled=False):
+                front_persist_sum = (g_persist.float() * f_mask.float()).sum(dim=1, keepdim=True)
+                front_gate = has_front[:, None].float() * torch.sigmoid(2.5 * (front_persist_sum - 0.8))
+                p_f_raw = 1.0 / scale_front_raw.square().clamp_min(1e-4) + (n_f_trk >= 2.0).float() * (
+                    0.10 / fv_out['scale_pv_mm'].float().square().clamp_min(1e-2)
+                )
+                p_m_raw = 1.0 / scale_mid_raw.square().clamp_min(1e-4) + (n_m_trk >= 2.0).float() * (
+                    0.10 / mv_trk_out['scale_pv_mm'].float().square().clamp_min(1e-2)
+                )
+                corr = self.pv_regime_scale_corr.float()
+                scale_front = (torch.rsqrt(p_f_raw) * corr[0:1, :]).clamp(0.03, 200.0)
+                dz_to_mid_si = z_first_m - v_mid[:, 2].detach()
+                is_mid_near_vtx = has_mid_si & (dz_to_mid_si >= -15.0) & (dz_to_mid_si <= 35.0)
+                corr_mid_row = torch.where(is_mid_near_vtx[:, None], corr[1:2, :], corr[2:3, :])
+                scale_mid = (torch.rsqrt(p_m_raw) * corr_mid_row).clamp(0.05, 220.0)
+
+                p_front = (1.0 / scale_front.square().clamp_min(1e-4)) * front_gate
+                p_mid = (1.0 / scale_mid.square().clamp_min(1e-4)) * (1.0 - 0.995 * front_gate)
+                p_tot = (p_front + p_mid).clamp_min(1e-6)
+                v_pv_mm = (p_front * v_front + p_mid * v_mid) / p_tot
+                scale_pv_mm = torch.rsqrt(p_tot).clamp(0.03, 220.0)
             sv_disp_mm = fv_out['sv_disp_mm']
         else:
             # Ablation `abl_homogeneous_regime`: collapse Front30 & Mid150 into single shared encoder
@@ -1378,43 +1700,89 @@ class DualRegimeModalNet(NextGenFlavourModel):
             z_tgt = self.mid_pix_cross(z_tgt, cal_tok, cal_mask, query_mask=t_mask)
             z_tgt = self.mid_pix_self(z_tgt, z_tgt, t_mask) * t_mask.unsqueeze(-1).to(z_tgt.dtype)
 
-            has_tgt = t_mask.any(dim=1)
-            t_safe_m = t_mask.clone()
-            if (~has_tgt).any():
-                t_safe_m[~has_tgt, 0] = True
-            tw_log = self.front_pool_gate(z_tgt).squeeze(-1).float().masked_fill(~t_safe_m, float('-inf'))
-            tw = torch.softmax(tw_log, dim=-1) * t_mask.float()
-            front_glob = (tw.unsqueeze(-1) * z_tgt.float()).sum(dim=1)
+            # Symmetric pooling into front_glob (pl<=5) and mid_si_glob (6<=pl<=11) for fair global_fusion
+            tf_m = t_mask & (t_pl <= 5)
+            has_front = tf_m.any(dim=1)
+            tf_safe = tf_m.clone()
+            if (~has_front).any():
+                tf_safe[~has_front, 0] = True
+            tf_w = torch.softmax(self.front_pool_gate(z_tgt).squeeze(-1).float().masked_fill(~tf_safe, float('-inf')), dim=-1) * tf_m.float()
+            front_glob = (tf_w.unsqueeze(-1) * z_tgt.float()).sum(dim=1)
+
+            tm_m = t_mask & (t_pl >= 6)
+            has_mid_si = tm_m.any(dim=1)
+            tm_safe = tm_m.clone()
+            if (~has_mid_si).any():
+                tm_safe[~has_mid_si, 0] = True
+            tm_w = torch.softmax(self.mid_pool_gate(z_tgt).squeeze(-1).float().masked_fill(~tm_safe, float('-inf')), dim=-1) * tm_m.float()
+            mid_si_glob = (tm_w.unsqueeze(-1) * z_tgt.float()).sum(dim=1)
+
+            with torch.amp.autocast(device_type=device.type, enabled=False):
+                has_tgt = t_mask.any(dim=1)
+                p_min_t = t_pl.masked_fill(~t_mask, 99).min(dim=1).values
+                p_min_tc = p_min_t.clamp(0, 14)
+                z_first_t = self.pix_plane_z[p_min_tc].float()
+                first_t_m = t_mask & (t_pl == p_min_t[:, None])
+                ft_safe = first_t_m.clone()
+                if (~has_tgt).any():
+                    ft_safe[~has_tgt, 0] = True
+                w_ft = torch.softmax(t_feat[..., 3].float().masked_fill(~ft_safe, float('-inf')), dim=1) * first_t_m.float()
+                xy_ft = (w_ft.unsqueeze(-1) * t_xyz[..., :2].float()).sum(dim=1)
+                z_w_t = torch.where(
+                    p_min_tc == 0,
+                    z_first_t + 7.5,
+                    torch.where(p_min_tc <= 5, z_first_t - 14.0, torch.minimum(v_cal_prior[:, 2], z_first_t - 12.5)),
+                )
+                v_si_t = torch.stack([xy_ft[:, 0], xy_ft[:, 1], z_w_t], dim=-1)
+                avr_ok_t = has_tgt & avr_has & ((avr_pv[:, 2] - z_w_t).abs() < 60.0)
+                v_init_t = torch.where(
+                    avr_ok_t[:, None], avr_pv[:, :3], torch.where(has_tgt[:, None], v_si_t, v_cal_prior)
+                )
 
             is_tgt_trk = trk_mask & (trk_morph[..., 1] < 0.5)
-            tv_out = self.front_vtx_layer(trk_kin_c, trk_emb_all, is_tgt_trk, v_cal_prior_c, cal_valid=cal_valid)
-            mid_head_in = torch.cat([front_glob, cal_out['cal_global'].float(), cal_start], dim=-1)
-            mid_ref = self.mid_vtx_head(mid_head_in)
-            v_pv_base = torch.cat([tv_out['v_pv_mm'][:, :2], tv_out['v_pv_mm'][:, 2:3] + z_ref_pv], dim=-1)
-            v_pv_mm = v_pv_base + 5.0 * torch.tanh(mid_ref[:, :3])
-            scale_pv_mm = tv_out['scale_pv_mm']
+            z_ref_t = v_init_t[:, 2:3]
+            trk_kin_ct = trk_kin.clone()
+            trk_kin_ct[..., 2] = trk_kin_ct[..., 2] - z_ref_t
+            v_init_t_c = torch.cat([v_init_t[:, :2], torch.zeros_like(z_ref_t)], dim=-1)
+            tv_out = self.front_vtx_layer(trk_kin_ct, trk_emb_all, is_tgt_trk, v_init_t_c, cal_valid=(cal_valid | has_tgt))
+            t_meta_feat = torch.stack([
+                (v_init_t[:, 2] - self.z_mid) / 1000.0,
+                ((z_first_t - v_init_t[:, 2]) / 45.0).clamp(-5.0, 5.0) * has_tgt.float(),
+                ((v_cal_prior[:, 2] - v_init_t[:, 2]) / 60.0).clamp(-5.0, 5.0),
+                ((avr_pv[:, 2] - v_init_t[:, 2]) / 45.0).clamp(-5.0, 5.0) * avr_has.float(),
+                has_front.float(),
+                has_mid_si.float(),
+            ], dim=-1)
+            t_prof_tok = torch.cat([z_seq, cal_tok.to(z_seq.dtype), front_glob.to(z_seq.dtype).unsqueeze(1)], dim=1)
+            t_prof_m = torch.cat([z_act, cal_mask, has_tgt.unsqueeze(1)], dim=1)
+            v_pv_mm, scale_raw_t = self.mid_vtx_head(
+                t_prof_tok, t_prof_m, t_meta_feat, v_init_t,
+                pix_tokens=z_tgt, pix_xyz_mm=t_xyz, pix_mask=t_mask, pix_plane=t_pl,
+            )
+            front_persist_sum = (g_persist.float() * tf_m.float()).sum(dim=1, keepdim=True)
+            front_gate = has_front[:, None].float() * torch.sigmoid(2.5 * (front_persist_sum - 0.8))
+            p_min_tm = t_pl.masked_fill(~tm_m, 99).min(dim=1).values.clamp(0, 14)
+            dz_to_mid_t = self.pix_plane_z[p_min_tm].float() - v_pv_mm[:, 2].detach()
+            is_mid_near_vtx = has_mid_si & (dz_to_mid_t >= -15.0) & (dz_to_mid_t <= 35.0)
+            corr = self.pv_regime_scale_corr.float()
+            corr_t = torch.where(
+                front_gate > 0.5, corr[0:1, :], torch.where(is_mid_near_vtx[:, None], corr[1:2, :], corr[2:3, :])
+            )
+            scale_pv_mm = (scale_raw_t * corr_t).clamp(0.03, 220.0)
             sv_disp_mm = tv_out['sv_disp_mm']
             p_front = 1.0 / scale_pv_mm.square().clamp_min(1e-4)
             p_mid = torch.zeros_like(p_front)
             v_front = v_pv_mm
             v_mid = v_pv_mm
+            scale_front = scale_pv_mm
+            scale_mid = scale_pv_mm
 
             z_front = z_tgt
             f_mask = t_mask
-            f_g_persist = g_persist
             z_mid = z_tgt[:, :0]
             m_mask = t_mask[:, :0]
             z_bridge = z_tgt[:, :0]
             bridge_mask = t_mask[:, :0]
-            # keep front_vtx_refine & mid_vtx_layer & mid_pool_gate gradients active in Gate B if called
-            _unused_reg = (
-                0.0 * self.front_vtx_refine(front_glob).sum()
-                + 0.0 * self.mid_pool_gate(front_glob).sum()
-                + 0.0 * self.front_bridge_attn(self.front_bridge_queries.expand(b, -1, -1), z_tgt, t_mask).sum()
-                + 0.0 * self.mid_vtx_layer(trk_kin, trk_emb_all, is_tgt_trk, v_cal_prior, cal_valid=cal_valid)['v_pv_mm'].sum()
-            )
-            v_pv_mm = v_pv_mm + _unused_reg
-            g_persist = f_g_persist
 
         # ==================================================================
         # Regime 3 & 4: IPT (Planes 12..14) + Cross-Magnet-0 Spec Interlock
@@ -1447,8 +1815,9 @@ class DualRegimeModalNet(NextGenFlavourModel):
         hc = self.spec_cand_attn1(hc, hc, trk_cand_mask)
         hc = self.spec_cand_attn2(hc, hc, trk_cand_mask)
 
+        spec_rel_logit = self.spec_rel_head(hc).squeeze(-1)
         if self.use_ipt_spec_interlock:
-            rho_spec = torch.sigmoid(self.spec_rel_head(hc).squeeze(-1)) * trk_cand_mask.float()
+            rho_spec = torch.sigmoid(spec_rel_logit) * trk_cand_mask.float()
         else:
             rho_spec = trk_cand_mask.float()
 
@@ -1486,22 +1855,8 @@ class DualRegimeModalNet(NextGenFlavourModel):
         spec_glob = self.spec_glob_fusion(torch.cat([cand_pool, hit_pool, ipt_glob, spec_summary_vec], dim=-1))
 
         # ==================================================================
-        # Longitudinal 69-Plane Profile + Uncertainty-Gated Cross-Modal Fusion
+        # Uncertainty-Gated Cross-Modal Fusion
         # ==================================================================
-        z_in = torch.cat([pix_plane_tok, cal_out['st_tok']], dim=1)[:, self.z_order_idx]
-        z_act = torch.cat([pix_plane_act, cal_out['st_mask']], dim=1)[:, self.z_order_idx]
-        z_in = (z_in + self.z_pos_proj(self.z_plane_geom).unsqueeze(0).to(z_in.dtype)) * z_act.unsqueeze(-1).to(z_in.dtype)
-        z_seq = self.z_profile_encoder(z_in, z_act)
-
-        with torch.amp.autocast(device_type=device.type, enabled=False):
-            z_safe = z_act.clone()
-            no_z = ~z_safe.any(dim=1)
-            if no_z.any():
-                z_safe[no_z, 0] = True
-            z_logits = self.z_pool_gate(z_seq.float()).squeeze(-1).masked_fill(~z_safe, float('-inf'))
-            z_w = torch.softmax(z_logits, dim=1) * z_act.float()
-            z_prof_glob = (z_w.unsqueeze(-1) * z_seq.float()).sum(dim=1)
-
         source = torch.cat([
             z_front, z_bridge, z_mid, cal_tok, z_ipt, z_spec_cands, spec_glob.unsqueeze(1)
         ], dim=1)
@@ -1514,11 +1869,14 @@ class DualRegimeModalNet(NextGenFlavourModel):
         latent_mask = torch.ones((b, self.n_queries + 1), dtype=torch.bool, device=device)
 
         if self.use_ipt_spec_interlock:
-            # Token reliability bias in cross-attention logits (Section 6.2.2)
             ones_br = torch.ones((b, z_bridge.shape[1]), device=device)
             ones_m = torch.ones((b, z_mid.shape[1]), device=device)
             ones_c = torch.ones((b, cal_tok.shape[1]), device=device)
             ones_i = torch.ones((b, z_ipt.shape[1]), device=device)
+            has_any_cand = trk_cand_mask.any(dim=1, keepdim=True)
+            spec_glob_rho = torch.where(
+                has_any_cand, max_rho.unsqueeze(1).clamp_min(1e-3), torch.ones((b, 1), device=device)
+            )
             tok_rho = torch.cat([
                 g_persist.clamp_min(1e-3),
                 ones_br,
@@ -1526,7 +1884,7 @@ class DualRegimeModalNet(NextGenFlavourModel):
                 ones_c,
                 ones_i,
                 rho_spec.clamp_min(1e-3),
-                max_rho.unsqueeze(1).clamp_min(1e-3),
+                spec_glob_rho,
             ], dim=1)
             ugca_bias = self.ugca_beta.float() * torch.log(tok_rho)[:, None, None, :]
         else:
@@ -1544,6 +1902,8 @@ class DualRegimeModalNet(NextGenFlavourModel):
             fused_global = self.global_fusion(torch.cat([
                 pool_attn,
                 front_glob.float(),
+                mid_si_glob.float(),
+                ipt_glob.float(),
                 cal_out['cal_global'].float(),
                 z_prof_glob,
                 spec_glob.float(),
@@ -1555,6 +1915,12 @@ class DualRegimeModalNet(NextGenFlavourModel):
             charm_logit = self.charm_head(fused_global).squeeze(-1)
             kin_pred = self.kin_head(fused_global)
 
+        cand_clean_pos = (
+            (~cand_injected_noise)
+            & trk_cand_mask
+            & (trk_cand[..., 0] > 0.75)
+            & ((interlock[..., 0] > 0.25) | (trk_cand[..., 9] < 0.6))
+        )
         return NextGenModelOutput(
             logits7=logits7,
             probs4=probs4,
@@ -1565,9 +1931,16 @@ class DualRegimeModalNet(NextGenFlavourModel):
             kin_pred=kin_pred,
             aux={
                 'rho_spec': rho_spec.detach(),
+                'spec_rel_logit': spec_rel_logit,
+                'cand_injected_noise': cand_injected_noise,
+                'cand_clean_pos': cand_clean_pos,
+                'front_gate': front_gate.squeeze(-1).detach(),
+                'has_mid_si': is_mid_near_vtx.detach(),
                 'v_front_mm': v_front,
+                'scale_front_mm': scale_front,
                 'P_front': p_front,
                 'v_mid_mm': v_mid,
+                'scale_mid_mm': scale_mid,
                 'P_mid': p_mid,
                 'g_persist_mean': g_persist.mean(dim=-1).detach(),
                 'n_dual_active': cal_out['n_dual_active'].detach(),
