@@ -6,9 +6,9 @@
   - N1 工作流：`feat/stage327-n1-unified` @ `466cd0e4e9303fbf069c02554b0e3831811db76e`
   - N2 & Q13 工作流：`feat/stage327-n2-taukinema` @ `48b955c2eb6e09407b0df147e096b95be6b69863`（前序修复提交 `112e259`）
   - Tail-DRO 与图表工作流：`feat/stage327-tail-dro` @ `1469f9888d6fcad9a243c5da9d94efddf8329963`
-  - 集成主分支：`feat/stage327-nextgen-completion` @ `6fc1b0c`（合并提交 `156eb73`、`4becf3f`、`6fc1b0c`）
+  - 集成主分支：`feat/stage327-nextgen-completion` @ `5cc0cee`（代码与导出接口集成；合并提交 `156eb73`、`4becf3f`、`6fc1b0c`）
 - **随机种子**：Stage-I 架构实验与消融统一固定 `seed = 42`；Stage-II `Tune6k` 冻结主干尾部确认采用三组独立种子 `{17, 42, 2026}`；配对 family-block bootstrap 统一固定 `seed = 20263250`（`B = 1,000`）
-- **计算调度与硬件**：HTCondor 调度节点 `bigbird20.cern.ch`（提交时排队空闲 GPU 负载最优，`--min-capability 8.0`），作业集群 ID `1585572..1585632`，运行于 `NVIDIA H100L-2-24C MIG 2g.24gb` 与 `Tesla V100-PCIE-32GB`
+- **计算调度与硬件**：HTCondor 调度节点 `bigbird20.cern.ch`（提交时排队空闲 GPU 负载最优，`--min-capability 8.0`），作业集群 ID `1585572..1585632`，运行于 `NVIDIA H100 NVL`、`NVIDIA H100L-2-24C MIG 2g.24gb`、`NVIDIA H100L-1-12C MIG 1g.12gb` 与 `NVIDIA A100-PCIE-40GB`（交互式单元测试使用 `Tesla T4`）
 - **产物与审计目录**：
   - 架构蓝图与修复规范：[stage327_plan](file:///eos/home-x/xcheng/FASER/Pinpoint/results/nextgen_research/stage327_plan)
   - N1 实验产物：[exp_unified_net](file:///eos/home-x/xcheng/FASER/Pinpoint/results/nextgen_research/exp_unified_net)
@@ -47,12 +47,12 @@ Stage 327 承接 [2026-11-22_stage326_nextgen_neutrino_ml_research.md](file:///e
 
 - **N1 `PinpointUnifiedNet`（[unified_pinpoint_net.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/unified_pinpoint_net.py)、[run_unified_pinpoint_net.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/run_unified_pinpoint_net.py)）**：
   - **模块组成（Round-2 实测 `7,569,774` 参数，`< 8.5M` 预算）**：包含多尺度像素小块残差编码器、带 FP64 计算后转 FP32 的异面直线最近点距与有符号冲击参数交互矩阵 `R_ab`（`_safe_hypot(dx, dy)` 防止零横动量梯度 `NaN`）、`front_gate` 解耦 30 mm 薄靶像素先验与 150 mm 厚靶闪烁体能量加权先验、42 站双激活（主闪烁体 + Veto/Preshower）Sinkhorn 最优传输与逐事例飞行时间相对中心化（per-event ToF centering）、Magnet-0 内径几何检查的 4D `IPT-Spec` 联锁与 `spec_rel_head`、位移锚定反冲轴半球特征 `C_hem`（抑制 $D \to K/\pi + X$ 同侧粲强子衰变伪装 $\nu_\tau$），以及 `ScaledQKNorm + log(1 + M)` 多重度自适应跨模态注意力。
-  - **Round-1 压力故障诊断与 Round-2 三项精确修复**：Round-1 评估发现 `TrkDead 2%+N1` 退化 `-5.32 pp`、`PixDark 1e-5` 退化 `-6.46 pp`。取证定位三项程序与物理机制缺陷并在 Round-2（`466cd0e`）修复：（1）Round-1 在线假三元组噪声注入仅扰动位置 `[:, 0:3]` 而遗留零斜率，导致推理期真实 `tracker_dead_2pct_noise1` 的大角度随机斜率触发 `R_ab` 分布外偏移；Round-2 同步采样斜率 `noise_hit[:, 3:6]` 并施加 4 站纵向持续性门控；（2）在特征预提取 `extract_unified_item` 中过滤孤立单像素热噪声团簇（`n_pix <= 1 & charge <= 1.5`），与推理期压力分布对齐；（3）将粲味辅助二分类损失掩码收紧至 `label < 2`（仅对 $\nu_e / \nu_\mu$ CC 事例监督 prompt vs charm，避免对 NC $c\bar{c}$ 与 $\nu_\tau$ 产生冲突梯度）。
+  - **Round-1 压力故障诊断与 Round-2 三项精确修复**：Round-1 评估发现 `TrkDead 2%+N1` 退化 `-5.32 pp`、`PixDark 1e-5` 退化 `-6.46 pp`。取证定位三项程序与物理机制缺陷并在 Round-2（`466cd0e`）修复：（1）Round-1 在线假三元组噪声注入仅扰动位置 `[:, 0:3]` 而遗留零斜率，导致推理期真实 `tracker_dead_2pct_noise1` 的大角度随机斜率触发 `R_ab` 分布外偏移；Round-2 同步采样斜率 `noise_hit[:, 3:6]` 并施加 4 站纵向持续性门控；（2）在特征预提取 `extract_unified_item`（`unified_pinpoint_net.py:160-185`）中过滤孤立 1-bit 单像素暗噪声团簇（`n_hits == 1`、同平面邻域 `cnt_r040 == 0 & cnt_r1 == 0` 且相邻两层无 `dp in {1, 2}` 紧符合 MIP 伴随击中），与推理期压力分布对齐；（3）将粲味辅助二分类损失掩码收紧至 `label < 2`（仅对 $\nu_e / \nu_\mu$ CC 事例监督 prompt vs charm，避免对 NC $c\bar{c}$ 与 $\nu_\tau$ 产生冲突梯度）。
 - **N2 `TauKinemaDiffNet` 初级顶点两步修复（[tau_kinema_diffnet.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/tau_kinema_diffnet.py)、[run_tau_kinema_diffnet.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/run_tau_kinema_diffnet.py)）**：
   - **Step 1（`n2fix`，提交 `112e259`）**：在 `tau_kinema_diffnet.py` 将像素顶点残差门控从 `first_p >= 0` 收紧为 `avr_ok = (n_tr >= 2) & (first_p >= 0) & (first_tgt_p <= 5)`，保留 Stage 326 Round-2 的 `m_res[NC_cc] = 0` 与 `0.20` 残差缩放。该单行修复将 `Interm150 |dz|` 从 `19.261 mm` 降至 `10.215 mm`，并揭示剩余误差来自两方面：（a）150 mm 钨靶级联反照率（backscatter albedo）在前部 30 mm 像素站产生单平面低电荷击中，使 `22.5%`（`165/734`）的 `Interm150` 事例伪造 `first_p <= 5`；（b）`_DifferentiableAVR` 缺乏对观测先验 `z_prior` 的直接锚定，且闪烁体粗顶点 `z_scint_init` 含上游反散射早触发偏置。
   - **Step 2（`n2v2`，提交 `48b955c`）**：实现反散射安全先验（要求前部两站像素团簇符合 `front_two_station` 才启用薄靶像素先验；厚靶区采用 5% 截尾抗反散射闪烁体前沿加权先验）与 `_RegimeAwareSymmetricVertexRefiner`（以 `(x_prior, y_prior, z_prior)` 为对称零均值中心锚点，利用径迹段投影残差与可学习 Huber 权重精细化 3D 初级顶点），参数量由 `5.658M` 精简至 `5.267M`。
 - **原型实验 Q13 全 `1.00 mm` 传感器对照（[run_q13_full_1mm_sensor.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/run_q13_full_1mm_sensor.py)）**：
-  - 实现 `_quantize_pix_patches_to_1mm`：利用真实探测器 `MAPS_PITCH_MM = 0.0208`（`32x32` 视野覆盖 `0.6656 mm`）及团簇全局位置 `(cx, cy)`，将每块 `32x32` 局部图像块积分投射到全局 `1.00 mm` 物理晶格对应的 `(1..2) x (1..2)` 宏体素，再以最近邻平铺回 `32x32` 张量，同时将团簇质心 `(x, y)` 量化至 `1.00 mm` 并重新提取软径迹段，严格保持闪烁体 `clusters` 与磁谱仪 `IPT` 逐位不变（`max_diff = 0.0`），与 `native_20um` 和 `centroid_only_1mm` 在完全相同的 Stage-I 训练设置（`seed = 42`，20 passes）下配对对比。
+  - 实现 `extract_full_1mm_sensor_item`（`run_q13_full_1mm_sensor.py:178-375`）：锁定原生 `20 um` 连通域团簇列表及全部 `IPT (plane >= 12)` 团簇逐位不变，将靶区（`plane < 12`）团簇内原始像素击中吸附至 **1-bit 去重 `1.00 mm` `rint` 体素晶格**，基于该 `1.00 mm` 体素重算靶区团簇质心、二阶矩、平面摘要与软径迹段，并以 `1.00 mm` 步距重新栅格化 `32x32` 局部图像块（`_rasterize_micro_patches(..., 1.00, 1.00)`），严格保持闪烁体 `clusters` 与磁谱仪 `IPT` 逐位不变（`max_diff = 0.0`），与 `native_20um` 和 `centroid_only_1mm` 在完全相同的 Stage-I 训练设置（`seed = 42`，20 passes）下配对对比。
 - **冻结主干 `Score Bank` KL-锚定 DRO 尾部微调（[tail_dro_pauc.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/tail_dro_pauc.py)、[run_tail_dro_finetune.py](file:///eos/home-x/xcheng/FASER/Pinpoint/PinpointAnalysis/src/analysis/flavour/nextgen/run_tail_dro_finetune.py)）**：
   - **数学形式**：冻结主干全部参数（`requires_grad = False`），仅微调末端分类头参数 $\phi$（`lr = 5e-5`，`weight_decay = 1e-4`，`3 passes`，`batch_size = 128`）。定义对数几率边际分数 $s_\tau(x) = \log p_\tau(x) - \log(1 - p_\tau(x))$，维护容量 $M = 8,192$ 的 FIFO 历史本底分数队列 $\{s_\tau(x_j^-)\}_{j=1}^M$（无梯度停驻），优化混合损失：
     $$\mathcal{L}_{\text{total}}(\phi, \eta) = \lambda_{\text{NLL}} \mathcal{L}_{\text{CE}}(y, p_\phi) + \lambda_{\text{KL}} D_{\text{KL}}\!\left(p_{\phi_0}(\cdot \mid x) \,\|\, p_\phi(\cdot \mid x)\right) + \lambda_{\text{DRO}} \mathcal{L}_{\text{CVaR-pAUC}}(\phi, \eta; \beta = 0.01)$$
@@ -86,9 +86,9 @@ Stage 327 承接 [2026-11-22_stage326_nextgen_neutrino_ml_research.md](file:///e
 
 | 模型变体 / 基线 | 参数量 | `All BA4` (%) | `All NLL` | `D1_obs BA4` (%) | `Front30` `\|dz\|` (mm) | `Interm150` `\|dz\|` (mm) | `SH 1% FPR` $\nu_\tau$ 效率 (All / D1, %) | `WS 1% FPR` $\nu_\tau$ 效率 (All / D1, %) | `W184` `p_tau>0.5` (%) | `TrkDead 2%+N1` $\Delta$BA4 (pp) | `PixDark 1e-5` $\Delta$BA4 (pp) | 9/9 Pulls 范围 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Stage 326 `TrackletIPFormer` (B) | 4.86M | 57.81 | 0.9659 | 64.24 | 5.008 | 5.562 | 4.43 / 6.08 | 4.67 / 4.98 | 2.33 | -6.59* | -2.74* | `[0.917, 1.111]` |
-| Stage 326 `DualRegimeModalNet` (D) | 5.42M | 57.52 | 0.9829 | 62.56 | — | — | 4.27 / 6.76 | 4.08 / 6.05 | 3.42 | -4.87* | -3.15* | — |
-| **Stage 326 解耦 `50/50 Blend` (B+D)** | **10.28M** | **58.54** | **0.9593** | **64.05** | — | — | **5.09 / 6.08** | **5.00 / 6.05** | **2.25** | — | — | — |
+| Stage 326 `TrackletIPFormer` (B) | 6.23M | 57.81 | 0.9659 | 64.24 | 5.008 | 5.562 | 4.43 / 6.08 | 4.67 / 4.98 | 2.33 | -6.59* | -2.74* | `[0.917, 1.111]` |
+| Stage 326 `DualRegimeModalNet` (D) | 6.63M | 57.52 | 0.9829 | 62.56 | — | — | 4.27 / 6.76 | 4.08 / 6.05 | 3.42 | -4.87* | -3.15* | — |
+| **Stage 326 解耦 `50/50 Blend` (B+D)** | **12.85M** | **58.54** | **0.9593** | **64.05** | — | — | **5.09 / 6.08** | **5.00 / 6.05** | **2.25** | — | — | — |
 | N1 R1 `s1_unified_pinpoint_net` | 7.595M | 58.00 | 0.9662 | 65.12 | 3.991 | 6.384 | 5.42 / 9.46 | 5.08 / 6.76 | 2.67 | -5.32 | -6.46 | `[0.866, 1.149]` |
 | N1 R1 `abl_no_online_spec_curriculum` | 7.595M | **58.60** | **0.9602** | 64.86 | 3.810 | 5.931 | 5.58 / 9.46 | 4.67 / 7.12 | 2.58 | -2.97 | -2.79 | `[0.851, 1.075]` |
 | N1 R1 `abl_no_recoil_hem` | 7.556M | 58.44 | 0.9644 | 64.58 | 3.528 | 6.062 | 4.93 / 6.08 | 4.75 / 3.91 | 7.08 | -4.00 | -7.13 | `[0.895, 1.085]` |
@@ -113,13 +113,13 @@ Stage 327 承接 [2026-11-22_stage326_nextgen_neutrino_ml_research.md](file:///e
 
 | 模型 / 融合方案 | 参数量 | `Front30` 中位 `\|dz\|` (mm) | `Interm150` 中位 `\|dz\|` (mm) | `All` 中位 3D 顶点误差 (mm) | 9/9 Pulls 范围 | `All BA4` (%) | `All NLL` | `D1_obs BA4` (%) | `WS 1% FPR` $\nu_\tau$ 效率 (%) | `SH 1% FPR` $\nu_\tau$ 效率 (%) | `W184` `p_tau>0.5` (%) |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Stage 326 `F_r2_d0400dfd`（修复前基线） | 5.658M | 3.749 | 19.261 | 18.910 | `[0.916, 1.077]` | 56.77 | 0.9846 | 63.00 | 3.92 (47/1200) | 3.28 (20/609) | 2.08 |
+| Stage 326 `F_r2_d0400dfd`（修复前基线） | 5.658M | 7.333 | 19.261 | 18.910 | `[0.919, 1.125]` | 56.77 | 0.9846 | 63.00 | 3.92 (47/1200) | 3.28 (20/609) | 2.08 |
 | Step 1：`F_n2fix`（仅 `first_tgt_p <= 5` 门控） | 5.658M | 6.954 | **10.215** | 16.155 | `[0.918, 1.051]` | 56.60 | 0.9877 | 63.63 | 3.92 (47/1200) | 4.11 (25/609) | **1.58** |
-| **Step 2：`F_n2v2`（反散射安全先验 + 对称顶点精修器）** | **5.267M** | **2.136** | **1.984** | **7.335** | **`[0.924, 1.119]`** | **58.46** | **0.9652** | **64.57** | **6.08 (73/1200)** | **5.75 (35/609)** | **7.50** (在 `p>0.633` 为 **2.17%**) |
-| 双模型基线 `Blend_BD`（50% B + 50% D） | 10.28M | — | — | — | — | 58.54 | 0.9593 | 64.05 | 5.00 (60/1200) | 5.09 (31/609) | 2.25 |
-| 三模型融合 `Blend_BDF_r2`（B + D + `F_r2`） | 15.94M | — | — | — | — | 58.83 | 0.9536 | 64.69 | 4.25 (51/1200) | 3.94 (24/609) | 1.50 |
-| 三模型融合 `Blend_BDF_n2fix`（B + D + `F_n2fix`） | 15.94M | — | — | — | — | 58.60 | 0.9558 | 64.95 | 4.83 (58/1200) | 4.43 (27/609) | 1.67 |
-| **三模型融合 `Blend_BDF_n2v2`（B + D + `F_n2v2`）** | **15.55M** | — | — | — | — | **58.83** | **0.9451** | **64.69** | **5.92 (71/1200)** | **5.42 (33/609)** | **3.67** |
+| **Step 2：`F_n2v2`（反散射安全先验 + 对称顶点精修器）** | **5.267M** | **2.136** | **1.984** | **7.335** | **`[0.924, 1.096]`** | **58.46** | **0.9652** | **64.57** | **6.08 (73/1200)** | **5.75 (35/609)** | **7.50** (在 `p>0.633` 为 **2.17%**) |
+| 双模型基线 `Blend_BD`（50% B + 50% D） | 12.85M | — | — | — | — | 58.54 | 0.9593 | 64.05 | 5.00 (60/1200) | 5.09 (31/609) | 2.25 |
+| 三模型融合 `Blend_BDF_r2`（B + D + `F_r2`） | 18.51M | — | — | — | — | 58.83 | 0.9536 | 64.69 | 4.25 (51/1200) | 3.94 (24/609) | 1.50 |
+| 三模型融合 `Blend_BDF_n2fix`（B + D + `F_n2fix`） | 18.51M | — | — | — | — | 58.60 | 0.9558 | 64.95 | 4.83 (58/1200) | 4.43 (27/609) | 1.67 |
+| **三模型融合 `Blend_BDF_n2v2`（B + D + `F_n2v2`）** | **18.12M** | — | — | — | — | **58.83** | **0.9451** | **64.69** | **5.92 (71/1200)** | **5.42 (33/609)** | **3.67** |
 
 **N2 关键统计检验（1,000 次配对 family-block bootstrap，`seed = 20263250`）与外推诊断**：
 - **单模型跃升（`F_n2v2 - F_r2_d0400dfd`）**：`All ΔBA4 = +1.69 pp`（95% CI `[+0.65, +2.77] pp`），`ΔNLL = -0.0194`（95% CI `[-0.0301, -0.0088]`），`1% FPR Δτ_eff = +2.17 pp`（95% CI `[+0.25, +4.48] pp`），`0.1% FPR Δτ_eff = +1.92 pp`（95% CI `[+0.84, +3.08] pp`），全部四项核心指标的 95% 置信区间严格排除零。
@@ -227,7 +227,7 @@ PYTHONPATH=src python3 -m analysis.flavour.nextgen.plot_stage327_summary
 ### 4.1 实测事实（Facts）
 
 1. **冻结主干 `Score Bank (8,192)` + KL/NLL 锚定 CVaR-DRO 解决了极低假阳性区梯度稀疏与概率失准的固有矛盾**：实测消融证明，无锚定 DRO 会使验证集 `NLL` 崩塌 `+0.064 ~ +0.079` 且 `ECE_tau` 恶化超 `3 倍`；无 `Score Bank` 在 `batch_size = 128` 下无法稳定解析 `1% FPR` 分位点；唯有结合 `8,192` 历史本底队列与 `KL(p_0 || p) + CE` 锚定（`dro_bal_l008_kl15_bank8192`），才能在 `Tune6k` 上同时实现 `NLL` 改善（`0.9380 -> 0.9374`）、`D1_obs 1% FPR` $\nu_\tau$ 效率跃升（`raw 6.73% -> 11.86%`，`screen_cal +4.17 pp [+0.31, +6.33] pp`）以及 `W184 NC Charm` 假阳性率压降 5 倍（`1.67% -> 0.33%`）。
-2. **多模态单模型端到端训练与解耦双模型集成存在可量化的“抗噪鲁棒性—干净样本判别率”权衡**：`PinpointUnifiedNet` 在干净数据上（Round-1 `abl_no_online_spec_curriculum` `58.60% / 0.9602`）已证明 `7.57M` 单模型容量足以匹敌 `10.28M` 解耦 `50/50 Blend`（`58.54% / 0.9593`）；加入斜率一致在线假三元组课程与单像素热噪声过滤后，硬件压力退化被压制至 `-0.07 pp`（`TrkDead 2%+N1`），但单主干共享表征必须同时容纳干净径迹几何与强噪声不变性，导致干净样本 `All BA4` 回落至 `57.48%`。解耦 `50/50 Blend` 通过几何主导（`TrackletIPFormer`）与量能/拓扑主导（`DualRegimeModalNet`）两条独立梯度路径的对偶平均，在准确率、对数似然与校准度上仍显著占优。
+2. **多模态单模型端到端训练与解耦双模型集成存在可量化的“抗噪鲁棒性—干净样本判别率”权衡**：`PinpointUnifiedNet` 在干净数据上（Round-1 `abl_no_online_spec_curriculum` `58.60% / 0.9602`）已证明 `7.57M` 单模型容量足以匹敌 `12.85M` 解耦 `50/50 Blend`（`58.54% / 0.9593`）；加入斜率一致在线假三元组课程与单像素热噪声过滤后，硬件压力退化被压制至 `-0.07 pp`（`TrkDead 2%+N1`），但单主干共享表征必须同时容纳干净径迹几何与强噪声不变性，导致干净样本 `All BA4` 回落至 `57.48%`。解耦 `50/50 Blend` 通过几何主导（`TrackletIPFormer`）与量能/拓扑主导（`DualRegimeModalNet`）两条独立梯度路径的对偶平均，在准确率、对数似然与校准度上仍显著占优。
 3. **`TauKinemaDiffNet` 在 150 mm 厚钨靶区的顶点失效由跨区段像素门控泄漏与钨级联反照率共同导致，对称锚定精修器已彻底修复该几何瓶颈**：仅施加 `first_tgt_p <= 5` 门控只能将 `Interm150 |dz|` 降至 `10.215 mm`；进一步剔除单平面钨反散射假触发并引入 `_RegimeAwareSymmetricVertexRefiner` 后，`Interm150 |dz|` 降至 `1.984 mm`（`Front30 = 2.136 mm`），单模型 `BA4` 跃升 `+1.69 pp` 至 `58.46%`，三模型融合 `Blend_BDF_n2v2` 将 Stage-I `NLL` 推进至 `0.9451`。
 4. **亚毫米像素分辨率（`20 um` vs `1.00 mm`）的物理收益严格受局部辐射长度调制**：在 `Front30` 薄钨靶区（单层约 `1.7 X_0`），`20 um` MAPS 提供显著对数似然优势（`ΔNLL = -0.0247 [-0.0405, -0.0105]`）与核粲背景抑制（`W184` 假阳性率从 `4.08%` 降至 `2.33%`）；在 `Interm150` 厚钨靶区（层间 `20.23 X_0`），多重库仑散射抹平精细径迹倾角信息，两者无统计显著差异。
 5. **位移锚定反冲半球特征 `C_hem` 是抑制核外推粲强子伪装 $\nu_\tau$ 的关键物理不变量**：在 N1 两轮受控消融中，移除 `C_hem` 均导致 `W184 NC Charm` 假阳性率翻倍恶化（Round-1：`2.67% -> 7.08%`；Round-2：`3.58% -> 5.83%`）。
@@ -242,7 +242,7 @@ PYTHONPATH=src python3 -m analysis.flavour.nextgen.plot_stage327_summary
 ## 5. 下一步计划
 
 1. **Stage 328A（Stage-I 受控补充验证：`TauKinemaDiffNet v2` 暗噪声硬化与三路 KL-DRO 评估，零接触封存集）**：
-   - **具体任务**：在 `TauKinemaDiffNet v2` 像素团簇入口复用 N1 Round-2 已验证的单像素热噪声过滤门控（`n_pix <= 1 & charge <= 1.5`），并在 `Train/Dev/Val` 上对冻结主干的 `B + D + F_n2v2` 执行 `Score Bank (8,192)` KL-DRO 微调。
+   - **具体任务**：在 `TauKinemaDiffNet v2` 像素团簇入口复用 N1 Round-2 已验证的孤立 1-bit 单像素暗噪声过滤门控（`n_hits == 1`、同平面邻域 `cnt_r040 == 0 & cnt_r1 == 0` 且相邻两层无 `dp in {1, 2}` 紧符合 MIP 伴随击中），并在 `Train/Dev/Val` 上对冻结主干的 `B + D + F_n2v2` 执行 `Score Bank (8,192)` KL-DRO 微调。
    - **所需输入**：`shards 000..079`（`Train / internal_dev_screen / internal_val_eval`）与 6 组非封存 OOD 分片。
    - **验收标准**：Stage-I `Interm150 |dz| <= 2.5 mm`，`PixDark 1e-5` 退化 `< 2.5 pp`，`W184 NC Charm p_tau > 0.5 <= 1.0%`，且三路融合在 `internal_val_eval` 上较二路 `50/50 Blend + KL-DRO` 取得统计显著的 `NLL` 或 `1% FPR` $\nu_\tau$ 效率提升；若未达标，维持当前已通过 Stage-II 确认的二路 `50/50 Blend + KL-DRO` 为唯一冻结候选。
 2. **Stage 328B（预注册一次性封存解封前演练与协议冻结）**：
