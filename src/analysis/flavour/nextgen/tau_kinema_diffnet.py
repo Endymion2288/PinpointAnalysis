@@ -972,7 +972,9 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         if 'avr_pv_mm' in batch:
             avr = batch['avr_pv_mm'].float()
             dz_cal = avr[:, 2] - cal_start[:, 0]
-            avr_ok = (avr[:, 3] > 0.5) & ((~cal_valid) | ((dz_cal >= -50.0) & (dz_cal <= 150.0)))
+            # N2 fix: restrict coarse C++ AVR prior strictly to front 30mm module (first_tgt_p <= 5)
+            # so coarse 150mm C++ AVR never overrides the neural/calorimeter anchor in Interm150.
+            avr_ok = is_front_p & (avr[:, 3] > 0.5) & ((~cal_valid) | ((dz_cal >= -50.0) & (dz_cal <= 150.0)))
             prior = torch.where(avr_ok.unsqueeze(-1), avr[:, :3], prior)
             any_valid = any_valid | avr_ok
         return prior, any_valid, is_front_p, is_mid_p

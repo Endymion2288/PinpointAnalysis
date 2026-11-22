@@ -8,12 +8,13 @@ an explicit Stage-1 path hook blocking shards 080..149 and validation_meta.
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 from datetime import datetime, timezone
 import hashlib
 import json
 import math
+import multiprocessing as mp
 import os
 from pathlib import Path
 import pickle
@@ -26,6 +27,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as pq
 from scipy.stats import beta as scipy_beta
 import torch
@@ -33,7 +35,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import BatchSampler, DataLoader, Dataset, RandomSampler, SequentialSampler
 
-from analysis.flavour.inventory import write_json
+from analysis.flavour.inventory import COMPRESSION, write_json
 from analysis.flavour.nextgen.protocols import (
     compute_student_t_pulls,
     conditional_three_from_four,
@@ -41,6 +43,7 @@ from analysis.flavour.nextgen.protocols import (
 from analysis.flavour.nextgen.seal_guard import (
     SealAuditGuard,
     SealViolationError,
+    assert_unsealed_split,
     load_authorized_split_shards,
     verify_inference_truth_invariance,
 )
@@ -75,6 +78,8 @@ from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import (
     extract_pf_item,
 )
 from analysis.flavour.v3.v2_pinpointformer.train import CachedPFDataset, move_batch_to_device
+from analysis.flavour.v3.v6_clean_sim.evaluate_stage317 import paired_family_bootstrap_delta
+from analysis.flavour.v3.v6_clean_sim.run_stage325_remediation import _perturb_observation_for_stress
 
 
 DEFAULT_CLEAN_ROOT = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/flavour/v6_clean_v3_2026-11-19/clean_sim')
@@ -831,21 +836,34 @@ def _build_stage1_train_pool_cache(
     return items_dir, meta
 
 
+def _extract_ood_chunk_worker(task: tuple) -> list[dict]:
+    obs_slice, start_idx, geometry, bounds, cfg_obs = task
+    extractor = _TauKinemaItemExtractor(geometry, bounds, cfg_obs)
+    out = []
+    for loc, ob in enumerate(obs_slice):
+        dom = compute_observable_containment(ob, geometry, bounds, config=cfg_obs)
+        out.append(extractor(start_idx + loc, ob, None, dom, geometry, bounds, cfg_obs))
+    return out
+
+
 def _extract_ood_items(
     ood_name: str,
     ood_root: Path,
     geometry: dict,
     bounds: dict,
     cfg_obs: dict,
+    workers: int = 4,
 ) -> tuple[list[dict], pd.DataFrame]:
     obs_p = ood_root / 'shards/000/observations.parquet'
-    ds = V3ObservationDataset(
-        obs_p,
-        DEFAULT_CLEAN_ROOT / 'geometry.json',
-        config=cfg_obs,
-        item_transform=_TauKinemaItemExtractor(geometry, bounds, cfg_obs),
-    )
-    items = [ds[i] for i in range(len(ds))]
+    obs_list = pq.read_table(obs_p).to_pylist()
+    if workers > 1 and len(obs_list) >= 200:
+        chunk = max(50, len(obs_list) // workers)
+        tasks = [(obs_list[i:i + chunk], i, geometry, bounds, cfg_obs) for i in range(0, len(obs_list), chunk)]
+        with ProcessPoolExecutor(max_workers=min(workers, len(tasks)), mp_context=mp.get_context('spawn')) as pool:
+            parts = list(pool.map(_extract_ood_chunk_worker, tasks))
+        items = [it for p in parts for it in p]
+    else:
+        items = _extract_ood_chunk_worker((obs_list, 0, geometry, bounds, cfg_obs))
     truth_meta = pd.read_parquet(ood_root / 'truth_meta.parquet')
     assert len(truth_meta) == len(items), f'{ood_name}: truth_meta {len(truth_meta)} != items {len(items)}'
     return items, truth_meta
@@ -921,7 +939,8 @@ def run_stage1_train_and_eval(
     f_va = set(zip(val_keys['family_hi'].astype(int), val_keys['family_lo'].astype(int)))
     assert len(f_tr & f_sc) == 0 and len(f_tr & f_va) == 0 and len(f_sc & f_va) == 0
 
-    scratch_root = Path(os.environ.get('PINPOINT_V3_SCRATCH', '/tmp'))
+    shm_free = shutil.disk_usage('/dev/shm').free if Path('/dev/shm').exists() else 0
+    scratch_root = Path('/dev/shm' if shm_free >= 6 * (1024 ** 3) else os.environ.get('PINPOINT_V3_SCRATCH', '/tmp'))
     scratch_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f'tkdn-{run_name}-', dir=scratch_root) as tmp_str:
         tmp_path = Path(tmp_str)
@@ -934,7 +953,7 @@ def run_stage1_train_and_eval(
             items_dir = tmp_path / 'train_pool_items'
             shutil.copytree(cache_dir / 'train_pool_items', items_dir)
             pool_meta = pd.read_parquet(cache_dir / 'pool_meta.parquet')
-            print(f'[{run_name}] Staged shared 32k cache from {cache_dir} to local scratch in {time.perf_counter()-t_prep0:.1f}s', flush=True)
+            print(f'[{run_name}] Staged shared 32k cache from {cache_dir} to local scratch ({scratch_root}) in {time.perf_counter()-t_prep0:.1f}s', flush=True)
         else:
             items_dir, pool_meta = _build_stage1_train_pool_cache(tmp_path, geometry, bounds, cfg_obs, workers=workers)
             print(f'[{run_name}] Cached 32k train-pool items in {time.perf_counter()-t_prep0:.1f}s', flush=True)
@@ -958,7 +977,7 @@ def run_stage1_train_and_eval(
 
         grad_accum = max(1, batch_size // micro_bs)
         assert batch_size % micro_bs == 0
-        loader_workers = min(2, max(1, workers // 2))
+        loader_workers = min(4, max(1, workers // 2))
         screen_loader = _make_loader(
             screen_ds, batch_size=max(64, micro_bs), shuffle=False, workers=loader_workers,
             seed=seed, y_scint_center=bounds['y_scint_center'], n_bars=bounds['n_bars'],
@@ -1221,7 +1240,7 @@ def run_stage1_train_and_eval(
     for ov_name, ov_root in OOD_SOURCES.items():
         if not (ov_root / 'shards/000/observations.parquet').is_file():
             continue
-        ood_items, ood_meta = _extract_ood_items(ov_name, ov_root, geometry, bounds, cfg_obs)
+        ood_items, ood_meta = _extract_ood_items(ov_name, ov_root, geometry, bounds, cfg_obs, workers=workers)
         ood_loader = DataLoader(
             ood_items,
             batch_size=64,
@@ -1477,9 +1496,891 @@ def aggregate_stage1_results(out_dir: Path) -> dict[str, Any]:
     return agg
 
 
+STAGE1_STRESS_SPECS: tuple[tuple[str, dict[str, Any], dict[str, Any]], ...] = (
+    ('nominal', {}, {}),
+    ('pixel_dead_2pct', {'pixel_dead': 0.02}, {}),
+    ('pixel_dead_5pct', {'pixel_dead': 0.05}, {}),
+    ('pixel_dark_1e-5', {'pixel_dark_rate': 1e-5}, {}),
+    ('tracker_dead_2pct_noise1', {'tracker_dead': 0.02, 'tracker_noise_per_station': 1.0}, {}),
+    ('tracker_dead_5pct_noise2', {'tracker_dead': 0.05, 'tracker_noise_per_station': 2.0}, {}),
+    ('sipm_sat_cap_0p95', {}, {'sipm_invert_max_occupancy': 0.95, 'sipm_sat_cap': 0.95}),
+)
+
+
+def _eval_stage1_stress_400(
+    model: TauKinemaDiffNet,
+    val_keys_400: pd.DataFrame,
+    geometry: dict,
+    bounds: dict,
+    device: torch.device,
+    workers: int = 4,
+) -> dict[str, Any]:
+    """Evaluate 7 detector-degradation stress perturbations on first 400 internal_val_eval events."""
+    assert_unsealed_split('internal_val', stage=1)
+    by_shard: dict[int, list[tuple[int, int, int]]] = {}
+    for idx_pos, row in enumerate(val_keys_400.itertuples(index=False)):
+        by_shard.setdefault(int(row.chunk), []).append((idx_pos, int(row.run), int(row.row)))
+    raw_obs_400: list[dict | None] = [None] * len(val_keys_400)
+    labels_400 = val_keys_400['label'].to_numpy(dtype=np.int64)
+    for chunk_id, entries in by_shard.items():
+        shard_p = DEFAULT_CLEAN_ROOT / 'data/shards' / f'{chunk_id:03d}'
+        prov = pd.read_parquet(shard_p / 'provenance.parquet', columns=KEY)
+        obs_tbl = pq.read_table(shard_p / 'observations.parquet').to_pylist()
+        pos_map = {(int(r), int(c), int(rw)): i for i, (r, c, rw) in enumerate(zip(prov['run'], prov['chunk'], prov['row']))}
+        for idx_pos, r, rw in entries:
+            raw_obs_400[idx_pos] = obs_tbl[pos_map[(r, chunk_id, rw)]]
+
+    base_cfg = _base_obs_config()
+    out_stress: dict[str, Any] = {}
+    nom_probs: np.ndarray | None = None
+    nom_ba4 = 0.0
+    for st_name, pkw, cfg_over in STAGE1_STRESS_SPECS:
+        rng_st = np.random.default_rng(32510)
+        cfg_use = {**base_cfg, **cfg_over}
+        pert_obs = [
+            (_perturb_observation_for_stress(ob, bounds, rng_st, **pkw) if pkw else ob)
+            for ob in raw_obs_400
+            if ob is not None
+        ]
+        if workers > 1 and len(pert_obs) >= 100:
+            chunk = max(50, len(pert_obs) // workers)
+            tasks = [(pert_obs[i:i + chunk], i, geometry, bounds, cfg_use) for i in range(0, len(pert_obs), chunk)]
+            with ProcessPoolExecutor(max_workers=min(workers, len(tasks)), mp_context=mp.get_context('spawn')) as pool:
+                parts = list(pool.map(_extract_ood_chunk_worker, tasks))
+            items = [it for p in parts for it in p]
+        else:
+            items = _extract_ood_chunk_worker((pert_obs, 0, geometry, bounds, cfg_use))
+        loader = DataLoader(
+            items,
+            batch_size=64,
+            shuffle=False,
+            num_workers=0,
+            collate_fn=_TauKinemaCollator(bounds['y_scint_center'], bounds['n_bars']),
+        )
+        pred = _predict_loader_fp32(model, loader, device)
+        pr = pred['probs4']
+        m = _ba4_and_nll(labels_400, pr)
+        if st_name == 'nominal':
+            nom_probs = pr
+            nom_ba4 = m['BA4']
+            tv = 0.0
+        else:
+            assert nom_probs is not None
+            tv = float((0.5 * np.abs(pr - nom_probs).sum(axis=1)).mean())
+        out_stress[st_name] = {
+            **m,
+            'delta_BA4_vs_nominal_pp': float((m['BA4'] - nom_ba4) * 100.0),
+            'mean_TV_vs_nominal': tv,
+        }
+    return out_stress
+
+
+def eval_n2_stage1(
+    out_dir: Path,
+    run_name: str = 's1_tau_kinema_diffnet_n2fix',
+    *,
+    workers: int = 4,
+) -> dict[str, Any]:
+    """Evaluate Stage-I N2 fix vs Round-2 d0400dfd and Stage-I B+D+F_n2fix 3-way blend."""
+    run_dir = out_dir / run_name
+    val_keys = pd.read_parquet(SPLITS_DIR / 'internal_val_eval_keys.parquet')
+    labels = val_keys['label'].to_numpy(dtype=np.int64)
+    obs_dom = val_keys['obs_domain_id'].to_numpy(dtype=np.int64)
+    reg_id = val_keys['region_id'].to_numpy(dtype=np.int64)
+    fams = pd.MultiIndex.from_frame(val_keys[FAMILY]).factorize()[0]
+
+    sc_df = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet')
+    sc_pos = pd.MultiIndex.from_frame(sc_df[KEY]).get_indexer(pd.MultiIndex.from_frame(val_keys[KEY]))
+    assert (sc_pos >= 0).all()
+    sc_val = sc_df.iloc[sc_pos].reset_index(drop=True)
+    v_true = np.column_stack([
+        sc_val['vertex_x_mm'].to_numpy(np.float64),
+        sc_val['vertex_y_mm'].to_numpy(np.float64),
+        sc_val['vertex_z_mm'].to_numpy(np.float64),
+    ])
+    v_valid = sc_val['vertex_valid'].to_numpy(dtype=int) > 0
+
+    pc_mask = (reg_id == 0) | (reg_id == 1)
+    slices_map = {
+        'All': np.ones(len(labels), dtype=bool),
+        'D1_pix_contained': obs_dom == 1,
+        'D2_scint_contained': obs_dom == 2,
+        'D3_partial_or_edge': obs_dom == 3,
+        'Pinpoint_Front_Interm': pc_mask,
+        'FrontPinpoint_30mm': reg_id == 0,
+        'IntermPinpoint_150mm': reg_id == 1,
+        'Pinpoint_OuterW': reg_id == 2,
+        'Fortune_ScintOnly': reg_id == 3,
+    }
+
+    p_f_n2 = np.load(run_dir / 'probs_internal_val_eval.npy').astype(np.float64)
+    v_pv_n2 = np.load(run_dir / 'v_pv_internal_val_eval.npy').astype(np.float64)
+    s_pv_n2 = np.load(run_dir / 'scale_pv_internal_val_eval.npy').astype(np.float64)
+    run_sum = json.loads((run_dir / 'run_summary.json').read_text())
+
+    # Evaluate Stage-I 400-event Stress perturbations if not already saved
+    stress_path = run_dir / 'stress_400_internal_val.json'
+    if stress_path.is_file():
+        stress_eval = json.loads(stress_path.read_text())
+    else:
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        geometry = json.loads((DEFAULT_CLEAN_ROOT / 'geometry.json').read_text())
+        bounds = detector_bounds(geometry)
+        ck = torch.load(run_dir / 'best.pt', map_location=device, weights_only=False)
+        model = TauKinemaDiffNet(geometry, ck['config']).to(device)
+        model.load_state_dict(ck['model'])
+        model.eval()
+        stress_eval = _eval_stage1_stress_400(model, val_keys.iloc[:400].reset_index(drop=True), geometry, bounds, device, workers=workers)
+        write_json(stress_path, stress_eval)
+
+    # PV metrics & all Student-t pulls
+    pv_metrics: dict[str, Any] = {}
+    all_pulls_ok = True
+    for pname, pmask in (
+        ('All', v_valid),
+        ('D1_pix_contained', v_valid & (obs_dom == 1)),
+        ('D2_scint_contained', v_valid & (obs_dom == 2)),
+        ('FrontPinpoint_30mm', v_valid & (reg_id == 0)),
+        ('IntermPinpoint_150mm', v_valid & (reg_id == 1)),
+    ):
+        err = v_pv_n2[pmask] - v_true[pmask]
+        r3 = np.sqrt((err ** 2).sum(axis=-1))
+        pulls = compute_student_t_pulls(
+            torch.from_numpy(v_pv_n2[pmask]),
+            torch.from_numpy(s_pv_n2[pmask]),
+            torch.from_numpy(v_true[pmask]),
+            torch.ones(int(pmask.sum()), dtype=torch.long),
+            df=3.0,
+        )
+        p68 = pulls['p68_abs_pull']
+        if pname in ('All', 'FrontPinpoint_30mm', 'IntermPinpoint_150mm'):
+            if not all(0.85 <= float(x) <= 1.15 for x in p68):
+                all_pulls_ok = False
+        pv_metrics[pname] = {
+            'count': int(pmask.sum()),
+            'median_abs_dx_mm': float(np.median(np.abs(err[:, 0]))),
+            'median_abs_dy_mm': float(np.median(np.abs(err[:, 1]))),
+            'median_abs_dz_mm': float(np.median(np.abs(err[:, 2]))),
+            'median_3d_mm': float(np.median(r3)),
+            'p68_abs_pull_xyz': p68,
+            'median_sigma_mm_xyz': pulls['median_sigma_mm'],
+        }
+
+    interm_dz = float(pv_metrics['IntermPinpoint_150mm']['median_abs_dz_mm'])
+    gate_af_pass = bool(
+        interm_dz <= 6.0
+        and all_pulls_ok
+        and float(run_sum.get('truth_invariance_val_max_diff', 1.0)) == 0.0
+    )
+
+    # Load frozen Stage-I B, D, and Round-2 F (d0400dfd)
+    nextgen_root = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/nextgen_research')
+    p_b = np.load(nextgen_root / 'exp_tracklet_ipformer/s1_tracklet_ipformer/probs_internal_val_eval.npy').astype(np.float64)
+    p_d = np.load(nextgen_root / 'exp_dual_regime/s1_dual_regime_modalnet/probs_internal_val_eval.npy').astype(np.float64)
+    p_f_r2 = np.load(nextgen_root / 'exp_tau_kinema/s1_tau_kinema_diffnet/probs_internal_val_eval.npy').astype(np.float64)
+
+    p_bd = 0.5 * (p_b + p_d)
+    p_bdf_r2 = (p_b + p_d + p_f_r2) / 3.0
+    p_bdf_n2 = (p_b + p_d + p_f_n2) / 3.0
+
+    models_cmp = {
+        'F_n2fix': p_f_n2,
+        'F_r2_d0400dfd': p_f_r2,
+        'B_tracklet': p_b,
+        'D_dual_regime': p_d,
+        'Blend_BD': p_bd,
+        'Blend_BDF_r2': p_bdf_r2,
+        'Blend_BDF_n2fix': p_bdf_n2,
+    }
+
+    metrics_by_model: dict[str, Any] = {}
+    for mname, mp_arr in models_cmp.items():
+        metrics_by_model[mname] = {
+            'slices': {sn: _ba4_and_nll(labels[mk], mp_arr[mk]) for sn, mk in slices_map.items()},
+            'within_slice_1pct_fpr': {
+                sn: _tau_efficiency_at_fpr(mp_arr[mk, 2], labels[mk], 0.01)
+                for sn, mk in (('All', slices_map['All']), ('D1', slices_map['D1_pix_contained']), ('Pinpoint', pc_mask), ('Front30', slices_map['FrontPinpoint_30mm']), ('Interm150', slices_map['IntermPinpoint_150mm']))
+            },
+            'split_half_1pct_fpr': {
+                sn: _split_half_tail_eval(mp_arr[:, 2], labels, val_keys, mk, fpr_targets=(0.01, 0.001))
+                for sn, mk in (('All', slices_map['All']), ('D1', slices_map['D1_pix_contained']), ('Pinpoint', pc_mask))
+            },
+        }
+
+    # W184 NC Charm blend check
+    w184_b = np.load(nextgen_root / 'exp_tracklet_ipformer/s1_tracklet_ipformer/probs_ood_w184_epps21_nc_charm.npy').astype(np.float64)
+    w184_d = np.load(nextgen_root / 'exp_dual_regime/s1_dual_regime_modalnet/ood_and_stress_probs.npz')['ood_gen_ood_w184_epps21_nc_charm'].astype(np.float64)
+    w184_f_r2 = np.load(nextgen_root / 'exp_tau_kinema/s1_tau_kinema_diffnet/probs_gen_ood_w184_epps21_nc_charm.npy').astype(np.float64)
+    w184_f_n2 = np.load(run_dir / 'probs_gen_ood_w184_epps21_nc_charm.npy').astype(np.float64)
+    w184_summary = {}
+    for wnm, warr in (
+        ('F_n2fix', w184_f_n2),
+        ('F_r2_d0400dfd', w184_f_r2),
+        ('Blend_BD', 0.5 * (w184_b + w184_d)),
+        ('Blend_BDF_r2', (w184_b + w184_d + w184_f_r2) / 3.0),
+        ('Blend_BDF_n2fix', (w184_b + w184_d + w184_f_n2) / 3.0),
+    ):
+        w184_summary[wnm] = {
+            'n_events': int(len(warr)),
+            'p_tau_gt_0p5': float((warr[:, 2] > 0.5).mean()),
+            'argmax_tau': float((warr.argmax(1) == 2).mean()),
+            'mean_p_tau': float(warr[:, 2].mean()),
+        }
+
+    boot_pairs = (
+        ('F_n2fix', 'F_r2_d0400dfd'),
+        ('Blend_BDF_n2fix', 'Blend_BDF_r2'),
+        ('Blend_BDF_n2fix', 'Blend_BD'),
+        ('Blend_BDF_n2fix', 'B_tracklet'),
+    )
+    paired_boot: dict[str, Any] = {}
+    for a_nm, b_nm in boot_pairs:
+        pa, pb = models_cmp[a_nm], models_cmp[b_nm]
+        paired_boot[f'{a_nm} - {b_nm}'] = {
+            sn: _paired_family_bootstrap_delta(pa[:, 2], pb[:, 2], pa, pb, labels, fams, mk, n_boot=1000, seed=20263250)
+            for sn, mk in (
+                ('All', slices_map['All']),
+                ('D1_pix_contained', slices_map['D1_pix_contained']),
+                ('FrontPinpoint_30mm', slices_map['FrontPinpoint_30mm']),
+                ('IntermPinpoint_150mm', slices_map['IntermPinpoint_150mm']),
+                ('Pinpoint_Front_Interm', pc_mask),
+            )
+        }
+
+    rep = {
+        'UTC': datetime.now(timezone.utc).isoformat(),
+        'run_name': run_name,
+        'gate_af_passed': gate_af_pass,
+        'interm150_median_abs_dz_mm': interm_dz,
+        'all_9_pulls_in_085_115': all_pulls_ok,
+        'run_summary': run_sum,
+        'pv_metrics': pv_metrics,
+        'stress_400_internal_val': stress_eval,
+        'models_internal_val_eval': metrics_by_model,
+        'w184_nc_charm': w184_summary,
+        'paired_family_bootstrap_seed20263250_n1000': paired_boot,
+    }
+    write_json(out_dir / 'stage1_n2_evaluation.json', rep)
+    return rep
+
+
+# ===========================================================================
+# Stage-II Frozen Confirmation (Train32k x 3 seeds {17, 42, 2026} -> Tune6k)
+# ===========================================================================
+STAGE2_SEEDS = (17, 42, 2026)
+_CFG_S2_BASE: dict[str, Any] = {
+    'pe_only': True,
+    'bar_threshold_pe': 2.5,
+    'sipm_npix': 14400.0,
+    'apply_sipm_saturation': False,
+    'invert_sipm_saturation': True,
+}
+STAGE2_OOD_SPECS: tuple[tuple[str, Path], ...] = (
+    ('gen_ood_w184_epps21_nc_charm', STAGE325_ROOT / 'ood_shards/gen_ood_w184_epps21_nc_charm'),
+    ('gen_ood_w184_epps21_nc_incl', STAGE325_ROOT / 'ood_shards/gen_ood_w184_epps21_nc_incl'),
+    ('gen_ood_run10085_10088', DEFAULT_CLEAN_ROOT / 'ood_shards/gen_ood_run10085_10088'),
+    ('gen_ood_pythia6_std', DEFAULT_CLEAN_ROOT / 'ood_shards/gen_ood_pythia6_std'),
+    ('gen_ood_pythia6_nux', DEFAULT_CLEAN_ROOT / 'ood_shards/gen_ood_pythia6_nux'),
+    ('diag_pythia8_free_nucleon_nc_charm', DEFAULT_CLEAN_ROOT / 'ood_shards/diag_pythia8_free_nucleon_nc_charm'),
+)
+STAGE2_STRESS_SPECS: tuple[tuple[str, dict[str, Any], dict[str, Any]], ...] = (
+    ('nominal', {}, dict(_CFG_S2_BASE)),
+    ('pixel_dead_2pct', {'pixel_dead': 0.02}, dict(_CFG_S2_BASE)),
+    ('pixel_dead_5pct', {'pixel_dead': 0.05}, dict(_CFG_S2_BASE)),
+    ('pixel_dark_1e-5', {'pixel_dark_rate': 1e-5}, dict(_CFG_S2_BASE)),
+    ('tracker_dead_2pct_noise1', {'tracker_dead': 0.02, 'tracker_noise_per_station': 1.0}, dict(_CFG_S2_BASE)),
+    ('tracker_dead_5pct_noise2', {'tracker_dead': 0.05, 'tracker_noise_per_station': 2.0}, dict(_CFG_S2_BASE)),
+    ('sipm_sat_cap_0p95', {}, {**_CFG_S2_BASE, 'sipm_invert_max_occupancy': 0.95, 'sipm_sat_cap': 0.95}),
+)
+
+
+class _S2MappedDataset(Dataset):
+    def __init__(self, items_dir: Path, sidecar_df: pd.DataFrame | None = None) -> None:
+        self.items = MappedItems(items_dir)
+        self.sidecar_df = sidecar_df
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __getitem__(self, idx: int) -> dict:
+        it = self.items[int(idx)]
+        if self.sidecar_df is not None:
+            row = self.sidecar_df.iloc[int(idx)]
+            it['label_7'] = int(row['label_7'])
+            it['tau_branch_valid'] = int(row['tau_branch_valid'])
+            it['charm_flag'] = int(row['charm_flag'])
+            it['charm_valid'] = int(row['charm_valid'])
+            it['vertex_xyz_mm'] = np.array([row['vertex_x_mm'], row['vertex_y_mm'], row['vertex_z_mm']], dtype=np.float32)
+            it['vertex_valid'] = int(row['vertex_valid'])
+            it['vis_kinematics'] = np.array([row['vis_pz_log1p'], row['vis_pt_log1p'], row['vis_cos_dphi'], row['vis_sin_dphi']], dtype=np.float32)
+            it['kin_valid'] = int(row['kin_valid'])
+        return it
+
+
+def _s2_extract_shard_worker(task: tuple) -> list[tuple[tuple[int, int, int], int, int, dict]]:
+    shard_str, geom, bounds, cfg, expected_split, attach_label = task
+    sp = Path(shard_str)
+    prov = pq.read_table(sp / 'provenance.parquet').to_pydict()
+    obs_list = pq.read_table(sp / 'observations.parquet').to_pylist()
+    tgt_list = pq.read_table(sp / 'targets.parquet').to_pylist() if attach_label else None
+    extractor = _TauKinemaItemExtractor(geom, bounds, cfg)
+    rows: list[tuple[tuple[int, int, int], int, int, dict]] = []
+    for i, (r, c, rw, sp_name, plbl) in enumerate(zip(prov['run'], prov['chunk'], prov['row'], prov['split'], prov['label'])):
+        if sp_name != expected_split:
+            continue
+        ob = obs_list[i]
+        lbl = int(tgt_list[i]['label']) if tgt_list is not None else 0
+        dom = compute_observable_containment(ob, geom, bounds, config=cfg)
+        it = extractor(len(rows), ob, lbl if attach_label else None, dom, geom, bounds, cfg)
+        rows.append(((int(r), int(c), int(rw)), int(plbl), int(lbl), it))
+    return rows
+
+
+def s2_prepare_cache_part(s2_cache: Path, tag: str, part: int, n_parts: int, workers: int = 8) -> dict[str, Any]:
+    if tag not in ('train32k', 'tune8k'):
+        raise ValueError(f'Unknown Stage-II cache tag {tag!r}')
+    tag_dir = s2_cache / tag
+    if (tag_dir / 'READY.json').is_file():
+        return json.loads((tag_dir / 'READY.json').read_text())
+    parts_dir = tag_dir / '_parts'
+    parts_dir.mkdir(parents=True, exist_ok=True)
+    part_file = parts_dir / f'part_{part:02d}_of_{n_parts:02d}.pkl'
+    if part_file.is_file():
+        return {'tag': tag, 'part': part, 'status': 'cached'}
+
+    split_req = 'train' if tag == 'train32k' else 'validation'
+    assert_unsealed_split(split_req, stage=2)
+    shards = load_authorized_split_shards(DEFAULT_CLEAN_ROOT / 'data', split_req, stage=2)
+    my_shards = shards[part::n_parts]
+    geometry = json.loads((DEFAULT_CLEAN_ROOT / 'geometry.json').read_text())
+    bounds = detector_bounds(geometry)
+    cfg = _base_obs_config()
+    scratch_base = '/dev/shm' if shutil.disk_usage('/dev/shm').free >= 6 * (1024 ** 3) else os.environ.get('_CONDOR_SCRATCH_DIR', '/tmp')
+    t0 = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix=f'tk-s2-{tag}-p{part}-', dir=scratch_base) as tmp_str:
+        local_root = Path(tmp_str) / 'native'
+        local_root.mkdir(parents=True, exist_ok=True)
+
+        def _copy_shard(sp: Path) -> Path:
+            dst = local_root / sp.name
+            dst.mkdir(parents=True, exist_ok=True)
+            fnames = ('observations.parquet', 'provenance.parquet', 'targets.parquet') if tag == 'train32k' else ('observations.parquet', 'provenance.parquet')
+            for fn in fnames:
+                shutil.copyfile(sp / fn, dst / fn)
+            return dst
+
+        with ThreadPoolExecutor(max_workers=min(8, max(1, workers))) as pool:
+            local_shards = list(pool.map(_copy_shard, my_shards))
+        tasks = [(str(sp), geometry, bounds, cfg, split_req, tag == 'train32k') for sp in local_shards]
+        with ProcessPoolExecutor(max_workers=workers, mp_context=mp.get_context('spawn')) as pool:
+            shard_rows = list(pool.map(_s2_extract_shard_worker, tasks))
+    rows = [row for sr in shard_rows for row in sr]
+    tmp_out = parts_dir / f'.tmp_part_{part:02d}_of_{n_parts:02d}.pkl'
+    with tmp_out.open('wb') as f:
+        pickle.dump(rows, f, protocol=pickle.HIGHEST_PROTOCOL)
+    os.replace(tmp_out, part_file)
+    return {'tag': tag, 'part': part, 'n_parts': n_parts, 'events': len(rows), 'seconds': float(time.perf_counter() - t0)}
+
+
+def s2_merge_cache_tag(s2_cache: Path, tag: str, n_parts: int) -> dict[str, Any]:
+    tag_dir = s2_cache / tag
+    if (tag_dir / 'READY.json').is_file():
+        return json.loads((tag_dir / 'READY.json').read_text())
+    parts_dir = tag_dir / '_parts'
+    t0 = time.perf_counter()
+    rows: list[tuple[tuple[int, int, int], int, int, dict]] = []
+    for p in range(n_parts):
+        with (parts_dir / f'part_{p:02d}_of_{n_parts:02d}.pkl').open('rb') as f:
+            rows.extend(pickle.load(f))
+    rows.sort(key=lambda x: x[0])
+    ordered_items, key_recs = [], []
+    for idx_row, (k, plbl, tlbl, it) in enumerate(rows):
+        it['index'] = int(idx_row)
+        ordered_items.append(it)
+        key_recs.append({'run': k[0], 'chunk': k[1], 'row': k[2], 'prov_label': plbl, 'tgt_label': tlbl})
+    out_dir = tag_dir / f'mapped_{tag}'
+    if out_dir.exists():
+        shutil.rmtree(out_dir, ignore_errors=True)
+    write_mapped_items([ordered_items[i:i + 64] for i in range(0, len(ordered_items), 64)], out_dir)
+    key_df = pd.DataFrame(key_recs)
+    if tag == 'tune8k':
+        scr_df = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'data/tune_screen.parquet', columns=KEY)
+        key_df['is_screen'] = pd.MultiIndex.from_frame(key_df[KEY]).isin(pd.MultiIndex.from_frame(scr_df[KEY]))
+    key_df.to_parquet(tag_dir / f'{tag}_keys.parquet', index=False, compression=COMPRESSION)
+    rep = {'tag': tag, 'n_parts': n_parts, 'events': len(ordered_items), 'merge_seconds': float(time.perf_counter() - t0)}
+    write_json(tag_dir / 'READY.json', rep)
+    shutil.rmtree(parts_dir, ignore_errors=True)
+    return rep
+
+
+def _s2_aux_ood_worker(task: tuple) -> tuple[str, int]:
+    oname, ood_root_str, geom, bounds, cfg, out_dir_str = task
+    obs_list = pq.read_table(Path(ood_root_str) / 'shards/000/observations.parquet').to_pylist()
+    ext = _TauKinemaItemExtractor(geom, bounds, cfg)
+    items = [ext(i, ob, None, compute_observable_containment(ob, geom, bounds, config=cfg), geom, bounds, cfg) for i, ob in enumerate(obs_list)]
+    out_dir = Path(out_dir_str)
+    if out_dir.exists():
+        shutil.rmtree(out_dir, ignore_errors=True)
+    write_mapped_items([items[j:j + 64] for j in range(0, len(items), 64)], out_dir)
+    return oname, len(items)
+
+
+def _s2_aux_stress_worker(task: tuple) -> tuple[str, int]:
+    st_name, pkw, c_over, obs_list, geom, bounds, cfg, out_dir_str = task
+    rng_st = np.random.default_rng(32510)
+    c_use = {**cfg, **c_over}
+    ext = _TauKinemaItemExtractor(geom, bounds, c_use)
+    items = []
+    for i, ob in enumerate(obs_list):
+        ob_p = _perturb_observation_for_stress(ob, bounds, rng_st, **pkw) if pkw else ob
+        items.append(ext(i, ob_p, None, compute_observable_containment(ob_p, geom, bounds, config=c_use), geom, bounds, c_use))
+    out_dir = Path(out_dir_str)
+    if out_dir.exists():
+        shutil.rmtree(out_dir, ignore_errors=True)
+    write_mapped_items([items[j:j + 64] for j in range(0, len(items), 64)], out_dir)
+    return st_name, len(items)
+
+
+def s2_prepare_aux_cache(s2_cache: Path, kind: str, workers: int = 8) -> dict[str, Any]:
+    aux_dir = s2_cache / f'aux_{kind}'
+    if (aux_dir / 'READY.json').is_file():
+        return json.loads((aux_dir / 'READY.json').read_text())
+    aux_dir.mkdir(parents=True, exist_ok=True)
+    geometry = json.loads((DEFAULT_CLEAN_ROOT / 'geometry.json').read_text())
+    bounds = detector_bounds(geometry)
+    cfg = _base_obs_config()
+    t0 = time.perf_counter()
+    if kind == 'ood':
+        tasks = [(oname, str(oroot), geometry, bounds, cfg, str(aux_dir / oname)) for oname, oroot in STAGE2_OOD_SPECS]
+        with ProcessPoolExecutor(max_workers=min(workers, len(tasks)), mp_context=mp.get_context('spawn')) as pool:
+            done = list(pool.map(_s2_aux_ood_worker, tasks))
+    else:
+        assert_unsealed_split('validation', stage=2)
+        sh80 = load_authorized_split_shards(DEFAULT_CLEAN_ROOT / 'data', 'validation', stage=2)[0]
+        obs80 = pq.read_table(sh80 / 'observations.parquet').to_pylist()
+        tasks = [(st_name, pkw, c_over, obs80, geometry, bounds, cfg, str(aux_dir / st_name)) for st_name, pkw, c_over in STAGE2_STRESS_SPECS]
+        with ProcessPoolExecutor(max_workers=min(workers, len(tasks)), mp_context=mp.get_context('spawn')) as pool:
+            done = list(pool.map(_s2_aux_stress_worker, tasks))
+    rep = {'kind': kind, 'entries': dict(done), 'seconds': float(time.perf_counter() - t0)}
+    write_json(aux_dir / 'READY.json', rep)
+    return rep
+
+
+def run_stage2_seed(
+    out_dir: Path,
+    seed: int,
+    *,
+    passes: int = 20,
+    batch_size: int = 128,
+    micro_bs: int = 64,
+    workers: int = 4,
+    resume: bool = False,
+) -> dict[str, Any]:
+    s2_root = out_dir / 'stage2'
+    s2_cache = s2_root / '_cache'
+    seed_dir = s2_root / f'seed_{seed}'
+    seed_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = seed_dir / 'manifest.json'
+    if resume and manifest_path.is_file():
+        man = json.loads(manifest_path.read_text())
+        if man.get('status') == 'complete':
+            return man
+
+    for req in ('train32k', 'tune8k', 'aux_ood', 'aux_stress'):
+        if not (s2_cache / req / 'READY.json').is_file():
+            raise FileNotFoundError(f'Missing Stage-II cache {s2_cache / req / "READY.json"}')
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    cap = torch.cuda.get_device_capability(device) if device.type == 'cuda' else (0, 0)
+    torch.manual_seed(int(seed))
+    np.random.seed(int(seed))
+    geometry = json.loads((DEFAULT_CLEAN_ROOT / 'geometry.json').read_text())
+    bounds = detector_bounds(geometry)
+
+    t_start = time.perf_counter()
+    utc_started = datetime.now(timezone.utc).isoformat()
+    shm_free = shutil.disk_usage('/dev/shm').free if Path('/dev/shm').exists() else 0
+    scratch_base = '/dev/shm' if shm_free >= 6 * (1024 ** 3) else os.environ.get('PINPOINT_V3_SCRATCH', '/tmp')
+    Path(scratch_base).mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(prefix=f'tk-s2-s{seed}-', dir=scratch_base) as tmp_str:
+        tmp_dir = Path(tmp_str)
+        tr_dir = tmp_dir / 'mapped_train32k'
+        tu_dir = tmp_dir / 'mapped_tune8k'
+        shutil.copytree(s2_cache / 'train32k/mapped_train32k', tr_dir)
+        shutil.copytree(s2_cache / 'tune8k/mapped_tune8k', tu_dir)
+
+        tr_keys = pd.read_parquet(s2_cache / 'train32k/train32k_keys.parquet')
+        tu_keys = pd.read_parquet(s2_cache / 'tune8k/tune8k_keys.parquet')
+        sc_all = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet')
+        pos_sc = pd.MultiIndex.from_frame(sc_all[KEY]).get_indexer(pd.MultiIndex.from_frame(tr_keys[KEY]))
+        assert (pos_sc >= 0).all()
+        tr_sidecar = sc_all.iloc[pos_sc].reset_index(drop=True)
+
+        train_ds = _S2MappedDataset(tr_dir, sidecar_df=tr_sidecar)
+        scr_mask = tu_keys['is_screen'].to_numpy(dtype=bool)
+        scr_idx = np.flatnonzero(scr_mask)
+        y_scr = tu_keys['prov_label'].to_numpy(dtype=np.int64)[scr_idx]
+
+        class _IndexedSubset(Dataset):
+            def __init__(self, base: Dataset, indices: np.ndarray) -> None:
+                self.base = base
+                self.indices = indices
+
+            def __len__(self) -> int:
+                return len(self.indices)
+
+            def __getitem__(self, i: int) -> dict:
+                return self.base[int(self.indices[i])]
+
+        tune8k_ds = _S2MappedDataset(tu_dir)
+        scr_ds = _IndexedSubset(tune8k_ds, scr_idx)
+
+        model_cfg = {
+            'dim': 168,
+            'heads': 8,
+            'n_global_layers': 2,
+            'n_queries': 12,
+            'drop_path': 0.10,
+            'head_dropout': 0.15,
+            'ablation': 'full',
+        }
+        model = TauKinemaDiffNet(geometry, model_cfg).to(device)
+        ema_model = copy.deepcopy(model).eval()
+        for p in ema_model.parameters():
+            p.requires_grad_(False)
+
+        grad_accum = max(1, batch_size // micro_bs)
+        opt = torch.optim.AdamW(model.build_param_groups(8.0e-4, 0.03), lr=8.0e-4, weight_decay=0.03, betas=(0.9, 0.98))
+        steps_per_pass = math.ceil(len(train_ds) / batch_size)
+        total_steps = passes * steps_per_pass
+        warmup_steps = max(1, int(0.06 * total_steps))
+        min_lr_ratio = 1.0e-5 / 8.0e-4
+
+        def _lr_lambda(step: int) -> float:
+            if step < warmup_steps:
+                return float(step + 1) / float(warmup_steps)
+            prog = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+            return min_lr_ratio + 0.5 * (1.0 - min_lr_ratio) * (1.0 + math.cos(math.pi * min(1.0, prog)))
+
+        scheduler = torch.optim.lr_scheduler.LambdaLR(opt, _lr_lambda)
+        amp_dtype = torch.bfloat16 if cap[0] >= 8 else torch.float16
+        amp_ok = cap[0] >= 7
+        use_fp16_scaler = amp_ok and (amp_dtype == torch.float16)
+        scaler = torch.amp.GradScaler('cuda', enabled=use_fp16_scaler)
+
+        loader_workers = min(4, max(1, workers // 2))
+        scr_loader = _make_loader(scr_ds, batch_size=max(64, micro_bs), shuffle=False, workers=loader_workers, seed=seed, y_scint_center=bounds['y_scint_center'], n_bars=bounds['n_bars'])
+        tune8k_loader = _make_loader(tune8k_ds, batch_size=max(64, micro_bs), shuffle=False, workers=loader_workers, seed=seed, y_scint_center=bounds['y_scint_center'], n_bars=bounds['n_bars'])
+
+        best_nll = float('inf')
+        best_pass = 0
+        global_step = 0
+        history: list[dict[str, Any]] = []
+        best_pt = seed_dir / 'best.pt'
+        ema_pt = seed_dir / 'ema.pt'
+        resume_pt = seed_dir / 'resume.pt'
+        start_pass = 1
+        if resume and resume_pt.is_file():
+            st = torch.load(resume_pt, map_location=device, weights_only=False)
+            model.load_state_dict(st['model'])
+            ema_model.load_state_dict(st['ema'])
+            opt.load_state_dict(st['opt'])
+            scheduler.load_state_dict(st['scheduler'])
+            best_nll = float(st['best_nll'])
+            best_pass = int(st['best_pass'])
+            global_step = int(st['global_step'])
+            history = list(st['history'])
+            start_pass = int(st['pass']) + 1
+
+        try:
+            torch.cuda.reset_peak_memory_stats(device)
+            for p_idx in range(start_pass, passes + 1):
+                tp0 = time.perf_counter()
+                tr_loader = _make_loader(train_ds, batch_size=micro_bs, shuffle=True, workers=loader_workers, seed=int(seed) * 1000 + p_idx, y_scint_center=bounds['y_scint_center'], n_bars=bounds['n_bars'], mirror=True)
+                model.train()
+                loss_sum = 0.0
+                n_seen = 0
+
+                def _run_win(win_buf: list[dict]) -> None:
+                    nonlocal global_step, loss_sum, n_seen
+                    global_step += 1
+                    opt.zero_grad(set_to_none=True)
+                    denoms = compute_tau_kinema_window_denoms(win_buf)
+                    tot_b = sum(len(mb['label']) for mb in win_buf)
+                    win_l = 0.0
+                    for mb in win_buf:
+                        db = move_batch_to_device(mb, device)
+                        with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                            out = model.forward_NextGen(db)
+                            loss, _ = compute_tau_kinema_loss(model, out, db, fixed_denoms=denoms)
+                        if use_fp16_scaler:
+                            scaler.scale(loss).backward()
+                        else:
+                            loss.backward()
+                        win_l += float(loss.detach().item())
+                    if use_fp16_scaler:
+                        scaler.unscale_(opt)
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                        scaler.step(opt)
+                        scaler.update()
+                    else:
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                        opt.step()
+                    scheduler.step()
+                    eff_ema = min(0.999, (1.0 + global_step) / (10.0 + global_step))
+                    _update_ema(ema_model, model, eff_ema)
+                    loss_sum += win_l * tot_b
+                    n_seen += tot_b
+
+                try:
+                    mb_buf: list[dict] = []
+                    for batch in tr_loader:
+                        mb_buf.append(batch)
+                        if len(mb_buf) >= grad_accum:
+                            _run_win(mb_buf)
+                            mb_buf.clear()
+                    if mb_buf:
+                        _run_win(mb_buf)
+                        mb_buf.clear()
+                finally:
+                    shutdown_loader(tr_loader)
+
+                pass_sec = time.perf_counter() - tp0
+                row_log: dict[str, Any] = {'pass': p_idx, 'step': global_step, 'lr': float(scheduler.get_last_lr()[0]), 'train_loss': float(loss_sum / max(n_seen, 1)), 'seconds': float(pass_sec)}
+                if p_idx == 1 or p_idx % 2 == 0 or p_idx == passes:
+                    scr_pred = _predict_loader_fp32(ema_model, scr_loader, device)
+                    m_scr = _ba4_and_nll(y_scr, scr_pred['probs4'])
+                    row_log.update({'tune_screen_nll': m_scr['NLL'], 'tune_screen_ba4': m_scr['BA4']})
+                    if m_scr['NLL'] < best_nll:
+                        best_nll = m_scr['NLL']
+                        best_pass = p_idx
+                        loc_b = tmp_dir / 'best.local.pt'
+                        torch.save({'model': ema_model.state_dict(), 'pass': p_idx, 'config': model_cfg}, loc_b)
+                        shutil.copyfile(loc_b, best_pt)
+                        loc_b.unlink(missing_ok=True)
+                    print(f"[stage2 n2 s{seed}] pass={p_idx}/{passes} step={global_step} tr_loss={row_log['train_loss']:.4f} scr_nll={m_scr['NLL']:.4f} scr_ba4={m_scr['BA4']*100:.2f}% ({pass_sec:.1f}s)", flush=True)
+                history.append(row_log)
+                if p_idx % 5 == 0 or p_idx == passes:
+                    loc_r = tmp_dir / 'resume.local.pt'
+                    torch.save({'pass': p_idx, 'global_step': global_step, 'model': model.state_dict(), 'ema': ema_model.state_dict(), 'opt': opt.state_dict(), 'scheduler': scheduler.state_dict(), 'best_nll': best_nll, 'best_pass': best_pass, 'history': history}, loc_r)
+                    shutil.copyfile(loc_r, resume_pt)
+                    loc_r.unlink(missing_ok=True)
+
+            loc_e = tmp_dir / 'ema.local.pt'
+            torch.save({'model': ema_model.state_dict(), 'pass': passes, 'config': model_cfg}, loc_e)
+            shutil.copyfile(loc_e, ema_pt)
+            loc_e.unlink(missing_ok=True)
+
+            best_state = torch.load(best_pt, map_location=device, weights_only=False)
+            ema_model.load_state_dict(best_state['model'])
+            ema_model.eval()
+            t8_out = _predict_loader_fp32(ema_model, tune8k_loader, device)
+            np.save(seed_dir / f'probs_tune8k_seed{seed}.npy', t8_out['probs4'])
+            np.save(seed_dir / f'pv_pred_tune8k_seed{seed}.npy', t8_out['v_pv_mm'])
+            np.save(seed_dir / f'pv_scale_tune8k_seed{seed}.npy', t8_out['scale_pv_mm'])
+            np.save(seed_dir / f'charm_prob_tune8k_seed{seed}.npy', t8_out['charm_prob'])
+
+            df_p = tu_keys[KEY + ['is_screen', 'prov_label']].copy().reset_index(drop=True)
+            for c in range(4):
+                df_p[f'p_{c}'] = t8_out['probs4'][:, c].astype(np.float32)
+            for ia, ax in enumerate(('x', 'y', 'z')):
+                df_p[f'v_hat_{ax}_mm'] = t8_out['v_pv_mm'][:, ia].astype(np.float32)
+                df_p[f'scale_{ax}_mm'] = t8_out['scale_pv_mm'][:, ia].astype(np.float32)
+            df_p.to_parquet(seed_dir / f'tune8k_predictions_seed{seed}.parquet', index=False, compression=COMPRESSION)
+
+            coll = _TauKinemaCollator(bounds['y_scint_center'], bounds['n_bars'])
+            for oname, _ in STAGE2_OOD_SPECS:
+                ods = _S2MappedDataset(s2_cache / 'aux_ood' / oname)
+                oloader = DataLoader(ods, batch_size=64, shuffle=False, num_workers=0, collate_fn=coll)
+                opred = _predict_loader_fp32(ema_model, oloader, device)
+                np.save(seed_dir / f'probs_ood_{oname}_seed{seed}.npy', opred['probs4'])
+
+            for st_name, _, _ in STAGE2_STRESS_SPECS:
+                sds = _S2MappedDataset(s2_cache / 'aux_stress' / st_name)
+                sloader = DataLoader(sds, batch_size=64, shuffle=False, num_workers=0, collate_fn=coll)
+                spred = _predict_loader_fp32(ema_model, sloader, device)
+                np.save(seed_dir / f'probs_stress_{st_name}_seed{seed}.npy', spred['probs4'])
+        finally:
+            shutdown_loader(scr_loader)
+            shutdown_loader(tune8k_loader)
+
+    peak_vram_mib = float(torch.cuda.max_memory_allocated(device) / (1024 ** 2))
+    manifest = {
+        'status': 'complete',
+        'stage': 'Stage-II',
+        'seed': int(seed),
+        'parameters': int(sum(p.numel() for p in model.parameters())),
+        'GPU': torch.cuda.get_device_name(device),
+        'peak_allocated_VRAM_MiB': round(peak_vram_mib, 1),
+        'total_optimizer_steps': int(global_step),
+        'best_pass': int(best_pass),
+        'best_tune_screen_nll': float(best_nll),
+        'wall_seconds': float(time.perf_counter() - t_start),
+        'UTC_started': utc_started,
+        'UTC_finished': datetime.now(timezone.utc).isoformat(),
+        'sealed_shards_touched': False,
+    }
+    write_json(manifest_path, manifest)
+    if resume_pt.is_file():
+        resume_pt.unlink()
+    return manifest
+
+
+def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
+    """Aggregate Stage-II 3-seed N2 results on Tune6k + 6 OOD + 7 Stress + B+D+F_n2fix blend."""
+    s2_root = out_dir / 'stage2'
+    tune_meta = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'validation_meta/tune_truth_meta.parquet')
+    scr_df = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'data/tune_screen.parquet', columns=KEY)
+    sidecar_df = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet')
+    ref_idx = pd.MultiIndex.from_frame(tune_meta[KEY])
+    in_screen = np.asarray(ref_idx.isin(pd.MultiIndex.from_frame(scr_df[KEY])), dtype=bool)
+    tune6k_m = ~in_screen
+
+    labels = tune_meta['label'].to_numpy(dtype=np.int64)
+    obs_dom = tune_meta['obs_domain_id'].to_numpy(dtype=np.int64)
+    pc_m = tune_meta['pixel_centered'].to_numpy(dtype=bool)
+    fp_m = tune_meta['front_pinpoint_pixel_centered'].to_numpy(dtype=bool)
+    interm_m = pc_m & (~fp_m)
+    fam_codes = pd.MultiIndex.from_frame(tune_meta[FAMILY]).factorize()[0]
+
+    s_pos = pd.MultiIndex.from_frame(sidecar_df[KEY]).get_indexer(ref_idx)
+    sc_al = sidecar_df.iloc[s_pos].reset_index(drop=True)
+    v_true = sc_al[['vertex_x_mm', 'vertex_y_mm', 'vertex_z_mm']].to_numpy(dtype=np.float64)
+    v_valid = sc_al['vertex_valid'].to_numpy(dtype=np.int64) > 0
+
+    seed_probs_t8, seed_pv_t8, seed_sc_t8 = {}, {}, {}
+    per_seed = {}
+    for seed in STAGE2_SEEDS:
+        sdir = s2_root / f'seed_{seed}'
+        df_s = pd.read_parquet(sdir / f'tune8k_predictions_seed{seed}.parquet')
+        pos = pd.MultiIndex.from_frame(df_s[KEY]).get_indexer(ref_idx)
+        assert (pos >= 0).all()
+        df_al = df_s.iloc[pos].reset_index(drop=True)
+        pr = df_al[['p_0', 'p_1', 'p_2', 'p_3']].to_numpy(dtype=np.float64)
+        vp = df_al[['v_hat_x_mm', 'v_hat_y_mm', 'v_hat_z_mm']].to_numpy(dtype=np.float64)
+        vs = df_al[['scale_x_mm', 'scale_y_mm', 'scale_z_mm']].to_numpy(dtype=np.float64)
+        seed_probs_t8[seed], seed_pv_t8[seed], seed_sc_t8[seed] = pr, vp, vs
+        per_seed[f'seed_{seed}'] = _ba4_and_nll(labels[tune6k_m], pr[tune6k_m])
+
+    p_f_ens = np.mean([seed_probs_t8[s] for s in STAGE2_SEEDS], axis=0)
+    vp_ens = np.mean([seed_pv_t8[s] for s in STAGE2_SEEDS], axis=0)
+    vs_ens = np.sqrt(np.mean([seed_sc_t8[s] ** 2 for s in STAGE2_SEEDS], axis=0))
+    np.save(s2_root / 'probs_tune6k_ens.npy', p_f_ens[tune6k_m].astype(np.float32))
+    np.save(s2_root / 'pv_pred_tune6k_ens.npy', vp_ens[tune6k_m].astype(np.float32))
+    np.save(s2_root / 'pv_scale_tune6k_ens.npy', vs_ens[tune6k_m].astype(np.float32))
+
+    # Calibrate PV scale strictly on tune_screen (N=2,000) by regime
+    vs_cal = vs_ens.copy()
+    for rtag, rmk in (('Front30', fp_m), ('Interm150', interm_m), ('Other', ~(fp_m | interm_m))):
+        cm = in_screen & v_valid & rmk
+        if int(cm.sum()) >= 50:
+            cp = compute_student_t_pulls(torch.from_numpy(vp_ens[cm]), torch.from_numpy(vs_ens[cm]), torch.from_numpy(v_true[cm]), torch.ones(int(cm.sum()), dtype=torch.int64), df=3.0)['p68_abs_pull']
+            cvec = np.asarray([float(np.clip(c, 0.4, 2.5)) if c > 0 else 1.0 for c in cp], dtype=np.float64)
+            vs_cal[rmk] *= cvec[None, :]
+
+    t6k_slices = {
+        'All_Tune6k': tune6k_m,
+        'D1_obs': tune6k_m & (obs_dom == 1),
+        'D2_obs': tune6k_m & (obs_dom == 2),
+        'D3_obs': tune6k_m & (obs_dom == 3),
+        'Pinpoint_PixXY': tune6k_m & pc_m,
+        'Front30': tune6k_m & fp_m,
+        'Interm150': tune6k_m & interm_m,
+    }
+    pv_audit: dict[str, Any] = {}
+    for rtag, rmk in (('All_active', tune6k_m & v_valid), ('Front30', tune6k_m & v_valid & fp_m), ('Interm150', tune6k_m & v_valid & interm_m), ('D1_obs', tune6k_m & v_valid & (obs_dom == 1))):
+        dz = np.abs(vp_ens[rmk, 2] - v_true[rmk, 2])
+        d3 = np.linalg.norm(vp_ens[rmk] - v_true[rmk], axis=1)
+        pulls = compute_student_t_pulls(torch.from_numpy(vp_ens[rmk]), torch.from_numpy(vs_cal[rmk]), torch.from_numpy(v_true[rmk]), torch.ones(int(rmk.sum()), dtype=torch.int64), df=3.0)
+        pv_audit[rtag] = {'count': int(rmk.sum()), 'median_abs_dz_mm': float(np.median(dz)), 'median_3d_mm': float(np.median(d3)), **pulls}
+
+    # Load frozen Stage-II B & D Tune6k ensembles for B+D+F_n2fix 3-way blend
+    nextgen_root = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/nextgen_research')
+    p_b_t6 = np.load(nextgen_root / 'exp_tracklet_ipformer/stage2/probs_tune6k_ens.npy').astype(np.float64)
+    p_d_t6 = np.load(nextgen_root / 'exp_dual_regime/stage2/probs_tune6k_ens3_raw.npy').astype(np.float64)
+    p_f_t6 = p_f_ens[tune6k_m]
+    p_bd_t6 = 0.5 * (p_b_t6 + p_d_t6)
+    p_bdf_t6 = (p_b_t6 + p_d_t6 + p_f_t6) / 3.0
+
+    y_t6 = labels[tune6k_m]
+    fam_t6 = fam_codes[tune6k_m]
+    t6_only_slices = {k: v[tune6k_m] for k, v in t6k_slices.items()}
+    eval_t6 = {}
+    for mnm, parr in (('F_n2fix_ens3', p_f_t6), ('Blend_BD_raw', p_bd_t6), ('Blend_BDF_n2fix_raw', p_bdf_t6)):
+        eval_t6[mnm] = {
+            'slices': {sn: _ba4_and_nll(y_t6[mk], parr[mk]) for sn, mk in t6_only_slices.items()},
+            'within_slice_1pct_fpr': {sn: _tau_efficiency_at_fpr(parr[t6_only_slices[sn], 2], y_t6[t6_only_slices[sn]], 0.01) for sn in ('All_Tune6k', 'D1_obs', 'Pinpoint_PixXY', 'Front30')},
+            'split_half_1pct_fpr': {sn: _split_half_tail_eval(parr[:, 2], y_t6, tune_meta.iloc[tune6k_m].reset_index(drop=True), t6_only_slices[sn], fpr_targets=(0.01, 0.001)) for sn in ('All_Tune6k', 'D1_obs', 'Pinpoint_PixXY')},
+        }
+
+    paired_boot = {
+        'Blend_BDF_n2fix - Blend_BD_raw': {
+            sn: paired_family_bootstrap_delta(p_bdf_t6[:, 2], p_bd_t6[:, 2], p_bdf_t6, p_bd_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
+            for sn in ('All_Tune6k', 'D1_obs', 'Front30', 'Interm150', 'Pinpoint_PixXY')
+        },
+        'Blend_BDF_n2fix - Tracklet_raw': {
+            sn: paired_family_bootstrap_delta(p_bdf_t6[:, 2], p_b_t6[:, 2], p_bdf_t6, p_b_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
+            for sn in ('All_Tune6k', 'D1_obs', 'Front30', 'Interm150', 'Pinpoint_PixXY')
+        },
+    }
+
+    ood_summary: dict[str, Any] = {}
+    for oname, oroot in STAGE2_OOD_SPECS:
+        yo = pd.read_parquet(oroot / 'truth_meta.parquet')['label'].to_numpy(dtype=np.int64)
+        pf = np.mean([np.load(s2_root / f'seed_{s}/probs_ood_{oname}_seed{s}.npy').astype(np.float64) for s in STAGE2_SEEDS], axis=0)
+        pb_o = np.load(nextgen_root / f'exp_tracklet_ipformer/stage2/probs_ood_{oname}_ens.npy').astype(np.float64)
+        pd_o = np.load(nextgen_root / 'exp_dual_regime/stage2/ood_and_stress_ens3_probs.npz')[f'ood_{oname}'].astype(np.float64)
+        pbdf_o = (pb_o + pd_o + pf) / 3.0
+        for tag_o, po in (('F_n2fix_ens3', pf), ('Blend_BDF_n2fix', pbdf_o)):
+            if len(np.unique(yo)) >= 4:
+                ood_summary.setdefault(oname, {})[tag_o] = {'n_events': int(len(yo)), **_ba4_and_nll(yo, po)}
+            else:
+                ood_summary.setdefault(oname, {})[tag_o] = {
+                    'n_events': int(len(yo)),
+                    'pred_tau_argmax_rate': float((po.argmax(1) == 2).mean()),
+                    'p_tau_gt_0p5_rate': float((po[:, 2] > 0.5).mean()),
+                    'mean_p_tau': float(po[:, 2].mean()),
+                }
+
+    sh80 = load_authorized_split_shards(DEFAULT_CLEAN_ROOT / 'data', 'validation', stage=2)[0]
+    prov80 = pd.read_parquet(sh80 / 'provenance.parquet', columns=KEY + ['label'])
+    pos80 = pd.MultiIndex.from_frame(tune_meta[KEY]).get_indexer(pd.MultiIndex.from_frame(prov80[KEY]))
+    y80 = tune_meta.iloc[pos80]['label'].to_numpy(dtype=np.int64)
+    p_nom_f = np.mean([np.load(s2_root / f'seed_{s}/probs_stress_nominal_seed{s}.npy').astype(np.float64) for s in STAGE2_SEEDS], axis=0)
+    stress_summary: dict[str, Any] = {}
+    for st_name, _, _ in STAGE2_STRESS_SPECS:
+        pf_s = np.mean([np.load(s2_root / f'seed_{s}/probs_stress_{st_name}_seed{s}.npy').astype(np.float64) for s in STAGE2_SEEDS], axis=0)
+        m_st = _ba4_and_nll(y80, pf_s)
+        stress_summary[st_name] = {**m_st, 'mean_TV_vs_nominal': float((0.5 * np.abs(pf_s - p_nom_f).sum(axis=1)).mean())}
+    nom_ba4 = stress_summary['nominal']['BA4']
+    for st_name in stress_summary:
+        stress_summary[st_name]['delta_BA4_vs_nominal_pp'] = float((stress_summary[st_name]['BA4'] - nom_ba4) * 100.0)
+
+    out_doc = {
+        'UTC': datetime.now(timezone.utc).isoformat(),
+        'stage': 'Stage-II TauKinemaDiffNet N2 Fix (Train32k x 3 seeds -> Tune6k + 6 OOD + 7 Stress + B+D+F Blend)',
+        'per_seed_tune6k': per_seed,
+        'pv_audit_tune6k': pv_audit,
+        'tune6k_models': eval_t6,
+        'paired_family_bootstrap_seed20263250_n1000': paired_boot,
+        'ood_evaluation': ood_summary,
+        'shard080_stress_tests': stress_summary,
+    }
+    write_json(s2_root / 'stage2_n2_tau_kinema_results.json', out_doc)
+    return out_doc
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=('gate_ab', 'prepare_cache', 'train', 'aggregate'), required=True)
+    parser.add_argument(
+        '--mode',
+        choices=(
+            'gate_ab', 'prepare_cache', 'train', 'aggregate', 'eval_n2_stage1',
+            's2_prepare_part', 's2_merge', 's2_prepare_aux', 's2_train', 's2_aggregate',
+        ),
+        required=True,
+    )
     parser.add_argument('--ablation', choices=TauKinemaDiffNet.VALID_ABLATIONS, default='full')
     parser.add_argument('--run-name', default=None)
     parser.add_argument('--out-dir', type=Path, default=EXP_ROOT)
@@ -1489,9 +2390,21 @@ def main() -> None:
     parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--micro-bs', type=int, default=64)
     parser.add_argument('--workers', type=int, default=4)
+    parser.add_argument('--cache-tag', type=str, default='train32k')
+    parser.add_argument('--part', type=int, default=0)
+    parser.add_argument('--n-parts', type=int, default=8)
+    parser.add_argument('--s2-aux-kind', type=str, default='ood', choices=('ood', 'stress'))
+    parser.add_argument('--resume', action='store_true')
     args = parser.parse_args()
 
-    with install_stage1_seal_and_tune_guard() as guard:
+    is_stage2 = args.mode.startswith('s2_')
+    if is_stage2:
+        guard = SealAuditGuard()
+        guard.__enter__()
+    else:
+        guard = install_stage1_seal_and_tune_guard()
+
+    try:
         if args.mode == 'gate_ab':
             res = run_gate_ab_checks(args.out_dir)
             print(json.dumps({
@@ -1533,9 +2446,32 @@ def main() -> None:
                 'paired_comparisons': list(agg['paired_family_bootstrap'].keys()),
                 'seal_violations': len(guard.violations) + len(_STAGE1_VIOLATIONS),
             }, indent=2))
+        elif args.mode == 'eval_n2_stage1':
+            rname = args.run_name or 's1_tau_kinema_diffnet_n2fix'
+            rep = eval_n2_stage1(args.out_dir, run_name=rname, workers=args.workers)
+            print(json.dumps({
+                'gate_af_passed': rep['gate_af_passed'],
+                'interm150_median_abs_dz_mm': rep['interm150_median_abs_dz_mm'],
+                'all_9_pulls_in_085_115': rep['all_9_pulls_in_085_115'],
+                'w184_nc_charm': rep['w184_nc_charm'],
+            }, indent=2))
+        elif args.mode == 's2_prepare_part':
+            print(json.dumps(s2_prepare_cache_part(args.out_dir / 'stage2/_cache', args.cache_tag, args.part, args.n_parts, workers=args.workers), indent=2))
+        elif args.mode == 's2_merge':
+            print(json.dumps(s2_merge_cache_tag(args.out_dir / 'stage2/_cache', args.cache_tag, args.n_parts), indent=2))
+        elif args.mode == 's2_prepare_aux':
+            print(json.dumps(s2_prepare_aux_cache(args.out_dir / 'stage2/_cache', args.s2_aux_kind, workers=args.workers), indent=2))
+        elif args.mode == 's2_train':
+            res = run_stage2_seed(args.out_dir, args.seed, passes=args.passes, batch_size=args.batch_size, micro_bs=args.micro_bs, workers=args.workers, resume=args.resume)
+            print(json.dumps({'status': res['status'], 'seed': res['seed'], 'best_pass': res['best_pass'], 'best_tune_screen_nll': res['best_tune_screen_nll'], 'wall_seconds': res['wall_seconds']}, indent=2))
+        elif args.mode == 's2_aggregate':
+            rep = aggregate_stage2_results(args.out_dir)
+            print(json.dumps({'per_seed_tune6k': rep['per_seed_tune6k'], 'pv_audit_tune6k': {k: v['median_abs_dz_mm'] for k, v in rep['pv_audit_tune6k'].items()}}, indent=2))
 
-        if guard.violations or _STAGE1_VIOLATIONS:
+        if guard.violations or (not is_stage2 and _STAGE1_VIOLATIONS):
             raise SealViolationError(f'Audit violations detected: {guard.violations + _STAGE1_VIOLATIONS}')
+    finally:
+        guard.__exit__(None, None, None)
 
 
 if __name__ == '__main__':
