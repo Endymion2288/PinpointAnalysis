@@ -914,6 +914,7 @@ def run_stage1_train_and_eval(
     micro_bs: int = 64,
     workers: int = 4,
     cache_dir: Path | None = None,
+    n2_vtx_mode: str = 'v1',
 ) -> dict[str, Any]:
     """Run matched-budget Stage-I training on Internal-Train -> Screen -> Internal-Val + OOD."""
     t_start = time.perf_counter()
@@ -997,6 +998,7 @@ def run_stage1_train_and_eval(
             'drop_path': 0.10,
             'head_dropout': 0.15,
             'ablation': ablation,
+            'n2_vtx_mode': str(n2_vtx_mode),
         }
         model = TauKinemaDiffNet(geometry, model_cfg).to(device)
         ema_model = copy.deepcopy(model).eval()
@@ -1283,6 +1285,7 @@ def run_stage1_train_and_eval(
         'status': 'complete',
         'run_name': run_name,
         'ablation': ablation,
+        'n2_vtx_mode': str(n2_vtx_mode),
         'seed': int(seed),
         'passes': int(passes),
         'total_steps': int(global_step),
@@ -1683,15 +1686,23 @@ def eval_n2_stage1(
     p_bdf_r2 = (p_b + p_d + p_f_r2) / 3.0
     p_bdf_n2 = (p_b + p_d + p_f_n2) / 3.0
 
+    is_v2 = 'n2v2' in run_name
+    f_tag = 'F_n2v2' if is_v2 else 'F_n2fix'
+    bdf_tag = 'Blend_BDF_n2v2' if is_v2 else 'Blend_BDF_n2fix'
+
     models_cmp = {
-        'F_n2fix': p_f_n2,
+        f_tag: p_f_n2,
         'F_r2_d0400dfd': p_f_r2,
         'B_tracklet': p_b,
         'D_dual_regime': p_d,
         'Blend_BD': p_bd,
         'Blend_BDF_r2': p_bdf_r2,
-        'Blend_BDF_n2fix': p_bdf_n2,
+        bdf_tag: p_bdf_n2,
     }
+    if is_v2 and (out_dir / 's1_tau_kinema_diffnet_n2fix/probs_internal_val_eval.npy').is_file():
+        p_f_v1 = np.load(out_dir / 's1_tau_kinema_diffnet_n2fix/probs_internal_val_eval.npy').astype(np.float64)
+        models_cmp['F_n2fix'] = p_f_v1
+        models_cmp['Blend_BDF_n2fix'] = (p_b + p_d + p_f_v1) / 3.0
 
     metrics_by_model: dict[str, Any] = {}
     for mname, mp_arr in models_cmp.items():
@@ -1712,14 +1723,19 @@ def eval_n2_stage1(
     w184_d = np.load(nextgen_root / 'exp_dual_regime/s1_dual_regime_modalnet/ood_and_stress_probs.npz')['ood_gen_ood_w184_epps21_nc_charm'].astype(np.float64)
     w184_f_r2 = np.load(nextgen_root / 'exp_tau_kinema/s1_tau_kinema_diffnet/probs_gen_ood_w184_epps21_nc_charm.npy').astype(np.float64)
     w184_f_n2 = np.load(run_dir / 'probs_gen_ood_w184_epps21_nc_charm.npy').astype(np.float64)
-    w184_summary = {}
-    for wnm, warr in (
-        ('F_n2fix', w184_f_n2),
+    w184_entries = [
+        (f_tag, w184_f_n2),
         ('F_r2_d0400dfd', w184_f_r2),
         ('Blend_BD', 0.5 * (w184_b + w184_d)),
         ('Blend_BDF_r2', (w184_b + w184_d + w184_f_r2) / 3.0),
-        ('Blend_BDF_n2fix', (w184_b + w184_d + w184_f_n2) / 3.0),
-    ):
+        (bdf_tag, (w184_b + w184_d + w184_f_n2) / 3.0),
+    ]
+    if is_v2 and (out_dir / 's1_tau_kinema_diffnet_n2fix/probs_gen_ood_w184_epps21_nc_charm.npy').is_file():
+        w184_f_v1 = np.load(out_dir / 's1_tau_kinema_diffnet_n2fix/probs_gen_ood_w184_epps21_nc_charm.npy').astype(np.float64)
+        w184_entries.append(('F_n2fix', w184_f_v1))
+        w184_entries.append(('Blend_BDF_n2fix', (w184_b + w184_d + w184_f_v1) / 3.0))
+    w184_summary = {}
+    for wnm, warr in w184_entries:
         w184_summary[wnm] = {
             'n_events': int(len(warr)),
             'p_tau_gt_0p5': float((warr[:, 2] > 0.5).mean()),
@@ -1727,12 +1743,15 @@ def eval_n2_stage1(
             'mean_p_tau': float(warr[:, 2].mean()),
         }
 
-    boot_pairs = (
-        ('F_n2fix', 'F_r2_d0400dfd'),
-        ('Blend_BDF_n2fix', 'Blend_BDF_r2'),
-        ('Blend_BDF_n2fix', 'Blend_BD'),
-        ('Blend_BDF_n2fix', 'B_tracklet'),
-    )
+    boot_pairs = [
+        (f_tag, 'F_r2_d0400dfd'),
+        (bdf_tag, 'Blend_BDF_r2'),
+        (bdf_tag, 'Blend_BD'),
+        (bdf_tag, 'B_tracklet'),
+    ]
+    if 'F_n2fix' in models_cmp:
+        boot_pairs.append((f_tag, 'F_n2fix'))
+        boot_pairs.append((bdf_tag, 'Blend_BDF_n2fix'))
     paired_boot: dict[str, Any] = {}
     for a_nm, b_nm in boot_pairs:
         pa, pb = models_cmp[a_nm], models_cmp[b_nm]
@@ -1760,7 +1779,8 @@ def eval_n2_stage1(
         'w184_nc_charm': w184_summary,
         'paired_family_bootstrap_seed20263250_n1000': paired_boot,
     }
-    write_json(out_dir / 'stage1_n2_evaluation.json', rep)
+    eval_filename = 'stage1_n2v2_evaluation.json' if is_v2 else 'stage1_n2_evaluation.json'
+    write_json(out_dir / eval_filename, rep)
     return rep
 
 
@@ -1975,6 +1995,7 @@ def run_stage2_seed(
     micro_bs: int = 64,
     workers: int = 4,
     resume: bool = False,
+    n2_vtx_mode: str = 'v1',
 ) -> dict[str, Any]:
     s2_root = out_dir / 'stage2'
     s2_cache = s2_root / '_cache'
@@ -2044,6 +2065,7 @@ def run_stage2_seed(
             'drop_path': 0.10,
             'head_dropout': 0.15,
             'ablation': 'full',
+            'n2_vtx_mode': str(n2_vtx_mode),
         }
         model = TauKinemaDiffNet(geometry, model_cfg).to(device)
         ema_model = copy.deepcopy(model).eval()
@@ -2175,10 +2197,74 @@ def run_stage2_seed(
             best_state = torch.load(best_pt, map_location=device, weights_only=False)
             ema_model.load_state_dict(best_state['model'])
             ema_model.eval()
+
+            # Fit (3 si_regime x 3 obs_domain) PV scale calibration strictly on Train32k[:8192]
+            n_pv_cal = min(8192, len(train_ds))
+            pv_cal_ds = _IndexedSubset(train_ds, np.arange(n_pv_cal))
+            pv_cal_loader = _make_loader(pv_cal_ds, batch_size=max(64, micro_bs), shuffle=False, workers=loader_workers, seed=seed, y_scint_center=bounds['y_scint_center'], n_bars=bounds['n_bars'])
+            try:
+                pv_cal_pred = _predict_loader_fp32(ema_model, pv_cal_loader, device)
+            finally:
+                shutdown_loader(pv_cal_loader)
+            tr_cal_sc = tr_sidecar.iloc[:n_pv_cal]
+            tr_cal_dom = np.asarray([int(train_ds[i]['obs_domain_id']) for i in range(n_pv_cal)], dtype=np.int64)
+            tr_cal_si = pv_cal_pred['si_regime']
+            tr_cal_vtrue = torch.from_numpy(np.column_stack([
+                tr_cal_sc['vertex_x_mm'].to_numpy(np.float32),
+                tr_cal_sc['vertex_y_mm'].to_numpy(np.float32),
+                tr_cal_sc['vertex_z_mm'].to_numpy(np.float32),
+            ]))
+            tr_cal_vvalid = torch.from_numpy(tr_cal_sc['vertex_valid'].to_numpy(dtype=np.int64))
+            tr_valid_np = tr_cal_vvalid.numpy() > 0
+            gl_pulls = compute_student_t_pulls(
+                torch.from_numpy(pv_cal_pred['v_pv_mm']),
+                torch.from_numpy(pv_cal_pred['scale_pv_mm']),
+                tr_cal_vtrue, tr_cal_vvalid, df=3.0,
+            )['p68_abs_pull']
+            gl_corr = [float(np.clip(c, 0.4, 2.5)) if c > 0.0 else 1.0 for c in gl_pulls]
+            pv_corr_si: dict[int, list[float]] = {}
+            for s_id in (0, 1, 2):
+                sm = (tr_cal_si == s_id) & tr_valid_np
+                if int(sm.sum()) >= 40:
+                    spulls = compute_student_t_pulls(
+                        torch.from_numpy(pv_cal_pred['v_pv_mm'][sm]),
+                        torch.from_numpy(pv_cal_pred['scale_pv_mm'][sm]),
+                        tr_cal_vtrue[sm], tr_cal_vvalid[sm], df=3.0,
+                    )['p68_abs_pull']
+                    pv_corr_si[s_id] = [float(np.clip(c, 0.4, 2.5)) if c > 0.0 else g for c, g in zip(spulls, gl_corr)]
+                else:
+                    pv_corr_si[s_id] = list(gl_corr)
+            pv_corr_reg: dict[str, list[float]] = {}
+            for s_id in (0, 1, 2):
+                for d_id in (1, 2, 3):
+                    dm = (tr_cal_si == s_id) & (tr_cal_dom == d_id) & tr_valid_np
+                    if int(dm.sum()) >= 80:
+                        dpulls = compute_student_t_pulls(
+                            torch.from_numpy(pv_cal_pred['v_pv_mm'][dm]),
+                            torch.from_numpy(pv_cal_pred['scale_pv_mm'][dm]),
+                            tr_cal_vtrue[dm], tr_cal_vvalid[dm], df=3.0,
+                        )['p68_abs_pull']
+                        pv_corr_reg[f'si{s_id}_dom{d_id}'] = [
+                            float(np.clip(c, 0.4, 2.5)) if c > 0.0 else fb for c, fb in zip(dpulls, pv_corr_si[s_id])
+                        ]
+                    else:
+                        pv_corr_reg[f'si{s_id}_dom{d_id}'] = list(pv_corr_si[s_id])
+
             t8_out = _predict_loader_fp32(ema_model, tune8k_loader, device)
+            t8_dom = np.asarray([int(tune8k_ds[i]['obs_domain_id']) for i in range(len(tune8k_ds))], dtype=np.int64)
+            t8_si = t8_out['si_regime']
+            t8_scale_cal = t8_out['scale_pv_mm'].copy()
+            for s_id in (0, 1, 2):
+                for d_id in (1, 2, 3):
+                    cvec = pv_corr_reg[f'si{s_id}_dom{d_id}']
+                    dm_t8 = (t8_si == s_id) & (t8_dom == d_id)
+                    if dm_t8.any():
+                        t8_scale_cal[dm_t8] *= np.asarray(cvec, dtype=np.float32)[None, :]
+
             np.save(seed_dir / f'probs_tune8k_seed{seed}.npy', t8_out['probs4'])
             np.save(seed_dir / f'pv_pred_tune8k_seed{seed}.npy', t8_out['v_pv_mm'])
             np.save(seed_dir / f'pv_scale_tune8k_seed{seed}.npy', t8_out['scale_pv_mm'])
+            np.save(seed_dir / f'pv_scale_cal_tune8k_seed{seed}.npy', t8_scale_cal)
             np.save(seed_dir / f'charm_prob_tune8k_seed{seed}.npy', t8_out['charm_prob'])
 
             df_p = tu_keys[KEY + ['is_screen', 'prov_label']].copy().reset_index(drop=True)
@@ -2187,6 +2273,7 @@ def run_stage2_seed(
             for ia, ax in enumerate(('x', 'y', 'z')):
                 df_p[f'v_hat_{ax}_mm'] = t8_out['v_pv_mm'][:, ia].astype(np.float32)
                 df_p[f'scale_{ax}_mm'] = t8_out['scale_pv_mm'][:, ia].astype(np.float32)
+                df_p[f'scale_cal_{ax}_mm'] = t8_scale_cal[:, ia].astype(np.float32)
             df_p.to_parquet(seed_dir / f'tune8k_predictions_seed{seed}.parquet', index=False, compression=COMPRESSION)
 
             coll = _TauKinemaCollator(bounds['y_scint_center'], bounds['n_bars'])
@@ -2227,8 +2314,8 @@ def run_stage2_seed(
     return manifest
 
 
-def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
-    """Aggregate Stage-II 3-seed N2 results on Tune6k + 6 OOD + 7 Stress + B+D+F_n2fix blend."""
+def aggregate_stage2_results(out_dir: Path, *, n2_vtx_mode: str = 'v1') -> dict[str, Any]:
+    """Aggregate Stage-II 3-seed N2 results on Tune6k + 6 OOD + 7 Stress + B+D+F blends."""
     s2_root = out_dir / 'stage2'
     tune_meta = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'validation_meta/tune_truth_meta.parquet')
     scr_df = pd.read_parquet(DEFAULT_CLEAN_ROOT / 'data/tune_screen.parquet', columns=KEY)
@@ -2249,7 +2336,7 @@ def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
     v_true = sc_al[['vertex_x_mm', 'vertex_y_mm', 'vertex_z_mm']].to_numpy(dtype=np.float64)
     v_valid = sc_al['vertex_valid'].to_numpy(dtype=np.int64) > 0
 
-    seed_probs_t8, seed_pv_t8, seed_sc_t8 = {}, {}, {}
+    seed_probs_t8, seed_pv_t8, seed_sc_t8, seed_sc_cal_t8 = {}, {}, {}, {}
     per_seed = {}
     for seed in STAGE2_SEEDS:
         sdir = s2_root / f'seed_{seed}'
@@ -2260,24 +2347,31 @@ def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
         pr = df_al[['p_0', 'p_1', 'p_2', 'p_3']].to_numpy(dtype=np.float64)
         vp = df_al[['v_hat_x_mm', 'v_hat_y_mm', 'v_hat_z_mm']].to_numpy(dtype=np.float64)
         vs = df_al[['scale_x_mm', 'scale_y_mm', 'scale_z_mm']].to_numpy(dtype=np.float64)
-        seed_probs_t8[seed], seed_pv_t8[seed], seed_sc_t8[seed] = pr, vp, vs
+        if 'scale_cal_x_mm' in df_al.columns:
+            vs_c = df_al[['scale_cal_x_mm', 'scale_cal_y_mm', 'scale_cal_z_mm']].to_numpy(dtype=np.float64)
+        else:
+            vs_c = vs.copy()
+        seed_probs_t8[seed], seed_pv_t8[seed], seed_sc_t8[seed], seed_sc_cal_t8[seed] = pr, vp, vs, vs_c
         per_seed[f'seed_{seed}'] = _ba4_and_nll(labels[tune6k_m], pr[tune6k_m])
 
     p_f_ens = np.mean([seed_probs_t8[s] for s in STAGE2_SEEDS], axis=0)
     vp_ens = np.mean([seed_pv_t8[s] for s in STAGE2_SEEDS], axis=0)
     vs_ens = np.sqrt(np.mean([seed_sc_t8[s] ** 2 for s in STAGE2_SEEDS], axis=0))
+    vs_cal_tr = np.sqrt(np.mean([seed_sc_cal_t8[s] ** 2 for s in STAGE2_SEEDS], axis=0))
     np.save(s2_root / 'probs_tune6k_ens.npy', p_f_ens[tune6k_m].astype(np.float32))
     np.save(s2_root / 'pv_pred_tune6k_ens.npy', vp_ens[tune6k_m].astype(np.float32))
     np.save(s2_root / 'pv_scale_tune6k_ens.npy', vs_ens[tune6k_m].astype(np.float32))
+    np.save(s2_root / 'pv_scale_cal_tune6k_ens.npy', vs_cal_tr[tune6k_m].astype(np.float32))
 
-    # Calibrate PV scale strictly on tune_screen (N=2,000) by regime
-    vs_cal = vs_ens.copy()
-    for rtag, rmk in (('Front30', fp_m), ('Interm150', interm_m), ('Other', ~(fp_m | interm_m))):
-        cm = in_screen & v_valid & rmk
-        if int(cm.sum()) >= 50:
-            cp = compute_student_t_pulls(torch.from_numpy(vp_ens[cm]), torch.from_numpy(vs_ens[cm]), torch.from_numpy(v_true[cm]), torch.ones(int(cm.sum()), dtype=torch.int64), df=3.0)['p68_abs_pull']
-            cvec = np.asarray([float(np.clip(c, 0.4, 2.5)) if c > 0 else 1.0 for c in cp], dtype=np.float64)
-            vs_cal[rmk] *= cvec[None, :]
+    # Calibrate PV scale on tune_screen (N=2,000) if per-seed Train32k cal was absent
+    vs_cal = vs_cal_tr.copy() if any((s2_root / f'seed_{s}/pv_scale_cal_tune8k_seed{s}.npy').is_file() for s in STAGE2_SEEDS) else vs_ens.copy()
+    if vs_cal is not vs_cal_tr and not any((s2_root / f'seed_{s}/pv_scale_cal_tune8k_seed{s}.npy').is_file() for s in STAGE2_SEEDS):
+        for rtag, rmk in (('Front30', fp_m), ('Interm150', interm_m), ('Other', ~(fp_m | interm_m))):
+            cm = in_screen & v_valid & rmk
+            if int(cm.sum()) >= 50:
+                cp = compute_student_t_pulls(torch.from_numpy(vp_ens[cm]), torch.from_numpy(vs_ens[cm]), torch.from_numpy(v_true[cm]), torch.ones(int(cm.sum()), dtype=torch.int64), df=3.0)['p68_abs_pull']
+                cvec = np.asarray([float(np.clip(c, 0.4, 2.5)) if c > 0 else 1.0 for c in cp], dtype=np.float64)
+                vs_cal[rmk] *= cvec[None, :]
 
     t6k_slices = {
         'All_Tune6k': tune6k_m,
@@ -2295,33 +2389,54 @@ def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
         pulls = compute_student_t_pulls(torch.from_numpy(vp_ens[rmk]), torch.from_numpy(vs_cal[rmk]), torch.from_numpy(v_true[rmk]), torch.ones(int(rmk.sum()), dtype=torch.int64), df=3.0)
         pv_audit[rtag] = {'count': int(rmk.sum()), 'median_abs_dz_mm': float(np.median(dz)), 'median_3d_mm': float(np.median(d3)), **pulls}
 
-    # Load frozen Stage-II B & D Tune6k ensembles for B+D+F_n2fix 3-way blend
+    # Load frozen Stage-II B & D Tune6k ensembles for 33/33/33 and 40/40/20 B+D+F blends
     nextgen_root = Path('/eos/home-x/xcheng/FASER/Pinpoint/results/nextgen_research')
     p_b_t6 = np.load(nextgen_root / 'exp_tracklet_ipformer/stage2/probs_tune6k_ens.npy').astype(np.float64)
     p_d_t6 = np.load(nextgen_root / 'exp_dual_regime/stage2/probs_tune6k_ens3_raw.npy').astype(np.float64)
     p_f_t6 = p_f_ens[tune6k_m]
     p_bd_t6 = 0.5 * (p_b_t6 + p_d_t6)
-    p_bdf_t6 = (p_b_t6 + p_d_t6 + p_f_t6) / 3.0
+    p_bdf33_t6 = (p_b_t6 + p_d_t6 + p_f_t6) / 3.0
+    p_bdf40_t6 = 0.4 * p_b_t6 + 0.4 * p_d_t6 + 0.2 * p_f_t6
+
+    f_tag = 'F_n2v2_ens3' if n2_vtx_mode == 'v2' else 'F_n2fix_ens3'
+    bdf33_tag = 'Blend_BDF_n2v2_33' if n2_vtx_mode == 'v2' else 'Blend_BDF_n2fix_raw'
+    bdf40_tag = 'Blend_BDF_n2v2_40_40_20' if n2_vtx_mode == 'v2' else 'Blend_BDF_n2fix_40_40_20'
 
     y_t6 = labels[tune6k_m]
     fam_t6 = fam_codes[tune6k_m]
     t6_only_slices = {k: v[tune6k_m] for k, v in t6k_slices.items()}
     eval_t6 = {}
-    for mnm, parr in (('F_n2fix_ens3', p_f_t6), ('Blend_BD_raw', p_bd_t6), ('Blend_BDF_n2fix_raw', p_bdf_t6)):
+    for mnm, parr in (
+        (f_tag, p_f_t6),
+        ('Tracklet_raw', p_b_t6),
+        ('DualRegime_raw', p_d_t6),
+        ('Blend_BD_raw', p_bd_t6),
+        (bdf33_tag, p_bdf33_t6),
+        (bdf40_tag, p_bdf40_t6),
+    ):
         eval_t6[mnm] = {
             'slices': {sn: _ba4_and_nll(y_t6[mk], parr[mk]) for sn, mk in t6_only_slices.items()},
-            'within_slice_1pct_fpr': {sn: _tau_efficiency_at_fpr(parr[t6_only_slices[sn], 2], y_t6[t6_only_slices[sn]], 0.01) for sn in ('All_Tune6k', 'D1_obs', 'Pinpoint_PixXY', 'Front30')},
+            'within_slice_1pct_fpr': {sn: _tau_efficiency_at_fpr(parr[t6_only_slices[sn], 2], y_t6[t6_only_slices[sn]], 0.01) for sn in ('All_Tune6k', 'D1_obs', 'Pinpoint_PixXY', 'Front30', 'Interm150')},
             'split_half_1pct_fpr': {sn: _split_half_tail_eval(parr[:, 2], y_t6, tune_meta.iloc[tune6k_m].reset_index(drop=True), t6_only_slices[sn], fpr_targets=(0.01, 0.001)) for sn in ('All_Tune6k', 'D1_obs', 'Pinpoint_PixXY')},
         }
 
+    boot_slices = ('All_Tune6k', 'D1_obs', 'Front30', 'Interm150', 'Pinpoint_PixXY')
     paired_boot = {
-        'Blend_BDF_n2fix - Blend_BD_raw': {
-            sn: paired_family_bootstrap_delta(p_bdf_t6[:, 2], p_bd_t6[:, 2], p_bdf_t6, p_bd_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
-            for sn in ('All_Tune6k', 'D1_obs', 'Front30', 'Interm150', 'Pinpoint_PixXY')
+        f'{bdf33_tag} - Blend_BD_raw': {
+            sn: _paired_family_bootstrap_delta(p_bdf33_t6[:, 2], p_bd_t6[:, 2], p_bdf33_t6, p_bd_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
+            for sn in boot_slices
         },
-        'Blend_BDF_n2fix - Tracklet_raw': {
-            sn: paired_family_bootstrap_delta(p_bdf_t6[:, 2], p_b_t6[:, 2], p_bdf_t6, p_b_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
-            for sn in ('All_Tune6k', 'D1_obs', 'Front30', 'Interm150', 'Pinpoint_PixXY')
+        f'{bdf40_tag} - Blend_BD_raw': {
+            sn: _paired_family_bootstrap_delta(p_bdf40_t6[:, 2], p_bd_t6[:, 2], p_bdf40_t6, p_bd_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
+            for sn in boot_slices
+        },
+        f'{bdf33_tag} - Tracklet_raw': {
+            sn: _paired_family_bootstrap_delta(p_bdf33_t6[:, 2], p_b_t6[:, 2], p_bdf33_t6, p_b_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
+            for sn in boot_slices
+        },
+        f'{bdf40_tag} - Tracklet_raw': {
+            sn: _paired_family_bootstrap_delta(p_bdf40_t6[:, 2], p_b_t6[:, 2], p_bdf40_t6, p_b_t6, y_t6, fam_t6, t6_only_slices[sn], n_boot=1000, seed=20263250)
+            for sn in boot_slices
         },
     }
 
@@ -2331,8 +2446,9 @@ def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
         pf = np.mean([np.load(s2_root / f'seed_{s}/probs_ood_{oname}_seed{s}.npy').astype(np.float64) for s in STAGE2_SEEDS], axis=0)
         pb_o = np.load(nextgen_root / f'exp_tracklet_ipformer/stage2/probs_ood_{oname}_ens.npy').astype(np.float64)
         pd_o = np.load(nextgen_root / 'exp_dual_regime/stage2/ood_and_stress_ens3_probs.npz')[f'ood_{oname}'].astype(np.float64)
-        pbdf_o = (pb_o + pd_o + pf) / 3.0
-        for tag_o, po in (('F_n2fix_ens3', pf), ('Blend_BDF_n2fix', pbdf_o)):
+        pbdf33_o = (pb_o + pd_o + pf) / 3.0
+        pbdf40_o = 0.4 * pb_o + 0.4 * pd_o + 0.2 * pf
+        for tag_o, po in ((f_tag, pf), (bdf33_tag, pbdf33_o), (bdf40_tag, pbdf40_o)):
             if len(np.unique(yo)) >= 4:
                 ood_summary.setdefault(oname, {})[tag_o] = {'n_events': int(len(yo)), **_ba4_and_nll(yo, po)}
             else:
@@ -2359,7 +2475,8 @@ def aggregate_stage2_results(out_dir: Path) -> dict[str, Any]:
 
     out_doc = {
         'UTC': datetime.now(timezone.utc).isoformat(),
-        'stage': 'Stage-II TauKinemaDiffNet N2 Fix (Train32k x 3 seeds -> Tune6k + 6 OOD + 7 Stress + B+D+F Blend)',
+        'n2_vtx_mode': n2_vtx_mode,
+        'stage': f'Stage-II TauKinemaDiffNet ({n2_vtx_mode}) (Train32k x 3 seeds -> Tune6k + 6 OOD + 7 Stress + B+D+F Blends)',
         'per_seed_tune6k': per_seed,
         'pv_audit_tune6k': pv_audit,
         'tune6k_models': eval_t6,
@@ -2394,6 +2511,7 @@ def main() -> None:
     parser.add_argument('--part', type=int, default=0)
     parser.add_argument('--n-parts', type=int, default=8)
     parser.add_argument('--s2-aux-kind', type=str, default='ood', choices=('ood', 'stress'))
+    parser.add_argument('--n2-vtx-mode', choices=('v1', 'v2'), default='v1')
     parser.add_argument('--resume', action='store_true')
     args = parser.parse_args()
 
@@ -2429,10 +2547,12 @@ def main() -> None:
                 micro_bs=args.micro_bs,
                 workers=args.workers,
                 cache_dir=args.cache_dir,
+                n2_vtx_mode=args.n2_vtx_mode,
             )
             print(json.dumps({
                 'status': res['status'],
                 'run_name': res['run_name'],
+                'n2_vtx_mode': args.n2_vtx_mode,
                 'parameters': res['parameters'],
                 'best_pass': res['best_pass'],
                 'best_screen_nll': res['best_screen_nll'],
@@ -2462,10 +2582,10 @@ def main() -> None:
         elif args.mode == 's2_prepare_aux':
             print(json.dumps(s2_prepare_aux_cache(args.out_dir / 'stage2/_cache', args.s2_aux_kind, workers=args.workers), indent=2))
         elif args.mode == 's2_train':
-            res = run_stage2_seed(args.out_dir, args.seed, passes=args.passes, batch_size=args.batch_size, micro_bs=args.micro_bs, workers=args.workers, resume=args.resume)
+            res = run_stage2_seed(args.out_dir, args.seed, passes=args.passes, batch_size=args.batch_size, micro_bs=args.micro_bs, workers=args.workers, resume=args.resume, n2_vtx_mode=args.n2_vtx_mode)
             print(json.dumps({'status': res['status'], 'seed': res['seed'], 'best_pass': res['best_pass'], 'best_tune_screen_nll': res['best_tune_screen_nll'], 'wall_seconds': res['wall_seconds']}, indent=2))
         elif args.mode == 's2_aggregate':
-            rep = aggregate_stage2_results(args.out_dir)
+            rep = aggregate_stage2_results(args.out_dir, n2_vtx_mode=args.n2_vtx_mode)
             print(json.dumps({'per_seed_tune6k': rep['per_seed_tune6k'], 'pv_audit_tune6k': {k: v['median_abs_dz_mm'] for k, v in rep['pv_audit_tune6k'].items()}}, indent=2))
 
         if guard.violations or (not is_stage2 and _STAGE1_VIOLATIONS):

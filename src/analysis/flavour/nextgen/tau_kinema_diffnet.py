@@ -61,7 +61,10 @@ from analysis.flavour.v3.v2_pinpointformer.pixel_tokenizer import (
     PIX_PLANE_SUMMARY_DIM,
 )
 from analysis.flavour.v3.v2_pinpointformer.stereo_bars import StereoBarNexus, static_scint_stations
-from analysis.flavour.v3.v2_pinpointformer.vertex_anchor import VertexAnchorPredictor
+from analysis.flavour.v3.v2_pinpointformer.vertex_anchor import (
+    VertexAnchorPredictor,
+    select_near_vertex_clusters,
+)
 
 
 PHI_LAW_DIM = 18
@@ -693,6 +696,173 @@ class Explicit12HypothesisEngine(nn.Module):
             }
 
 
+class _RegimeAwareSymmetricVertexRefiner(nn.Module):
+    """Regime-aware Y-mirror-equivariant two-stage (69+54 longitudinal coarse + near-vertex fine) PV refiner."""
+
+    def __init__(self, tok_dim: int, vtx_dim: int = 96, heads: int = 4) -> None:
+        super().__init__()
+        self.prof_proj = nn.Linear(tok_dim, vtx_dim)
+        self.cal_proj = nn.Linear(tok_dim, vtx_dim)
+        self.rel_z_proj = nn.Linear(3, vtx_dim)
+        self.coarse_q = nn.Parameter(torch.randn(1, 4, vtx_dim) * 0.02)
+        self.coarse_cross = ScaledQKNormAttention(dim=vtx_dim, heads=heads, init_scale=8.0, drop_path=0.05)
+        self.coarse_head = nn.Sequential(
+            nn.LayerNorm(vtx_dim + 8),
+            nn.Linear(vtx_dim + 8, vtx_dim),
+            nn.SiLU(),
+        )
+        self.delta_coarse_xz = nn.Linear(vtx_dim, 2)
+
+        self.pix_proj = nn.Linear(tok_dim, vtx_dim)
+        self.fine_rel_proj = nn.Sequential(
+            nn.Linear(6, vtx_dim),
+            nn.LayerNorm(vtx_dim),
+            nn.SiLU(),
+        )
+        self.fine_q = nn.Parameter(torch.randn(1, 4, vtx_dim) * 0.02)
+        self.fine_cross = ScaledQKNormAttention(dim=vtx_dim, heads=heads, init_scale=10.0, drop_path=0.05)
+        self.y_cluster_gate = nn.Linear(vtx_dim, 1)
+
+        self.fine_head = nn.Sequential(
+            nn.LayerNorm(2 * vtx_dim),
+            nn.Linear(2 * vtx_dim, vtx_dim),
+            nn.SiLU(),
+        )
+        self.delta_fine_xz = nn.Linear(vtx_dim, 2)
+        self.y_blend_gate = nn.Linear(vtx_dim, 1)
+        self.log_scale_xyz = nn.Linear(vtx_dim, 3)
+
+        nn.init.normal_(self.delta_coarse_xz.weight, std=1e-3)
+        nn.init.zeros_(self.delta_coarse_xz.bias)
+        nn.init.normal_(self.delta_fine_xz.weight, std=1e-3)
+        nn.init.zeros_(self.delta_fine_xz.bias)
+        nn.init.constant_(self.y_blend_gate.bias, -1.0)
+        nn.init.normal_(self.log_scale_xyz.weight, std=1e-3)
+        nn.init.zeros_(self.log_scale_xyz.bias)
+
+    def forward(
+        self,
+        z_seq: torch.Tensor,
+        z_act: torch.Tensor,
+        layer_z_69_mm: torch.Tensor,
+        cal_st_tok: torch.Tensor,
+        cal_st_mask: torch.Tensor,
+        cal_st_z_mm: torch.Tensor,
+        anchor_meta_feat: torch.Tensor,
+        v_prior_mm: torch.Tensor,
+        is_front_p: torch.Tensor,
+        u_pix: torch.Tensor | None = None,
+        pix_xyz_mm: torch.Tensor | None = None,
+        pix_mask: torch.Tensor | None = None,
+        pix_plane: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        b = int(z_seq.shape[0])
+        prior = v_prior_mm.float()
+
+        dz_69 = layer_z_69_mm[None, :] - prior[:, 2:3]
+        rel_69 = torch.stack([
+            dz_69 / 40.0,
+            torch.asinh(dz_69 / 10.0) / 3.0,
+            ((dz_69 >= -25.0) & (dz_69 <= 165.0)).float(),
+        ], dim=-1)
+        p_69 = (self.prof_proj(z_seq) + self.rel_z_proj(rel_69.to(z_seq.dtype))) * z_act.unsqueeze(-1).to(z_seq.dtype)
+
+        dz_54 = cal_st_z_mm[None, :] - prior[:, 2:3]
+        rel_54 = torch.stack([
+            dz_54 / 40.0,
+            torch.asinh(dz_54 / 10.0) / 3.0,
+            ((dz_54 >= -25.0) & (dz_54 <= 165.0)).float(),
+        ], dim=-1)
+        p_54 = (self.cal_proj(cal_st_tok) + self.rel_z_proj(rel_54.to(cal_st_tok.dtype))) * cal_st_mask.unsqueeze(-1).to(cal_st_tok.dtype)
+
+        prof_tok = torch.cat([p_69, p_54], dim=1)
+        prof_m = torch.cat([z_act, cal_st_mask], dim=1)
+        any_prof = prof_m.any(dim=1, keepdim=True)
+        safe_pm = prof_m.clone()
+        if (~any_prof.squeeze(-1)).any():
+            safe_pm[~any_prof.squeeze(-1), 0] = True
+        h_c_attn = self.coarse_cross(self.coarse_q.expand(b, -1, -1), prof_tok, safe_pm).mean(dim=1)
+        h_c_attn = h_c_attn * any_prof.to(h_c_attn.dtype)
+        h_c = self.coarse_head(torch.cat([h_c_attn, anchor_meta_feat.to(h_c_attn.dtype)], dim=-1))
+
+        with torch.amp.autocast(device_type=h_c.device.type, enabled=False):
+            c_scale = torch.where(
+                is_front_p[:, None],
+                prior.new_tensor([70.0, 90.0]),
+                prior.new_tensor([140.0, 260.0]),
+            )
+            d_xz_c = torch.tanh(self.delta_coarse_xz(h_c.float())) * c_scale
+            v_coarse = torch.stack([
+                prior[:, 0] + d_xz_c[:, 0],
+                prior[:, 1],
+                prior[:, 2] + d_xz_c[:, 1],
+            ], dim=-1)
+
+        if u_pix is not None and pix_xyz_mm is not None and pix_mask is not None and pix_xyz_mm.shape[1] > 0:
+            k_sel = min(64, pix_xyz_mm.shape[1])
+            c_idx, c_mask = select_near_vertex_clusters(
+                pix_xyz_mm, pix_mask, v_coarse.detach(), k_vtx=k_sel, pix_plane=pix_plane
+            )
+            c_tok = self.pix_proj(
+                torch.gather(u_pix, 1, c_idx.unsqueeze(-1).expand(-1, -1, u_pix.shape[-1]))
+            )
+            c_xyz = torch.gather(pix_xyz_mm.float(), 1, c_idx.unsqueeze(-1).expand(-1, -1, 3))
+            rel = c_xyz - v_coarse[:, None, :]
+            dx = rel[..., 0]
+            dy = rel[..., 1]
+            dz = rel[..., 2]
+            abs_dy = dy.abs()
+            rel_inv = torch.stack([
+                dx / 15.0,
+                abs_dy / 15.0,
+                dz / 35.0,
+                torch.asinh(dx / 2.0) / 3.0,
+                torch.asinh(abs_dy / 2.0) / 3.0,
+                torch.asinh(dz / 8.0) / 3.0,
+            ], dim=-1)
+            c_in = (c_tok + self.fine_rel_proj(rel_inv.to(c_tok.dtype))) * c_mask.unsqueeze(-1).to(c_tok.dtype)
+            any_c = c_mask.any(dim=1, keepdim=True)
+            safe_cm = c_mask.clone()
+            if (~any_c.squeeze(-1)).any():
+                safe_cm[~any_c.squeeze(-1), 0] = True
+            h_f_attn = self.fine_cross(self.fine_q.expand(b, -1, -1), c_in, safe_cm).mean(dim=1)
+            h_f_safe = torch.where(any_c, h_f_attn, h_c_attn)
+
+            w_y = torch.softmax(
+                self.y_cluster_gate(c_in).squeeze(-1).float().masked_fill(~safe_cm, float('-inf')),
+                dim=1,
+            ) * c_mask.float()
+            dy_cent = (w_y * dy.clamp(-30.0, 30.0)).sum(dim=1)
+            has_fine_y = any_c.squeeze(-1).float()
+        else:
+            h_f_safe = h_c_attn
+            dy_cent = v_coarse.new_zeros((b,))
+            has_fine_y = v_coarse.new_zeros((b,))
+
+        h_comb = self.fine_head(torch.cat([h_c, h_f_safe], dim=-1))
+        with torch.amp.autocast(device_type=h_comb.device.type, enabled=False):
+            hcf = h_comb.float()
+            f_scale = torch.where(
+                is_front_p[:, None],
+                v_coarse.new_tensor([18.0, 30.0]),
+                v_coarse.new_tensor([25.0, 60.0]),
+            )
+            d_xz_f = torch.tanh(self.delta_fine_xz(hcf)) * f_scale
+            dy_f = torch.sigmoid(self.y_blend_gate(hcf).squeeze(-1)) * dy_cent * has_fine_y
+            v_anchor = torch.stack([
+                v_coarse[:, 0] + d_xz_f[:, 0],
+                v_coarse[:, 1] + dy_f,
+                v_coarse[:, 2] + d_xz_f[:, 1],
+            ], dim=-1)
+            base_sc = torch.where(
+                is_front_p[:, None],
+                v_coarse.new_tensor([0.35, 0.35, 3.5]),
+                v_coarse.new_tensor([1.20, 1.20, 8.5]),
+            )
+            sigma_anc = (torch.exp(self.log_scale_xyz(hcf).clamp(-4.5, 4.0)) * base_sc).clamp(0.03, 160.0)
+        return v_anchor, sigma_anc
+
+
 class TauKinemaDiffNet(NextGenFlavourModel):
     """PINPOINT-Native Differentiable Physics-Hypothesis Likelihood Network (~5.35M params)."""
 
@@ -711,6 +881,9 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         self.ablation = str(cfg.get('ablation', 'full'))
         if self.ablation not in self.VALID_ABLATIONS:
             raise ValueError(f'Unknown ablation {self.ablation!r}; expected one of {self.VALID_ABLATIONS}')
+        self.n2_vtx_mode = str(cfg.get('n2_vtx_mode', 'v1'))
+        if self.n2_vtx_mode not in ('v1', 'v2'):
+            raise ValueError(f'Unknown n2_vtx_mode {self.n2_vtx_mode!r}; expected v1 or v2')
 
         bounds = detector_bounds(geometry)
         stations = static_scint_stations(geometry, bounds)
@@ -775,7 +948,12 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         self.trk_attn = AttentionStack(
             dim=dim, n_layers=2, heads=heads, init_scale=12.0, max_scale=50.0, drop_path=drop_path
         )
-        self.vtx_anchor = VertexAnchorPredictor(dim=dim, heads=heads)
+        if self.n2_vtx_mode == 'v2':
+            self.vtx_anchor = None
+            self.vtx_refiner_v2 = _RegimeAwareSymmetricVertexRefiner(tok_dim=dim, vtx_dim=96, heads=4)
+        else:
+            self.vtx_anchor = VertexAnchorPredictor(dim=dim, heads=heads)
+            self.vtx_refiner_v2 = None
         self.vtx_layer = DifferentiableStudentTVertexLayer(hidden_dim=dim, df=3.0, n_iters=4)
         self.pv_regime_scale = nn.Sequential(
             nn.Linear(3 * dim + 16 + 6, 64),
@@ -838,6 +1016,9 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         ]).astype(np.float32)
         self.register_buffer('z_order_idx', torch.from_numpy(z_order).long())
         self.register_buffer('z_plane_geom', torch.from_numpy(z_geom))
+        if self.n2_vtx_mode == 'v2':
+            self.register_buffer('layer_z_69_mm', torch.from_numpy(all_z[z_order].astype(np.float32)))
+            self.register_buffer('cal_st_z_mm', torch.from_numpy(np.asarray(stations['station_z_mm'], dtype=np.float32)))
         self.z_pos_proj = nn.Linear(4, dim)
         self.z_profile_encoder = AttentionStack(
             dim=dim, n_layers=2, heads=heads, init_scale=10.0, max_scale=50.0, drop_path=drop_path
@@ -924,7 +1105,7 @@ class TauKinemaDiffNet(NextGenFlavourModel):
                 br = 'stereo_bars'
             elif name.startswith('spec_'):
                 br = 'spectrometer'
-            elif name.startswith(('trk_', 'vtx_layer.', 'vtx_anchor.', 'vtx_stat_proj.', 'pv_regime_scale.')):
+            elif name.startswith(('trk_', 'vtx_layer.', 'vtx_anchor.', 'vtx_refiner_v2.', 'vtx_stat_proj.', 'pv_regime_scale.')):
                 br = 'tracklet_vertex'
             elif name.startswith(('cascade_fitter.', 'hemisphere_mod.', 'w_stub', 'w_gap', 'law2_scale')):
                 br = 'physics_laws'
@@ -934,6 +1115,74 @@ class TauKinemaDiffNet(NextGenFlavourModel):
                 br = 'hypothesis_head'
             groups.setdefault(br, []).append(param)
         return groups
+
+    def _compute_cal_prior_v2(
+        self,
+        batch: dict[str, torch.Tensor],
+        b: int,
+        device: torch.device,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Backscatter-safe regime prior + 8-d anchor metadata feature vector for n2v2."""
+        center = self.default_center_mm[None, :].expand(b, -1).to(device)
+        cal_start = batch['cal_start'].float()
+        cal_valid = cal_start[:, 3] > 0.5
+        v_cal_prior = torch.where(
+            cal_valid.unsqueeze(-1),
+            torch.stack([cal_start[:, 1], cal_start[:, 2], cal_start[:, 0]], dim=-1),
+            center,
+        )
+
+        ps = batch['pix_plane_summary'].float()  # (B, 15, 12)
+        tgt_act_raw = ps[:, :12, 0] > 0.5
+        tgt_multi = ps[:, :12, 1] >= (math.log1p(2.0) / 8.0 - 1e-4)
+        near_cal = (~cal_valid[:, None]) | ((cal_start[:, 0:1] - self.pix_plane_z_mm[None, :12]) < 95.0)
+        tgt_act_clean = tgt_act_raw & (tgt_multi | near_cal)
+        use_clean = tgt_act_clean.any(dim=1, keepdim=True)
+        tgt_act = torch.where(use_clean, tgt_act_clean, tgt_act_raw)
+
+        has_tgt = tgt_act.any(dim=1)
+        p_grid = torch.arange(12, device=device, dtype=torch.long)[None, :].expand(b, 12)
+        first_tgt_p = torch.where(tgt_act, p_grid, torch.full_like(p_grid, 99)).min(dim=1).values.clamp(max=11)
+        is_front_p = has_tgt & (first_tgt_p <= 5)
+        is_mid_p = has_tgt & (first_tgt_p >= 6)
+
+        b_idx = torch.arange(b, device=device)
+        ps_first = ps[b_idx, first_tgt_p]
+        x_si = self.default_center_mm[0] + 135.0 * ps_first[:, 7]
+        y_si = self.default_center_mm[1] + 100.0 * ps_first[:, 6]
+        z_si_p = self.pix_plane_z_mm[first_tgt_p]
+
+        z_w_f = torch.where(first_tgt_p == 0, z_si_p + 7.5, z_si_p - 14.0)
+        v_si_front = torch.stack([x_si, y_si, z_w_f], dim=-1)
+        avr = batch['avr_pv_mm'].float() if 'avr_pv_mm' in batch else torch.zeros((b, 4), device=device)
+        avr_has = avr[:, 3] > 0.5
+        avr_ok = is_front_p & avr_has & ((avr[:, 2] - z_w_f).abs() < 45.0)
+        v_prior_front = torch.where(avr_ok.unsqueeze(-1), avr[:, :3], v_si_front)
+
+        si_precedes_cal = is_mid_p & cal_valid & (z_si_p <= cal_start[:, 0] + 10.0) & ((cal_start[:, 0] - z_si_p) < 85.0)
+        z_est_m = torch.where(
+            si_precedes_cal,
+            torch.minimum(cal_start[:, 0], z_si_p - 12.5),
+            torch.where(cal_valid, cal_start[:, 0], torch.where(is_mid_p, z_si_p - 30.0, center[:, 2])),
+        )
+        use_si_xy_m = is_mid_p & ((~cal_valid) | ((z_si_p - z_est_m).abs() <= 40.0))
+        xy_est_m = torch.where(use_si_xy_m.unsqueeze(-1), torch.stack([x_si, y_si], dim=-1), v_cal_prior[:, :2])
+        v_prior_mid = torch.cat([xy_est_m, z_est_m.unsqueeze(-1)], dim=-1)
+
+        v_phys_prior = torch.where(is_front_p.unsqueeze(-1), v_prior_front, v_prior_mid)
+        any_valid = cal_valid | has_tgt | avr_ok
+
+        anchor_meta_feat = torch.stack([
+            (v_phys_prior[:, 2] - self.default_center_mm[2]) / 1000.0,
+            ((z_si_p - v_phys_prior[:, 2]) / 45.0).clamp(-5.0, 5.0) * has_tgt.float(),
+            ((v_cal_prior[:, 2] - v_phys_prior[:, 2]) / 45.0).clamp(-5.0, 5.0) * cal_valid.float(),
+            ((avr[:, 2] - v_phys_prior[:, 2]) / 30.0).clamp(-4.0, 4.0) * avr_has.float(),
+            is_front_p.float(),
+            is_mid_p.float(),
+            avr_ok.float(),
+            cal_valid.float(),
+        ], dim=-1)
+        return v_phys_prior, any_valid, is_front_p, is_mid_p, anchor_meta_feat
 
     def _compute_cal_prior(
         self,
@@ -1040,16 +1289,34 @@ class TauKinemaDiffNet(NextGenFlavourModel):
             z_prof_glob = (z_w.unsqueeze(-1) * z_seq.float()).sum(dim=1)
 
         # 4. Two-Stage Neural Vertex Anchor (causal silicon+calorimeter+AVR prior -> coarse+fine PV)
-        v_phys_prior, any_valid_prior, is_front_p, is_mid_p = self._compute_cal_prior(batch, b, device)
-        v_anchor, log_var_anchor = self.vtx_anchor(
-            z_seq.to(pix_plane_tok.dtype),
-            z_act,
-            v_phys_prior,
-            pix_tokens=u_pix,
-            pix_xyz_mm=pix_xyz,
-            pix_mask=pix_mask,
-            pix_plane=batch['pix_plane'],
-        )
+        if self.n2_vtx_mode == 'v2':
+            v_phys_prior, any_valid_prior, is_front_p, is_mid_p, anchor_meta_feat = self._compute_cal_prior_v2(batch, b, device)
+            v_anchor, sigma_anc_v2 = self.vtx_refiner_v2(
+                z_seq.to(pix_plane_tok.dtype),
+                z_act,
+                self.layer_z_69_mm,
+                cal_tok[:, :self.n_st].to(pix_plane_tok.dtype),
+                cal_mask[:, :self.n_st],
+                self.cal_st_z_mm,
+                anchor_meta_feat,
+                v_phys_prior,
+                is_front_p,
+                u_pix=u_pix,
+                pix_xyz_mm=pix_xyz,
+                pix_mask=pix_mask,
+                pix_plane=batch['pix_plane'],
+            )
+        else:
+            v_phys_prior, any_valid_prior, is_front_p, is_mid_p = self._compute_cal_prior(batch, b, device)
+            v_anchor, log_var_anchor = self.vtx_anchor(
+                z_seq.to(pix_plane_tok.dtype),
+                z_act,
+                v_phys_prior,
+                pix_tokens=u_pix,
+                pix_xyz_mm=pix_xyz,
+                pix_mask=pix_mask,
+                pix_plane=batch['pix_plane'],
+            )
 
         # 4. Soft non-exclusive multi-tracklets (reuse precomputed if present, else extract on-the-fly)
         if 'trk_kin' in batch and 'trk_morph' in batch and 'trk_mask' in batch:
@@ -1090,7 +1357,7 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         trk_emb = self.trk_attn(trk_emb, trk_mask, pair_bias=trk_pair_bias)
 
         # Differentiable Student-t (df=3) PV + SV + IP re-injection, z-centered around v_anchor[:, 2]
-        z_ref = v_anchor[:, 2:3].float()
+        z_ref = (v_anchor[:, 2:3].detach() if self.n2_vtx_mode == 'v2' else v_anchor[:, 2:3]).float()
         trk_kin_c = trk_kin.float().clone()
         trk_kin_c[..., 2] = trk_kin_c[..., 2] - z_ref
         prior_c = v_anchor.float().clone()
@@ -1109,12 +1376,26 @@ class TauKinemaDiffNet(NextGenFlavourModel):
             t_w = t_w / t_w.sum(dim=1, keepdim=True).clamp_min(1e-6)
             trk_glob = (t_w.unsqueeze(-1) * trk_emb.float()).sum(dim=1)
 
-            has_tgt_trk = (trk_mask & (trk_morph[..., 1] < 0.5)).any(dim=1)
-            anc_scale_base = v_anchor.new_tensor([0.20, 0.20, 2.50])[None, :]
-            sigma_anc = (anc_scale_base * torch.exp(0.5 * log_var_anchor.float().clamp(-6.0, 6.0))).clamp(0.02, 150.0)
-            prec_anc = 1.0 / sigma_anc.square()
-            sigma_trk = vtx_out['scale_pv_mm'].float().clamp(0.02, 150.0)
-            prec_trk = (1.0 / sigma_trk.square()) * has_tgt_trk.unsqueeze(-1).float()
+            if self.n2_vtx_mode == 'v2':
+                tgt_trk_m = trk_mask & (trk_morph[..., 1] < 0.5)
+                has_tgt_trk = tgt_trk_m.any(dim=1)
+                has_2trk = (tgt_trk_m.sum(dim=1) >= 2).float()
+                sigma_anc = sigma_anc_v2.float().clamp(0.03, 160.0)
+                prec_anc = 1.0 / sigma_anc.square().clamp_min(9e-4)
+                sigma_trk = vtx_out['scale_pv_mm'].float().clamp(0.02, 150.0)
+                trk_axis_gate = torch.stack([
+                    has_2trk,
+                    has_2trk,
+                    0.25 * has_2trk * is_front_p.float(),
+                ], dim=-1)
+                prec_trk = (1.0 / sigma_trk.square().clamp_min(9e-4)) * trk_axis_gate
+            else:
+                has_tgt_trk = (trk_mask & (trk_morph[..., 1] < 0.5)).any(dim=1)
+                anc_scale_base = v_anchor.new_tensor([0.20, 0.20, 2.50])[None, :]
+                sigma_anc = (anc_scale_base * torch.exp(0.5 * log_var_anchor.float().clamp(-6.0, 6.0))).clamp(0.02, 150.0)
+                prec_anc = 1.0 / sigma_anc.square()
+                sigma_trk = vtx_out['scale_pv_mm'].float().clamp(0.02, 150.0)
+                prec_trk = (1.0 / sigma_trk.square()) * has_tgt_trk.unsqueeze(-1).float()
             prec_tot = (prec_anc + prec_trk).clamp_min(1e-6)
             v_pv_fused = (prec_anc * v_anchor.float() + prec_trk * v_pv_trk.float()) / prec_tot
             n_trk_norm = torch.log1p((trk_mask & (trk_morph[..., 1] < 0.5)).float().sum(dim=1)) / 4.0
@@ -1189,14 +1470,26 @@ class TauKinemaDiffNet(NextGenFlavourModel):
             sv_disp = vtx_out['sv_disp_mm'].float()
             dchi2 = vtx_out['delta_chi2_2v'].float()
             sv_mag = torch.sqrt(sv_disp.square().sum(dim=-1, keepdim=True) + 1e-8)
-            vtx_stats = torch.cat([
-                torch.log1p(dchi2.clamp_min(0.0)) / 3.0,
-                torch.asinh(sv_mag / 0.2) / 3.0,
-                torch.asinh(sv_disp[:, 2:3] / 0.5) / 3.0,
-                torch.log(scale_pv.clamp_min(0.01)),
-                (v_pv[:, 2:3] - self.default_center_mm[2]) / 500.0,
-                vtx_out['pi_sv'].float().amax(dim=1, keepdim=True),
-            ], dim=-1)
+            if self.n2_vtx_mode == 'v2':
+                sv_disp_det_s = sv_disp.detach()
+                sv_mag_det_s = sv_mag.detach()
+                vtx_stats = torch.cat([
+                    torch.log1p(dchi2.detach().clamp_min(0.0)) / 3.0,
+                    torch.asinh(sv_mag_det_s / 0.2) / 3.0,
+                    torch.asinh(sv_disp_det_s[:, 2:3] / 0.5) / 3.0,
+                    torch.log(scale_pv.detach().clamp_min(0.01)),
+                    (v_pv.detach()[:, 2:3] - self.default_center_mm[2]) / 500.0,
+                    vtx_out['pi_sv'].detach().float().amax(dim=1, keepdim=True),
+                ], dim=-1)
+            else:
+                vtx_stats = torch.cat([
+                    torch.log1p(dchi2.clamp_min(0.0)) / 3.0,
+                    torch.asinh(sv_mag / 0.2) / 3.0,
+                    torch.asinh(sv_disp[:, 2:3] / 0.5) / 3.0,
+                    torch.log(scale_pv.clamp_min(0.01)),
+                    (v_pv[:, 2:3] - self.default_center_mm[2]) / 500.0,
+                    vtx_out['pi_sv'].float().amax(dim=1, keepdim=True),
+                ], dim=-1)
             vtx_stat_tok = self.vtx_stat_proj(vtx_stats)
 
             z_backbone = self.global_fusion(torch.cat([
@@ -1395,13 +1688,15 @@ def compute_tau_kinema_loss(
     fixed_denoms: dict[str, float] | None = None,
     w_proc: float = 1.0,
     w_charm: float = 0.25,
-    w_vtx: float = 0.20,
+    w_vtx: float | None = None,
     w_kin: float = 0.15,
     w_res: float = 1.0e-3,
     w_sv_disp: float = 0.0,  # Strictly 0.0 on Clean v3 (zero tau_decay_L3d_mm on train)
 ) -> tuple[torch.Tensor, dict[str, float]]:
     """Compute exact F5 supervision loss for TauKinemaDiffNet (strictly internal_train keys only)."""
     del w_sv_disp  # Explicitly unused; kept in signature to document F5 closure
+    is_n2v2 = getattr(model, 'n2_vtx_mode', 'v1') == 'v2'
+    eff_w_vtx = (0.30 if is_n2v2 else 0.20) if w_vtx is None else float(w_vtx)
     if isinstance(out, NextGenModelOutput):
         logits7 = out.logits7
         probs4 = out.probs4
@@ -1485,7 +1780,8 @@ def compute_tau_kinema_loss(
                 denom_override=fd.get('vtx'),
             )
             if 'v_anchor' in aux and 'sigma_anc' in aux:
-                l_vtx = l_vtx + 0.15 * student_t_vertex_loss(
+                anc_w = 0.25 if is_n2v2 else 0.15
+                l_vtx = l_vtx + anc_w * student_t_vertex_loss(
                     aux['v_anchor'],
                     aux['sigma_anc'],
                     batch['vertex_xyz_mm'],
@@ -1523,7 +1819,7 @@ def compute_tau_kinema_loss(
         total = (
             w_proc * l_proc
             + w_charm * l_charm
-            + w_vtx * l_vtx
+            + eff_w_vtx * l_vtx
             + w_kin * l_kin
             + l_prior
             + l_res

@@ -31,6 +31,7 @@ from analysis.flavour.nextgen.seal_guard import (
 from analysis.flavour.nextgen.tau_kinema_diffnet import (
     TauKinemaDiffNet,
     compute_tau_kinema_loss,
+    compute_tau_kinema_window_denoms,
 )
 from analysis.flavour.nextgen.tracklet_ipformer import extract_tracklet_pf_item
 from analysis.flavour.v2.partitions import KEY
@@ -284,6 +285,145 @@ class TestNextGenN2TauKinemaFix(unittest.TestCase):
         self.assertEqual(float(it_full['pix_feat'][tgt_cl, 9].max()), 0.0)  # ecc == 0 for single 1mm voxel
         self.assertGreater(float(np.abs(it_q['pix_patches'][p_tgt].astype(np.float32) - it_full['pix_patches'][p_tgt].astype(np.float32)).max()), 1e-2)
         self.assertLess(float(it_full['pix_patches'][p_tgt].sum()), float(it_q['pix_patches'][p_tgt].sum()))  # 1-bit dedup (1 vs 4)
+
+    def test_n2_v2_gate_ab_and_symmetry(self) -> None:
+        """Verify n2v2 Gate A/B, backscatter guard, Y-mirror equivariance, bs=1 vs bs=8, and grad_accum=2."""
+        with SealAuditGuard():
+            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            geometry, items32, bounds = _load_real_or_synthetic_32(device)
+            b8 = move_batch_to_device(collate_tau_kinema(items32[:8], bounds['y_scint_center'], bounds['n_bars']), device)
+            b1 = move_batch_to_device(collate_tau_kinema(items32[:1], bounds['y_scint_center'], bounds['n_bars']), device)
+            b32 = move_batch_to_device(collate_tau_kinema(items32, bounds['y_scint_center'], bounds['n_bars']), device)
+
+            torch.manual_seed(42)
+            model = TauKinemaDiffNet(
+                geometry,
+                {'dim': 168, 'heads': 8, 'drop_path': 0.0, 'head_dropout': 0.0, 'n2_vtx_mode': 'v2'},
+            ).to(device)
+            ga = run_gate_a_health_check(
+                model,
+                b8,
+                lambda out, b: compute_tau_kinema_loss(model, out, b)[0],
+                expected_logits_shape=(8, 7),
+                branch_groups_fn=lambda m: {k: [(f'p{i}', p) for i, p in enumerate(v)] for k, v in m.branch_parameter_groups().items()},
+            )
+            self.assertTrue(ga['passed'])
+
+            ti = verify_inference_truth_invariance(model, b8, atol=1e-7)
+            self.assertEqual(float(ti['max_abs_diff']), 0.0)
+
+            # Single-hit upstream tungsten backscatter on plane 1 (>95 mm ahead of cal_start) must not hijack Interm150
+            b_bk = {k: (v.clone() if torch.is_tensor(v) else v) for k, v in b1.items()}
+            b_bk['pix_plane_summary'] = torch.zeros_like(b1['pix_plane_summary'])
+            b_bk['pix_plane_summary'][0, 1, 0] = 1.0
+            b_bk['pix_plane_summary'][0, 1, 1] = float(np.log1p(1.0) / 8.0)  # 1 hit (albedo)
+            b_bk['pix_plane_summary'][0, 7, 0] = 1.0
+            b_bk['pix_plane_summary'][0, 7, 1] = float(np.log1p(5.0) / 8.0)  # 5 hits (shower core)
+            b_bk['cal_start'] = torch.tensor([[float(bounds['pixel_Zpos'][7]) - 10.0, 0.0, bounds['y_scint_center'], 1.0]], device=device)
+            with torch.inference_mode():
+                _, _, is_f_bk, is_m_bk, _ = model._compute_cal_prior_v2(b_bk, 1, device)
+            self.assertFalse(bool(is_f_bk[0].item()))
+            self.assertTrue(bool(is_m_bk[0].item()))
+
+            # Strict Y-mirror equivariance of _RegimeAwareSymmetricVertexRefiner wrt coordinate inputs
+            model.eval()
+            yc = float(bounds['y_scint_center'])
+            b_cpu = move_batch_to_device(collate_tau_kinema(items32[:4], yc, bounds['n_bars']), torch.device('cpu'))
+            m_cpu = copy.deepcopy(model).cpu().eval()
+            torch.manual_seed(7)
+            z_seq_r = torch.randn(4, len(m_cpu.layer_z_69_mm), 168)
+            z_act_r = torch.ones(4, len(m_cpu.layer_z_69_mm), dtype=torch.bool)
+            cal_tok_r = torch.randn(4, m_cpu.n_st, 168)
+            cal_m_r = torch.ones(4, m_cpu.n_st, dtype=torch.bool)
+            meta_r = torch.randn(4, 8)
+            prior_r = torch.tensor([[2.0, yc + 4.5, bounds['z_mid'] - 100.0]] * 4, dtype=torch.float32)
+            is_f_r = torch.tensor([True, True, False, False])
+            u_pix_r = torch.randn_like(b_cpu['pix_xyz_mm'][..., :1]).expand(-1, -1, 168).clone()
+            pix_xyz_mir = b_cpu['pix_xyz_mm'].clone()
+            pix_xyz_mir[..., 1] = 2.0 * yc - pix_xyz_mir[..., 1]
+            prior_mir = prior_r.clone()
+            prior_mir[:, 1] = 2.0 * yc - prior_mir[:, 1]
+            with torch.inference_mode():
+                va1, sa1 = m_cpu.vtx_refiner_v2(
+                    z_seq_r, z_act_r, m_cpu.layer_z_69_mm, cal_tok_r, cal_m_r, m_cpu.cal_st_z_mm,
+                    meta_r, prior_r, is_f_r, u_pix=u_pix_r,
+                    pix_xyz_mm=b_cpu['pix_xyz_mm'], pix_mask=b_cpu['pix_mask'], pix_plane=b_cpu['pix_plane'],
+                )
+                va2, sa2 = m_cpu.vtx_refiner_v2(
+                    z_seq_r, z_act_r, m_cpu.layer_z_69_mm, cal_tok_r, cal_m_r, m_cpu.cal_st_z_mm,
+                    meta_r, prior_mir, is_f_r, u_pix=u_pix_r,
+                    pix_xyz_mm=pix_xyz_mir, pix_mask=b_cpu['pix_mask'], pix_plane=b_cpu['pix_plane'],
+                )
+            self.assertLessEqual(float((va2[:, 1] - (2.0 * yc - va1[:, 1])).abs().max().item()), 1e-5)
+            self.assertLessEqual(float((va2[:, [0, 2]] - va1[:, [0, 2]]).abs().max().item()), 1e-5)
+            self.assertLessEqual(float((sa2 - sa1).abs().max().item()), 1e-5)
+
+            # IEEE-FP32 bs=1 vs bs=8 consistency
+            old_mm = torch.backends.cuda.matmul.allow_tf32
+            old_cudnn = torch.backends.cudnn.allow_tf32
+            torch.backends.cuda.matmul.allow_tf32 = False
+            torch.backends.cudnn.allow_tf32 = False
+            try:
+                with torch.inference_mode():
+                    p1 = model(b1)['probs4']
+                    p8 = model(b8)['probs4'][:1]
+                    self.assertLessEqual(float((p1 - p8).abs().max().item()), 1e-6)
+            finally:
+                torch.backends.cuda.matmul.allow_tf32 = old_mm
+                torch.backends.cudnn.allow_tf32 = old_cudnn
+
+            # Exact CPU FP32 grad_accum=2 vs full-batch equivalence (disable stochastic Dropout/DropPath)
+            saved_drop: list[tuple[torch.nn.Module, float]] = []
+            for _mod in m_cpu.modules():
+                if isinstance(_mod, torch.nn.Dropout):
+                    saved_drop.append((_mod, _mod.p))
+                    _mod.p = 0.0
+                elif hasattr(_mod, 'drop_prob'):
+                    saved_drop.append((_mod, _mod.drop_prob))
+                    _mod.drop_prob = 0.0
+            try:
+                m_cpu.train()
+                m_cpu.zero_grad(set_to_none=True)
+                b4a = move_batch_to_device(collate_tau_kinema(items32[:2], yc, bounds['n_bars']), torch.device('cpu'))
+                b4b = move_batch_to_device(collate_tau_kinema(items32[2:4], yc, bounds['n_bars']), torch.device('cpu'))
+                den_full = compute_tau_kinema_window_denoms([b_cpu])
+                den_acc = compute_tau_kinema_window_denoms([b4a, b4b])
+                l_full, _ = compute_tau_kinema_loss(m_cpu, m_cpu.forward_NextGen(b_cpu), b_cpu, fixed_denoms=den_full)
+                l_full.backward()
+                g_full = torch.cat([p.grad.detach().reshape(-1) for p in m_cpu.parameters() if p.grad is not None])
+                m_cpu.zero_grad(set_to_none=True)
+                for mb in (b4a, b4b):
+                    l_mb, _ = compute_tau_kinema_loss(m_cpu, m_cpu.forward_NextGen(mb), mb, fixed_denoms=den_acc)
+                    l_mb.backward()
+                g_acc = torch.cat([p.grad.detach().reshape(-1) for p in m_cpu.parameters() if p.grad is not None])
+                rel_l2 = float((g_full - g_acc).norm() / g_full.norm().clamp_min(1e-12))
+                self.assertLess(rel_l2, 1e-4)
+            finally:
+                for _mod, _p in saved_drop:
+                    if isinstance(_mod, torch.nn.Dropout):
+                        _mod.p = _p
+                    else:
+                        _mod.drop_prob = _p
+
+            # Gate B 32/32 real overfit < 0.05
+            def _gate_b_loss(out: dict, b: dict) -> torch.Tensor:
+                l_f5, _ = compute_tau_kinema_loss(model, out, b, w_vtx=0.0, w_kin=0.0, w_charm=0.05)
+                p4 = out['probs4'].float().clamp_min(1e-7)
+                return F.nll_loss(torch.log(p4), b['label'].long()) + 0.002 * l_f5
+
+            gb = run_gate_b_overfit_32_check(
+                model,
+                b32,
+                _gate_b_loss,
+                steps=100,
+                lr=3.0e-3,
+                min_acc=1.0,
+                max_final_loss=0.05,
+                upstream_param_prefixes=('pix_in.', 'stereo_bars.', 'trk_in.'),
+            )
+            self.assertTrue(gb['passed'])
+            self.assertEqual(float(gb['final_acc']), 1.0)
+            self.assertLess(float(gb['final_loss']), 0.05)
 
 
 if __name__ == '__main__':
