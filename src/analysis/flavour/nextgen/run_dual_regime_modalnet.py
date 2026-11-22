@@ -322,14 +322,18 @@ def stage_authorized_train_shards(data_root: Path, dst_root: Path) -> Path:
 
 
 def _extract_shard_worker(task: tuple) -> list[dict]:
-    shard_str, geom, bounds, cfg, keys_filter_set = task
+    if len(task) == 6:
+        shard_str, geom, bounds, cfg, keys_filter_set, expected_split = task
+    else:
+        shard_str, geom, bounds, cfg, keys_filter_set = task
+        expected_split = 'train'
     shard_p = Path(assert_unsealed_path(shard_str))
     prov = pd.read_parquet(shard_p / 'provenance.parquet', columns=KEY + FAMILY + ['split', 'label'])
     obs_list = pq.read_table(shard_p / 'observations.parquet').to_pylist()
     items = []
     for li, row in enumerate(prov.itertuples(index=False)):
         k = (int(row.run), int(row.chunk), int(row.row))
-        if row.split != 'train':
+        if row.split != expected_split:
             continue
         if keys_filter_set is not None and k not in keys_filter_set:
             continue
@@ -2084,11 +2088,1202 @@ def run_aggregate() -> dict[str, Any]:
     return final_doc
 
 
+# ===========================================================================
+# Stage-II Gate G: Train32k x 3 Seeds {17, 42, 2026}, Tune6k, Sec 12, OOD & Shard-080 Stress
+# ===========================================================================
+STAGE2_DIR = EXP_ROOT / 'stage2'
+STAGE2_CACHE_DIR = STAGE2_DIR / '_stage2_item_cache'
+STAGE2_SEEDS: tuple[int, ...] = (17, 42, 2026)
+ALL_STAGE2_OOD: tuple[str, ...] = (
+    'gen_ood_pythia6_std',
+    'gen_ood_pythia6_nux',
+    'gen_ood_run10085_10088',
+    'diag_pythia8_free_nucleon_nc_charm',
+    'gen_ood_w184_epps21_nc_incl',
+    'gen_ood_w184_epps21_nc_charm',
+)
+
+
+def _weighted_ba4_pct(labels: np.ndarray, probs: np.ndarray, weights: np.ndarray) -> float:
+    pred = np.asarray(probs, dtype=np.float64).argmax(axis=1)
+    y = np.asarray(labels, dtype=np.int64)
+    w = np.asarray(weights, dtype=np.float64)
+    recalls = []
+    for c in range(4):
+        m = (y == c) & (w > 0.0)
+        if m.any():
+            recalls.append(float(w[m & (pred == c)].sum() / max(float(w[m].sum()), 1e-12)))
+    return float(np.mean(recalls)) * 100.0 if recalls else 0.0
+
+
+def _split_half_tail_eval_multi(
+    scores: np.ndarray,
+    labels: np.ndarray,
+    keys_df: pd.DataFrame,
+    mask: np.ndarray,
+) -> dict[str, Any]:
+    return {
+        'fpr_0.01': _split_half_tail_eval(scores, labels, keys_df, mask, 0.01),
+        'fpr_0.001': _split_half_tail_eval(scores, labels, keys_df, mask, 0.001),
+    }
+
+
+def _paired_family_bootstrap_full(
+    probs_a: np.ndarray,
+    probs_b: np.ndarray,
+    labels: np.ndarray,
+    family_codes: np.ndarray,
+    mask: np.ndarray,
+    n_boot: int = 1000,
+    seed: int = 20263250,
+) -> dict[str, Any]:
+    """Paired 1,000-rep family bootstrap returning delta_BA4_pp, delta_NLL, delta_tau_eff_1pct_pp & 0.1%."""
+    base = paired_family_bootstrap_delta(
+        probs_a[:, 2], probs_b[:, 2], probs_a, probs_b, labels, family_codes, mask, n_boot=n_boot, seed=seed
+    )
+    m = np.asarray(mask, dtype=bool)
+    pa = np.clip(probs_a[m].astype(np.float64), 1e-8, 1.0)
+    pa /= np.maximum(pa.sum(axis=1, keepdims=True), 1e-12)
+    pb = np.clip(probs_b[m].astype(np.float64), 1e-8, 1.0)
+    pb /= np.maximum(pb.sum(axis=1, keepdims=True), 1e-12)
+    y = labels[m].astype(np.int64)
+    fams = family_codes[m]
+
+    nll_i_a = -np.log(pa[np.arange(len(y)), y])
+    nll_i_b = -np.log(pb[np.arange(len(y)), y])
+    diff_i = nll_i_a - nll_i_b
+    pt_dnll = float(np.mean(diff_i))
+
+    _, inv = np.unique(fams, return_inverse=True)
+    order = np.argsort(inv, kind='mergesort')
+    _, sp = np.unique(inv[order], return_index=True)
+    groups = [order[s:e] for s, e in zip(sp, np.r_[sp[1:], len(order)])]
+    n_fam = len(groups)
+    rng = np.random.default_rng(seed)
+    d_nll = np.empty(n_boot, dtype=np.float64)
+    for b in range(n_boot):
+        draw = rng.integers(0, n_fam, size=n_fam)
+        b_idx = np.concatenate([groups[g] for g in draw])
+        d_nll[b] = float(np.mean(diff_i[b_idx]))
+
+    return {
+        **base,
+        'delta_NLL': pt_dnll,
+        'delta_NLL_ci95': [float(np.quantile(d_nll, 0.025)), float(np.quantile(d_nll, 0.975))],
+    }
+
+
+def _eff_at_fixed_purity_t3(
+    q3: np.ndarray,
+    y3: np.ndarray,
+    prior_w: tuple[float, float, float] | list[float],
+    target_purity: float,
+    min_selected: int = 5,
+) -> list[float]:
+    """Section 12 fixed-purity recall [%] for (nu_e, nu_mu, NC) under prior weights `prior_w`."""
+    w = np.asarray(prior_w, dtype=np.float64)
+    n_cls = np.array([(y3 == c).sum() for c in range(3)], dtype=np.float64)
+    out: list[float] = []
+    for c in range(3):
+        if n_cls[c] <= 0:
+            out.append(0.0)
+            continue
+        sc_c = q3[:, c]
+        order = np.argsort(-sc_c, kind='mergesort')
+        ys = y3[order]
+        best = 0.0
+        cnt = np.zeros(3, dtype=np.float64)
+        for i in range(len(ys)):
+            cnt[ys[i]] += 1.0
+            if i + 1 < len(ys) and sc_c[order[i]] == sc_c[order[i + 1]]:
+                continue
+            if cnt.sum() < min_selected:
+                continue
+            rates = cnt / np.maximum(n_cls, 1.0)
+            pur = float((w[c] * rates[c]) / max(float(np.dot(w, rates)), 1e-12))
+            if pur >= target_purity and rates[c] > best:
+                best = float(rates[c])
+        out.append(float(best * 100.0))
+    return out
+
+
+def _collaboration_section12_slice(
+    probs4: np.ndarray,
+    labels: np.ndarray,
+    mask: np.ndarray,
+    *,
+    purity_target: float | None = None,
+    natural_prior: tuple[float, float, float] | None = None,
+) -> dict[str, Any]:
+    base = _collaboration_t3_eval(probs4, labels, mask)
+    m = np.asarray(mask, dtype=bool) & (labels != 2)
+    if not m.any() or purity_target is None:
+        return base
+    y3 = three_targets(labels[m])
+    q3 = three_from_four(probs4[m])
+    base[f'eff_at_{int(round(purity_target * 100))}pct_purity_uniform_pct'] = _eff_at_fixed_purity_t3(
+        q3, y3, (1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0), purity_target, min_selected=5
+    )
+    if natural_prior is not None:
+        base[f'eff_at_{int(round(purity_target * 100))}pct_purity_natural_pct'] = _eff_at_fixed_purity_t3(
+            q3, y3, natural_prior, purity_target, min_selected=5
+        )
+    return base
+
+
+def _build_shard080_stress_items(
+    geom: dict,
+    bounds: dict,
+    pool: ProcessPoolExecutor | None = None,
+) -> tuple[dict[str, list[dict]], np.ndarray, pd.DataFrame]:
+    """Exact Stage-325 Shard-080 7-condition detector degradation stress suite (`rng=32510`)."""
+    assert_unsealed_split('validation', stage=2)
+    shard080 = assert_unsealed_path(CLEAN_ROOT / 'data/shards/080')
+    obs_080 = pq.read_table(shard080 / 'observations.parquet').to_pylist()
+    prov_080 = pd.read_parquet(shard080 / 'provenance.parquet', columns=KEY + FAMILY + ['split', 'label'])
+    y_080 = prov_080['label'].to_numpy(dtype=np.int64)
+
+    stress_items: dict[str, list[dict]] = {}
+    for st_name, pkw, cfg_over in STRESS_SPECS:
+        rng_st = np.random.default_rng(32510)
+        cfg_use = {**BASE_OBS_CFG, **cfg_over}
+        pert_obs = [
+            (_perturb_observation_for_stress(ob, bounds, rng_st, **pkw) if pkw else ob)
+            for ob in obs_080
+        ]
+        stress_items[st_name] = _parallel_extract_obs_list(pert_obs, None, geom, bounds, cfg_use, pool=pool)
+    return stress_items, y_080, prov_080
+
+
+def run_stage2_preextract(part: int = -1) -> dict[str, Any]:
+    """Sharded Stage-2 item pre-extraction (`part=0..7` Train32k, `part=8..9` Tune8k, `part=10` 6xOOD + Shard-080 stress)."""
+    for sp in ('train', 'validation', 'tune_screen', 'tune6k', 'ood'):
+        assert_unsealed_split(sp, stage=2)
+
+    t0 = time.perf_counter()
+    geom = json.loads(assert_unsealed_path(CLEAN_ROOT / 'geometry.json').read_text())
+    bounds = detector_bounds(geom)
+    bounds['_plane_x0'] = np.array([cumulative_radiation_length(float(z), geom) for z in bounds['pixel_Zpos']], dtype=np.float32)
+
+    STAGE2_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    n_workers = min(4, max(1, os.cpu_count() or 1))
+    scratch_base = os.environ.get('PINPOINT_V3_SCRATCH', '/tmp')
+    Path(scratch_base).mkdir(parents=True, exist_ok=True)
+
+    if 0 <= part <= 7:
+        all_tr = load_authorized_split_shards(CLEAN_ROOT / 'data', 'train', stage=2)
+        sub_shards = all_tr[part * 10 : (part + 1) * 10]
+        with tempfile.TemporaryDirectory(prefix=f'dr-s2-tr-{part}-', dir=scratch_base) as tmp_dir:
+            tmp_s = Path(tmp_dir) / 'shards'
+            tmp_s.mkdir(parents=True, exist_ok=True)
+            local_dirs = []
+            for sp in sub_shards:
+                assert_unsealed_path(sp)
+                dst_sp = tmp_s / sp.name
+                shutil.copytree(sp, dst_sp)
+                local_dirs.append(dst_sp)
+            tasks = [(str(sd), geom, bounds, BASE_OBS_CFG, None, 'train') for sd in local_dirs]
+            with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
+                parts = list(pool.map(_extract_shard_worker, tasks))
+            part_items = [it for p in parts for it in p]
+        out_f = STAGE2_CACHE_DIR / f'train_part_{part}.pkl'
+        tmp_f = STAGE2_CACHE_DIR / f'train_part_{part}.pkl.tmp'
+        with tmp_f.open('wb') as fh:
+            pickle.dump(part_items, fh, protocol=5)
+        tmp_f.replace(out_f)
+        sec = float(time.perf_counter() - t0)
+        print(f'[stage2-preextract part={part}] Wrote {len(part_items)} train items to {out_f} in {sec:.1f}s', flush=True)
+        return {'part': part, 'split': 'train', 'n_items': len(part_items), 'seconds': sec}
+
+    if 8 <= part <= 9:
+        v_idx = part - 8
+        all_va = load_authorized_split_shards(CLEAN_ROOT / 'data', 'validation', stage=2)
+        sub_shards = all_va[v_idx * 10 : (v_idx + 1) * 10]
+        with tempfile.TemporaryDirectory(prefix=f'dr-s2-va-{v_idx}-', dir=scratch_base) as tmp_dir:
+            tmp_s = Path(tmp_dir) / 'shards'
+            tmp_s.mkdir(parents=True, exist_ok=True)
+            local_dirs = []
+            for sp in sub_shards:
+                assert_unsealed_path(sp)
+                dst_sp = tmp_s / sp.name
+                shutil.copytree(sp, dst_sp)
+                local_dirs.append(dst_sp)
+            tasks = [(str(sd), geom, bounds, BASE_OBS_CFG, None, 'validation') for sd in local_dirs]
+            with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
+                parts = list(pool.map(_extract_shard_worker, tasks))
+            part_items = [it for p in parts for it in p]
+        out_f = STAGE2_CACHE_DIR / f'val_part_{v_idx}.pkl'
+        tmp_f = STAGE2_CACHE_DIR / f'val_part_{v_idx}.pkl.tmp'
+        with tmp_f.open('wb') as fh:
+            pickle.dump(part_items, fh, protocol=5)
+        tmp_f.replace(out_f)
+        sec = float(time.perf_counter() - t0)
+        print(f'[stage2-preextract part={part}] Wrote {len(part_items)} val items to {out_f} in {sec:.1f}s', flush=True)
+        return {'part': part, 'split': 'validation', 'n_items': len(part_items), 'seconds': sec}
+
+    if part == 10:
+        with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp.get_context('fork')) as pool:
+            ood_pre = {
+                ov: _build_ood_items(ov, geom, bounds, pool=pool)
+                for ov in ALL_STAGE2_OOD
+            }
+            stress_items, y_080, prov_080 = _build_shard080_stress_items(geom, bounds, pool=pool)
+        out_f = STAGE2_CACHE_DIR / 'ood_stress_stage2_pack.pkl'
+        tmp_f = STAGE2_CACHE_DIR / 'ood_stress_stage2_pack.pkl.tmp'
+        with tmp_f.open('wb') as fh:
+            pickle.dump(
+                {'ood_pre': ood_pre, 'stress_items': stress_items, 'y_080': y_080, 'prov_080': prov_080},
+                fh,
+                protocol=5,
+            )
+        tmp_f.replace(out_f)
+        sec = float(time.perf_counter() - t0)
+        print(f'[stage2-preextract part=10] Wrote 6xOOD + Shard-080 stress pack to {out_f} in {sec:.1f}s', flush=True)
+        return {'part': 10, 'n_ood_sets': len(ood_pre), 'seconds': sec}
+
+    raise ValueError(f'Expected --part in 0..10, got {part}')
+
+
+@torch.no_grad()
+def _verify_stage2_obs_only_and_truth_invariance(
+    ema_model: DualRegimeModalNet,
+    geom: dict,
+    bounds: dict,
+    tune_meta: pd.DataFrame,
+    saved_probs_tune8k: np.ndarray,
+    device: torch.device,
+) -> dict[str, Any]:
+    """Gate G & Gate A check on trained Stage-II checkpoint:
+    1) Pure-observation label-free replay on 64 Shard-080 events with NO targets/provenance/sidecar (`<= 1e-6`);
+    2) 39-key truth-corruption invariance across all 7 NextGenModelOutput tensors (`<= 1e-7`).
+    """
+    from analysis.flavour.nextgen.seal_guard import TRUTH_BATCH_KEYS
+
+    _set_ieee_fp32(True)
+    ema_model.eval()
+    shard080 = assert_unsealed_path(CLEAN_ROOT / 'data/shards/080')
+    prov64 = pd.read_parquet(shard080 / 'provenance.parquet', columns=KEY).iloc[:64].reset_index(drop=True)
+    raw64 = pq.read_table(shard080 / 'observations.parquet').slice(0, 64)
+
+    with tempfile.TemporaryDirectory(prefix='dr-s2-obsonly-') as tmp_d:
+        tmp_p = Path(tmp_d)
+        pq.write_table(raw64, tmp_p / 'observations.parquet')
+        (tmp_p / 'geometry.json').write_text(json.dumps(geom))
+        assert not (tmp_p / 'targets.parquet').exists()
+        assert not (tmp_p / 'provenance.parquet').exists()
+
+        obs_list = pq.read_table(tmp_p / 'observations.parquet').to_pylist()
+        geom_loaded = json.loads((tmp_p / 'geometry.json').read_text())
+        bounds_loaded = detector_bounds(geom_loaded)
+        bounds_loaded['_plane_x0'] = np.array(
+            [cumulative_radiation_length(float(z), geom_loaded) for z in bounds_loaded['pixel_Zpos']],
+            dtype=np.float32,
+        )
+        obs_items = [
+            extract_dual_regime_item(
+                i, ob, None, compute_observable_containment(ob, geom_loaded, bounds_loaded, BASE_OBS_CFG),
+                geom_loaded, bounds_loaded, BASE_OBS_CFG,
+            )
+            for i, ob in enumerate(obs_list)
+        ]
+        rep_pred = predict_dual_items_fp32(ema_model, obs_items, bounds_loaded, device, batch_size=64)
+        p_obs = rep_pred['probs'].astype(np.float64)
+
+    pos64 = pd.MultiIndex.from_frame(tune_meta[KEY]).get_indexer(pd.MultiIndex.from_frame(prov64[KEY]))
+    p_saved = saved_probs_tune8k[pos64].astype(np.float64)
+    diff_vs_saved = float(np.max(np.abs(p_obs - p_saved)))
+
+    # 39-key truth-corruption invariance across all 7 outputs on a mixed 16-event batch
+    yc, nb = float(bounds['y_scint_center']), int(bounds['n_bars'])
+    b_clean = move_batch_to_device(collate_dual_regime(obs_items[:16], mirror_rng=None, y_scint_center=yc, n_bars=nb), device)
+    b_clean = {k: v for k, v in b_clean.items() if k not in TRUTH_BATCH_KEYS}
+    out_ref = ema_model.forward_NextGen(b_clean)
+
+    b_mut = dict(b_clean)
+    bsz = 16
+    b_mut['label'] = torch.full((bsz,), 3, dtype=torch.long, device=device)
+    b_mut['label_4'] = torch.full((bsz,), 3, dtype=torch.long, device=device)
+    b_mut['label_7'] = torch.full((bsz,), 6, dtype=torch.long, device=device)
+    b_mut['tau_branch'] = ['had'] * bsz
+    b_mut['tau_branch_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
+    b_mut['charm_flag'] = torch.ones((bsz,), dtype=torch.long, device=device)
+    b_mut['has_charm'] = torch.ones((bsz,), dtype=torch.bool, device=device)
+    b_mut['charm_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
+    b_mut['vertex_xyz_mm'] = torch.full((bsz, 3), 999.0, dtype=torch.float32, device=device)
+    b_mut['vertex_x_mm'] = torch.full((bsz,), 999.0, dtype=torch.float32, device=device)
+    b_mut['vertex_y_mm'] = torch.full((bsz,), -999.0, dtype=torch.float32, device=device)
+    b_mut['vertex_z_mm'] = torch.full((bsz,), -1234.0, dtype=torch.float32, device=device)
+    b_mut['vertex_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
+    b_mut['vis_kinematics'] = torch.full((bsz, 4), 42.0, dtype=torch.float32, device=device)
+    b_mut['kin_valid'] = torch.ones((bsz,), dtype=torch.long, device=device)
+    b_mut['trackID'] = torch.full((bsz, 64), 777, dtype=torch.long, device=device)
+    b_mut['Ev_GeV'] = torch.full((bsz,), 5000.0, dtype=torch.float32, device=device)
+    b_mut['energy_nu_GeV'] = torch.full((bsz,), 5000.0, dtype=torch.float32, device=device)
+    b_mut['family_hi'] = torch.zeros((bsz,), dtype=torch.long, device=device)
+    b_mut['family_lo'] = torch.zeros((bsz,), dtype=torch.long, device=device)
+    for tk in TRUTH_BATCH_KEYS:
+        if tk not in b_mut:
+            b_mut[tk] = torch.ones((bsz,), dtype=torch.float32, device=device)
+    out_mut = ema_model.forward_NextGen(b_mut)
+
+    out_diffs = {}
+    for fname in ('logits7', 'probs4', 'charm_logit', 'v_pv_mm', 'scale_pv_mm', 'sv_disp_mm', 'kin_pred'):
+        t1 = getattr(out_ref, fname).detach().float()
+        t2 = getattr(out_mut, fname).detach().float()
+        out_diffs[fname] = float((t1 - t2).abs().max().item())
+    max_truth_diff = max(out_diffs.values())
+
+    if diff_vs_saved > 1e-5:
+        raise RuntimeError(f'Stage-II label-free replay mismatch: {diff_vs_saved}')
+    if max_truth_diff > 1e-7:
+        raise RuntimeError(f'Stage-II truth-invariance violation: {out_diffs}')
+
+    return {
+        'obs_only_64_shard080': {
+            'events': 64,
+            'targets_file_present': False,
+            'all_finite': bool(np.isfinite(p_obs).all()),
+            'max_abs_diff_vs_saved_tune8k_fp32': diff_vs_saved,
+            'passed': bool(np.isfinite(p_obs).all() and diff_vs_saved <= 1e-6),
+        },
+        'truth_invariance_7outputs': {
+            'per_output_max_abs_diff': out_diffs,
+            'max_abs_diff': max_truth_diff,
+            'passed': bool(max_truth_diff <= 1e-7),
+        },
+    }
+
+
+def run_stage2_train(seed: int) -> dict[str, Any]:
+    """Frozen Stage-II training on full `Train32k` (`N=32,000`, `20` passes = `5,000` steps) for one seed in `{17, 42, 2026}`."""
+    if seed not in STAGE2_SEEDS:
+        raise ValueError(f'Expected Stage-2 seed in {STAGE2_SEEDS}, got {seed}')
+    if not torch.cuda.is_available():
+        raise RuntimeError('CUDA GPU required for Stage-2 training')
+
+    for sp in ('train', 'validation', 'tune_screen', 'tune6k', 'ood'):
+        assert_unsealed_split(sp, stage=2)
+
+    t0 = time.perf_counter()
+    utc_started = datetime.now(timezone.utc).isoformat()
+    device = torch.device('cuda:0')
+    np.random.seed(seed)
+
+    out_dir = STAGE2_DIR / f'seed_{seed}'
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    geom = json.loads(assert_unsealed_path(CLEAN_ROOT / 'geometry.json').read_text())
+    bounds = detector_bounds(geom)
+    bounds['_plane_x0'] = np.array([cumulative_radiation_length(float(z), geom) for z in bounds['pixel_Zpos']], dtype=np.float32)
+    yc, nb = float(bounds['y_scint_center']), int(bounds['n_bars'])
+
+    tr_part_files = [STAGE2_CACHE_DIR / f'train_part_{p}.pkl' for p in range(8)]
+    va_part_files = [STAGE2_CACHE_DIR / f'val_part_{p}.pkl' for p in range(2)]
+    os_file = STAGE2_CACHE_DIR / 'ood_stress_stage2_pack.pkl'
+    if not (all(pf.is_file() for pf in tr_part_files) and all(pf.is_file() for pf in va_part_files)):
+        raise FileNotFoundError(f'Stage-2 Train32k/Tune8k cache missing in {STAGE2_CACHE_DIR}; run --mode stage2-preextract first')
+
+    tr_items_raw = []
+    for pf in tr_part_files:
+        with pf.open('rb') as fh:
+            tr_items_raw.extend(pickle.load(fh))
+    # Deterministic sort by (run, chunk, row) across all 80 Train32k shards
+    tr_items_raw.sort(key=lambda it: (int(it['run']), int(it['chunk']), int(it['row'])))
+    tr_keys = pd.DataFrame({
+        'run': [int(it['run']) for it in tr_items_raw],
+        'chunk': [int(it['chunk']) for it in tr_items_raw],
+        'row': [int(it['row']) for it in tr_items_raw],
+    })
+    if len(tr_items_raw) != 32000:
+        raise RuntimeError(f'Expected 32,000 Train32k items, got {len(tr_items_raw)}')
+
+    # Join event_sidecar strictly on Train32k keys during training & PV scale calibration!
+    sc_df = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet'))
+    pos_sc = pd.MultiIndex.from_frame(sc_df[KEY]).get_indexer(pd.MultiIndex.from_frame(tr_keys[KEY]))
+    if (pos_sc < 0).any():
+        raise ValueError('Train32k keys missing from event_sidecar.parquet')
+    tr_sidecar = sc_df.iloc[pos_sc].reset_index(drop=True)
+    del sc_df
+
+    va_items_raw = []
+    for pf in va_part_files:
+        with pf.open('rb') as fh:
+            va_items_raw.extend(pickle.load(fh))
+    tune_meta = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'validation_meta/tune_truth_meta.parquet'))
+    scr_df = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'data/tune_screen.parquet'), columns=KEY + ['label'])
+    tune8k_items = _align_items_to_keys(va_items_raw, tune_meta)
+    del va_items_raw
+
+    in_screen = np.asarray(pd.MultiIndex.from_frame(tune_meta[KEY]).isin(pd.MultiIndex.from_frame(scr_df[KEY])), dtype=bool)
+    tune6k_m = ~in_screen
+    if int(in_screen.sum()) != 2000 or int(tune6k_m.sum()) != 6000:
+        raise RuntimeError(f'Unexpected tune_screen/Tune6k counts: {int(in_screen.sum())} / {int(tune6k_m.sum())}')
+
+    screen_items = [tune8k_items[i] for i in np.flatnonzero(in_screen)]
+    y_screen = tune_meta['label'].to_numpy(dtype=np.int64)[in_screen]
+    print(f'[stage2 seed={seed}] Loaded Train32k ({len(tr_items_raw)}), tune_screen ({len(screen_items)}), Tune8k ({len(tune8k_items)}) in {time.perf_counter()-t0:.1f}s', flush=True)
+
+    train_ds = InMemoryDualDataset(tr_items_raw, event_sidecar=tr_sidecar)
+    cap = torch.cuda.get_device_capability(0)
+    torch.manual_seed(seed)
+
+    # FROZEN architecture & hyperparameters from commit a2c2bd09 (`s1_dual_regime_modalnet`)
+    model_cfg = {
+        'dim': 160,
+        'heads': 8,
+        'drop_path': 0.10,
+        'head_dropout': 0.15,
+        **VARIANT_CONFIGS['s1_dual_regime_modalnet'],
+    }
+    model = DualRegimeModalNet(geom, model_cfg).to(device)
+    ema_model = copy.deepcopy(model).eval()
+    for p in ema_model.parameters():
+        p.requires_grad_(False)
+    n_params = int(sum(p.numel() for p in model.parameters() if p.requires_grad))
+
+    base_lr = 8.0e-4
+    min_lr = 1.0e-5
+    wd = 0.03
+    passes = 20
+    batch_size = 128
+    micro_bs = 64
+    grad_accum = 2
+    ema_decay = 0.999
+
+    opt = torch.optim.AdamW(model.build_param_groups(base_lr, wd), lr=base_lr, weight_decay=wd, betas=(0.9, 0.98))
+    steps_per_pass = math.ceil(len(train_ds) / batch_size)  # 250
+    total_steps = passes * steps_per_pass                   # 5,000
+    warmup_steps = max(1, int(0.06 * total_steps))          # 300
+    min_lr_ratio = min_lr / base_lr
+
+    def _lr_lambda(step: int) -> float:
+        if step < warmup_steps:
+            return float(step + 1) / float(warmup_steps)
+        prog = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+        return min_lr_ratio + 0.5 * (1.0 - min_lr_ratio) * (1.0 + math.cos(math.pi * min(1.0, prog)))
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(opt, _lr_lambda)
+    amp_dtype = torch.bfloat16 if cap[0] >= 8 else torch.float16
+    amp_ok = cap[0] >= 7
+    scaler = torch.amp.GradScaler('cuda', enabled=(amp_ok and amp_dtype == torch.float16))
+
+    best_nll = float('inf')
+    best_pass = 0
+    history: list[dict[str, Any]] = []
+    best_ema_path = out_dir / 'best_ema.pt'
+    last_ema_path = out_dir / 'last_ema.pt'
+
+    torch.cuda.reset_peak_memory_stats(device)
+    global_step = 0
+    for p_idx in range(1, passes + 1):
+        tp0 = time.perf_counter()
+        gen = torch.Generator()
+        gen.manual_seed(seed + p_idx * 101)
+        mirror_rng = np.random.default_rng(seed + p_idx * 997)
+        sampler = BatchSampler(RandomSampler(train_ds, generator=gen), batch_size=micro_bs, drop_last=False)
+        loader = DataLoader(
+            train_ds,
+            batch_sampler=sampler,
+            num_workers=0,
+            collate_fn=lambda xs, mr=mirror_rng: collate_dual_regime(xs, mirror_rng=mr, y_scint_center=yc, n_bars=nb),
+        )
+        model.train()
+        _set_ieee_fp32(False)
+        loss_sum = 0.0
+        n_seen = 0
+        win_buf: list[dict] = []
+        for mb in loader:
+            win_buf.append(mb)
+            if len(win_buf) < grad_accum:
+                continue
+            global_step += 1
+            opt.zero_grad(set_to_none=True)
+            fd = compute_dual_window_denominators(win_buf)
+            win_loss = 0.0
+            win_n = 0
+            for sub_mb in win_buf:
+                db = move_batch_to_device(sub_mb, device)
+                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                    loss, _ = compute_dual_regime_loss(model, db, fixed_denoms=fd)
+                if scaler.is_enabled():
+                    scaler.scale(loss).backward()
+                else:
+                    loss.backward()
+                win_loss += float(loss.detach().item())
+                win_n += len(db['label'])
+            if scaler.is_enabled():
+                scaler.unscale_(opt)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                scaler.step(opt)
+                scaler.update()
+            else:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                opt.step()
+            scheduler.step()
+            _update_ema(ema_model, model, ema_decay)
+            loss_sum += win_loss * win_n
+            n_seen += win_n
+            win_buf.clear()
+
+        if win_buf:
+            global_step += 1
+            opt.zero_grad(set_to_none=True)
+            fd = compute_dual_window_denominators(win_buf)
+            tail_loss = 0.0
+            tail_n = 0
+            for sub_mb in win_buf:
+                db = move_batch_to_device(sub_mb, device)
+                with torch.amp.autocast('cuda', dtype=amp_dtype, enabled=amp_ok):
+                    loss, _ = compute_dual_regime_loss(model, db, fixed_denoms=fd)
+                if scaler.is_enabled():
+                    scaler.scale(loss).backward()
+                else:
+                    loss.backward()
+                tail_loss += float(loss.detach().item())
+                tail_n += len(db['label'])
+            loss_sum += tail_loss * tail_n
+            n_seen += tail_n
+            if scaler.is_enabled():
+                scaler.unscale_(opt)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                scaler.step(opt)
+                scaler.update()
+            else:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
+                opt.step()
+            scheduler.step()
+            _update_ema(ema_model, model, ema_decay)
+
+        train_loss = loss_sum / max(n_seen, 1)
+        row_hist: dict[str, Any] = {
+            'pass': p_idx,
+            'step': global_step,
+            'train_loss': train_loss,
+            'pass_sec': float(time.perf_counter() - tp0),
+        }
+        if p_idx == 1 or p_idx % 2 == 0 or p_idx == passes:
+            scr_pred = predict_dual_items_fp32(ema_model, screen_items, bounds, device, batch_size=64)
+            scr_m = _ba4_and_nll(y_screen, scr_pred['probs'])
+            row_hist['tune_screen_NLL'] = scr_m['NLL']
+            row_hist['tune_screen_BA4_pct'] = scr_m['BA4_pct']
+            if scr_m['NLL'] < best_nll:
+                best_nll = scr_m['NLL']
+                best_pass = p_idx
+                torch.save({'model': ema_model.state_dict(), 'config': model_cfg, 'pass': p_idx, 'seed': seed}, best_ema_path)
+            print(
+                f"[stage2 seed={seed}] pass={p_idx:02d}/{passes} step={global_step} train_loss={train_loss:.4f} "
+                f"tune_screen_NLL={scr_m['NLL']:.4f} tune_screen_BA4={scr_m['BA4_pct']:.2f}% ({row_hist['pass_sec']:.1f}s)",
+                flush=True,
+            )
+        history.append(row_hist)
+
+    torch.save({'model': ema_model.state_dict(), 'config': model_cfg, 'pass': passes, 'seed': seed}, last_ema_path)
+    peak_vram_mib = float(torch.cuda.max_memory_allocated(device) / (1024 ** 2))
+
+    # Load best `tune_screen` EMA checkpoint and fit PV regime scales strictly on Train32k (zero Tune truth leakage!)
+    _set_ieee_fp32(True)
+    ckpt = torch.load(best_ema_path, map_location=device, weights_only=False)
+    ema_model.load_state_dict(ckpt['model'])
+    ema_model.eval()
+    pv_corr = _calibrate_pv_regime_scales_on_train(ema_model, tr_items_raw, tr_sidecar, bounds, device)
+    torch.save(
+        {'model': ema_model.state_dict(), 'config': model_cfg, 'pass': best_pass, 'seed': seed, 'pv_regime_scale_corr': pv_corr.tolist()},
+        best_ema_path,
+    )
+
+    # Single-shot IEEE-FP32 predictions on Tune8k (split into tune_screen 2k & Tune6k 6k), 6x OOD, and Shard-080 7x Stress
+    tune8k_pred = predict_dual_items_fp32(ema_model, tune8k_items, bounds, device, batch_size=64)
+    p_tune8k = tune8k_pred['probs']
+    np.save(out_dir / 'probs_tune8k.npy', p_tune8k)
+    np.save(out_dir / 'probs_tune_screen.npy', p_tune8k[in_screen])
+    np.save(out_dir / 'probs_tune6k.npy', p_tune8k[tune6k_m])
+    np.save(out_dir / 'v_pv_tune8k.npy', tune8k_pred['v_pv_mm'])
+    np.save(out_dir / 'scale_pv_tune8k.npy', tune8k_pred['scale_pv_mm'])
+    np.save(out_dir / 'v_pv_tune6k.npy', tune8k_pred['v_pv_mm'][tune6k_m])
+    np.save(out_dir / 'scale_pv_tune6k.npy', tune8k_pred['scale_pv_mm'][tune6k_m])
+    np.save(out_dir / 'charm_prob_tune8k.npy', tune8k_pred['charm_prob'])
+
+    for _wait_i in range(60):
+        if os_file.is_file():
+            break
+        time.sleep(15.0)
+    if not os_file.is_file():
+        raise FileNotFoundError(f'Missing {os_file} after training')
+    with os_file.open('rb') as fh:
+        os_pack = pickle.load(fh)
+    ood_pre = os_pack['ood_pre']
+    stress_items = os_pack['stress_items']
+    y_080 = os_pack['y_080']
+    del os_pack
+
+    ood_probs: dict[str, np.ndarray] = {}
+    ood_metrics: dict[str, Any] = {}
+    for ov, (o_items, o_lbls) in ood_pre.items():
+        po = predict_dual_items_fp32(ema_model, o_items, bounds, device, batch_size=64)['probs']
+        ood_probs[f'ood_{ov}'] = po
+        if 'nc_' in ov:
+            ood_metrics[ov] = {
+                'n_events': int(len(o_lbls)),
+                'mean_p_tau': float(po[:, 2].mean()),
+                'frac_pred_nc_pct': float((po.argmax(1) == 3).mean() * 100.0),
+                'frac_pred_tau_pct': float((po.argmax(1) == 2).mean() * 100.0),
+                'frac_p_tau_gt_0p5_pct': float((po[:, 2] > 0.5).mean() * 100.0),
+            }
+        else:
+            ood_metrics[ov] = _ba4_and_nll(o_lbls, po)
+
+    stress_probs: dict[str, np.ndarray] = {}
+    stress_metrics: dict[str, Any] = {}
+    p_nom = None
+    ba4_nom = 0.0
+    for st_name, _, _ in STRESS_SPECS:
+        ps = predict_dual_items_fp32(ema_model, stress_items[st_name], bounds, device, batch_size=64)['probs']
+        stress_probs[f'stress_{st_name}'] = ps
+        m_st = _ba4_and_nll(y_080, ps)
+        if st_name == 'nominal':
+            p_nom = ps
+            ba4_nom = m_st['BA4_pct']
+        tv = float(0.5 * np.abs(ps - p_nom).sum(axis=1).mean()) if p_nom is not None else 0.0
+        stress_metrics[st_name] = {
+            'BA4_pct': m_st['BA4_pct'],
+            'delta_BA4_vs_nominal_pp': float(m_st['BA4_pct'] - ba4_nom),
+            'NLL': m_st['NLL'],
+            'mean_TV_vs_nominal': tv,
+        }
+
+    np.savez_compressed(out_dir / 'ood_and_stress_probs.npz', **ood_probs, **stress_probs)
+
+    # Gate G label-free pure-observation replay & Gate A 39-key truth-invariance verification
+    closure = _verify_stage2_obs_only_and_truth_invariance(ema_model, geom, bounds, tune_meta, p_tune8k, device)
+
+    y_tune8k = tune_meta['label'].to_numpy(dtype=np.int64)
+    t6k_m = _ba4_and_nll(y_tune8k[tune6k_m], p_tune8k[tune6k_m])
+    summary = {
+        'variant': 's2_dual_regime_modalnet',
+        'seed': int(seed),
+        'UTC_started': utc_started,
+        'UTC_finished': datetime.now(timezone.utc).isoformat(),
+        'wall_seconds': float(time.perf_counter() - t0),
+        'gpu_name': torch.cuda.get_device_name(0),
+        'n_params': n_params,
+        'train_events': len(train_ds),
+        'passes': passes,
+        'total_steps': global_step,
+        'effective_batch_size': batch_size,
+        'micro_bs': micro_bs,
+        'grad_accum': grad_accum,
+        'peak_vram_MiB': peak_vram_mib,
+        'best_pass': best_pass,
+        'best_tune_screen_NLL': best_nll,
+        'pv_regime_scale_corr': pv_corr.tolist(),
+        'tune6k_all': t6k_m,
+        'ood_metrics': ood_metrics,
+        'stress_shard080': stress_metrics,
+        'gate_g_closure': closure,
+        'history': history,
+    }
+    write_json(out_dir / 'run_summary.json', summary)
+    print(
+        f"[stage2 seed={seed}] DONE in {summary['wall_seconds']:.1f}s | best_pass={best_pass} "
+        f"Tune6k_BA4={t6k_m['BA4_pct']:.2f}% Tune6k_NLL={t6k_m['NLL']:.4f} VRAM={peak_vram_mib:.0f}MiB",
+        flush=True,
+    )
+    return summary
+
+
+def _fit_scalar_temperature_on_screen(probs_screen: np.ndarray, y_screen: np.ndarray) -> dict[str, float]:
+    """Fit pure scalar temperature `T` strictly on `tune_screen` (`N=2,000`), preserving argmax / BA4 identically."""
+    from scipy.optimize import minimize_scalar
+    from scipy.special import softmax
+
+    lp = np.log(np.clip(probs_screen.astype(np.float64), 1e-8, 1.0))
+    lp -= lp.mean(axis=1, keepdims=True)
+    y = y_screen.astype(np.int64)
+    idx = np.arange(len(y))
+
+    def _nll(log_inv_t: float) -> float:
+        inv_t = math.exp(float(log_inv_t))
+        p = softmax(inv_t * lp, axis=1)
+        return float(-np.mean(np.log(np.clip(p[idx, y], 1e-12, 1.0))))
+
+    res = minimize_scalar(_nll, bounds=(math.log(0.25), math.log(4.0)), method='bounded')
+    inv_t = float(math.exp(float(res.x)))
+    return {'inv_T': inv_t, 'T': float(1.0 / inv_t), 'screen_NLL': float(res.fun)}
+
+
+def _apply_scalar_temperature(probs: np.ndarray, inv_t: float) -> np.ndarray:
+    from scipy.special import softmax
+
+    lp = np.log(np.clip(probs.astype(np.float64), 1e-8, 1.0))
+    lp -= lp.mean(axis=1, keepdims=True)
+    return softmax(float(inv_t) * lp, axis=1)
+
+
+def run_stage2_aggregate() -> dict[str, Any]:
+    """Aggregate 3-seed Stage-II confirmation on `Tune6k`, Sec 12 Collaboration slices, 6x OOD, Shard-080 stress & Stage-325 bootstrap."""
+    from analysis.flavour.v2.r2.readout import grouped_folds
+    from analysis.flavour.v3.v4_tau.ensemble import (
+        _apply_domain_convex_blend,
+        _fit_domain_convex_blend,
+        fit_oof_domain_ensemble,
+    )
+    from analysis.flavour.v3.v6_clean_sim.evaluate_stage317 import _select_seed_prediction_df
+
+    for sp in ('train', 'validation', 'tune_screen', 'tune6k', 'ood'):
+        assert_unsealed_split(sp, stage=2)
+
+    t0 = time.perf_counter()
+    STAGE2_DIR.mkdir(parents=True, exist_ok=True)
+    tune_meta = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'validation_meta/tune_truth_meta.parquet'))
+    scr_df = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'data/tune_screen.parquet'), columns=KEY)
+    sc_df = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'truth_sidecar/event_sidecar.parquet'))
+    prov_080 = pd.read_parquet(assert_unsealed_path(CLEAN_ROOT / 'data/shards/080/provenance.parquet'), columns=KEY + ['label'])
+    y_080 = prov_080['label'].to_numpy(dtype=np.int64)
+
+    in_screen = np.asarray(pd.MultiIndex.from_frame(tune_meta[KEY]).isin(pd.MultiIndex.from_frame(scr_df[KEY])), dtype=bool)
+    tune6k_m = ~in_screen
+    ref_idx = pd.MultiIndex.from_frame(tune_meta[KEY])
+    fam_codes = pd.MultiIndex.from_frame(tune_meta[FAMILY]).factorize()[0]
+
+    labels = tune_meta['label'].to_numpy(dtype=np.int64)
+    obs_dom = tune_meta['obs_domain_id'].to_numpy(dtype=np.int64)
+    geom_w = tune_meta['geom_weight'].to_numpy(dtype=np.float64)
+    ev_tune = tune_meta['energy_nu_GeV'].to_numpy(dtype=np.float64)
+    pc_m = tune_meta['pixel_centered'].to_numpy(dtype=bool)
+    fp_m = tune_meta['front_pinpoint_pixel_centered'].to_numpy(dtype=bool)
+    interm_m = pc_m & (~fp_m)
+    fort_m = tune_meta['fortune_module'].to_numpy(dtype=bool)
+
+    # Exact Stage-325 common-support [50, 2312] GeV (E_nu, nu/nubar) matched weights on Tune6k
+    common_e_m = (ev_tune >= 50.0) & (ev_tune <= 2312.0)
+    nu_sign = (tune_meta['init_pdg'].to_numpy(dtype=np.int64) > 0).astype(np.int64)
+    e_edges = np.geomspace(50.0, 2312.0, 11)
+    eb_t = np.clip(np.digitize(ev_tune, e_edges) - 1, 0, 9)
+    cell_t = eb_t * 2 + nu_sign
+    p_cell = np.zeros((4, 20), dtype=np.float64)
+    for c in range(4):
+        mc = (labels == c) & common_e_m & tune6k_m
+        cnt = np.bincount(cell_t[mc], minlength=20).astype(np.float64)
+        p_cell[c] = (cnt + 0.5) / max(1.0, cnt.sum() + 10.0)
+    p_cell_tgt = np.power(np.prod(p_cell, axis=0), 0.25)
+    p_cell_tgt /= max(float(p_cell_tgt.sum()), 1e-12)
+    matched_val_w = np.zeros(len(tune_meta), dtype=np.float64)
+    for c in range(4):
+        mc = (labels == c) & common_e_m & tune6k_m
+        rw = np.clip(p_cell_tgt[cell_t[mc]] / np.maximum(p_cell[c, cell_t[mc]], 1e-9), 0.1, 10.0)
+        rw /= max(float(rw.sum()), 1e-12)
+        matched_val_w[mc] = rw
+
+    # Offline truth vertices for PV & Section 12 Mahlstedt geometric slices (NEVER passed to model!)
+    pos_sc = pd.MultiIndex.from_frame(sc_df[KEY]).get_indexer(ref_idx)
+    sc_tune = sc_df.iloc[pos_sc].reset_index(drop=True)
+    v_true = np.column_stack([
+        sc_tune['vertex_x_mm'].to_numpy(np.float64),
+        sc_tune['vertex_y_mm'].to_numpy(np.float64),
+        sc_tune['vertex_z_mm'].to_numpy(np.float64),
+    ])
+    v_valid = sc_tune['vertex_valid'].to_numpy(dtype=np.int64) > 0
+    pos_080_in_tune = ref_idx.get_indexer(pd.MultiIndex.from_frame(prov_080[KEY]))
+
+    vx_m, vy_m, vz_m = tune_meta['vertex_x_mm'].to_numpy(np.float64), tune_meta['vertex_y_mm'].to_numpy(np.float64), tune_meta['vertex_z_mm'].to_numpy(np.float64)
+    mahlstedt_pc_m = (
+        tune6k_m
+        & (vx_m >= -113.00) & (vx_m <= 112.99)
+        & (vy_m >= -90.00) & (vy_m <= 65.99)
+        & (vz_m >= -2986.99) & (vz_m <= -2486.99)
+    )
+    mahlstedt_lg_m = (
+        tune6k_m
+        & (vx_m >= -118.00) & (vx_m <= 272.00)
+        & (vy_m >= -207.00) & (vy_m <= 183.00)
+        & (vz_m >= -2986.99) & (vz_m <= -2004.88)
+    )
+
+    # Load all 3 Stage-II seeds
+    seed_probs_t8k: dict[int, np.ndarray] = {}
+    seed_vpv_t8k: dict[int, np.ndarray] = {}
+    seed_spv_t8k: dict[int, np.ndarray] = {}
+    seed_ood_npz: dict[int, Any] = {}
+    seed_summaries: dict[str, Any] = {}
+    member_frames: dict[str, pd.DataFrame] = {}
+
+    for s in STAGE2_SEEDS:
+        sdir = STAGE2_DIR / f'seed_{s}'
+        if not (sdir / 'probs_tune8k.npy').is_file():
+            raise FileNotFoundError(f'Missing Stage-2 seed output in {sdir}')
+        p8 = np.load(sdir / 'probs_tune8k.npy').astype(np.float64)
+        p8 /= np.maximum(p8.sum(axis=1, keepdims=True), 1e-12)
+        v8 = np.load(sdir / 'v_pv_tune8k.npy').astype(np.float64)
+        s8 = np.load(sdir / 'scale_pv_tune8k.npy').astype(np.float64)
+        c8 = np.load(sdir / 'charm_prob_tune8k.npy').astype(np.float64)
+        seed_probs_t8k[s] = p8
+        seed_vpv_t8k[s] = v8
+        seed_spv_t8k[s] = s8
+        seed_ood_npz[s] = np.load(sdir / 'ood_and_stress_probs.npz')
+        seed_summaries[f'seed_{s}'] = json.loads((sdir / 'run_summary.json').read_text())
+
+        df_m = tune_meta[KEY].copy()
+        for c in range(4):
+            df_m[f'p_{c}'] = p8[:, c]
+        df_m['charm_prob'] = c8
+        df_m['v_hat_x_mm'] = v8[:, 0]
+        df_m['v_hat_y_mm'] = v8[:, 1]
+        df_m['v_hat_z_mm'] = v8[:, 2]
+        member_frames[f's2_dual_s{s}'] = df_m
+
+    # 1. Raw equal-weight 3-seed probability average (exact Stage-325 primary neural metric!)
+    p_ens_raw = np.mean([seed_probs_t8k[s] for s in STAGE2_SEEDS], axis=0)
+    np.save(STAGE2_DIR / 'probs_tune8k_ens3_raw.npy', p_ens_raw.astype(np.float32))
+    np.save(STAGE2_DIR / 'probs_tune6k_ens3_raw.npy', p_ens_raw[tune6k_m].astype(np.float32))
+
+    # 2. Strict `tune_screen` (N=2,000) calibrations (ZERO Tune6k access during fit!)
+    temp_fit = _fit_scalar_temperature_on_screen(p_ens_raw[in_screen], labels[in_screen])
+    p_ens_screen_temp = _apply_scalar_temperature(p_ens_raw, temp_fit['inv_T'])
+    np.save(STAGE2_DIR / 'probs_tune8k_ens3_screen_temp.npy', p_ens_screen_temp.astype(np.float32))
+    np.save(STAGE2_DIR / 'probs_tune6k_ens3_screen_temp.npy', p_ens_screen_temp[tune6k_m].astype(np.float32))
+
+    lp_stack = np.stack([
+        np.log(np.clip(seed_probs_t8k[s], 1e-8, 1.0)) - np.mean(np.log(np.clip(seed_probs_t8k[s], 1e-8, 1.0)), axis=1, keepdims=True)
+        for s in STAGE2_SEEDS
+    ], axis=0)
+    global_blend_fit = _fit_domain_convex_blend(lp_stack[:, in_screen, :], labels[in_screen])
+    domain_blend_fits: dict[str, Any] = {'global': global_blend_fit, 'by_obs_domain': {}}
+    p_ens_screen_dom = _apply_domain_convex_blend(lp_stack, global_blend_fit)
+    for did in (1, 2, 3):
+        m_fit = in_screen & (obs_dom == did)
+        m_app = obs_dom == did
+        if int(m_fit.sum()) >= 40:
+            dfit = _fit_domain_convex_blend(lp_stack[:, m_fit, :], labels[m_fit])
+            domain_blend_fits['by_obs_domain'][OBS_DOMAIN_NAMES[did]] = dfit
+            p_ens_screen_dom[m_app] = _apply_domain_convex_blend(lp_stack[:, m_app, :], dfit)
+    np.save(STAGE2_DIR / 'probs_tune8k_ens3_screen_cal.npy', p_ens_screen_dom.astype(np.float32))
+    np.save(STAGE2_DIR / 'probs_tune6k_ens3_screen_cal.npy', p_ens_screen_dom[tune6k_m].astype(np.float32))
+
+    # Stage-325 5-fold OOF domain ensemble on Tune8k for full parity reference
+    folds, _ = grouped_folds(tune_meta[KEY + FAMILY + ['label']].reset_index(drop=True), folds=5, seed=20263250)
+    oof_slices = {
+        'All_Tune8k': np.ones(len(tune_meta), dtype=bool),
+        'PinpointBlock_PixXY': pc_m,
+        'FrontPinpoint_PixXY': fp_m,
+        'D_pix_contained': obs_dom == 1,
+    }
+    oof_ens = fit_oof_domain_ensemble(member_frames, tune_meta, oof_slices, n_folds=5, folds=folds)
+    p_oof_t8k = oof_ens['oof_probs']
+
+    # Precision-weighted 3-seed PV ensemble on Tune8k / Tune6k
+    prec_list = [1.0 / np.maximum(seed_spv_t8k[s], 0.03) ** 2 for s in STAGE2_SEEDS]
+    prec_mean = np.mean(prec_list, axis=0)
+    v_ens_t8k = np.sum([w * seed_vpv_t8k[s] for w, s in zip(prec_list, STAGE2_SEEDS)], axis=0) / np.maximum(np.sum(prec_list, axis=0), 1e-8)
+    s_ens_t8k = 1.0 / np.sqrt(np.maximum(prec_mean, 1e-8))
+    np.save(STAGE2_DIR / 'v_pv_tune6k_ens3.npy', v_ens_t8k[tune6k_m].astype(np.float32))
+    np.save(STAGE2_DIR / 'scale_pv_tune6k_ens3.npy', s_ens_t8k[tune6k_m].astype(np.float32))
+
+    def _eval_tune_prob_array(p_arr: np.ndarray) -> dict[str, Any]:
+        dom_res = {
+            OBS_DOMAIN_NAMES[did]: _ba4_and_nll(labels[tune6k_m & (obs_dom == did)], p_arr[tune6k_m & (obs_dom == did)])
+            for did in (1, 2, 3)
+            if (tune6k_m & (obs_dom == did)).any()
+        }
+        reg_res = {
+            'Pinpoint_PixXY': _ba4_and_nll(labels[tune6k_m & pc_m], p_arr[tune6k_m & pc_m]),
+            'FrontPinpoint_30mm': _ba4_and_nll(labels[tune6k_m & fp_m], p_arr[tune6k_m & fp_m]),
+            'IntermPinpoint_150mm': _ba4_and_nll(labels[tune6k_m & interm_m], p_arr[tune6k_m & interm_m]),
+            'Fortune_ScintOnly': _ba4_and_nll(labels[tune6k_m & fort_m], p_arr[tune6k_m & fort_m]),
+        }
+        # Also evaluate threshold locked strictly on tune_screen (N=2,000) -> Tune6k (N=6,000)
+        bg_scr = np.sort(p_arr[in_screen & (labels != 2), 2])[::-1]
+        k_scr = int(math.floor(0.01 * len(bg_scr)))
+        thr_scr = float(bg_scr[k_scr]) if k_scr < len(bg_scr) else -1e9
+        tp_scr = int(np.sum(p_arr[tune6k_m & (labels == 2), 2] > thr_scr))
+        fp_scr = int(np.sum(p_arr[tune6k_m & (labels != 2), 2] > thr_scr))
+        n_tau_6k = int((tune6k_m & (labels == 2)).sum())
+        n_bg_6k = int((tune6k_m & (labels != 2)).sum())
+        return {
+            'tune8k_all': _ba4_and_nll(labels, p_arr),
+            'tune6k_screen_excl': _ba4_and_nll(labels[tune6k_m], p_arr[tune6k_m]),
+            'tune6k_common_E_nu_matched_BA4_pct': _weighted_ba4_pct(labels, p_arr, matched_val_w),
+            'tune8k_mass_weighted_2t_BA4_pct': _weighted_ba4_pct(labels, p_arr, geom_w),
+            'tune6k_mass_weighted_2t_BA4_pct': _weighted_ba4_pct(labels[tune6k_m], p_arr[tune6k_m], geom_w[tune6k_m]),
+            'tune6k_by_obs_domain': dom_res,
+            'tune6k_by_truth_region': reg_res,
+            'tune6k_tau_tail': {
+                'split_half_All': _split_half_tail_eval_multi(p_arr[:, 2], labels, tune_meta, tune6k_m),
+                'split_half_Pinpoint': _split_half_tail_eval_multi(p_arr[:, 2], labels, tune_meta, tune6k_m & pc_m),
+                'split_half_D1_obs': _split_half_tail_eval_multi(p_arr[:, 2], labels, tune_meta, tune6k_m & (obs_dom == 1)),
+                'within_slice_1pct_All': _within_slice_tail_eval(p_arr[:, 2], labels, tune6k_m, 0.01),
+                'within_slice_1pct_Pinpoint': _within_slice_tail_eval(p_arr[:, 2], labels, tune6k_m & pc_m, 0.01),
+                'within_slice_1pct_D1_obs': _within_slice_tail_eval(p_arr[:, 2], labels, tune6k_m & (obs_dom == 1), 0.01),
+                'within_slice_0p1pct_All': _within_slice_tail_eval(p_arr[:, 2], labels, tune6k_m, 0.001),
+                'screen_locked_1pct_All': {
+                    'threshold_locked_on_tune_screen': thr_scr,
+                    'screen_bg': int(len(bg_scr)),
+                    'screen_allowed_bg': k_scr,
+                    'tune6k_TP': tp_scr,
+                    'tune6k_tau': n_tau_6k,
+                    'tune6k_FP': fp_scr,
+                    'tune6k_B': n_bg_6k,
+                    'tune6k_tau_eff_pct': float(tp_scr / max(1, n_tau_6k) * 100.0),
+                    'tune6k_tau_eff_ci95_pct': [100.0 * x for x in _clopper_pearson_ci95(tp_scr, n_tau_6k)],
+                    'tune6k_FPR_pct': float(fp_scr / max(1, n_bg_6k) * 100.0),
+                },
+            },
+            'section12_collaboration_slices': {
+                'note': '96 scintillator panels + 1-bit binary pixels + 96mm Magnet1/2 bore QC + 32k 4-class training (T4 -> Conditional T3 projection)',
+                'All_non_tau': _collaboration_section12_slice(p_arr, labels, tune6k_m),
+                'Truth_Mahlstedt_PC': _collaboration_section12_slice(
+                    p_arr, labels, mahlstedt_pc_m, purity_target=0.90, natural_prior=(0.1145, 0.6397, 0.2459)
+                ),
+                'Truth_Mahlstedt_LG': _collaboration_section12_slice(
+                    p_arr, labels, mahlstedt_lg_m, purity_target=0.80, natural_prior=(0.1195, 0.6399, 0.2406)
+                ),
+                'D1_obs_non_tau': _collaboration_section12_slice(
+                    p_arr, labels, tune6k_m & (obs_dom == 1), purity_target=0.90, natural_prior=(0.1145, 0.6397, 0.2459)
+                ),
+                'D2_obs_non_tau': _collaboration_section12_slice(
+                    p_arr, labels, tune6k_m & (obs_dom == 2), purity_target=0.80, natural_prior=(0.1195, 0.6399, 0.2406)
+                ),
+                'Common_Enu_50_2312_non_tau': _collaboration_section12_slice(p_arr, labels, tune6k_m & common_e_m),
+            },
+        }
+
+    def _eval_pv(vh_arr: np.ndarray, sh_arr: np.ndarray) -> dict[str, Any]:
+        out_pv: dict[str, Any] = {}
+        shard080_m = np.zeros(len(tune_meta), dtype=bool)
+        shard080_m[pos_080_in_tune] = True
+        for tag, mk in (
+            ('Tune6k_All_valid', tune6k_m & v_valid),
+            ('Tune6k_Pinpoint_PixXY', tune6k_m & pc_m & v_valid),
+            ('Tune6k_FrontPinpoint_30mm', tune6k_m & fp_m & v_valid),
+            ('Tune6k_IntermPinpoint_150mm', tune6k_m & interm_m & v_valid),
+            ('Shard080_400_valid', shard080_m & v_valid),
+        ):
+            if mk.any():
+                dz = np.abs(vh_arr[mk, 2] - v_true[mk, 2])
+                r3 = np.linalg.norm(vh_arr[mk] - v_true[mk], axis=-1)
+                pulls = compute_student_t_pulls(
+                    torch.from_numpy(vh_arr), torch.from_numpy(sh_arr),
+                    torch.from_numpy(v_true), torch.from_numpy(mk.astype(np.int64)), df=3.0,
+                )
+                out_pv[tag] = {
+                    'n_events': int(mk.sum()),
+                    'median_abs_dz_mm': float(np.median(dz)),
+                    'median_3d_mm': float(np.median(r3)),
+                    **pulls,
+                }
+        return out_pv
+
+    per_seed_eval = {
+        f'seed_{s}': {
+            'metrics': _eval_tune_prob_array(seed_probs_t8k[s]),
+            'pv_audit': _eval_pv(seed_vpv_t8k[s], seed_spv_t8k[s]),
+            'best_pass': seed_summaries[f'seed_{s}']['best_pass'],
+            'best_tune_screen_NLL': seed_summaries[f'seed_{s}']['best_tune_screen_NLL'],
+            'wall_seconds': seed_summaries[f'seed_{s}']['wall_seconds'],
+            'peak_vram_MiB': seed_summaries[f'seed_{s}']['peak_vram_MiB'],
+            'gpu_name': seed_summaries[f'seed_{s}']['gpu_name'],
+            'gate_g_closure': seed_summaries[f'seed_{s}']['gate_g_closure'],
+        }
+        for s in STAGE2_SEEDS
+    }
+
+    # Compute 3-seed mean & std across key Tune6k metrics
+    ba4_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_screen_excl']['BA4_pct'] for s in STAGE2_SEEDS]
+    nll_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_screen_excl']['NLL'] for s in STAGE2_SEEDS]
+    d1_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_by_obs_domain']['D_pix_contained']['BA4_pct'] for s in STAGE2_SEEDS]
+    d2_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_by_obs_domain']['D_scint_contained']['BA4_pct'] for s in STAGE2_SEEDS]
+    d3_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_by_obs_domain']['D_partial_or_edge']['BA4_pct'] for s in STAGE2_SEEDS]
+    sh1_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_tau_tail']['split_half_All']['fpr_0.01']['held_tau_eff_pct'] for s in STAGE2_SEEDS]
+    ws1_seeds = [per_seed_eval[f'seed_{s}']['metrics']['tune6k_tau_tail']['within_slice_1pct_All']['tau_eff_pct'] for s in STAGE2_SEEDS]
+    dz_f_seeds = [per_seed_eval[f'seed_{s}']['pv_audit']['Tune6k_FrontPinpoint_30mm']['median_abs_dz_mm'] for s in STAGE2_SEEDS]
+    dz_i_seeds = [per_seed_eval[f'seed_{s}']['pv_audit']['Tune6k_IntermPinpoint_150mm']['median_abs_dz_mm'] for s in STAGE2_SEEDS]
+
+    seed_stability = {
+        'seeds': list(STAGE2_SEEDS),
+        'tune6k_BA4_per_seed_pct': ba4_seeds,
+        'tune6k_BA4_mean_pct': float(np.mean(ba4_seeds)),
+        'tune6k_BA4_std_pct': float(np.std(ba4_seeds, ddof=0)),
+        'tune6k_BA4_sample_std_pct': float(np.std(ba4_seeds, ddof=1)),
+        'gate_g_std_lt_0p5pp_passed': bool(float(np.std(ba4_seeds, ddof=1)) < 0.5),
+        'tune6k_NLL_mean_std': [float(np.mean(nll_seeds)), float(np.std(nll_seeds, ddof=1))],
+        'tune6k_D1_BA4_mean_std_pct': [float(np.mean(d1_seeds)), float(np.std(d1_seeds, ddof=1))],
+        'tune6k_D2_BA4_mean_std_pct': [float(np.mean(d2_seeds)), float(np.std(d2_seeds, ddof=1))],
+        'tune6k_D3_BA4_mean_std_pct': [float(np.mean(d3_seeds)), float(np.std(d3_seeds, ddof=1))],
+        'split_half_1pct_All_mean_std_pct': [float(np.mean(sh1_seeds)), float(np.std(sh1_seeds, ddof=1))],
+        'within_slice_1pct_All_mean_std_pct': [float(np.mean(ws1_seeds)), float(np.std(ws1_seeds, ddof=1))],
+        'front30_pv_dz_mean_std_mm': [float(np.mean(dz_f_seeds)), float(np.std(dz_f_seeds, ddof=1))],
+        'interm150_pv_dz_mean_std_mm': [float(np.mean(dz_i_seeds)), float(np.std(dz_i_seeds, ddof=1))],
+    }
+
+    # Ensemble OOD & Shard-080 Stress (3-seed raw mean + per-seed mean/std + seed_17 Stage-325 parity)
+    ens_ood_stress_arrays: dict[str, np.ndarray] = {}
+    ood_ens_metrics: dict[str, Any] = {}
+    for ov in ALL_STAGE2_OOD:
+        _, o_lbls = _load_ood_observations(ov)
+        ps_list = [seed_ood_npz[s][f'ood_{ov}'].astype(np.float64) for s in STAGE2_SEEDS]
+        p_ens_o = np.mean(ps_list, axis=0)
+        ens_ood_stress_arrays[f'ood_{ov}'] = p_ens_o.astype(np.float32)
+        if 'nc_' in ov:
+            s_ftau = [float((p.argmax(1) == 2).mean() * 100.0) for p in ps_list]
+            s_gt05 = [float((p[:, 2] > 0.5).mean() * 100.0) for p in ps_list]
+            ood_ens_metrics[ov] = {
+                'n_events': int(len(o_lbls)),
+                'ens3_mean_p_tau': float(p_ens_o[:, 2].mean()),
+                'ens3_frac_pred_nc_pct': float((p_ens_o.argmax(1) == 3).mean() * 100.0),
+                'ens3_frac_pred_tau_pct': float((p_ens_o.argmax(1) == 2).mean() * 100.0),
+                'ens3_frac_p_tau_gt_0p5_pct': float((p_ens_o[:, 2] > 0.5).mean() * 100.0),
+                'seed_mean_std_frac_pred_tau_pct': [float(np.mean(s_ftau)), float(np.std(s_ftau, ddof=1))],
+                'seed_mean_std_frac_p_tau_gt_0p5_pct': [float(np.mean(s_gt05)), float(np.std(s_gt05, ddof=1))],
+            }
+        else:
+            m_eo = _ba4_and_nll(o_lbls, p_ens_o)
+            s_ba = [_ba4_and_nll(o_lbls, p)['BA4_pct'] for p in ps_list]
+            ood_ens_metrics[ov] = {
+                **m_eo,
+                'seed_mean_std_BA4_pct': [float(np.mean(s_ba)), float(np.std(s_ba, ddof=1))],
+            }
+
+    stress_ens_metrics: dict[str, Any] = {}
+    p_nom_ens = None
+    ba4_nom_ens = 0.0
+    for st_name, _, _ in STRESS_SPECS:
+        ps_list = [seed_ood_npz[s][f'stress_{st_name}'].astype(np.float64) for s in STAGE2_SEEDS]
+        p_ens_s = np.mean(ps_list, axis=0)
+        ens_ood_stress_arrays[f'stress_{st_name}'] = p_ens_s.astype(np.float32)
+        m_es = _ba4_and_nll(y_080, p_ens_s)
+        if st_name == 'nominal':
+            p_nom_ens = p_ens_s
+            ba4_nom_ens = m_es['BA4_pct']
+        tv_ens = float(0.5 * np.abs(p_ens_s - p_nom_ens).sum(axis=1).mean()) if p_nom_ens is not None else 0.0
+        s_ba = [seed_summaries[f'seed_{s}']['stress_shard080'][st_name]['BA4_pct'] for s in STAGE2_SEEDS]
+        s_tv = [seed_summaries[f'seed_{s}']['stress_shard080'][st_name]['mean_TV_vs_nominal'] for s in STAGE2_SEEDS]
+        stress_ens_metrics[st_name] = {
+            'ens3_BA4_pct': m_es['BA4_pct'],
+            'ens3_delta_BA4_vs_nominal_pp': float(m_es['BA4_pct'] - ba4_nom_ens),
+            'ens3_NLL': m_es['NLL'],
+            'ens3_mean_TV_vs_nominal': tv_ens,
+            'seed17_BA4_pct': seed_summaries['seed_17']['stress_shard080'][st_name]['BA4_pct'],
+            'seed17_delta_BA4_vs_nominal_pp': seed_summaries['seed_17']['stress_shard080'][st_name]['delta_BA4_vs_nominal_pp'],
+            'seed17_mean_TV_vs_nominal': seed_summaries['seed_17']['stress_shard080'][st_name]['mean_TV_vs_nominal'],
+            'seed_mean_std_BA4_pct': [float(np.mean(s_ba)), float(np.std(s_ba, ddof=1))],
+            'seed_mean_std_TV': [float(np.mean(s_tv)), float(np.std(s_tv, ddof=1))],
+        }
+    np.savez_compressed(STAGE2_DIR / 'ood_and_stress_ens3_probs.npz', **ens_ood_stress_arrays)
+
+    # Load frozen Stage-325 baselines on Tune8k -> Tune6k for exact paired 1,000-rep family bootstrap (seed=20263250)
+    bl_doc = json.loads(assert_unsealed_path(STAGE325_ROOT / 'stage325_frozen_baselines.json').read_text())
+    s325_man = json.loads(assert_unsealed_path(STAGE325_ROOT / 'v9_stage325_freeze_manifest.json').read_text())
+
+    s325_probs: dict[str, np.ndarray] = {}
+    bdt_df = pd.read_parquet(assert_unsealed_path(bl_doc['baselines']['bdt_histgb_full_obs_70d']['tune8k_pred_path']))
+    bpos = pd.MultiIndex.from_frame(bdt_df[KEY]).get_indexer(ref_idx)
+    s325_probs['BDT-70d'] = bdt_df.iloc[bpos][['p0', 'p1', 'p2', 'p3']].to_numpy(dtype=np.float64)
+
+    s325_nn_specs = [
+        ('B1++', 'v325_b1pp_clean'),
+        ('PF-20um', 'v325_pf_20um'),
+        ('Hybrid-v2', 'v325_pf_hybrid_v2'),
+        ('Hybrid+NOMAD', 'v325_pf_hybrid_v2_nomad'),
+        ('PF-EMatch-v2', 'v325_pf_20um_ematched_v2'),
+    ]
+    for bl_label, prefix in s325_nn_specs:
+        p_seeds = []
+        for s in STAGE2_SEEDS:
+            df_s, _ = _select_seed_prediction_df(assert_unsealed_path(STAGE325_ROOT / 'experiments' / f'{prefix}_s{s}'))
+            p_cols = ['p_0', 'p_1', 'p_2', 'p_3'] if 'p_0' in df_s.columns else ['p0', 'p1', 'p2', 'p3']
+            pos = pd.MultiIndex.from_frame(df_s[KEY]).get_indexer(ref_idx)
+            p_seeds.append(df_s.iloc[pos][p_cols].to_numpy(dtype=np.float64))
+        s325_probs[bl_label] = np.mean(p_seeds, axis=0)
+
+    paired_boot: dict[str, Any] = {}
+    slice_defs = [
+        ('Tune6k_All', tune6k_m),
+        ('Tune6k_D1_obs', tune6k_m & (obs_dom == 1)),
+        ('Tune6k_D2_obs', tune6k_m & (obs_dom == 2)),
+        ('Tune6k_Pinpoint', tune6k_m & pc_m),
+    ]
+    for bl_label, pb in s325_probs.items():
+        for stag, smk in slice_defs:
+            paired_boot[f'DualRegime_ens3_raw - {bl_label} ({stag})'] = _paired_family_bootstrap_full(
+                p_ens_raw, pb, labels, fam_codes, smk, n_boot=1000, seed=20263250
+            )
+        paired_boot[f'DualRegime_ens3_screen_cal - {bl_label} (Tune6k_All)'] = _paired_family_bootstrap_full(
+            p_ens_screen_dom, pb, labels, fam_codes, tune6k_m, n_boot=1000, seed=20263250
+        )
+
+    # Side-by-side Stage-325 reference summary for instant comparison
+    s325_ref = {}
+    for bl_label, pb in s325_probs.items():
+        s325_ref[bl_label] = _eval_tune_prob_array(pb)
+
+    final_doc = {
+        'UTC': datetime.now(timezone.utc).isoformat(),
+        'wall_seconds': float(time.perf_counter() - t0),
+        'protocol': 'Stage-II Gate G Single-Shot Frozen Confirmation (SealAuditGuard stage=2; ZERO shards/100..149 access)',
+        'frozen_architecture_commit': 'a2c2bd090666efb3d3d58a7a456a04de4a839c5c',
+        'train_split': 'Train32k (shards 000..079, N=32,000)',
+        'screen_split': 'tune_screen (N=2,000)',
+        'eval_split': 'Tune6k (Tune8k \\ tune_screen, N=6,000)',
+        'seed_stability': seed_stability,
+        'ens3_raw': {
+            'metrics': _eval_tune_prob_array(p_ens_raw),
+            'pv_audit': _eval_pv(v_ens_t8k, s_ens_t8k),
+        },
+        'ens3_screen_scalar_temp': {
+            'calibration_fit_on_tune_screen': temp_fit,
+            'metrics': _eval_tune_prob_array(p_ens_screen_temp),
+        },
+        'ens3_screen_domain_blend': {
+            'calibration_fit_on_tune_screen': domain_blend_fits,
+            'metrics': _eval_tune_prob_array(p_ens_screen_dom),
+        },
+        'oof_5fold_tune8k_reference': {
+            'tune8k_all': _ba4_and_nll(labels, p_oof_t8k),
+            'tune8k_pinpoint': _ba4_and_nll(labels[pc_m], p_oof_t8k[pc_m]),
+        },
+        'per_seed': per_seed_eval,
+        'ood_6shards': {
+            'DualRegime_ens3_raw': ood_ens_metrics,
+            'stage325_reference': {
+                k: s325_man['generator_ood_validation'][k]
+                for k in ('s325-b1pp-clean', 's325-pf-20um', 's325-pf-hybrid-v2', 's325-pf-hybrid-v2-nomad')
+                if k in s325_man.get('generator_ood_validation', {})
+            },
+        },
+        'stress_shard080_7tests': {
+            'DualRegime': stress_ens_metrics,
+            'stage325_reference': s325_man.get('detector_degradation_stress_324_10', {}),
+        },
+        'paired_family_bootstrap_1000_seed20263250': paired_boot,
+        'stage325_tune6k_reference': s325_ref,
+    }
+    out_json = STAGE2_DIR / 'stage2_dual_regime_results.json'
+    write_json(out_json, final_doc)
+    if STAGE2_CACHE_DIR.exists():
+        shutil.rmtree(STAGE2_CACHE_DIR, ignore_errors=True)
+        print(f'[stage2-aggregate] Removed temporary cache {STAGE2_CACHE_DIR}', flush=True)
+    print(f'[stage2-aggregate] Wrote {out_json} in {final_doc["wall_seconds"]:.1f}s', flush=True)
+    return final_doc
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', required=True, choices=('gate-ab', 'preextract', 'train-neural', 'train-sec13', 'aggregate'))
+    parser.add_argument(
+        '--mode',
+        required=True,
+        choices=(
+            'gate-ab',
+            'preextract',
+            'train-neural',
+            'train-sec13',
+            'aggregate',
+            'stage2-preextract',
+            'stage2-train',
+            'stage2-aggregate',
+        ),
+    )
     parser.add_argument('--variant', default='s1_dual_regime_modalnet')
     parser.add_argument('--part', type=int, default=-1)
+    parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
     with SealAuditGuard() as guard:
@@ -2102,6 +3297,12 @@ def main() -> None:
             run_section13_controls()
         elif args.mode == 'aggregate':
             run_aggregate()
+        elif args.mode == 'stage2-preextract':
+            run_stage2_preextract(args.part)
+        elif args.mode == 'stage2-train':
+            run_stage2_train(args.seed)
+        elif args.mode == 'stage2-aggregate':
+            run_stage2_aggregate()
         if guard.violations:
             raise RuntimeError(f'Seal violations recorded: {guard.violations}')
 
