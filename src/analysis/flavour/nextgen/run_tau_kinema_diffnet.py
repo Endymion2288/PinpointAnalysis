@@ -302,7 +302,7 @@ def _predict_loader_fp32(
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.allow_tf32 = False
     model.eval()
-    probs4_l, probs12_l, phi_l, vpv_l, spv_l, charm_l, tau_s_l, kin_l = [], [], [], [], [], [], [], []
+    probs4_l, probs12_l, phi_l, vpv_l, spv_l, charm_l, tau_s_l, kin_l, si_reg_l = [], [], [], [], [], [], [], [], []
     try:
         for batch in loader:
             db = move_batch_to_device(batch, device)
@@ -313,6 +313,15 @@ def _predict_loader_fp32(
             }
             with torch.amp.autocast(device_type=device.type, enabled=False):
                 out = model.forward_NextGen(clean_db)
+            tgt_act = clean_db['pix_plane_summary'][:, :12, 0] > 0.5
+            has_tgt = tgt_act.any(dim=1)
+            p_grid = torch.arange(12, device=tgt_act.device, dtype=torch.long)[None, :].expand_as(tgt_act)
+            first_p = torch.where(tgt_act, p_grid, torch.full_like(p_grid, 99)).min(dim=1).values
+            si_reg = torch.where(
+                ~has_tgt,
+                torch.full_like(first_p, 2),
+                torch.where(first_p <= 5, torch.zeros_like(first_p), torch.ones_like(first_p)),
+            )
             probs4_l.append(out.probs4.float().cpu().numpy())
             probs12_l.append(out.aux['probs12'].float().cpu().numpy())
             phi_l.append(out.aux['phi_law'].float().cpu().numpy())
@@ -320,6 +329,7 @@ def _predict_loader_fp32(
             spv_l.append(out.scale_pv_mm.float().cpu().numpy())
             charm_l.append(torch.sigmoid(out.charm_logit.float()).cpu().numpy())
             tau_s_l.append(out.tau_score(charm_penalty=0.0).cpu().numpy())
+            si_reg_l.append(si_reg.cpu().numpy())
             assert out.kin_pred is not None
             kin_l.append(out.kin_pred.float().cpu().numpy())
     finally:
@@ -335,6 +345,7 @@ def _predict_loader_fp32(
         'charm_prob': np.concatenate(charm_l, axis=0).astype(np.float32),
         'tau_score': np.concatenate(tau_s_l, axis=0).astype(np.float32),
         'kin_pred': np.concatenate(kin_l, axis=0).astype(np.float32),
+        'si_regime': np.concatenate(si_reg_l, axis=0).astype(np.int64),
     }
 
 
@@ -633,15 +644,23 @@ def run_gate_ab_checks(out_dir: Path) -> dict[str, Any]:
         )
         ti = verify_inference_truth_invariance(model, batch8, atol=1e-7)
 
-        # Empty-modality finite check & bs=1 vs bs=8 consistency
+        # Empty-modality finite check & strict IEEE-FP32 bs=1 vs bs=8 consistency
         model.eval()
-        with torch.inference_mode():
-            out_emp = model(empty_batch)
-            assert torch.isfinite(out_emp['probs4']).all() and torch.isfinite(out_emp['v_hat']).all()
-            p1 = model(batch1)['probs4']
-            p8 = model(batch8)['probs4'][:1]
-            bs1_vs_bs8_diff = float((p1 - p8).abs().max().item())
-            assert bs1_vs_bs8_diff <= 1e-6, f'bs=1 vs bs=8 diff {bs1_vs_bs8_diff} > 1e-6'
+        _old_mm = torch.backends.cuda.matmul.allow_tf32
+        _old_cudnn = torch.backends.cudnn.allow_tf32
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        try:
+            with torch.inference_mode():
+                out_emp = model(empty_batch)
+                assert torch.isfinite(out_emp['probs4']).all() and torch.isfinite(out_emp['v_hat']).all()
+                p1 = model(batch1)['probs4']
+                p8 = model(batch8)['probs4'][:1]
+                bs1_vs_bs8_diff = float((p1 - p8).abs().max().item())
+                assert bs1_vs_bs8_diff <= 1e-6, f'bs=1 vs bs=8 diff {bs1_vs_bs8_diff} > 1e-6'
+        finally:
+            torch.backends.cuda.matmul.allow_tf32 = _old_mm
+            torch.backends.cudnn.allow_tf32 = _old_cudnn
 
         # Exact microbatch grad_accum=2 vs full-batch equivalence check on full model
         grad_accum_rel_l2 = None
@@ -1038,7 +1057,8 @@ def run_stage1_train_and_eval(
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 2.0)
                     opt.step()
                 scheduler.step()
-                _update_ema(ema_model, model, 0.999)
+                eff_ema = min(0.999, (1.0 + global_step) / (10.0 + global_step))
+                _update_ema(ema_model, model, eff_ema)
                 loss_sum += win_l * tot_b
                 n_seen += tot_b
 
@@ -1102,8 +1122,10 @@ def run_stage1_train_and_eval(
         sample_val_batch = move_batch_to_device(next(iter(val_loader)), device)
         ti_val = verify_inference_truth_invariance(ema_model, sample_val_batch, atol=1e-7)
 
-        # Calibrate per-obs-domain Student-t PV scale multipliers strictly on internal_train[:4096]
-        n_pv_cal = min(4096, len(tr_pos))
+        # Calibrate Student-t PV scale multipliers strictly on internal_train[:8192]
+        # stratified by observable first-silicon target regime (0:Front<=5, 1:Interm 6..11, 2:None)
+        # crossed with obs_domain_id (1, 2, 3) when >= 80 valid events.
+        n_pv_cal = min(8192, len(tr_pos))
         pv_cal_ds = CachedPFDataset(items_dir, pool_meta, indices=tr_pos[:n_pv_cal])
         pv_cal_loader = _make_loader(
             pv_cal_ds, batch_size=max(64, micro_bs), shuffle=False, workers=loader_workers,
@@ -1115,6 +1137,7 @@ def run_stage1_train_and_eval(
             shutdown_loader(pv_cal_loader)
         tr_cal_sc = tr_sidecar.iloc[:n_pv_cal]
         tr_cal_dom = tr_keys['obs_domain_id'].to_numpy(dtype=np.int64)[:n_pv_cal]
+        tr_cal_si = pv_cal_pred['si_regime']
         tr_cal_vtrue = torch.from_numpy(
             np.column_stack([
                 tr_cal_sc['vertex_x_mm'].to_numpy(np.float32),
@@ -1123,6 +1146,7 @@ def run_stage1_train_and_eval(
             ])
         )
         tr_cal_vvalid = torch.from_numpy(tr_cal_sc['vertex_valid'].to_numpy(dtype=np.int64))
+        tr_valid_np = tr_cal_vvalid.numpy() > 0
         global_pulls = compute_student_t_pulls(
             torch.from_numpy(pv_cal_pred['v_pv_mm']),
             torch.from_numpy(pv_cal_pred['scale_pv_mm']),
@@ -1130,31 +1154,55 @@ def run_stage1_train_and_eval(
             tr_cal_vvalid,
             df=3.0,
         )['p68_abs_pull']
-        pv_scale_corr_by_dom: dict[int, list[float]] = {}
-        global_corr = [float(np.clip(c, 0.5, 2.5)) if c > 0.0 else 1.0 for c in global_pulls]
-        for d_id in (1, 2, 3):
-            dm = (tr_cal_dom == d_id) & (tr_cal_vvalid.numpy() > 0)
-            if int(dm.sum()) >= 40:
-                dpulls = compute_student_t_pulls(
-                    torch.from_numpy(pv_cal_pred['v_pv_mm'][dm]),
-                    torch.from_numpy(pv_cal_pred['scale_pv_mm'][dm]),
-                    tr_cal_vtrue[dm],
-                    tr_cal_vvalid[dm],
+        global_corr = [float(np.clip(c, 0.4, 2.5)) if c > 0.0 else 1.0 for c in global_pulls]
+
+        pv_scale_corr_by_si: dict[int, list[float]] = {}
+        for s_id in (0, 1, 2):
+            sm = (tr_cal_si == s_id) & tr_valid_np
+            if int(sm.sum()) >= 40:
+                spulls = compute_student_t_pulls(
+                    torch.from_numpy(pv_cal_pred['v_pv_mm'][sm]),
+                    torch.from_numpy(pv_cal_pred['scale_pv_mm'][sm]),
+                    tr_cal_vtrue[sm],
+                    tr_cal_vvalid[sm],
                     df=3.0,
                 )['p68_abs_pull']
-                pv_scale_corr_by_dom[d_id] = [float(np.clip(c, 0.5, 2.5)) if c > 0.0 else g for c, g in zip(dpulls, global_corr)]
+                pv_scale_corr_by_si[s_id] = [float(np.clip(c, 0.4, 2.5)) if c > 0.0 else g for c, g in zip(spulls, global_corr)]
             else:
-                pv_scale_corr_by_dom[d_id] = list(global_corr)
+                pv_scale_corr_by_si[s_id] = list(global_corr)
+
+        pv_scale_corr_by_regime: dict[str, list[float]] = {}
+        for s_id in (0, 1, 2):
+            for d_id in (1, 2, 3):
+                key = f'si{s_id}_dom{d_id}'
+                dm = (tr_cal_si == s_id) & (tr_cal_dom == d_id) & tr_valid_np
+                if int(dm.sum()) >= 80:
+                    dpulls = compute_student_t_pulls(
+                        torch.from_numpy(pv_cal_pred['v_pv_mm'][dm]),
+                        torch.from_numpy(pv_cal_pred['scale_pv_mm'][dm]),
+                        tr_cal_vtrue[dm],
+                        tr_cal_vvalid[dm],
+                        df=3.0,
+                    )['p68_abs_pull']
+                    pv_scale_corr_by_regime[key] = [
+                        float(np.clip(c, 0.4, 2.5)) if c > 0.0 else fb
+                        for c, fb in zip(dpulls, pv_scale_corr_by_si[s_id])
+                    ]
+                else:
+                    pv_scale_corr_by_regime[key] = list(pv_scale_corr_by_si[s_id])
 
         # Evaluate Internal-Val (4,800 events) in strict IEEE-FP32
         val_pred = _predict_loader_fp32(ema_model, val_loader, device)
         val_obs_dom = val_keys['obs_domain_id'].to_numpy(dtype=np.int64)
+        val_si_reg = val_pred['si_regime']
         scale_pv_raw = val_pred['scale_pv_mm'].copy()
         scale_pv_cal = scale_pv_raw.copy()
-        for d_id, cvec in pv_scale_corr_by_dom.items():
-            dm_val = val_obs_dom == d_id
-            if dm_val.any():
-                scale_pv_cal[dm_val] *= np.asarray(cvec, dtype=np.float32)[None, :]
+        for s_id in (0, 1, 2):
+            for d_id in (1, 2, 3):
+                cvec = pv_scale_corr_by_regime[f'si{s_id}_dom{d_id}']
+                dm_val = (val_si_reg == s_id) & (val_obs_dom == d_id)
+                if dm_val.any():
+                    scale_pv_cal[dm_val] *= np.asarray(cvec, dtype=np.float32)[None, :]
         np.save(run_dir / 'probs_internal_val_eval.npy', val_pred['probs4'])
         np.save(run_dir / 'probs12_internal_val_eval.npy', val_pred['probs12'])
         np.save(run_dir / 'phi_law_internal_val_eval.npy', val_pred['phi_law'])
@@ -1234,9 +1282,12 @@ def run_stage1_train_and_eval(
         'UTC_started': utc_started,
         'UTC_finished': datetime.now(timezone.utc).isoformat(),
         'truth_invariance_val_max_diff': float(ti_val['max_abs_diff']),
-        'pv_scale_corr_by_obs_domain': {str(k): v for k, v in pv_scale_corr_by_dom.items()},
+        'pv_scale_corr_by_obs_regime': pv_scale_corr_by_regime,
         'stage1_audit_violations': list(_STAGE1_VIOLATIONS),
         'learned_alpha_res': float(ema_model.hyp_engine.alpha_res.detach().cpu().item())
+        if ema_model.hyp_engine.alpha_res is not None
+        else None,
+        'learned_gamma_res': float(F.softplus(ema_model.hyp_engine.alpha_res.detach().cpu()).item())
         if ema_model.hyp_engine.alpha_res is not None
         else None,
         'history': history,

@@ -188,10 +188,13 @@ def _build_initial_physics_matrix() -> tuple[torch.Tensor, torch.Tensor]:
     a[[2, 4], 17] = torch.tensor([1.4, 1.4])
     a[[3, 5], 17] = torch.tensor([-1.4, -1.4])
 
-    # Prior intercepts: prompt/light = 0, rare charm branches initialized at ~ -1.4 (exp(-1.4) ~ 0.24)
-    # so zero-sample NC_cc stays calibrated without drifting to -inf!
+    # Gentle scaling (0.20x) for standardized phi_norm avoids step-0 logit saturation.
+    a = 0.20 * a
+
+    # Balanced 4-class macro priors (probs4 ~ [0.25, 0.25, 0.25, 0.25], NLL ~ 1.39),
+    # Y-mirror mu-/mu+ symmetry, and ~88:12 prompt/charm branching priors.
     b = torch.tensor(
-        [0.0, -1.4, 0.0, -0.4, -1.4, -1.8, -0.2, -0.2, 0.0, -0.2, 0.0, -1.5],
+        [-0.128, -2.120, -0.821, -0.821, -2.813, -2.813, -1.715, -1.772, -0.693, -1.897, -0.128, -2.120],
         dtype=torch.float32,
     )
     return a, b
@@ -536,6 +539,21 @@ class Explicit12HypothesisEngine(nn.Module):
         a_init, b_init = _build_initial_physics_matrix()
         self.register_buffer('A_init', a_init)
         self.register_buffer('b_init', b_init)
+        # Fixed pure-observation reference scales (mean[16]=0, mean[17]=0 for exact Y-mirror symmetry)
+        self.register_buffer(
+            'phi_ref_mean',
+            torch.tensor(
+                [0.80, 0.80, 0.40, 0.20, 0.45, 0.70, 0.80, 2.50, 0.08, 0.55, -0.10, 0.30, 0.55, 1.10, 0.11, 0.04, 0.0, 0.0],
+                dtype=torch.float32,
+            ),
+        )
+        self.register_buffer(
+            'phi_ref_std',
+            torch.tensor(
+                [0.35, 0.40, 0.35, 0.22, 0.35, 0.55, 1.00, 0.90, 0.36, 0.45, 0.85, 0.26, 0.50, 0.25, 0.35, 0.30, 0.32, 0.38],
+                dtype=torch.float32,
+            ),
+        )
 
         # Residual mask: m_res[NC_cc] = 0.0 (slot 11 strictly anchored to physics laws!)
         m_res = torch.ones(N_HYPOTHESES, dtype=torch.float32)
@@ -564,14 +582,16 @@ class Explicit12HypothesisEngine(nn.Module):
         else:
             self.A_phys = nn.Parameter(a_init.clone())
             self.b_phys = nn.Parameter(b_init.clone())
-            self.alpha_res = nn.Parameter(torch.tensor(0.30, dtype=torch.float32))
+            self.alpha_res = nn.Parameter(torch.tensor(0.5413, dtype=torch.float32))
             self.res_mlp = nn.Sequential(
-                nn.LayerNorm(in_dim),
-                nn.Linear(in_dim, 256),
+                nn.LayerNorm(in_dim + PHI_LAW_DIM),
+                nn.Linear(in_dim + PHI_LAW_DIM, 256),
                 nn.SiLU(),
                 nn.Dropout(head_dropout),
                 nn.Linear(256, N_HYPOTHESES),
             )
+            nn.init.normal_(self.res_mlp[-1].weight, std=1.0e-2)
+            nn.init.zeros_(self.res_mlp[-1].bias)
             self.unconstrained_head4 = None
             self.unconstrained_charm_head = None
             # Conditional tau-associated charm branch P(charm | tau, x) = sigma(z_tau_c)
@@ -586,16 +606,17 @@ class Explicit12HypothesisEngine(nn.Module):
         if self.abl_unconstrained:
             return self.A_init.sum() * 0.0
         assert self.A_phys is not None and self.b_phys is not None
-        return 0.05 * ((self.A_phys.float() - self.A_init).square().sum() + (self.b_phys.float() - self.b_init).square().sum())
+        return 0.05 * ((self.A_phys.float() - self.A_init).square().mean() + (self.b_phys.float() - self.b_init).square().mean())
 
     def forward(self, z_backbone: torch.Tensor, phi_law: torch.Tensor) -> dict[str, torch.Tensor]:
         with torch.amp.autocast(device_type=z_backbone.device.type, enabled=False):
             zf = z_backbone.float()
             phi = phi_law.float()
+            phi_norm = ((phi - self.phi_ref_mean[None, :]) / self.phi_ref_std[None, :]).clamp(-5.0, 5.0)
 
             if self.abl_unconstrained:
                 assert self.unconstrained_head4 is not None and self.unconstrained_charm_head is not None
-                joint = torch.cat([zf, phi], dim=-1)
+                joint = torch.cat([zf, phi_norm], dim=-1)
                 logits4 = self.unconstrained_head4(joint)
                 probs4 = F.softmax(logits4, dim=-1)
                 # Map 4-class logits back to 7-class contract symmetrically for uniform output interface
@@ -631,9 +652,10 @@ class Explicit12HypothesisEngine(nn.Module):
                 and self.res_mlp is not None
                 and self.tau_charm_head is not None
             )
-            l_phys12 = F.linear(phi, self.A_phys.float(), self.b_phys.float())  # (B, 12)
-            r_res12 = self.res_mlp(zf)  # (B, 12)
-            gamma_res = torch.tanh(self.alpha_res.float())
+            l_phys12 = F.linear(phi_norm, self.A_phys.float(), self.b_phys.float())  # (B, 12)
+            joint = torch.cat([zf, phi_norm], dim=-1)
+            r_res12 = self.res_mlp(joint)  # (B, 12)
+            gamma_res = F.softplus(self.alpha_res.float())
             ell12 = l_phys12 + gamma_res * self.m_res[None, :] * r_res12
 
             # Exact log-space marginalization from 12 sub-hypotheses -> 7 canonical classes
@@ -756,9 +778,9 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         self.vtx_anchor = VertexAnchorPredictor(dim=dim, heads=heads)
         self.vtx_layer = DifferentiableStudentTVertexLayer(hidden_dim=dim, df=3.0, n_iters=4)
         self.pv_regime_scale = nn.Sequential(
-            nn.Linear(6, 32),
+            nn.Linear(3 * dim + 16 + 6, 64),
             nn.SiLU(),
-            nn.Linear(32, 3),
+            nn.Linear(64, 3),
         )
         nn.init.zeros_(self.pv_regime_scale[-1].weight)
         nn.init.zeros_(self.pv_regime_scale[-1].bias)
@@ -947,6 +969,12 @@ class TauKinemaDiffNet(NextGenFlavourModel):
 
         prior = torch.where(has_tgt.unsqueeze(-1), si_xyz, prior)
         any_valid = cal_valid | has_tgt
+        if 'avr_pv_mm' in batch:
+            avr = batch['avr_pv_mm'].float()
+            dz_cal = avr[:, 2] - cal_start[:, 0]
+            avr_ok = (avr[:, 3] > 0.5) & ((~cal_valid) | ((dz_cal >= -50.0) & (dz_cal <= 150.0)))
+            prior = torch.where(avr_ok.unsqueeze(-1), avr[:, :3], prior)
+            any_valid = any_valid | avr_ok
         return prior, any_valid, is_front_p, is_mid_p
 
     def _build_bar_energy_grids(self, batch: dict[str, torch.Tensor], b: int, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
@@ -998,13 +1026,22 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         cal_tok = bar_out['cal_tokens']
         cal_mask = bar_out['cal_mask']
 
-        # 3. Two-Stage Neural Vertex Anchor (causal silicon+calorimeter prior -> coarse+fine PV)
+        # 3. Longitudinal 69-Plane Profile Encoder (must run BEFORE vtx_anchor to provide z_mm/X0/lambda_I!)
+        z_in = torch.cat([pix_plane_tok, cal_tok[:, :self.n_st]], dim=1)[:, self.z_order_idx]
+        z_act = torch.cat([pix_plane_act, cal_mask[:, :self.n_st]], dim=1)[:, self.z_order_idx]
+        z_in = (z_in + self.z_pos_proj(self.z_plane_geom).unsqueeze(0).to(z_in.dtype)) * z_act.unsqueeze(-1).to(z_in.dtype)
+        z_seq = self.z_profile_encoder(z_in, z_act)
+        with torch.amp.autocast(device_type=device.type, enabled=False):
+            z_logits = self.z_pool_gate(z_seq.float()).squeeze(-1).masked_fill(~z_act, -1e4)
+            z_w = torch.softmax(z_logits, dim=1) * z_act.float()
+            z_w = z_w / z_w.sum(dim=1, keepdim=True).clamp_min(1e-6)
+            z_prof_glob = (z_w.unsqueeze(-1) * z_seq.float()).sum(dim=1)
+
+        # 4. Two-Stage Neural Vertex Anchor (causal silicon+calorimeter+AVR prior -> coarse+fine PV)
         v_phys_prior, any_valid_prior, is_front_p, is_mid_p = self._compute_cal_prior(batch, b, device)
-        anchor_src = torch.cat([pix_plane_tok, cal_tok[:, :self.n_st]], dim=1)
-        anchor_mask = torch.cat([pix_plane_act, cal_mask[:, :self.n_st]], dim=1)
         v_anchor, log_var_anchor = self.vtx_anchor(
-            anchor_src,
-            anchor_mask,
+            z_seq.to(pix_plane_tok.dtype),
+            z_act,
             v_phys_prior,
             pix_tokens=u_pix,
             pix_xyz_mm=pix_xyz,
@@ -1064,26 +1101,39 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         trk_emb = self.trk_post_attn(trk_emb, trk_mask, pair_bias=trk_pair_bias)
 
         # Inverse-variance precision fusion of two-stage neural anchor & Student-t tracklet vertex
-        has_tgt_trk = (trk_mask & (trk_morph[..., 1] < 0.5)).any(dim=1)
-        anc_scale_base = v_anchor.new_tensor([0.20, 0.20, 2.50])[None, :]
-        sigma_anc = (anc_scale_base * torch.exp(0.5 * log_var_anchor.float().clamp(-6.0, 6.0))).clamp(0.02, 150.0)
-        prec_anc = 1.0 / sigma_anc.square()
-        sigma_trk = vtx_out['scale_pv_mm'].float().clamp(0.02, 150.0)
-        prec_trk = (1.0 / sigma_trk.square()) * has_tgt_trk.unsqueeze(-1).float()
-        prec_tot = (prec_anc + prec_trk).clamp_min(1e-6)
-        v_pv_fused = (prec_anc * v_anchor.float() + prec_trk * v_pv_trk.float()) / prec_tot
-        n_trk_norm = torch.log1p((trk_mask & (trk_morph[..., 1] < 0.5)).float().sum(dim=1)) / 4.0
-        regime_ctx = torch.stack([
-            is_front_p.float(),
-            is_mid_p.float(),
-            has_tgt_trk.float(),
-            n_trk_norm,
-            (cal_mask[:, :self.n_st].float().sum(dim=1) / 54.0),
-            (v_pv_fused[:, 2] - self.default_center_mm[2]) / 500.0,
-        ], dim=-1)
-        scale_pv_fused = (
-            torch.rsqrt(prec_tot) * torch.exp(self.pv_regime_scale(regime_ctx).float().clamp(-1.5, 1.5))
-        ).clamp(0.02, 150.0)
+        with torch.amp.autocast(device_type=device.type, enabled=False):
+            t_logits = self.trk_pool_gate(trk_emb.float()).squeeze(-1).masked_fill(~trk_mask, -1e4)
+            t_w = torch.softmax(t_logits, dim=1) * trk_mask.float()
+            t_w = t_w / t_w.sum(dim=1, keepdim=True).clamp_min(1e-6)
+            trk_glob = (t_w.unsqueeze(-1) * trk_emb.float()).sum(dim=1)
+
+            has_tgt_trk = (trk_mask & (trk_morph[..., 1] < 0.5)).any(dim=1)
+            anc_scale_base = v_anchor.new_tensor([0.20, 0.20, 2.50])[None, :]
+            sigma_anc = (anc_scale_base * torch.exp(0.5 * log_var_anchor.float().clamp(-6.0, 6.0))).clamp(0.02, 150.0)
+            prec_anc = 1.0 / sigma_anc.square()
+            sigma_trk = vtx_out['scale_pv_mm'].float().clamp(0.02, 150.0)
+            prec_trk = (1.0 / sigma_trk.square()) * has_tgt_trk.unsqueeze(-1).float()
+            prec_tot = (prec_anc + prec_trk).clamp_min(1e-6)
+            v_pv_fused = (prec_anc * v_anchor.float() + prec_trk * v_pv_trk.float()) / prec_tot
+            n_trk_norm = torch.log1p((trk_mask & (trk_morph[..., 1] < 0.5)).float().sum(dim=1)) / 4.0
+            regime_ctx = torch.stack([
+                is_front_p.float(),
+                is_mid_p.float(),
+                has_tgt_trk.float(),
+                n_trk_norm,
+                (cal_mask[:, :self.n_st].float().sum(dim=1) / 54.0),
+                (v_pv_fused[:, 2] - self.default_center_mm[2]) / 500.0,
+            ], dim=-1)
+            pv_scale_ctx = torch.cat([
+                z_prof_glob,
+                bar_out['cal_global'].float(),
+                trk_glob,
+                batch['c_obs'].float(),
+                regime_ctx,
+            ], dim=-1)
+            scale_pv_fused = (
+                torch.rsqrt(prec_tot) * torch.exp(self.pv_regime_scale(pv_scale_ctx).float().clamp(-1.5, 1.5))
+            ).clamp(0.02, 150.0)
 
         # 4. IPT-Interlocked Spectrometer Encoder
         ipt_mask = trk_mask & (trk_morph[..., 1] > 0.5)
@@ -1111,12 +1161,6 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         hit_pool = torch.cat([h_mean, h_attn], dim=-1) * has_hit.unsqueeze(-1).to(hh.dtype)
         spec_tok = self.spec_fusion(torch.cat([cand_pool, hit_pool], dim=-1)) * (has_hit | has_cand).unsqueeze(-1).to(hh.dtype)
 
-        # 5. Longitudinal 69-Plane Profile Encoder
-        z_in = torch.cat([pix_plane_tok, cal_tok[:, :self.n_st]], dim=1)[:, self.z_order_idx]
-        z_act = torch.cat([pix_plane_act, cal_mask[:, :self.n_st]], dim=1)[:, self.z_order_idx]
-        z_in = (z_in + self.z_pos_proj(self.z_plane_geom).unsqueeze(0).to(z_in.dtype)) * z_act.unsqueeze(-1).to(z_in.dtype)
-        z_seq = self.z_profile_encoder(z_in, z_act)
-
         # 6. Global Heterogeneous Perceiver Cross-Modal Fusion
         source = torch.cat([u_pix, pix_plane_tok, cal_tok, trk_emb, spec_tok.unsqueeze(1)], dim=1)
         source_mask = torch.cat([pix_mask, pix_plane_act, cal_mask, trk_mask, (has_hit | has_cand).unsqueeze(1)], dim=1)
@@ -1137,16 +1181,6 @@ class TauKinemaDiffNet(NextGenFlavourModel):
         with torch.amp.autocast(device_type=device.type, enabled=False):
             w_lat = torch.softmax(self.pool_gate(q_lat.float()), dim=1)
             pool_attn = (w_lat * q_lat.float()).sum(dim=1)
-
-            z_logits = self.z_pool_gate(z_seq.float()).squeeze(-1).masked_fill(~z_act, -1e4)
-            z_w = torch.softmax(z_logits, dim=1) * z_act.float()
-            z_w = z_w / z_w.sum(dim=1, keepdim=True).clamp_min(1e-6)
-            z_prof_glob = (z_w.unsqueeze(-1) * z_seq.float()).sum(dim=1)
-
-            t_logits = self.trk_pool_gate(trk_emb.float()).squeeze(-1).masked_fill(~trk_mask, -1e4)
-            t_w = torch.softmax(t_logits, dim=1) * trk_mask.float()
-            t_w = t_w / t_w.sum(dim=1, keepdim=True).clamp_min(1e-6)
-            trk_glob = (t_w.unsqueeze(-1) * trk_emb.float()).sum(dim=1)
 
             v_pv = v_pv_fused
             scale_pv = scale_pv_fused
@@ -1173,14 +1207,20 @@ class TauKinemaDiffNet(NextGenFlavourModel):
             ], dim=-1))
 
             # 7. Three Differentiable PINPOINT Physics Laws -> phi_law (B, 18)
+            # Detach PV/SV geometry inputs so l_phys12 cannot hijack v_pv or crush pi_sv
+            v_pv_det = v_pv.detach()
+            pi_sv_det = vtx_out['pi_sv'].detach().float()
+            dchi2_det = dchi2.detach()
+            sv_mag_det = sv_mag.detach()
+
             grid_x_e, grid_y_e = self._build_bar_energy_grids(batch, b, device)
-            law1_out = self.cascade_fitter(grid_x_e, grid_y_e, v_pv)
+            law1_out = self.cascade_fitter(grid_x_e, grid_y_e, v_pv_det)
 
             # Law 2: Displaced Topology & Parent-Stub vs Photon-Gap Bayes factor
-            s_d0_norm = vtx_out['trk_ip_feat'][..., 1].float()  # log1p(s_d0) / 3
+            s_d0_norm = vtx_out['trk_ip_feat'][..., 1].detach().float()  # log1p(s_d0) / 3
             s_d0_raw = torch.expm1((3.0 * s_d0_norm).clamp(0.0, 12.0))
             is_tgt = trk_mask & (trk_morph[..., 1] < 0.5)
-            w_disp_raw = (vtx_out['pi_sv'].float() * torch.sigmoid(s_d0_raw - 1.2) + 0.05 * s_d0_raw) * is_tgt.float()
+            w_disp_raw = (pi_sv_det * torch.sigmoid(s_d0_raw - 1.2) + 0.05 * s_d0_raw) * is_tgt.float()
             has_disp = (w_disp_raw.sum(dim=1) > 0.05).float()
             w_disp = w_disp_raw / w_disp_raw.sum(dim=1, keepdim=True).clamp_min(1e-6)
 
@@ -1207,8 +1247,8 @@ class TauKinemaDiffNet(NextGenFlavourModel):
 
             law2_raw = torch.stack([
                 torch.log1p(s_disp_agg.clamp_min(0.0)) / 2.5,
-                torch.log1p(dchi2.squeeze(-1).clamp_min(0.0)) / 3.0,
-                torch.asinh(sv_mag.squeeze(-1) / 0.2) / 3.0,
+                torch.log1p(dchi2_det.squeeze(-1).clamp_min(0.0)) / 3.0,
+                torch.asinh(sv_mag_det.squeeze(-1) / 0.2) / 3.0,
                 b_stub_gap,
                 shared_root_3p,
             ], dim=-1) * F.softplus(self.law2_scale.float()).clamp(0.2, 3.0)[None, :]
@@ -1216,11 +1256,11 @@ class TauKinemaDiffNet(NextGenFlavourModel):
             law3_out = self.hemisphere_mod(
                 grid_x_e,
                 grid_y_e,
-                v_pv,
+                v_pv_det,
                 trk_kin,
                 trk_morph,
                 trk_mask,
-                vtx_out['pi_sv'],
+                pi_sv_det,
                 s_d0_raw,
                 batch['trk_cand'],
                 batch['trk_cand_mask'],
@@ -1256,6 +1296,8 @@ class TauKinemaDiffNet(NextGenFlavourModel):
             'p_all_charm': hyp_out['p_all_charm'],
             'z_tau_c': hyp_out['z_tau_c'],
             'delta_chi2_2v': dchi2.squeeze(-1),
+            'v_anchor': v_anchor.float(),
+            'sigma_anc': sigma_anc,
             'entropies': entropies,
         }
         return NextGenModelOutput(
@@ -1353,7 +1395,7 @@ def compute_tau_kinema_loss(
     w_charm: float = 0.25,
     w_vtx: float = 0.20,
     w_kin: float = 0.15,
-    w_res: float = 0.02,
+    w_res: float = 1.0e-3,
     w_sv_disp: float = 0.0,  # Strictly 0.0 on Clean v3 (zero tau_decay_L3d_mm on train)
 ) -> tuple[torch.Tensor, dict[str, float]]:
     """Compute exact F5 supervision loss for TauKinemaDiffNet (strictly internal_train keys only)."""
@@ -1430,7 +1472,7 @@ def compute_tau_kinema_loss(
         else:
             l_charm = logits7.sum() * 0.0
 
-        # Heavy-tailed Student-t (df=3) PV loss
+        # Heavy-tailed Student-t (df=3) PV loss (+ anchor auxiliary supervision)
         if 'vertex_valid' in batch and 'vertex_xyz_mm' in batch:
             l_vtx = student_t_vertex_loss(
                 v_pv_mm,
@@ -1440,6 +1482,15 @@ def compute_tau_kinema_loss(
                 df=3.0,
                 denom_override=fd.get('vtx'),
             )
+            if 'v_anchor' in aux and 'sigma_anc' in aux:
+                l_vtx = l_vtx + 0.15 * student_t_vertex_loss(
+                    aux['v_anchor'],
+                    aux['sigma_anc'],
+                    batch['vertex_xyz_mm'],
+                    batch['vertex_valid'],
+                    df=3.0,
+                    denom_override=fd.get('vtx'),
+                )
         else:
             l_vtx = logits7.sum() * 0.0
 
