@@ -38,6 +38,7 @@ import zstandard as zstd
 from analysis.flavour.create_data import BRANCHES, ROOT_TREES
 from analysis.flavour.inventory import write_json
 from analysis.flavour.nextgen.dual_regime_modalnet import extract_nonexclusive_spec_candidates
+from analysis.flavour.nextgen import seal_guard
 from analysis.flavour.nextgen.seal_guard import (
     SealAuditGuard,
     SealViolationError,
@@ -121,13 +122,19 @@ _L2_FORBIDDEN_PATH_RE = re.compile(
 _L2_HOOK_INSTALLED = False
 
 
+class _L2CorpusSealGuard(SealAuditGuard):
+    """Scoped SealAuditGuard for L2 corpus provenance and GENIE chunk allowlisting."""
+
+
 def install_l2_seal_guard() -> SealAuditGuard:
     """Install SealAuditGuard + L2 hard block on shards/080..149, planned_manifest, and GENIE 000..028."""
     global _L2_HOOK_INSTALLED
-    guard = SealAuditGuard()
+    guard = _L2CorpusSealGuard()
     guard.__enter__()
     if not _L2_HOOK_INSTALLED:
         def _l2_hook(event: str, args: tuple[Any, ...]) -> None:
+            if not any(isinstance(g, _L2CorpusSealGuard) for g in seal_guard._ACTIVE_GUARDS):
+                return
             if event not in ('open', 'os.stat', 'os.scandir', 'os.listdir') or not args:
                 return
             target = args[0]
@@ -141,7 +148,9 @@ def install_l2_seal_guard() -> SealAuditGuard:
                 path_str = path_str.decode('utf-8', errors='ignore')
             norm = path_str.replace('\\', '/')
             if _L2_FORBIDDEN_PATH_RE.search(norm):
-                guard.violations.append(f'{event}:{norm}')
+                for g in list(seal_guard._ACTIVE_GUARDS):
+                    if isinstance(g, _L2CorpusSealGuard):
+                        g.violations.append(f'{event}:{norm}')
                 raise SealViolationError(f'L2 provenance guard forbids accessing {norm}')
 
         sys.addaudithook(_l2_hook)

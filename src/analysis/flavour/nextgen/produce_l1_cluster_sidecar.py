@@ -42,6 +42,7 @@ import uproot
 
 from analysis.flavour.create_data import BRANCHES, ROOT_TREES, lists
 from analysis.flavour.inventory import COMPRESSION, write_json
+from analysis.flavour.nextgen import seal_guard
 from analysis.flavour.nextgen.seal_guard import (
     SealAuditGuard,
     SealViolationError,
@@ -124,13 +125,19 @@ _L1_HOOK_INSTALLED = False
 _L1_AUDIT_VIOLATIONS: list[str] = []
 
 
+class _L1Stage1SealGuard(SealAuditGuard):
+    """Scoped SealAuditGuard for L1 Stage-1 and GENIE chunk allowlisting."""
+
+
 def install_l1_stage1_guard() -> SealAuditGuard:
     """Install runtime SealAuditGuard + Stage-1 & GENIE chunk allowlist hook."""
     global _L1_HOOK_INSTALLED
-    guard = SealAuditGuard()
+    guard = _L1Stage1SealGuard()
     guard.__enter__()
     if not _L1_HOOK_INSTALLED:
         def _l1_hook(event: str, args: tuple[Any, ...]) -> None:
+            if not any(isinstance(g, _L1Stage1SealGuard) for g in seal_guard._ACTIVE_GUARDS):
+                return
             if event not in ('open', 'os.stat', 'os.scandir', 'os.listdir') or not args:
                 return
             target = args[0]
@@ -145,6 +152,9 @@ def install_l1_stage1_guard() -> SealAuditGuard:
             norm = ps.replace('\\', '/')
             if _L1_FORBIDDEN_RE.search(norm):
                 _L1_AUDIT_VIOLATIONS.append(f'{event}:{norm}')
+                for g in list(seal_guard._ACTIVE_GUARDS):
+                    if isinstance(g, _L1Stage1SealGuard):
+                        g.violations.append(f'{event}:{norm}')
                 raise SealViolationError(f'L1 Stage-1 hard block on {event}: {norm}')
 
         sys.addaudithook(_l1_hook)

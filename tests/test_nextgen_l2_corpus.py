@@ -32,19 +32,22 @@ class TestNextGenL2Corpus(unittest.TestCase):
 
     def test_l2_seal_guard_blocks_sealed_and_early_genie(self) -> None:
         guard = install_l2_seal_guard()
-        blocked_paths = [
-            CLEAN_V3_ROOT / 'planned_manifest.parquet',
-            CLEAN_V3_ROOT / 'sealed_truth_meta/cal_a_truth_meta.parquet',
-            CLEAN_V3_ROOT / 'data/shards/080/observations.parquet',
-            CLEAN_V3_ROOT / 'data/shards/100/observations.parquet',
-            Path('/eos/project-f/fasersim-bonn/public/pinpoint/data/10081/10081_000.root'),
-            Path('/eos/project-f/fasersim-bonn/public/pinpoint/data/10083/10083_028.root'),
-            Path('/eos/project-f/fasersim-bonn/public/pinpoint/data/10086/10086_015.root'),
-        ]
-        for bp in blocked_paths:
-            with self.assertRaises(SealViolationError):
-                open(bp, 'rb')
-        guard.violations.clear()
+        try:
+            blocked_paths = [
+                CLEAN_V3_ROOT / 'planned_manifest.parquet',
+                CLEAN_V3_ROOT / 'sealed_truth_meta/cal_a_truth_meta.parquet',
+                CLEAN_V3_ROOT / 'data/shards/080/observations.parquet',
+                CLEAN_V3_ROOT / 'data/shards/100/observations.parquet',
+                Path('/eos/project-f/fasersim-bonn/public/pinpoint/data/10081/10081_000.root'),
+                Path('/eos/project-f/fasersim-bonn/public/pinpoint/data/10083/10083_028.root'),
+                Path('/eos/project-f/fasersim-bonn/public/pinpoint/data/10086/10086_015.root'),
+            ]
+            for bp in blocked_paths:
+                with self.assertRaises(SealViolationError):
+                    open(bp, 'rb')
+            guard.violations.clear()
+        finally:
+            guard.__exit__(None, None, None)
 
     def test_pack_unpack_zero_truth_and_reconstruct_pix_feat22(self) -> None:
         sh0 = CLEAN_V3_ROOT / 'data/shards/000'
