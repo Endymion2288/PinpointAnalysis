@@ -1988,6 +1988,15 @@ def run_stage2_aggregate(variant: str | None = None) -> dict[str, Any]:
     vp_ens = np.mean(seed_vp, axis=0)
     vs_ens = np.sqrt(np.mean([s ** 2 for s in seed_sc], axis=0))
 
+    # Calibrate 3-seed ensemble Student-t(nu=3) PV scales strictly on tune_screen (N=2,000)
+    # so 3-seed variance shrinkage is accounted for without touching Tune6k.
+    scr_v = in_screen & v_valid
+    t_q68 = 1.1969
+    scr_raw_pull = np.abs(vp_ens[scr_v] - v_true[scr_v]) / np.maximum(vs_ens[scr_v], 1e-4) / t_q68
+    pv_scale_mult = np.quantile(scr_raw_pull, 0.6827, axis=0).astype(np.float64)
+    vs_ens_cal = vs_ens * pv_scale_mult[None, :]
+    np.save(STAGE2_DIR / 'scale_pv_tune8k_gn2_ens3_cal.npy', vs_ens_cal.astype(np.float32))
+
     seed_ba4s = [_ba4_and_nll(labels[tune6k_m], p[tune6k_m])['BA4_pct'] for p in seed_p_raw]
     seed_nlls = [_ba4_and_nll(labels[tune6k_m], p[tune6k_m])['NLL'] for p in seed_p_raw]
 
@@ -2052,22 +2061,27 @@ def run_stage2_aggregate(variant: str | None = None) -> dict[str, Any]:
             },
         }
 
-    pv_audit: dict[str, Any] = {}
-    for rtag, rmk in (
-        ('All_active', tune6k_m & v_valid),
-        ('Pinpoint_PixXY', tune6k_m & v_valid & pc_m),
-        ('Front30', tune6k_m & v_valid & fp_m),
-        ('Interm150', tune6k_m & v_valid & interm_m),
-        ('D1_obs', tune6k_m & v_valid & (obs_dom == 1)),
-        ('D2_obs', tune6k_m & v_valid & (obs_dom == 2)),
-    ):
-        dz = np.abs(vp_ens[rmk, 2] - v_true[rmk, 2])
-        d3 = np.linalg.norm(vp_ens[rmk] - v_true[rmk], axis=1)
-        pulls = compute_student_t_pulls(
-            torch.from_numpy(vp_ens[rmk]), torch.from_numpy(vs_ens[rmk]),
-            torch.from_numpy(v_true[rmk]), torch.ones(int(rmk.sum()), dtype=torch.int64), df=3.0,
-        )
-        pv_audit[rtag] = {'count': int(rmk.sum()), 'median_abs_dz_mm': float(np.median(dz)), 'median_3d_mm': float(np.median(d3)), **pulls}
+    def _build_pv_audit(scale_arr: np.ndarray) -> dict[str, Any]:
+        res: dict[str, Any] = {}
+        for rtag, rmk in (
+            ('All_active', tune6k_m & v_valid),
+            ('Pinpoint_PixXY', tune6k_m & v_valid & pc_m),
+            ('Front30', tune6k_m & v_valid & fp_m),
+            ('Interm150', tune6k_m & v_valid & interm_m),
+            ('D1_obs', tune6k_m & v_valid & (obs_dom == 1)),
+            ('D2_obs', tune6k_m & v_valid & (obs_dom == 2)),
+        ):
+            dz = np.abs(vp_ens[rmk, 2] - v_true[rmk, 2])
+            d3 = np.linalg.norm(vp_ens[rmk] - v_true[rmk], axis=1)
+            pulls = compute_student_t_pulls(
+                torch.from_numpy(vp_ens[rmk]), torch.from_numpy(scale_arr[rmk]),
+                torch.from_numpy(v_true[rmk]), torch.ones(int(rmk.sum()), dtype=torch.int64), df=3.0,
+            )
+            res[rtag] = {'count': int(rmk.sum()), 'median_abs_dz_mm': float(np.median(dz)), 'median_3d_mm': float(np.median(d3)), **pulls}
+        return res
+
+    pv_audit = _build_pv_audit(vs_ens_cal)
+    pv_audit_uncal = _build_pv_audit(vs_ens)
 
     # 6 OOD & 7 Stress
     ood_summary: dict[str, Any] = {}
@@ -2190,7 +2204,9 @@ def run_stage2_aggregate(variant: str | None = None) -> dict[str, Any]:
         'l1_ctrl_no_gn2_ens3_raw_tune6k': _eval_t6k(ctrl_ens_raw) if ctrl_ens_raw is not None else None,
         'l1_ctrl_no_gn2_ens3_dro_tune6k': _eval_t6k(ctrl_ens_dro) if ctrl_ens_dro is not None else None,
         'l1_ctrl_no_gn2_ood_evaluation': ctrl_ood_summary if has_ctrl_s2 else None,
+        'pv_scale_multiplier_tune_screen': pv_scale_mult.tolist(),
         'pv_audit_tune6k': pv_audit,
+        'pv_audit_tune6k_uncal': pv_audit_uncal,
         'ood_evaluation': ood_summary,
         'shard080_stress_tests': stress_summary,
         'paired_family_bootstrap_1000_seed20263250': boot,
